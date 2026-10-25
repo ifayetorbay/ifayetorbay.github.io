@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025232317"></script>
+<script src="heybe-web.js?v=20261025232802"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1302,9 +1302,10 @@ function viewTrip(){
       ${isRO() || S.sample ? '' : `<button class="tbtn${confirmArc ? ' sure' : ''}" data-act="archive">${confirmArc ? 'Emin misin? Seyahat salt okunur olacak (sonra geri açılabilir)' : '🗄️ Seyahati arşivle'}</button>`}
       <button class="tbtn${confirmTrip ? ' sure' : ''}" data-act="deltrip">${confirmTrip ? 'Emin misin? Seyahat ve tüm kayıtları silinecek' : '🗑️ Seyahati sil'}</button></div>` : ''}</section>
   ${isRO() ? `<div class="callout warn"><b>🗄️ Bu seyahat arşivde</b><span>Kayıtlar sadece görüntülenebilir; ekleme, düzenleme, silme ve ödeme kapalı.${S.trip.closedAt ? ` Arşiv tarihi: ${new Date(S.trip.closedAt).toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})}.` : ''}</span>
-    ${isTripAdmin() ? `<button class="btn sm" data-act="unarchive">Arşivden çıkar</button>` : `<span class="note">Arşivden çıkarmayı sadece seyahati kuran kişi yapabilir.</span>`}</div>` : ''}
+    ${isTripAdmin() ? `<button class="btn sm" data-act="unarchive">Arşivden çıkar</button>` : ''}</div>` : ''}
   <div class="card" style="display:flex;flex-direction:column;gap:16px">
-    ${mg ? '' : `<p class="note" style="margin:0">🔒 Seyahatin ortak ayarlarını ${ownerName() ? `<b>${esc(ownerName())}</b> (kurucu)` : 'seyahati kuran kişi'} ve yardımcı kurucular değiştirebilir. Kur, bütçe ve büyük harcama sınırını sen de değiştirebilirsin.</p>`}
+    ${isTripAdmin() && myUid ? `<p class="note" style="margin:0">👑 Ortak ayarları sen ve ⭐ ile seçtiğin yardımcı kurucular değiştirebilir. Bunu diğerleri görmez.</p>`
+      : mg && myUid ? `<p class="note" style="margin:0">⭐ Yardımcı kurucusun: ortak ayarları değiştirebilirsin.</p>` : ''}
     <div class="f"><label for="tKind">Kimlerle gidiyorsunuz?${help('kind')}</label><select class="inp" id="tKind" data-bind="kind" ${dis}>
       ${[['friends','👫 Arkadaşlar'],['family','👨‍👩‍👧 Sadece ailem'],['families','👨‍👩‍👧‍👦 Birkaç aile']].map(([k, l]) => `<option value="${k}" ${KIND() === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
       ${isFamilies() ? `<label class="toggle"><span><b>Çocuklar yarım pay</b><span class="note" style="display:block">Açıksa her çocuk yetişkinin yarısı kadar pay alır.</span></span><input type="checkbox" class="sw" id="tKid" data-bind="kidHalf" ${S.trip.kidHalf ? 'checked' : ''} ${dis} aria-label="Çocuklar yarım pay"></label>` : ''}</div>
@@ -1319,7 +1320,7 @@ function viewTrip(){
       <span class="note">${IN_CLAUDE ? 'Claude içinde canlı kur alınamıyor; güncel kuru bankandan bakıp buraya yaz. Herkes için aynı kur kullanılır.' : 'Canlı kur kendiliğinden güncellenir (uygulama açıkken 2 saatte bir); istersen “Canlı kuru çek” ile hemen yenileyebilir ya da elle yazabilirsin.'} Durum: ${rateLabel()}</span>
       ${Object.keys(S.trip.rates || {}).length ? `<span class="note num">Diğer kurlar: 1 € = ${OTHER_CURS.filter(([c]) => S.trip.rates[c]).map(([c]) => money(S.trip.rates[c], c)).join(' · ')}</span>` : ''}</div>
     <div class="f"><label for="tMe">Bu telefonu kim kullanıyor?${help('me')}</label>
-      ${myUid && myPerson() ? `<div style="display:flex;gap:8px;align-items:center"><div class="inp locked" style="flex:1">${emojiOf(S.me)} ${nm(S.me)} 🔒</div>${isTripAdmin() || selfFixLeft() ? `<button type="button" class="btn" data-release="${S.me}">Değiştir${isTripAdmin() ? '' : ` · ${Math.ceil(selfFixLeft() / 60e3)} dk`}</button>` : ''}</div><span class="note">Bu telefon/hesap ${nm(S.me)} olarak tanımlı; başka bir kişi seçilemez.${isTripAdmin() ? '' : selfFixLeft() ? ' Yanlışsa birkaç dakika içinde (bir kez) kendin değiştirebilirsin; sonrasında seyahati kuran kişi düzeltir.' : ' Yanlışsa seyahati kuran kişi bağı kaldırabilir.'}</span>`
+      ${myUid && myPerson() ? `<div style="display:flex;gap:8px;align-items:center"><div class="inp locked" style="flex:1">${emojiOf(S.me)} ${nm(S.me)} 🔒</div>${isTripAdmin() || selfFixLeft() ? `<button type="button" class="btn" data-release="${S.me}">Değiştir${isTripAdmin() ? '' : ` · ${Math.ceil(selfFixLeft() / 60e3)} dk`}</button>` : ''}</div><span class="note">Bu telefon/hesap ${nm(S.me)} olarak tanımlı; başka bir kişi seçilemez.${isTripAdmin() ? '' : selfFixLeft() ? ' Yanlışsa birkaç dakika içinde (bir kez) kendin değiştirebilirsin; sonrası için grupta söyle.' : ' Yanlış seçtiysen grupta söyle, düzeltilir.'}</span>`
         : `<select class="inp" id="tMe" data-bind="me">${opt(S.me)}</select><span class="note">Harcama eklerken “ödeyen” otomatik bu kişi seçilir.</span>`}</div>
     <div class="f"><span class="lab">Büyük harcama sınırı${help('big')}</span>
       <div class="two"><input class="inp num" id="tBigE" inputmode="decimal" value="${nf0.format(bigLimits().eur)}" data-bind="bigEur" aria-label="Euro sınırı"><input class="inp num" id="tBigT" inputmode="decimal" value="${nf0.format(bigLimits().tr)}" data-bind="bigTry" aria-label="TL sınırı"></div>
@@ -1332,11 +1333,12 @@ function viewTrip(){
     ${S.trip.kasaOn && !isFamily() ? `<div class="f"><label for="tHolder">Kasayı kim tutuyor?</label><select class="inp" id="tHolder" data-bind="holder" ${dis}>${opt(S.trip.holder)}</select></div>` : ''}
   </div>
   <h2>Katılımcılar</h2>
-  <p class="hint">${mg ? `Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}${isTripAdmin() && myUid ? ' ⭐ ile birini yardımcı kurucu yapabilirsin.' : ''}` : 'Kendi emojine dokunarak değiştirebilirsin.'}</p>
+  <p class="hint">${mg ? `Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}${isTripAdmin() && myUid ? ' ☆ işaretine dokunarak birini yardımcı kurucu (⭐) yapabilirsin; ☆ kişi Heybe\'ye katılıp adını seçince çıkar.' : ''}` : 'Kendi emojine dokunarak değiştirebilirsin.'}</p>
   <div class="list">${S.people.map(p => `<div class="swr"><button class="swdel l" data-delp="${p.id}" tabindex="-1">Sil</button><button class="swdel r" data-delp="${p.id}" tabindex="-1">Sil</button><div class="row pcard prow">
     <button type="button" class="emo" data-emo="${p.id}" aria-label="${esc(p.name)} emojisini değiştir">${emojiOf(p.id)}</button>
     <input class="inp" id="pn-${p.id}" data-pname="${p.id}" value="${esc(p.name)}" aria-label="İsim" ${dis}>
-    ${p.uid && p.uid === S.trip.ownerUid ? `<span class="lockmark" title="Kurucu">👑</span>` : p.uid && isTripAdmin() && myUid && p.uid !== myUid ? `<button type="button" class="fbtn" data-admin="${p.id}" aria-pressed="${admins.has(p.uid)}" title="Yardımcı kurucu">${admins.has(p.uid) ? '⭐' : '☆'}</button>` : p.uid && admins.has(p.uid) ? `<span class="lockmark" title="Yardımcı kurucu">⭐</span>` : ''}
+    ${isTripAdmin() && myUid ? (p.uid === myUid ? `<span class="lockmark" title="Kurucu">👑</span>` : p.uid ? `<button type="button" class="fbtn" data-admin="${p.id}" aria-pressed="${admins.has(p.uid)}" title="Yardımcı kurucu">${admins.has(p.uid) ? '⭐' : '☆'}</button>` : '')
+      : p.uid && p.uid === myUid && admins.has(myUid) ? `<span class="lockmark" title="Yardımcı kurucusun">⭐</span>` : ''}
     ${isFamilies() ? `<span class="famctl"><button type="button" class="fbtn" data-fam="${p.id}" data-fk="size">👤 ${p.size || 1}</button><button type="button" class="fbtn" data-fam="${p.id}" data-fk="kids">🧒 ${p.kids || 0}</button></span>` : ''}
     ${p.uid ? (isManager() && myUid ? `<button type="button" class="btn sm" data-release="${p.id}" title="Bu kişinin telefon bağını kaldır">🔓</button>` : `<span class="lockmark" title="Bir telefona bağlı">🔒</span>`) : ''}
   </div></div>`).join('')}</div>
@@ -1378,7 +1380,7 @@ const isManager = () => isTripAdmin() || !!(myUid && (S.trip.admins || []).inclu
 const ownerName = () => { const p = S.people.find(q => q.uid && q.uid === S.trip.ownerUid); return p ? rawName(p.id) : ''; };
 const MGR_BINDS = new Set(['name', 'country', 'start', 'end', 'kasaOn', 'kind', 'kidHalf', 'holder']);
 const MGR_ACTS = new Set(['setmode', 'addperson', 'archive', 'deltrip']);
-function mgrOnly(){ toast(`Bu ayarı seyahati kuran${ownerName() ? ' (' + ownerName() + ')' : ''} ya da yardımcı kurucu değiştirebilir.`); render(); }
+function mgrOnly(){ toast('Bu ayarı değiştirme yetkin yok.'); render(); }
 function claimPerson(id){
   S.people.forEach(p => { if (p.uid === myUid) delete p.uid; });
   const p = S.people.find(q => q.id === id); if (p){ p.uid = myUid; p.boundAt = Date.now(); delete p.freed; }
@@ -2567,7 +2569,7 @@ const famSize = p => `👤 ${p.size || 1}${p.kids ? ` · 🧒 ${p.kids}` : ''}`;
 // (ör. Esma'yı "Orbay ailesi"ne aktarınca ailenin payı 2 olur). Kendine yapılmış görünen ödemeler kaldırılır.
 const personUses = id => S.entries.filter(e => e.paidBy === id || e.by === id || e.from === id || e.to === id || (e.among || []).includes(id)).length;
 function askDeletePerson(id){
-  if (myUid && !isTripAdmin()) return toast('Katılımcıyı sadece seyahati kuran kişi silebilir.');
+  if (myUid && !isManager()) return toast('Bu ayarı değiştirme yetkin yok.');
   if (S.people.length <= 1) return toast('Seyahatte en az bir katılımcı kalmalı.');
   swClose();
   if (!personUses(id)) return removePerson(id, null);
@@ -3311,7 +3313,7 @@ document.addEventListener('click', ev => {
     const p = person(d.admin); if (!p || !p.uid || !isTripAdmin()) return;
     const a = new Set(S.trip.admins || []), on = !a.has(p.uid);
     if (on) a.add(p.uid); else a.delete(p.uid);
-    S.trip.admins = [...a]; logEvent(on ? `${rawName(p.id)} kişisini yardımcı kurucu yaptı` : `${rawName(p.id)} kişisinin yardımcı kurucu yetkisini kaldırdı`);
+    S.trip.admins = [...a];     // işlem geçmişine yazılmaz: kimin yetkili olduğunu yalnız kurucu ve o kişi bilir
     save(); render(); toast(on ? `⭐ ${rawName(p.id)} artık yardımcı kurucu` : `${rawName(p.id)} yardımcı kurucu değil`); return;
   }
   if (d.fam){
@@ -3355,7 +3357,7 @@ document.addEventListener('click', ev => {
   }
   if (d.release){
     const self = person(d.release).uid === myUid && selfFixLeft() > 0;
-    if (!isManager() && !self){ toast('Kişi bağını seyahati kuran ya da yardımcı kurucu kaldırabilir.'); return; }
+    if (!isManager() && !self){ toast('Bu ayarı değiştirme yetkin yok.'); return; }
     if (self && !isTripAdmin()) try { localStorage.setItem(FIX_KEY(S.tid), '1'); } catch(_) {}
     // Bağ buluta da yazılır; o hesabın telefonu bu kişiye sessizce geri bağlanmaz (freed), kim olduğu yeniden sorulur.
     const p = person(d.release), was = p.uid; delete p.uid; p.freed = was; save();
@@ -3493,7 +3495,7 @@ document.addEventListener('click', ev => {
       confirmArc = false; S.trip.closed = true; S.trip.closedAt = Date.now(); logEvent('seyahati arşivledi');
       tab = 'list'; render(); window.scrollTo(0, 0); toast('🗄️ Seyahat arşivlendi; artık sadece görüntülenebilir.'); break;
     case 'unarchive':
-      if (!isTripAdmin()){ toast('Arşivden çıkarmayı sadece seyahati kuran kişi yapabilir.'); break; }
+      if (!isTripAdmin()){ toast('Bu ayarı değiştirme yetkin yok.'); break; }
       S.trip.closed = false; logEvent('seyahati arşivden çıkardı'); render(); toast('Seyahat yeniden düzenlenebilir.'); break;
     case 'deltrip':
       if (!confirmTrip){ confirmTrip = true; render(); break; }
