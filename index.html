@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025231253"></script>
+<script src="heybe-web.js?v=20261025232317"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -310,6 +310,7 @@ textarea.copy{width:100%;min-height:180px;border:1.5px solid var(--line);border-
 /* arşiv: değiştiren düğmeler gizli, alanlar pasif */
 body.ro .acts, body.ro .kacts, body.ro .callout [data-act=setmode], body.ro [data-act=editplan], body.ro [data-act=shoplimit],
 body.ro [data-act=rate], body.ro [data-act=addperson], body.ro .giftadd, body.ro .grow .x, body.ro .swdel{display:none}
+body.nomgr .callout [data-act=setmode], body.nomgr .swdel{display:none}
 body.ro .tfchip, body.ro .gchk, body.ro .wbtn, body.ro .emo{pointer-events:none}
 body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro #shOutlet{pointer-events:none;opacity:.6}
 .here.muted{color:var(--muted)}
@@ -913,6 +914,7 @@ function render(){
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
   const fab = document.getElementById('fab');
   document.body.classList.toggle('ro', isRO());
+  document.body.classList.toggle('nomgr', !isManager());
   { const sb = document.querySelector('nav.tabs [data-tab=settle]'); sb.hidden = isFamily(); if (isFamily() && tab === 'settle') tab = 'list';
     document.querySelector('nav.tabs .in').style.gridTemplateColumns = `repeat(${isFamily() ? 4 : 5},1fr)`; }
   fab.hidden = tab === 'trip' || isRO();
@@ -1289,6 +1291,7 @@ function viewSum(C){
 function viewTrip(){
   const opt = sel => S.people.map(p => `<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)}</option>`).join('');
   const tc = themeCountry(), range = tripRange(S.trip), day = tripDayText().replace(/^ · /, '');
+  const mg = isManager(), dis = mg ? '' : 'disabled', admins = new Set(S.trip.admins || []);
   // Diğer sekmelerdeki gibi renkli özet kartı: seyahatin adı, hangi gününde olunduğu, tarih ve kişiler.
   return `<section class="hero"><div><div class="lbl">${tc ? flagOf(tc[0]) + ' ' : ''}${esc(S.trip.name)}</div>
       <div class="big num">${isRO() ? '🗄️ Arşivde' : day ? day.replace(/^./, c => c.toLocaleUpperCase('tr')) : peopleLabel()}</div>
@@ -1301,14 +1304,15 @@ function viewTrip(){
   ${isRO() ? `<div class="callout warn"><b>🗄️ Bu seyahat arşivde</b><span>Kayıtlar sadece görüntülenebilir; ekleme, düzenleme, silme ve ödeme kapalı.${S.trip.closedAt ? ` Arşiv tarihi: ${new Date(S.trip.closedAt).toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})}.` : ''}</span>
     ${isTripAdmin() ? `<button class="btn sm" data-act="unarchive">Arşivden çıkar</button>` : `<span class="note">Arşivden çıkarmayı sadece seyahati kuran kişi yapabilir.</span>`}</div>` : ''}
   <div class="card" style="display:flex;flex-direction:column;gap:16px">
-    <div class="f"><label for="tKind">Kimlerle gidiyorsunuz?${help('kind')}</label><select class="inp" id="tKind" data-bind="kind">
+    ${mg ? '' : `<p class="note" style="margin:0">🔒 Seyahatin ortak ayarlarını ${ownerName() ? `<b>${esc(ownerName())}</b> (kurucu)` : 'seyahati kuran kişi'} ve yardımcı kurucular değiştirebilir. Kur, bütçe ve büyük harcama sınırını sen de değiştirebilirsin.</p>`}
+    <div class="f"><label for="tKind">Kimlerle gidiyorsunuz?${help('kind')}</label><select class="inp" id="tKind" data-bind="kind" ${dis}>
       ${[['friends','👫 Arkadaşlar'],['family','👨‍👩‍👧 Sadece ailem'],['families','👨‍👩‍👧‍👦 Birkaç aile']].map(([k, l]) => `<option value="${k}" ${KIND() === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      ${isFamilies() ? `<label class="toggle"><span><b>Çocuklar yarım pay</b><span class="note" style="display:block">Açıksa her çocuk yetişkinin yarısı kadar pay alır.</span></span><input type="checkbox" class="sw" id="tKid" data-bind="kidHalf" ${S.trip.kidHalf ? 'checked' : ''} aria-label="Çocuklar yarım pay"></label>` : ''}</div>
-    <div class="f"><label for="tName">Seyahat adı</label><input class="inp" id="tName" value="${esc(S.trip.name)}" data-bind="name"></div>
-    <div class="f"><label for="tCountry">Ülke (renk teması)</label><select class="inp" id="tCountry" data-bind="country">${countryOpts()}</select>
+      ${isFamilies() ? `<label class="toggle"><span><b>Çocuklar yarım pay</b><span class="note" style="display:block">Açıksa her çocuk yetişkinin yarısı kadar pay alır.</span></span><input type="checkbox" class="sw" id="tKid" data-bind="kidHalf" ${S.trip.kidHalf ? 'checked' : ''} ${dis} aria-label="Çocuklar yarım pay"></label>` : ''}</div>
+    <div class="f"><label for="tName">Seyahat adı</label><input class="inp" id="tName" value="${esc(S.trip.name)}" data-bind="name" ${dis}></div>
+    <div class="f"><label for="tCountry">Ülke (renk teması)</label><select class="inp" id="tCountry" data-bind="country" ${dis}>${countryOpts()}</select>
       <span class="note">Uygulamanın renkleri gidilen ülkenin bayrağından alınır.</span></div>
     <div class="f"><span class="lab">Seyahat tarihleri</span>
-      <div class="two"><input type="date" class="inp" id="tStart" value="${S.trip.start || ''}" data-bind="start" aria-label="Gidiş"><input type="date" class="inp" id="tEnd" value="${S.trip.end || ''}" data-bind="end" aria-label="Dönüş"></div>
+      <div class="two"><input type="date" class="inp" id="tStart" value="${S.trip.start || ''}" data-bind="start" ${dis} aria-label="Gidiş"><input type="date" class="inp" id="tEnd" value="${S.trip.end || ''}" data-bind="end" ${dis} aria-label="Dönüş"></div>
       <span class="note">Gidişten önce girilen harcamalar kendiliğinden “Seyahat öncesi” sayılır.</span></div>
     <div class="f"><label for="tRate">Euro kuru (1 € kaç ₺)${help('rate')}</label>
       <div style="display:flex;gap:8px"><input class="inp num" id="tRate" inputmode="decimal" value="${nf4.format(S.trip.rate)}" data-bind="rate" style="flex:1;min-width:0">${IN_CLAUDE ? '' : `<button class="btn" data-act="rate">Canlı kuru çek</button>`}</div>
@@ -1319,26 +1323,27 @@ function viewTrip(){
         : `<select class="inp" id="tMe" data-bind="me">${opt(S.me)}</select><span class="note">Harcama eklerken “ödeyen” otomatik bu kişi seçilir.</span>`}</div>
     <div class="f"><span class="lab">Büyük harcama sınırı${help('big')}</span>
       <div class="two"><input class="inp num" id="tBigE" inputmode="decimal" value="${nf0.format(bigLimits().eur)}" data-bind="bigEur" aria-label="Euro sınırı"><input class="inp num" id="tBigT" inputmode="decimal" value="${nf0.format(bigLimits().tr)}" data-bind="bigTry" aria-label="TL sınırı"></div>
-      <span class="note">Solda € (diğer para birimleri euro karşılığıyla), sağda ₺. Bu tutarın üstündeki harcamalar kırmızı tonla vurgulanır.</span></div>
+      <span class="note">Solda € (diğer para birimleri euro karşılığıyla), sağda ₺. Bu tutarın üstündeki harcamalar kırmızı tonla vurgulanır. Bu sınır sadece senin telefonunda geçerli.</span></div>
     <div class="f"><label for="tPlan">Bütçe (kişi başı)${help('plan')}</label>
       <div style="display:flex;gap:8px"><input class="inp num" id="tPlan" inputmode="decimal" placeholder="ör. 60.000" value="${S.trip.plan ? nf0.format(S.trip.plan) : ''}" data-bind="plan" style="flex:1;min-width:0">
       <select class="inp" id="tPlanCur" data-bind="planCur" aria-label="Bütçe para birimi" style="width:auto">${PLAN_CURS.map(k => `<option value="${k}" ${planCurOf() === k ? 'selected' : ''}>${symOf(k)} ${k}</option>`).join('')}</select></div>
       <span class="note">Bu tatil kişi başı kaça mal olsun? Seyahat öncesi harcananlar düşülür, kalanı seyahat günlerine bölünür. Boş bırakırsan bütçe takibi kapalı olur.</span></div>
-    ${isFamily() ? '' : `<div class="toggle" data-hhost><div><b>Ortak kasa</b>${help('kasa')}<div class="note">Herkes kasaya para koyar, harcamalar kasadan yapılır.</div></div><input type="checkbox" class="sw" id="tKasa" data-bind="kasaOn" ${S.trip.kasaOn?'checked':''} aria-label="Ortak kasa"></div>`}
-    ${S.trip.kasaOn && !isFamily() ? `<div class="f"><label for="tHolder">Kasayı kim tutuyor?</label><select class="inp" id="tHolder" data-bind="holder">${opt(S.trip.holder)}</select></div>` : ''}
+    ${isFamily() ? '' : `<div class="toggle" data-hhost><div><b>Ortak kasa</b>${help('kasa')}<div class="note">Herkes kasaya para koyar, harcamalar kasadan yapılır.</div></div><input type="checkbox" class="sw" id="tKasa" data-bind="kasaOn" ${S.trip.kasaOn?'checked':''} ${dis} aria-label="Ortak kasa"></div>`}
+    ${S.trip.kasaOn && !isFamily() ? `<div class="f"><label for="tHolder">Kasayı kim tutuyor?</label><select class="inp" id="tHolder" data-bind="holder" ${dis}>${opt(S.trip.holder)}</select></div>` : ''}
   </div>
   <h2>Katılımcılar</h2>
-  <p class="hint">Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}</p>
+  <p class="hint">${mg ? `Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}${isTripAdmin() && myUid ? ' ⭐ ile birini yardımcı kurucu yapabilirsin.' : ''}` : 'Kendi emojine dokunarak değiştirebilirsin.'}</p>
   <div class="list">${S.people.map(p => `<div class="swr"><button class="swdel l" data-delp="${p.id}" tabindex="-1">Sil</button><button class="swdel r" data-delp="${p.id}" tabindex="-1">Sil</button><div class="row pcard prow">
     <button type="button" class="emo" data-emo="${p.id}" aria-label="${esc(p.name)} emojisini değiştir">${emojiOf(p.id)}</button>
-    <input class="inp" id="pn-${p.id}" data-pname="${p.id}" value="${esc(p.name)}" aria-label="İsim">
+    <input class="inp" id="pn-${p.id}" data-pname="${p.id}" value="${esc(p.name)}" aria-label="İsim" ${dis}>
+    ${p.uid && p.uid === S.trip.ownerUid ? `<span class="lockmark" title="Kurucu">👑</span>` : p.uid && isTripAdmin() && myUid && p.uid !== myUid ? `<button type="button" class="fbtn" data-admin="${p.id}" aria-pressed="${admins.has(p.uid)}" title="Yardımcı kurucu">${admins.has(p.uid) ? '⭐' : '☆'}</button>` : p.uid && admins.has(p.uid) ? `<span class="lockmark" title="Yardımcı kurucu">⭐</span>` : ''}
     ${isFamilies() ? `<span class="famctl"><button type="button" class="fbtn" data-fam="${p.id}" data-fk="size">👤 ${p.size || 1}</button><button type="button" class="fbtn" data-fam="${p.id}" data-fk="kids">🧒 ${p.kids || 0}</button></span>` : ''}
-    ${p.uid ? (isTripAdmin() && myUid ? `<button type="button" class="btn sm" data-release="${p.id}" title="Bu kişinin telefon bağını kaldır">🔓</button>` : `<span class="lockmark" title="Bir telefona bağlı">🔒</span>`) : ''}
+    ${p.uid ? (isManager() && myUid ? `<button type="button" class="btn sm" data-release="${p.id}" title="Bu kişinin telefon bağını kaldır">🔓</button>` : `<span class="lockmark" title="Bir telefona bağlı">🔒</span>`) : ''}
   </div></div>`).join('')}</div>
   ${isFamilies() ? `<p class="hint">👤 yetişkin, 🧒 çocuk sayısı: dokundukça artar (en fazla 9, sonra başa döner). Yeni harcamalar bu sayılara göre bölünür.</p>` : ''}
   ${IN_WEB && !S.sample && merged && !isRO() ? `<button class="btn pri block" data-act="invite">📨 Arkadaşlarını davet et</button>
   <p class="hint">Davet mesajı WhatsApp'ta hazır açılır: grubunu seç, gönder. Herkes bağlantıya dokunup kendi adını seçer.</p>` : ''}
-  <button class="btn block" data-act="addperson">${isFamilies() ? '+ Aile ekle' : '+ Kişi ekle'}</button>
+  ${mg ? `<button class="btn block" data-act="addperson">${isFamilies() ? '+ Aile ekle' : '+ Kişi ekle'}</button>` : ''}
   ${S.sample ? `<p class="hint">Şu an örnek bir Roma gezisi görüyorsun. Üstteki “+ Yeni” ile kendi isimlerinizle sıfırdan başlayabilirsin.</p>` : ''}`;
 }
 
@@ -1366,6 +1371,14 @@ let myUid = null, iAmOwner = false;
 const myPerson = () => myUid ? S.people.find(p => p.uid === myUid) : null;
 // Seyahati kuran: seyahatte kayıtlı kurucu hesap, yoksa yapıtın sahibi. Claude yoksa (bu cihazda) herkes.
 const isTripAdmin = () => !myUid ? true : S.trip.ownerUid ? S.trip.ownerUid === myUid : iAmOwner;
+// Ortak ayarları (tür, ad, tema, tarihler, katılımcılar, kasa, hesaplaşma şekli, arşiv/silme) kurucu ve kurucunun
+// yetki verdiği yardımcı kurucular (trip.admins) değiştirir. Bütçe, kur ve kişinin kendi emojisi herkese açık;
+// büyük harcama sınırı herkesin kendi telefonunda. Sunucu da aynı kuralı uygular (docs_trip_guard).
+const isManager = () => isTripAdmin() || !!(myUid && (S.trip.admins || []).includes(myUid));
+const ownerName = () => { const p = S.people.find(q => q.uid && q.uid === S.trip.ownerUid); return p ? rawName(p.id) : ''; };
+const MGR_BINDS = new Set(['name', 'country', 'start', 'end', 'kasaOn', 'kind', 'kidHalf', 'holder']);
+const MGR_ACTS = new Set(['setmode', 'addperson', 'archive', 'deltrip']);
+function mgrOnly(){ toast(`Bu ayarı seyahati kuran${ownerName() ? ' (' + ownerName() + ')' : ''} ya da yardımcı kurucu değiştirebilir.`); render(); }
 function claimPerson(id){
   S.people.forEach(p => { if (p.uid === myUid) delete p.uid; });
   const p = S.people.find(q => q.id === id); if (p){ p.uid = myUid; p.boundAt = Date.now(); delete p.freed; }
@@ -2236,7 +2249,9 @@ let toastTimer;
 // Telefonda "hareketi azalt" açıksa hiçbiri çalışmaz.
 let lastView = '', flashId = null;
 // Büyük harcama: TL'de trip.bigTry (varsayılan 20.000 ₺), euroda ve diğer birimlerde euro karşılığı trip.bigEur (varsayılan 150 €) ve üstü.
-const bigLimits = () => ({eur:S.trip.bigEur > 0 ? S.trip.bigEur : 150, tr:S.trip.bigTry > 0 ? S.trip.bigTry : 20000});
+const BIG_KEY = tid => 'yol-hesabi-buyuk-' + tid;
+function myBig(){ try { return JSON.parse(localStorage.getItem(BIG_KEY(S.tid)) || '{}') || {}; } catch(_) { return {}; } }
+const bigLimits = () => { const m = myBig(); return {eur:m.eur > 0 ? m.eur : S.trip.bigEur > 0 ? S.trip.bigEur : 150, tr:m.tr > 0 ? m.tr : S.trip.bigTry > 0 ? S.trip.bigTry : 20000}; };
 function isBig(e){
   if (!e || e.kind !== 'expense') return false;
   const L = bigLimits();
@@ -3290,6 +3305,15 @@ document.addEventListener('click', ev => {
   if (isRO() && (d.edit || d.del || d.delp || d.payto || d.shop || d.solo || d.gift || d.giftrm || d.tf || d.emo || RO_ACTS.has(d.act))){
     toast('🗄️ Bu seyahat arşivde, sadece görüntülenebilir. Değiştirmek için Seyahat sekmesinden arşivden çıkar.'); return;
   }
+  if (!isManager() && (d.delp || d.fam || d.admin || MGR_ACTS.has(d.act))){ mgrOnly(); return; }
+  if (d.emo && !isManager() && d.emo !== S.me){ toast('Sadece kendi emojini değiştirebilirsin.'); return; }
+  if (d.admin){
+    const p = person(d.admin); if (!p || !p.uid || !isTripAdmin()) return;
+    const a = new Set(S.trip.admins || []), on = !a.has(p.uid);
+    if (on) a.add(p.uid); else a.delete(p.uid);
+    S.trip.admins = [...a]; logEvent(on ? `${rawName(p.id)} kişisini yardımcı kurucu yaptı` : `${rawName(p.id)} kişisinin yardımcı kurucu yetkisini kaldırdı`);
+    save(); render(); toast(on ? `⭐ ${rawName(p.id)} artık yardımcı kurucu` : `${rawName(p.id)} yardımcı kurucu değil`); return;
+  }
   if (d.fam){
     if (isRO()) return;
     const p = person(d.fam), k = d.fk, max = 9, min = k === 'size' ? 1 : 0;
@@ -3331,7 +3355,7 @@ document.addEventListener('click', ev => {
   }
   if (d.release){
     const self = person(d.release).uid === myUid && selfFixLeft() > 0;
-    if (!isTripAdmin() && !self){ toast('Kişi bağını sadece seyahati kuran kaldırabilir.'); return; }
+    if (!isManager() && !self){ toast('Kişi bağını seyahati kuran ya da yardımcı kurucu kaldırabilir.'); return; }
     if (self && !isTripAdmin()) try { localStorage.setItem(FIX_KEY(S.tid), '1'); } catch(_) {}
     // Bağ buluta da yazılır; o hesabın telefonu bu kişiye sessizce geri bağlanmaz (freed), kim olduğu yeniden sorulur.
     const p = person(d.release), was = p.uid; delete p.uid; p.freed = was; save();
@@ -3538,6 +3562,7 @@ document.addEventListener('change', async ev => {
   if (form && el.id === 'nKasa'){ form.kasaOn = el.checked; return; }
   if (form && el.id === 'fTF'){ form.noTF = !el.checked; return; }
   if (isRO() && !form && (el.dataset.pname || el.id === 'shOutlet' || (b && b !== 'me'))){ toast('🗄️ Seyahat arşivde.'); render(); return; }
+  if (!form && !isManager() && (el.dataset.pname || MGR_BINDS.has(b))){ mgrOnly(); return; }
   if (!form && el.id === 'shOutlet'){ SH.outlet = el.value.trim(); saveShop(); render(); return; }
   if (form && el.id === 'fCur'){ if (el.value) setCur(el.value); drawSheetKeep(); return; }
   if (form && el.id === 'fSettle'){ form.settleTL = el.checked; if (el.checked && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
@@ -3551,7 +3576,11 @@ document.addEventListener('change', async ev => {
   if (b === 'name') S.trip.name = el.value.trim() || S.trip.name;
   if (b === 'country') S.trip.country = el.value || null;
   if (b === 'rate'){ const r = parseAmt(el.value); if (r > 0){ S.trip.rate = r; S.trip.rateSrc = 'manual'; S.trip.rateAt = Date.now(); } }
-  if (b === 'bigEur' || b === 'bigTry'){ const v = parsePlan(el.value); S.trip[b] = v > 0 ? Math.round(v) : 0; }
+  if (b === 'bigEur' || b === 'bigTry'){
+    const v = parsePlan(el.value), m = myBig(); m[b === 'bigEur' ? 'eur' : 'tr'] = v > 0 ? Math.round(v) : 0;
+    try { localStorage.setItem(BIG_KEY(S.tid), JSON.stringify(m)); } catch(_) {}
+    render(); return;
+  }
   if (b === 'plan'){ const v = parsePlan(el.value); S.trip.plan = v > 0 ? Math.round(v) : 0; }
   if (b === 'planCur') S.trip.planCur = el.value;
   if (b === 'start' || b === 'end') S.trip[b] = el.value || null;

@@ -12,6 +12,8 @@
 
   async function signIn(){
     let {data:{session}} = await sb.auth.getSession();
+    // Saklı oturum geçersizse (silinmiş ya da süresi dolmuş) yenisi açılır.
+    if (session){ const {error} = await sb.auth.getUser(); if (error){ await sb.auth.signOut({scope:'local'}).catch(() => {}); session = null; } }
     if (!session){ const r = await sb.auth.signInAnonymously(); if (r.error) throw r.error; session = r.data.session; }
     return session.user.id;
   }
