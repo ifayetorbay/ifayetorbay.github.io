@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025225059"></script>
+<script src="heybe-web.js?v=20261025225526"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1514,7 +1514,10 @@ function drawSheet(){
         <span class="mid"><span class="d">${esc(t.trip.name || 'Seyahat')}</span><span class="m">${dates(t.trip)} · ${t.people.length} kişi</span></span>
         ${here ? `<span class="here">Açık</span>` : t.trip.closed ? `<span class="here muted">🗄️ Arşiv</span>` : ''}</button>`;
     }).join('') + `</div>` : `<p class="note">Henüz kayıtlı bir seyahatin yok. İlkini başlatalım mı? 🧳</p>`)
-    + (ts.length && !S.sample ? `<button class="btn block" data-act="sameteam">🔁 Bu seyahatin ekibiyle yeni seyahat</button>` : '');
+    + (ts.length && !S.sample ? `<button class="btn block" data-act="sameteam">🔁 Bu seyahatin ekibiyle yeni seyahat</button>` : '')
+    + (IN_WEB ? `<div class="f"><label for="joinUrl">Davet bağlantısıyla katıl</label>
+      <div style="display:flex;gap:8px"><input class="inp" id="joinUrl" placeholder="Bağlantıyı buraya yapıştır" autocomplete="off" style="flex:1;min-width:0"><button class="btn pri" data-act="joinurl">Katıl</button></div>
+      <span class="note">WhatsApp'taki davet bağlantısına uzun basıp kopyala, buraya yapıştır. Ana ekrandaki Heybe seyahati görmüyorsa bu yolla eklenir.</span></div>` : '');
   } else if (f.mode === 'who'){
     body = `<p class="note">Bu telefonu kim kullanıyor? ${myUid ? 'Bir kez seç; bundan sonra bu hesap hep bu kişi olarak açılır. Başkasının seçtiği kişi seçilemez.' : 'Bir kez seç: harcama eklerken “ödeyen” sen olursun, hesabın sana göre gösterilir.'}</p>
       <div class="whochips">${S.people.map(p => { const taken = myUid && p.uid && p.uid !== myUid;
@@ -1955,6 +1958,7 @@ function onRemote(kind){
     const j = IN_WEB ? window.claude.takeJoined() : null;
     if (j && cloudMetas.has(j)){ if (j !== S.tid){ stashTrip(); openCloudTrip(j); loadMe(); themeNow = null; } setTimeout(() => toast(`${S.trip.name} seyahatine katıldın 🎉`), 400); }
     else if (IN_WEB && window.claude.joinFailed()) setTimeout(() => toast('Davet bağlantısı geçersiz; bağlantıyı gönderen kişiden yenisini iste.'), 400);
+    else if (IN_WEB && !cloudMetas.size && (navigator.standalone || matchMedia('(display-mode: standalone)').matches)) setTimeout(() => { if (!form) openSheet({mode:'trips'}); }, 600);
     loadLogs(); loadShop(); render(); renderCloud(); maybeAskWho(); return;
   }
   if (kind === 'meta'){
@@ -2054,6 +2058,16 @@ function inviteText(link){
     ``,
     `İyi yolculuklar! ✈️`
   ].join('\n');
+}
+// Web: yapıştırılan davet ya da kurucu bağlantısıyla seyahate katılır ve onu açar.
+async function joinFromLink(){
+  const el = document.getElementById('joinUrl'), v = el ? el.value.trim() : '';
+  if (!v) return toast('Önce davet bağlantısını yapıştır.');
+  const r = await window.claude.joinWith(v);
+  if (!r.ok) return toast(r.tid ? 'Bağlantı geçersiz ya da kullanılmış; gönderen kişiden yenisini iste.' : 'Bu bir Heybe davet bağlantısı değil.');
+  for (let i = 0; i < 30 && !cloudMetas.has(r.tid); i++) await new Promise(ok => setTimeout(ok, 200));
+  if (!cloudMetas.has(r.tid)) return toast('Katıldın; seyahat birazdan listede görünecek.');
+  closeSheet(); await switchTrip(r.tid); maybeAskWho();
 }
 // Web: seyahatin davet bağlantısını WhatsApp'ta (ya da telefonun paylaş menüsünde) paylaşır.
 async function inviteFriends(){
@@ -3424,6 +3438,7 @@ document.addEventListener('click', ev => {
     case 'trips': openSheet({mode:'trips'}); break;
     case 'tripmore': tripMore = !tripMore; render(); break;
     case 'invite': inviteFriends(); break;
+    case 'joinurl': joinFromLink(); break;
     case 'newtrip': openSheet({mode:'newtrip', name:'', names:['','','',''], extra:[], kasaOn:false, kind:'friends'}); break;
     case 'sameteam':
       // 🔁 Aynı ekiple yeni seyahat: kişiler, emojiler, aile sayıları, telefon bağları, tür ve bütçe para birimi taşınır.

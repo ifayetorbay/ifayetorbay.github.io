@@ -121,6 +121,15 @@
     photoUrl:id => `${URL0}/storage/v1/object/public/photos/${encodeURIComponent(id)}`,
     // Davet bağlantısı: seyahatin gizli anahtarıyla.
     async inviteLink(tid){ const k = await ensureTrip(tid); return `${location.origin}${location.pathname}?katil=${encodeURIComponent(tid)}.${k}`; },
+    // Uygulama içinden yapıştırılan davet ya da kurucu bağlantısı (iPhone'da ana ekran uygulaması Safari'den ayrı hafıza kullanır).
+    async joinWith(text){
+      const m = String(text || '').match(/[?&](katil|kurucu)=([^&\s]+)/); if (!m) return {ok:false};
+      const [t, k] = decodeURIComponent(m[2]).split('.');
+      await ready;
+      const {data, error} = m[1] === 'kurucu' ? await sb.rpc('claim_trip', {t, k}) : await sb.rpc('join_trip', {t, k});
+      if (error || !data) return {ok:false, tid:t};
+      refreshAll(); return {ok:true, tid:t};
+    },
     takeJoined(){ try { const t = localStorage.getItem(JOIN_KEY); localStorage.removeItem(JOIN_KEY); return t; } catch(_) { return null; } },
     joinFailed:() => !!window.__heybeJoinFailed
   };
