@@ -8,7 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025233024"></script>
+<script>window.HEYBE_VER = '20261025233138';</script>
+<script src="heybe-web.js?v=20261025233138"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1344,6 +1345,7 @@ function viewTrip(){
   </div></div>`).join('')}</div>
   ${isFamilies() ? `<p class="hint">👤 yetişkin, 🧒 çocuk sayısı: dokundukça artar (en fazla 9, sonra başa döner). Yeni harcamalar bu sayılara göre bölünür.</p>` : ''}
   ${mg ? `<button class="btn block" data-act="addperson">${isFamilies() ? '+ Aile ekle' : '+ Kişi ekle'}</button>` : ''}
+  ${window.HEYBE_VER ? `<p class="hint" style="text-align:center;opacity:.7">Heybe · sürüm ${window.HEYBE_VER.replace(/^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d).*/, '$3.$2 $4:$5')}</p>` : ''}
   ${S.sample ? `<p class="hint">Şu an örnek bir Roma gezisi görüyorsun. Üstteki “+ Yeni” ile kendi isimlerinizle sıfırdan başlayabilirsin.</p>` : ''}`;
 }
 
@@ -3633,5 +3635,11 @@ if (Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false);
 startCloud();
 </script>
 
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js'));</script>
+<script>
+if ('serviceWorker' in navigator) addEventListener('load', async () => {
+  const had = !!navigator.serviceWorker.controller; let done = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !done){ done = true; location.reload(); } });
+  try { const reg = await navigator.serviceWorker.register('sw.js'); document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); }); } catch(_) {}
+});
+</script>
 </body></html>
