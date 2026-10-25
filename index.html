@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025223937"></script>
+<script src="heybe-web.js?v=20261025224627"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2025,13 +2025,42 @@ async function startCloud(){
   }, fail);
 }
 
+// Davet mesajı: bağlantı en üstte, altında kısa kullanım kılavuzu ve test çağrısı (WhatsApp biçimi: *kalın*).
+function inviteText(link){
+  return [
+    `🧳 *Heybe'ye davetlisin!*`,
+    `*${S.trip.name}* hesabını artık Heybe'de tutuyoruz. Katılmak için dokun, sonra adını seç:`,
+    `👉 ${link}`,
+    ``,
+    `*Heybe nedir?*`,
+    `Seyahat harcamalarını aramızda adil ve zahmetsiz bölüşmek için hazırlanan bir uygulama. Kim ne ödedi, kim kime ne kadar gönderecek, hepsi tek yerde ve herkeste aynı anda güncel.`,
+    ``,
+    `*Sekmeler*`,
+    `📋 *Harcamalar:* Harcamayı ekle (€, ₺ ya da başka para), kimlerin ortak olduğunu seç. Fiş fotoğrafından tutarı okuyabilir.`,
+    `🔁 *Hesaplaşma:* Kime ne kadar göndereceğin ya da kimden alacağın, TL olarak. Gönderince "Ödendi"ye dokun.`,
+    `📊 *Özet:* Kategoriler, günlük harcama, seyahat hikâyesi; PDF, Excel ve seyahat albümü.`,
+    `🔒 *Kişisel:* Alışverişlerin, tax-free iaden ve hediye listen. Bunu sadece sen görürsün.`,
+    `👥 *Seyahat:* Tarihler, bütçe ve katılımcılar.`,
+    ``,
+    `*İlk açılışta*`,
+    `1. Bağlantıya dokun, listeden adını seç (bir kez sorulur).`,
+    `2. Ana ekrana ekle: Android'de Chrome ⋮ → "Uygulamayı yükle"; iPhone'da Safari Paylaş → "Ana Ekrana Ekle".`,
+    `Hesap açmak, şifre ya da indirme yok.`,
+    ``,
+    `*Birlikte test ediyoruz 🙏*`,
+    `Heybe yepyeni; bu seyahatte hep beraber deneyeceğiz. Takıldığın, eksik ya da yanlış gördüğün her şeyi bana yaz. Düzeltmeler telefonuna kendiliğinden gelir.`,
+    `Hedefimiz, sizin desteğinizle olgunlaştırıp Play Store ve App Store'da gerçek bir uygulama olarak yayınlamak. Her yorumunuz bu yüzden çok değerli.`,
+    ``,
+    `İyi yolculuklar! ✈️`
+  ].join('\n');
+}
 // Web: seyahatin davet bağlantısını WhatsApp'ta (ya da telefonun paylaş menüsünde) paylaşır.
 async function inviteFriends(){
   if (!IN_WEB || S.sample) return;
   try {
     await pushNow();
     const link = await window.claude.inviteLink(S.tid);
-    const text = `${S.trip.name} seyahatinin hesabını Heybe'de tutuyoruz 🧳 Katılmak için dokun, sonra adını seç:\n${link}`;
+    const text = inviteText(link);
     if (navigator.share){ try { await navigator.share({title:'Heybe', text}); return; } catch(e){ if (e && e.name === 'AbortError') return; } }
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   } catch(_) { toast('Davet bağlantısı oluşturulamadı; internet bağlantını kontrol et.'); }
