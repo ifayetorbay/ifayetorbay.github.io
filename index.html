@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261025233138';</script>
-<script src="heybe-web.js?v=20261025233138"></script>
+<script>window.HEYBE_VER = '20261025233256';</script>
+<script src="heybe-web.js?v=20261025233256"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1297,7 +1297,7 @@ function viewTrip(){
   return `<section class="hero"><div><div class="lbl">${tc ? flagOf(tc[0]) + ' ' : ''}${esc(S.trip.name)}</div>
       <div class="big num">${isRO() ? '🗄️ Arşivde' : day ? day.replace(/^./, c => c.toLocaleUpperCase('tr')) : peopleLabel()}</div>
       <div class="eur num">${[range ? '📅 ' + range : '', day || isRO() ? peopleLabel() : 'Tarihleri aşağıdan ekle'].filter(Boolean).join(' · ')}</div></div>
-    <div class="me who2"><button class="wbtn tbtn tchip" data-act="trips">🧳 Değiştir</button>${IN_WEB && !S.sample && merged ? `<button class="wbtn tbtn tchip solid" data-act="invite">📨 Davet et</button><button class="wbtn tbtn tchip" data-act="newtrip">＋ Yeni</button>` : `<button class="wbtn tbtn tchip solid" data-act="newtrip">＋ Yeni</button>`}
+    <div class="me who2"><button class="wbtn tbtn tchip" data-act="trips">🧳 Değiştir</button>${IN_WEB && !S.sample && merged ? `<button class="wbtn tbtn tchip" data-act="invite">📨 Davet et</button>` : ''}<button class="wbtn tbtn tchip" data-act="newtrip">＋ Yeni</button>
       <button class="wbtn tbtn tchip more" data-act="tripmore" aria-expanded="${tripMore}" aria-label="Diğer seyahat işlemleri"><span>•••</span></button></div>
     ${tripMore ? `<div class="tmore">${S.sample ? '' : `<button class="tbtn" data-act="sameteam">🔁 Aynı ekiple yeni seyahat</button>`}
       ${isRO() || S.sample ? '' : `<button class="tbtn${confirmArc ? ' sure' : ''}" data-act="archive">${confirmArc ? 'Emin misin? Seyahat salt okunur olacak (sonra geri açılabilir)' : '🗄️ Seyahati arşivle'}</button>`}
