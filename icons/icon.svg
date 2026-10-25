@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Heybe simgesi (cam/parlak stil): açık turkuaz zemin üstünde canlı turuncu heybe; tek askıyla bağlı iki göz (bölüşmek),
+       düğmeli kapak, kilim şeridi, püsküller. Arka plan tam kare: mağazalar köşeleri kendisi yuvarlar. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9FBF8"/><stop offset="1" stop-color="#9FE0D8"/></linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="bag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A5A"/><stop offset=".55" stop-color="#F45B32"/><stop offset="1" stop-color="#D93A22"/></linearGradient>
+    <linearGradient id="flap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C83A20"/><stop offset="1" stop-color="#A82A16"/></linearGradient>
+    <linearGradient id="strap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8582F"/><stop offset="1" stop-color="#A82A16"/></linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE08A"/><stop offset="1" stop-color="#F2A81D"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dy="16"/><feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="230" r="230" fill="url(#glow)"/>
+  <g filter="url(#shadow)" transform="translate(0,-10)">
+    <!-- askı -->
+    <path d="M176 210Q176 108 256 108Q336 108 336 210" fill="none" stroke="url(#strap)" stroke-width="32" stroke-linecap="round"/>
+    <path d="M190 160Q204 124 256 122" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="7" stroke-linecap="round"/>
+    <!-- iki göz -->
+    <path d="M138 196H246L254 350Q254 404 202 404H176Q124 404 126 350Z" fill="url(#bag)"/>
+    <path d="M266 196H374L386 350Q388 404 336 404H310Q258 404 258 350Z" fill="url(#bag)"/>
+    <!-- kilim şeridi -->
+    <path d="M131 300H250L252 342H128Z" fill="#fff"/>
+    <path d="M262 300H381L384 342H260Z" fill="#fff"/>
+    <g fill="#13A89A">
+      <path d="M160 307L173 321L160 335L147 321Z"/><path d="M190 307L203 321L190 335L177 321Z"/><path d="M220 307L233 321L220 335L207 321Z"/>
+      <path d="M292 307L305 321L292 335L279 321Z"/><path d="M322 307L335 321L322 335L309 321Z"/><path d="M352 307L365 321L352 335L339 321Z"/>
+    </g>
+    <!-- kapaklar ve düğmeler -->
+    <path d="M138 196H246V240Q192 284 138 240Z" fill="url(#flap)"/>
+    <path d="M266 196H374V240Q320 284 266 240Z" fill="url(#flap)"/>
+    <circle cx="192" cy="258" r="12" fill="url(#gold)"/>
+    <circle cx="320" cy="258" r="12" fill="url(#gold)"/>
+    <!-- cam parıltısı -->
+    <path d="M150 208H178Q170 250 160 380Q146 372 144 350Z" fill="url(#shine)"/>
+    <path d="M278 208H306Q298 250 288 380Q274 372 272 350Z" fill="url(#shine)"/>
+    <!-- püsküller -->
+    <g stroke="#D93A22" stroke-width="6" stroke-linecap="round"><path d="M189 404V422"/><path d="M323 404V422"/></g>
+    <circle cx="189" cy="432" r="12" fill="url(#gold)"/>
+    <circle cx="323" cy="432" r="12" fill="url(#gold)"/>
+  </g>
+</svg>
