@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025225526"></script>
+<script src="heybe-web.js?v=20261025225649"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1369,8 +1369,11 @@ function bindMe(){
   const p = local && S.people.find(q => q.id === local);
   if (p && !p.uid && p.freed !== myUid){ claimPerson(p.id); save(); render(); }
 }
+const IOS_SAFARI = /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone;
+let iosGo = false;
 function maybeAskWho(){
   if (S.sample || !S.people.length || form) return;
+  if (IN_WEB && IOS_SAFARI && !iosGo && myUid && !myPerson()){ openSheet({mode:'ios'}); return; }
   if (myUid){ bindMe(); if (!myPerson()) openSheet({mode:'who'}); return; }
   try { if (localStorage.getItem(meKey(S.tid))) return; } catch(_) { return; }
   openSheet({mode:'who'});
@@ -1518,6 +1521,15 @@ function drawSheet(){
     + (IN_WEB ? `<div class="f"><label for="joinUrl">Davet bağlantısıyla katıl</label>
       <div style="display:flex;gap:8px"><input class="inp" id="joinUrl" placeholder="Bağlantıyı buraya yapıştır" autocomplete="off" style="flex:1;min-width:0"><button class="btn pri" data-act="joinurl">Katıl</button></div>
       <span class="note">WhatsApp'taki davet bağlantısına uzun basıp kopyala, buraya yapıştır. Ana ekrandaki Heybe seyahati görmüyorsa bu yolla eklenir.</span></div>` : '');
+  } else if (f.mode === 'ios'){
+    // iPhone'da ana ekran uygulaması Safari'den ayrı hafıza kullanır: kişi seçimi orada yapılmalı.
+    body = `<p class="note">iPhone'da ana ekrandaki Heybe, Safari'den ayrı çalışır. Adını orada seçersen telefonun seni hep tanır.</p>
+      <ol class="note" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+        <li>Aşağıdaki Paylaş (□↑) → <b>Ana Ekrana Ekle</b>.</li>
+        <li>WhatsApp'taki davet bağlantısına uzun bas → <b>Kopyala</b>.</li>
+        <li>Ana ekrandaki <b>Heybe</b>'yi aç → <b>Davet bağlantısıyla katıl</b> kutusuna yapıştır → Katıl, sonra adını seç.</li>
+      </ol>
+      <button class="btn block" data-act="iosgo">Ana ekrana eklemeden Safari'de devam et</button>`;
   } else if (f.mode === 'who'){
     body = `<p class="note">Bu telefonu kim kullanıyor? ${myUid ? 'Bir kez seç; bundan sonra bu hesap hep bu kişi olarak açılır. Başkasının seçtiği kişi seçilemez.' : 'Bir kez seç: harcama eklerken “ödeyen” sen olursun, hesabın sana göre gösterilir.'}</p>
       <div class="whochips">${S.people.map(p => { const taken = myUid && p.uid && p.uid !== myUid;
@@ -1531,7 +1543,7 @@ function drawSheet(){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? 'Sadece bana · düzenle' : 'Sadece bana harcama', shop: f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? 'Sadece bana · düzenle' : 'Sadece bana harcama', shop: f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
   const saveLbl = {expense:'Kaydet', delperson:'Aktar ve sil', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
@@ -2048,8 +2060,8 @@ function inviteText(link){
     `👥 *Seyahat:* Tarihler, bütçe ve katılımcılar.`,
     ``,
     `*İlk açılışta*`,
-    `1. Bağlantıya dokun, listeden adını seç (bir kez sorulur).`,
-    `2. Ana ekrana ekle: Android'de Chrome ⋮ → "Uygulamayı yükle"; iPhone'da Safari Paylaş → "Ana Ekrana Ekle".`,
+    `🤖 *Android:* Bağlantıya dokun, adını seç. Chrome ⋮ → "Uygulamayı yükle".`,
+    `🍎 *iPhone:* Bağlantıyı Safari'de aç → Paylaş → "Ana Ekrana Ekle". Sonra bu bağlantıyı kopyala, ana ekrandaki Heybe'de "Davet bağlantısıyla katıl"a yapıştır ve adını orada seç.`,
     `Hesap açmak, şifre ya da indirme yok.`,
     ``,
     `*Birlikte test ediyoruz 🙏*`,
@@ -3439,6 +3451,7 @@ document.addEventListener('click', ev => {
     case 'tripmore': tripMore = !tripMore; render(); break;
     case 'invite': inviteFriends(); break;
     case 'joinurl': joinFromLink(); break;
+    case 'iosgo': iosGo = true; closeSheet(); setTimeout(maybeAskWho, 250); break;
     case 'newtrip': openSheet({mode:'newtrip', name:'', names:['','','',''], extra:[], kasaOn:false, kind:'friends'}); break;
     case 'sameteam':
       // 🔁 Aynı ekiple yeni seyahat: kişiler, emojiler, aile sayıları, telefon bağları, tür ve bütçe para birimi taşınır.
