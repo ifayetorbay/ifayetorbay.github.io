@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025225803"></script>
+<script src="heybe-web.js?v=20261025230327"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1070,8 +1070,15 @@ function budgetHtml(){
   return `<section class="budget"><div class="bhead" data-hhost>${head}</div>${body}</section>`;
 }
 
+// Web: örnek seyahat görünüyorsa kişi henüz kendi seyahatine bağlanmamıştır; nasıl bağlanacağı en üstte söylenir.
+function webSampleNote(){
+  if (!IN_WEB || !S.sample) return '';
+  return `<div class="callout warn"><b>👋 Bu bir örnek seyahat</b>
+    <span>Kendi seyahatini görmek için sana gelen davet bağlantısını (ya da kurucu bağlantını) kopyala ve buraya yapıştır.${IOS_SAFARI ? ' iPhone\'da önce Paylaş → Ana Ekrana Ekle de; yapıştırmayı ana ekrandaki Heybe\'de yap.' : ''}</span>
+    <button class="btn sm" data-act="trips">🔗 Bağlantıyı yapıştır</button></div>`;
+}
 function viewList(C){
-  let h = `<section class="hero">
+  let h = webSampleNote() + `<section class="hero">
     <div><div class="lbl">Toplam harcama</div>
     <div class="big num">${eu(C.total)}</div><div class="eur num">bugünkü kurla ${tl(C.total)}</div>
     ${C.preTotal ? `<div class="eur num">Seyahat öncesi ${eu(C.preTotal)} · Seyahatte ${eu(C.total - C.preTotal)}</div>` : ''}</div>
@@ -1511,16 +1518,17 @@ function drawSheet(){
   } else if (f.mode === 'trips'){
     const ts = tripList();
     const dates = t => tripRange(t) || 'tarih yok';
-    body = `<button class="btn pri block" data-act="newtrip">+ Yeni seyahat</button>` + (ts.length ? `<div class="list">` + ts.map(t => {
+    const joinBox = IN_WEB ? `<div class="f"><label for="joinUrl">Davet bağlantısıyla katıl</label>
+      <div style="display:flex;gap:8px"><input class="inp" id="joinUrl" placeholder="Bağlantıyı buraya yapıştır" autocomplete="off" style="flex:1;min-width:0"><button class="btn pri" data-act="joinurl">Katıl</button></div>
+      <span class="note">WhatsApp'taki davet bağlantısına (ya da kurucu bağlantına) uzun basıp kopyala, buraya yapıştır.</span></div>` : '';
+    body = (S.sample ? joinBox : '') + `<button class="btn ${S.sample && IN_WEB ? '' : 'pri '}block" data-act="newtrip">+ Yeni seyahat</button>` + (ts.length ? `<div class="list">` + ts.map(t => {
       const c = themeCountry(t.trip), here = t.tid === S.tid && !S.sample;
       return `<button class="row" data-trip="${t.tid}"><span class="ic">${c ? flagOf(c[0]) : '🧳'}</span>
         <span class="mid"><span class="d">${esc(t.trip.name || 'Seyahat')}</span><span class="m">${dates(t.trip)} · ${t.people.length} kişi</span></span>
         ${here ? `<span class="here">Açık</span>` : t.trip.closed ? `<span class="here muted">🗄️ Arşiv</span>` : ''}</button>`;
     }).join('') + `</div>` : `<p class="note">Henüz kayıtlı bir seyahatin yok. İlkini başlatalım mı? 🧳</p>`)
     + (ts.length && !S.sample ? `<button class="btn block" data-act="sameteam">🔁 Bu seyahatin ekibiyle yeni seyahat</button>` : '')
-    + (IN_WEB ? `<div class="f"><label for="joinUrl">Davet bağlantısıyla katıl</label>
-      <div style="display:flex;gap:8px"><input class="inp" id="joinUrl" placeholder="Bağlantıyı buraya yapıştır" autocomplete="off" style="flex:1;min-width:0"><button class="btn pri" data-act="joinurl">Katıl</button></div>
-      <span class="note">WhatsApp'taki davet bağlantısına uzun basıp kopyala, buraya yapıştır. Ana ekrandaki Heybe seyahati görmüyorsa bu yolla eklenir.</span></div>` : '');
+    + (S.sample ? '' : joinBox);
   } else if (f.mode === 'ios'){
     // iPhone'da ana ekran uygulaması Safari'den ayrı hafıza kullanır: kişi seçimi orada yapılmalı.
     body = `<p class="note">iPhone'da ana ekrandaki Heybe, Safari'den ayrı çalışır. Adını orada seçersen telefonun seni hep tanır.</p>
