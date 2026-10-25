@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="heybe-web.js?v=20261025230934"></script>
+<script src="heybe-web.js?v=20261025231253"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -873,9 +873,17 @@ async function fetchRate(manual){
       }
     } catch(_) {}
   }
-  rateBusy = false; rateFailed = !ok; render();
+  rateBusy = false; rateFailed = !ok;
+  if (ok && !S.sample && S.people.length) save();   // herkes aynı kuru görsün diye buluta da yazılır
+  render();
   if (manual) toast(ok ? `Kur güncellendi: 1 € = ${nf4.format(S.trip.rate)} ₺` : 'Canlı kur alınamadı. Kuru Seyahat sekmesinden elle girebilirsin.');
 }
+// Canlı kur kendiliğinden: açılışta ve seyahat açılınca 30 dakikadan eskiyse, uygulama açıkken de 2 saatte bir.
+// (Hesaplaşma, ilk toplam ödemeden sonra o günün kuruna kilitli kalır; bu yenileme onu değiştirmez.)
+const RATE_EVERY = 2 * 36e5;
+function rateCheck(age = RATE_EVERY){ if (!IN_CLAUDE && !document.hidden && Date.now() - (S.trip.rateAt || 0) > age) fetchRate(false); }
+setInterval(() => rateCheck(), 5 * 6e4);
+document.addEventListener('visibilitychange', () => rateCheck());
 function rateLabel(){
   if (rateBusy) return 'güncelleniyor…';
   if (S.trip.rateSrc === 'live') return `<span class="dot live"></span>canlı · ${hhmm(S.trip.rateAt)}`;
@@ -1304,7 +1312,7 @@ function viewTrip(){
       <span class="note">Gidişten önce girilen harcamalar kendiliğinden “Seyahat öncesi” sayılır.</span></div>
     <div class="f"><label for="tRate">Euro kuru (1 € kaç ₺)${help('rate')}</label>
       <div style="display:flex;gap:8px"><input class="inp num" id="tRate" inputmode="decimal" value="${nf4.format(S.trip.rate)}" data-bind="rate" style="flex:1;min-width:0">${IN_CLAUDE ? '' : `<button class="btn" data-act="rate">Canlı kuru çek</button>`}</div>
-      <span class="note">${IN_CLAUDE ? 'Claude içinde canlı kur alınamıyor; güncel kuru bankandan bakıp buraya yaz. Herkes için aynı kur kullanılır.' : 'Kur internetten kendiliğinden çekilir; istersen elle de yazabilirsin.'} Durum: ${rateLabel()}</span>
+      <span class="note">${IN_CLAUDE ? 'Claude içinde canlı kur alınamıyor; güncel kuru bankandan bakıp buraya yaz. Herkes için aynı kur kullanılır.' : 'Canlı kur kendiliğinden güncellenir (uygulama açıkken 2 saatte bir); istersen “Canlı kuru çek” ile hemen yenileyebilir ya da elle yazabilirsin.'} Durum: ${rateLabel()}</span>
       ${Object.keys(S.trip.rates || {}).length ? `<span class="note num">Diğer kurlar: 1 € = ${OTHER_CURS.filter(([c]) => S.trip.rates[c]).map(([c]) => money(S.trip.rates[c], c)).join(' · ')}</span>` : ''}</div>
     <div class="f"><label for="tMe">Bu telefonu kim kullanıyor?${help('me')}</label>
       ${myUid && myPerson() ? `<div style="display:flex;gap:8px;align-items:center"><div class="inp locked" style="flex:1">${emojiOf(S.me)} ${nm(S.me)} 🔒</div>${isTripAdmin() || selfFixLeft() ? `<button type="button" class="btn" data-release="${S.me}">Değiştir${isTripAdmin() ? '' : ` · ${Math.ceil(selfFixLeft() / 60e3)} dk`}</button>` : ''}</div><span class="note">Bu telefon/hesap ${nm(S.me)} olarak tanımlı; başka bir kişi seçilemez.${isTripAdmin() ? '' : selfFixLeft() ? ' Yanlışsa birkaç dakika içinde (bir kez) kendin değiştirebilirsin; sonrasında seyahati kuran kişi düzeltir.' : ' Yanlışsa seyahati kuran kişi bağı kaldırabilir.'}</span>`
@@ -1917,7 +1925,7 @@ function emptyState(){
 async function enterTrip(build, toTab){
   finishUndo(); await pushNow(); stashTrip();
   build(); loadMe(); loadLogs(); loadShop();
-  tab = toTab || 'list'; themeNow = null; render(); window.scrollTo(0,0); maybeAskWho();
+  tab = toTab || 'list'; themeNow = null; render(); window.scrollTo(0,0); maybeAskWho(); rateCheck(30 * 6e4);
 }
 function switchTrip(tid){
   if (tid === S.tid && !S.sample) return;
@@ -1981,7 +1989,7 @@ function onRemote(kind){
     if (j && cloudMetas.has(j)){ if (j !== S.tid){ stashTrip(); openCloudTrip(j); loadMe(); themeNow = null; } setTimeout(() => toast(`${S.trip.name} seyahatine katıldın 🎉`), 400); }
     else if (IN_WEB && window.claude.joinFailed()) setTimeout(() => toast('Davet bağlantısı geçersiz; bağlantıyı gönderen kişiden yenisini iste.'), 400);
     else if (IN_WEB && !cloudMetas.size && (navigator.standalone || matchMedia('(display-mode: standalone)').matches)) setTimeout(() => { if (!form) openSheet({mode:'trips'}); }, 600);
-    loadLogs(); loadShop(); render(); renderCloud(); maybeAskWho(); return;
+    loadLogs(); loadShop(); render(); renderCloud(); maybeAskWho(); rateCheck(30 * 6e4); return;
   }
   if (kind === 'meta'){
     const rm0 = cloudMetas.get(S.tid);
