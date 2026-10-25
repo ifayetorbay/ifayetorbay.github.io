@@ -18,10 +18,11 @@
   // Davet bağlantısıyla gelindiyse seyahate üye olunur; adres çubuğundan anahtar silinir.
   async function start(){
     const uid = await signIn();
-    const q = new URLSearchParams(location.search).get('katil');
+    const P = new URLSearchParams(location.search), q = P.get('katil') || P.get('kurucu');
     if (q){
+      // kurucu: taşınan seyahatin tek kullanımlık kurucu bağlantısı
       const [t, k] = q.split('.');
-      const {data, error} = await sb.rpc('join_trip', {t, k});
+      const {data, error} = P.get('kurucu') ? await sb.rpc('claim_trip', {t, k}) : await sb.rpc('join_trip', {t, k});
       if (!error && data) try { localStorage.setItem(JOIN_KEY, t); } catch(_) {}
       else window.__heybeJoinFailed = true;
       history.replaceState(null, '', location.pathname);
