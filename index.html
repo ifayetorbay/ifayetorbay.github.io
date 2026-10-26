@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026174135';</script>
-<script src="heybe-web.js?v=20261026174135"></script>
+<script>window.HEYBE_VER = '20261026175124';</script>
+<script src="heybe-web.js?v=20261026175124"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2280,37 +2280,48 @@ function loadTess(){
   }));
 }
 // ---- fiş okuma (cihazda, Tesseract metninden) ----
-// Bütün kurallar tests/fis-test.mjs'deki örnek fişlerle denenir (node tests/fis-test.mjs).
-// Toplam: ara toplam, KDV ve indirim olmayan ilk "TOTAL / TOPLAM / IMPORTE / SUMME…" satırı ("TOTAL (VAT INCLUDED)" sayılır,
-// "TOTAL IVA 22,55" sayılmaz); yoksa ödenen − para üstü; o da yoksa ürünlerin toplamı ya da en büyük tutar.
-// Ürünler: fiyatı aynı satırda olanlar ("CAMISA LINO 39,95") ya da iki satırlı ("1x NIKE AIR MAX (SHOES)" + "Unit Price: 79,99",
-// "PLATANO" + "0,850 kg 2,10 €/kg 1,79"). Ürün kodu, beden, renk satırları atlanır. Adet: "2x", "2 x", "3 @", "2 " (başta),
-// "x2", "1 UN"; birim fiyat satırında adetle çarpılır. Ürünün hemen altındaki yüzdeli indirim ("SCONTO 30% -567,00") o ürüne;
-// genel indirim (ürünler toplamı > ödenen) ürünlere oranla dağıtılır, ürünlerin toplamı ödenen tutara eşit olur.
-// Ürün adı: marka + model ("Nike Air Max Systm", "New Balance 530"); tek markalı mağazada marka yoksa başa eklenir;
-// tür Türkçe parantezle ("(Ayakkabı)"). Türkçe fişlerde ad olduğu gibi (Türkçe harflerle) kalır.
-const RC_TOTAL = /\b(TOTAL|TOTALE|TOPLAM|GESAMT|SUMME|IMPORTE|AMOUNT|TUTAR|BETRAG|TOTAAL|SUMA|A PAGAR|ZU ZAHLEN|MONTANT)\b/i;
-const RC_SUB = /SUB ?-?TOTAL|ARA ?TOPLAM|SUBTOTALE|ZWISCHENSUMME|SOUS[- ]?TOTAL|BASE IMPONIBLE/i;
-const RC_VAT = /(^|[^\p{L}])(V\.?A\.?T|I\.?V\.?A|K\.?D\.?V|TAX|MWST|TVA|UST)(?![\p{L}])/iu;
-const RC_INCL = /INCL|INCLUIDO|INCLUSO|INCLUS|TTC|INKL|DAH[İI]L/i;
-const RC_DISC = /DISCOUNT|DESCUENTO|DESCONTO|\bDTO\b|SCONTO|RABATT|REMISE|İNDİRİM|INDIRIM|\bPROMO|REBAJA|\bOFF\b|SAVINGS?\b|\bRETURN|REFUND|DEVOLUCI|\bRESO\b|İADE|STORNO/i;
-const RC_PAY = /\b(PAID|PAGADO|PAGATO|PAGAMENTO|BEZAHLT|PAY[ÉE]|ÖDENEN|CARD|TARJETA|VISA|MASTERCARD|AMEX|CB|CARTA|KART|KARTI|CASH|EFECTIVO|CONTANTI|BAR|NAK[İI]T|MULTIBANCO|EC)\b/i;
-const RC_CHANGE = /\b(CHANGE|CAMBIO|RESTO|R[ÜU]CKGELD|MONNAIE|TROCO)\b|PARA [ÜU]ST[ÜU]/i;
-const RC_SKIP = /\b(NIF|CIF|N\.I\.F|TEL[FÉ]?|PHONE|FAX|DATE|FECHA|DATA|DATUM|TAR[İI]H|TIME|HORA|ORA|UHRZEIT|SAAT|TICKET|TIQUE|RECIBO|FACTURA|CASHIER|CAJERO|CAMARERO|CASSA|KASA|AUTH|AUTORIZACI[OÓ]N|TERMINAL|TPV|AID|OP|MESA|GRACIAS|THANK|GRAZIE|MERCI|DANKE|TEŞEKKÜR)\b/i;
-const RC_META = /^(ART(ICULO|ICLE|IKEL)?|REF|SKU|EAN|COD(IGO|ICE)?|C[ÓO]DIGO|STYLE|BARCODE|TALLA|SIZE|TAGLIA|GR[ÖO]SSE|TAILLE|BEDEN|COLOU?R|COLORE|FARBE|COULEUR|RENK)\b/i;
+// Bütün kurallar tests/fisler.mjs'deki örnek fişlerle denenir (node tests/fis-test.mjs): 7+ dilde mağaza, market, restoran,
+// kart slibi ve 9 ülkeden outlet fişleri. Kural değişince test çalıştırılır.
+// Toplam: ara toplam, KDV ve indirim olmayan toplam satırı ("TOTAL (VAT INCLUDED)" sayılır, "TOTAL IVA 22,55" sayılmaz); birden çok
+// varsa ödemeden önceki sonuncusu ("Summe 688,80" → turist indirimi → "Zu zahlen 619,92"); yoksa ödenen − para üstü.
+// Ürünler: tek satırlı, iki satırlı ("1x NIKE AIR MAX (SHOES)" + "Unit Price: 79,99"), adı iki satıra taşan; liste/outlet fiyatı
+// ("PVP 89,90" + "PRECIO OUTLET 62,93", "UVP" + "Ihr Preis", "Was £… Now £…", "49,95 statt 89,95"); ürün kodu, beden satırları atlanır.
+// Adet: "2x", "2 x", "3 @", baştaki "2 ", "x2", "1 UN/Stk", "2,00", adet sütunu ("Aantal", "Qtd", "Uds"), ürünün üstündeki "2 AD X 249,99".
+// İndirim: ürünün altındaki yüzdeli indirim tutarı uyuşuyorsa o ürüne; genel indirim ürünlere oranla dağıtılır (toplam = ödenen).
+// Ad: marka + model ("Nike Air Max Systm", "New Balance 530"); tek markalı mağazada marka başa eklenir; tür Türkçe parantezle.
+const rcKw = (w, end = true) => new RegExp(`(?<![\\p{L}\\d])(?:${w})${end ? '(?![\\p{L}])' : ''}`, 'iu');
+const RC_TOTAL = rcKw('TOTAL|TOTALE|TOPLAM|GESAMT|GESAMTSUMME|GESAMTBETRAG|ENDBETRAG|SUMME|IMPORTE|AMOUNT|TUTAR|BETRAG|TOTAAL|SUMA|A PAGAR|ZU ZAHLEN|MONTANT|CELKEM|ΣΥΝΟΛΟ|ΣΥΝΟΔΟ|ΣΥΝ0Λ0|RAZEM');   // ΣΥΝΟΔΟ: OCR'ın Λ/Δ karıştırması
+const RC_SUB = /SUB ?-?TOTA|ARA ?TOPLAM|ZWISCHENSUMME|SOUS[- ]?TOTAL|BASE IMPONIBLE|MEZISOU|ΥΠΟΣΥΝΟΛΟ/i;
+const RC_VAT = rcKw('V\\.?A\\.?T\\.?|I\\.?V\\.?A\\.?|K\\.?D\\.?V|TAX|SALES TAX|MWST|TVA|UST|BTW|DPH|ΦΠΑ|PTU');
+const RC_INCL = /INCL|INCLU[IÍ]DO|INCLUSO|INCLUS|TTC|INKL|ENTHALTEN|DAH[İI]L/i;
+const RC_DISC = new RegExp('(?<![\\p{L}\\d])(?:DISCOUNT|DESCUENTO|DESCONTO|SCONTO|RABATT?|REMISE|İNDİRİM|INDIRIM|PROMO|REBAJA|SAVING|DEVOLUCI|STORNO|KORTING|SLEVA|ΕΚΠΤΩΣ|PASSPORT|REFUND)|(?<![\\p{L}\\d])(?:DTO|OFF|RETURN|RESO|İADE)(?![\\p{L}])', 'iu');
+const RC_PAY = rcKw('PAID|PAGADO|PAGATO|PAGAMENTO|BEZAHLT|PAY[ÉE]|ÖDENEN|CARD|TARJETA|VISA|MASTERCARD|MAESTRO|AMEX|CB|CARTA|KART|KARTI|KARTE|KREDITKARTE|GIROCARD|CASH|EFECTIVO|CONTANTI|BAR|NAK[İI]T|MULTIBANCO|EC|PIN|PINNEN|CONTANT|KARTA|ΚΑΡΤΑ|KAPTA|ΜΕΤΡΗΤΑ|CONTACTLESS|ENTREGADO');
+const RC_CHANGE = /(?<![\p{L}])(CHANGE|CAMBIO|RESTO|R[ÜU]CKGELD|MONNAIE|TROCO|WISSELGELD|ΡΕΣΤΑ|VRÁCENO)(?![\p{L}])|PARA [ÜU]ST[ÜU]/iu;
+const RC_SKIP = rcKw('NIF|CIF|N\\.I\\.F|TEL[FÉ]?|PHONE|FAX|DATE|FECHA|DATA|DATUM|TAR[İI]H|TIME|HORA|ORA|UHRZEIT|SAAT|TICKET|TIQUE|RECIBO|RECEIPT|RICEVUTA|FACTURA|FATURA|RECHNUNG|BELEG|BON|BON-NR|BONNUMMER|SCONTRINO|ÚČTENKA|ΑΠΟΔΕΙΞΗ|F[İI]Ş|CASHIER|CAJERO|CAMARERO|CASSA|KASA|AUTH|AUTORIZACI[OÓ]N|TERMINAL|TPV|AID|OP|MESA|GRACIAS|THANK|GRAZIE|MERCI|DANKE|TEŞEKKÜR|TAX FREE');
+const RC_META = /^(ART(?:[IÍ]CULO|ICLE|IKEL)?\.?-?(?:NR\.?)?|REF|SKU|EAN|COD(?:IGO|ICE)?|C[ÓO]DIGO|STYLE|BARCODE|TALLA|SIZE|TAGLIA|GR[ÖO]SSE|TAILLE|BEDEN|COLOU?R|COLORE|FARBE|COULEUR|RENK)(?![\p{L}])/iu;
+// Outlet merkezleri mağaza adı sayılmaz (mağaza bir alttaki satırdır: "LA ROCA VILLAGE" / "TOMMY HILFIGER").
+const RC_CENTER = /VILLAGE|DESIGNER OUTLET|OUTLET ?CITY|THE MALL|FASHION (?:OUTLET|ARENA)|FREEPORT|PREMIUM OUTLETS|OUTLET CENT|FOXTOWN|MC ?ARTHUR ?GLEN|MARQUES AVENUE|OPTIMUM OUTLET|C\.C\.|CENTRO COMERCIAL|SHOPPING CENT/i;
+// Liste fiyatı (ödenmeyen) ve outlet fiyatı (ödenen) etiketleri.
+const RC_RRP = rcKw('PVP|RRP|WAS|UVP|PREZZO PIENO|PREZZO DI LISTINO|PRIX INITIAL|ANCIEN PRIX|PRIX CONSEILL[ÉE]|ORIGINAL PRICE|PRECIO ORIGINAL|PRECIO ANTERIOR|LISTENPREIS|ADVIESPRIJS');
+const RC_OUTP = rcKw('PRECIO OUTLET|PREZZO OUTLET|PRIX OUTLET|OUTLET ?PRICE|OUTLETPREIS|OUTLETPRIJS|IHR PREIS|PRIX VILLAGE|NOUVEAU PRIX|NOW|AHORA|PREZZO SCONTATO|PREZZO FINALE|PRECIO FINAL|SALE PRICE|YOUR PRICE|VOTRE PRIX|JETZT');
+const RC_STATT = rcKw('STATT|ANSTATT|INSTEAD OF|AU LIEU DE|INVECE DI|EN LUGAR DE|YER[İI]NE');
+const RC_QTYCOL = rcKw('AANTAL|QTY|QTD|CANT\\.?|UDS|MENGE|QT[ÀA]|QTÉ|ADET|STK|MNOŽSTVÍ|ΠΟΣ');
 // OCR bozmalarına dayanıklı: "Unit Prices", "Pr1ce", "Precio Unit." da birim fiyat etiketi sayılır.
 const RC_GENERIC = /^(KG|G|GR|L|ML|UN|UD|UDS|PZ|PCS|ST|STK|AD|ADET|EUR|EUROS?|UNIT\w*|PR[I1L]C\w*|PREC\w*|UNITARIO|UNITAIRE|PREZZ\w*|PREIS|EINZELPREIS|PRIX|B[İI]R[İI]M|F[İI]YAT|IMPORTE|PVP|P|U|C|E|X|@)$/i;
 const RC_UNIT = /UNIT|PRECIO|PREZZO|EINZELPREIS|PRIX|B[İI]R[İI]M|PVP|@/i;
-// Türler: önce özel olan (POLO, T-SHIRT) sonra genel (SHIRT). KEEP: Türkçede de kullanılan, adda kalan kelimeler.
-const RC_TYPES = [['SHOES?|SNEAKERS?|TRAINERS?|ZAPATILLAS?|ZAPATOS?|SCARPE|SCHUHE|CHAUSSURES|BASKETS', 'Ayakkabı'], ['BOOTS?|BOTAS?|STIVALI', 'Bot'], ['SANDALS?|SANDALIAS?|SANDALI', 'Sandalet'],
-  ['HOODIE|SWEATSHIRT|SUDADERA|FELPA|SWEAT', 'Sweatshirt'], ['POLO', 'Polo tişört'], ['T-?SHIRTS?|CAMISETAS?|MAGLIETTA|TEE', 'Tişört'], ['SHIRTS?|CAMISAS?|CAMICIA|HEMD|CHEMISE', 'Gömlek'],
-  ['JACKETS?|CHAQUETAS?|GIACCA|JACKE|VESTE|PARKA|ANORAK|COAT|ABRIGO|CAPPOTTO|BLAZER|PLUMAS?', 'Ceket / mont'], ['JEANS?|VAQUEROS?', 'Kot pantolon'],
-  ['PANTS|TROUSERS|PANTAL[OÓ]N(ES)?|PANTALONI|HOSE|JOGGERS?|CHINOS?', 'Pantolon'], ['SHORTS|BERMUDAS?|PANTALONCINI', 'Şort'], ['DRESS|VESTIDO|VESTITO|KLEID|ROBE', 'Elbise'],
-  ['SKIRT|FALDA|GONNA|ROCK|JUPE', 'Etek'], ['SWEATER|JERSEY|JUMPER|MAGLIONE|PULL|PULLOVER|CARDIGAN|KNIT', 'Kazak'], ['SOCKS|CALCETINES|CALZINI|SOCKEN|CHAUSSETTES', 'Çorap'],
-  ['BACKPACK|MOCHILA|ZAINO|RUCKSACK|SAC A DOS|SAC À DOS', 'Sırt çantası'], ['BAGS?|BOLSA|BOLSO|BORSA|TASCHE|SAC|TOTE|HANDBAG', 'Çanta'], ['WALLET|CARTERA|PORTAFOGLIO|GELDB[ÖO]RSE', 'Cüzdan'],
-  ['BELT|CINTUR[OÓ]N|CINTURA|G[ÜU]RTEL|CEINTURE', 'Kemer'], ['CAP|HAT|GORRA|SOMBRERO|CAPPELLO|M[ÜU]TZE|BEANIE', 'Şapka'], ['SCARF|BUFANDA|SCIARPA|SCHAL|[ÉE]CHARPE', 'Atkı'],
+// Türler: önce özel olan (POLO, T-SHIRT) sonra genel (SHIRT); pantolon takımdan önce ("PANTALON TRAJE" pantolondur). KEEP: Türkçede de kullanılan, adda kalan kelimeler.
+const RC_TYPES = [['SHOES?|SNEAKERS?|TRAINERS?|ZAPATILLAS?|ZAPATOS?|SCARPE|SCHUHE|CHAUSSURES|BASKETS?|PUMPS?|HEELS?|LOAFERS?|MOCASINES|MOCASSINI|MOCASSINS?|MULES?|ESPADRILLES?|D[ÉE]COLLET[ÉE]S?|BOTY', 'Ayakkabı'],
+  ['BOOTS?|BOTAS?|STIVALI|STIEFEL', 'Bot'], ['SANDALS?|SANDALIAS?|SANDALI|SANDALEN', 'Sandalet'],
+  ['HOODIE|SWEATSHIRT|SUDADERA|FELPA|SWEAT', 'Sweatshirt'], ['POLO', 'Polo tişört'], ['T-?SHIRTS?|CAMISETAS?|MAGLIETTA|TEE|TRIKO|TRIČKO', 'Tişört'], ['SHIRTS?|CAMISAS?|CAMICIA|HEMD|CHEMISE|OVERHEMD', 'Gömlek'],
+  ['JACKETS?|CHAQUETAS?|GIACCA|JACKE|\\p{L}*JACKE|VESTE|PARKA|ANORAK|COAT|ABRIGO|CAPPOTTO|BLAZER|PLUMAS?|SAKKO|SACO|AMERICANA|CASACO|JAS|BUNDA|MANTEL', 'Ceket / mont'], ['JEANS?|VAQUEROS?', 'Kot pantolon'],
+  ['PANTS|TROUSERS|PANTAL[OÓ]N(ES)?|PANTALONI|HOSE|JOGGERS?|CHINOS?|BROEK|KALHOTY|CAL[ÇC]AS', 'Pantolon'], ['SHORTS|BERMUDAS?|PANTALONCINI', 'Şort'], ['SUIT|ABITO|TRAJE|ANZUG|KOSTÜM|COMPLETO', 'Takım elbise'], ['DRESS|VESTIDO|VESTITO|KLEID|ROBE|JURK', 'Elbise'],
+  ['SKIRT|FALDA|GONNA|ROCK|JUPE|ROK', 'Etek'], ['SWEATER|JERSEY|JUMPER|MAGLIONE|PULL|PULLOVER|CARDIGAN|KNIT|TRUI|CAMISOLA', 'Kazak'], ['SOCKS|CALCETINES|CALZINI|SOCKEN|CHAUSSETTES|SOKKEN|MEIAS', 'Çorap'],
+  ['BACKPACK|MOCHILA|ZAINO|RUCKSACK|SAC A DOS|SAC À DOS', 'Sırt çantası'], ['BAGS?|BOLSA|BOLSO|BORSA|TASCHE|SAC|TOTE|HANDBAG|TAS', 'Çanta'], ['WALLET|CARTERA|PORTAFOGLIO|GELDB[ÖO]RSE|PORTEFEUILLE', 'Cüzdan'],
+  ['BELT|CINTUR[OÓ]N|CINTURA|G[ÜU]RTEL|CEINTURE|RIEM', 'Kemer'], ['CAP|HAT|GORRA|SOMBRERO|CAPPELLO|M[ÜU]TZE|BEANIE', 'Şapka'], ['SCARF|BUFANDA|SCIARPA|SCHAL|[ÉE]CHARPE|SJAAL', 'Atkı'],
+  ['TIES?|CORBATA|CRAVATTA|KRAWATTE|CRAVATE', 'Kravat'], ['NECKLACE|COLLANA|HALSKETTE|COLLIER|KETTE', 'Kolye'], ['EARRINGS?|PENDIENTES|ORECCHINI|OHRRINGE|BOUCLES', 'Küpe'],
+  ['BRACELET|PULSERA|BRACCIALE|ARMBAND', 'Bileklik'], ['RING|ANILLO|ANELLO|BAGUE', 'Yüzük'],
   ['SUNGLASSES|GAFAS|OCCHIALI|SONNENBRILLE|LUNETTES', 'Güneş gözlüğü'], ['WATCH|RELOJ|OROLOGIO|UHR|MONTRE', 'Saat'], ['PERFUME|PERFUM|PARFUM|PROFUMO|EDT|EDP|EDC|COLONIA|COLOGNE', 'Parfüm'],
-  ['SWIMSUIT|SWIM|BA[ÑN]ADOR|BIKINI', 'Mayo'], ['UNDERWEAR|BOXERS?|BRIEFS', 'İç çamaşırı'], ['LEGGINGS?|MALLAS', 'Tayt'], ['GLOVES?|GUANTES|GUANTI', 'Eldiven']]
+  ['SWIMSUIT|SWIM|BA[ÑN]ADOR|BIKINI', 'Mayo'], ['UNDERWEAR|BOXERS?|BRIEFS', 'İç çamaşırı'], ['LEGGINGS?|MALLAS', 'Tayt'], ['GLOVES?|GUANTES|GUANTI|HANDSCHUHE', 'Eldiven']]
   .map(([w, tr]) => [new RegExp(`(?<![\\p{L}\\d])(${w})(?![\\p{L}\\d])`, 'iu'), tr]);
 const RC_KEEP = /^(HOODIE|POLO|BOXERS?|LEGGINGS?|BIKINI|BLAZER|PARKA|CARDIGAN)$/i;
 const RC_ABBR = /^(EDT|EDP|EDC|USB|LED|SPF|XXL|XL|UV|TV|HD|GG|NB|CK|LV|DNA|USA|UK)$/i;
@@ -2322,14 +2333,16 @@ function rcCase(t, tr){
     if (/^\s*$/.test(w) || w !== w.toUpperCase()) return w;        // zaten küçük harfliyse dokunma
     const letters = (w.match(/\p{L}/gu) || []).length;
     if (/\d/.test(w) && letters <= 2) return w;                    // 100ML, 3P, N5, 1,5L
-    if (RC_ABBR.test(w.replace(/[^\p{L}]/gu, '')) || (letters <= 2 && !/[AEIOUÁÉÍÓÚÀÈÌÒÙÄÖÜİ]/i.test(w) && !/\d/.test(w))) return w;   // GG, NB, EDT
+    if (RC_ABBR.test(w.replace(/[^\p{L}]/gu, '')) || (letters <= 2 && !/[AEIOUÁÉÍÓÚÀÈÌÒÙÄÖÜİÃÕÂÊÎÔÛÆØÅΑΕΗΙΟΥΩ]/i.test(w) && !/\d/.test(w))) return w;   // GG, NB, EDT
     const loc = tr && !RC_EN.test(w) ? 'tr' : 'en';
     return w.toLocaleLowerCase(loc).replace(/(^|[(\/.-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase(loc));
   }).join('');
 }
 function rcName(raw, tr, store){
-  // Ürün numarası (5+ hane) ve sondaki beden (M, XL, 42, 32/32) ada girmez.
-  let n = raw.replace(/(^|\s)-?\d{1,3}%/g, ' ').replace(/(^|\s)\d{5,}(?=\s|$)/g, ' ').replace(/\s(XXS|XS|S|M|L|XL|XXL|XXXL|\d{2}(\/\d{2})?)\s*$/i, '').replace(/[^\p{L}\p{N} .,&'()\/-]/gu, ' ').replace(/\s+/g, ' ').replace(/[\s.,-]+$/, '').trim();
+  // Atılanlar: yüzdeler, ürün numaraları (5+ hane ya da "MW0MW11796"), para birimi kodları, sondaki harf bedeni ve "32/32".
+  let n = raw.replace(/(^|\s)-?\d{1,3}%/g, ' ').replace(/(^|\s)\d{5,}(?=\s|$)/g, ' ')
+    .replace(/(^|\s)(?=[A-Z0-9]*\d[A-Z0-9]*\d[A-Z0-9]*\d[A-Z0-9]*\d)[A-Z0-9]{8,}(?=\s|$)/gi, ' ').replace(/(^|\s)(EUR|EUROS?|CHF|GBP|USD|TL|KČ|CZK)(?=\s|$)/gi, ' ')
+    .replace(/\s(XXS|XS|S|M|L|XL|XXL|XXXL|\d{2}\/\d{2})\s*$/i, '').replace(/[^\p{L}\p{N} .,&'()\/-]/gu, ' ').replace(/\s+/g, ' ').replace(/[\s.,-]+$/, '').trim();
   n = rcCase(n, tr);
   // Baştaki marka doğru yazılır (NB → New Balance, LEVI'S → Levi's).
   const b = brandAt(n); if (b){ const w = n.split(' '); n = [b.name, ...w.slice(b.n)].join(' '); }
@@ -2347,24 +2360,28 @@ function rcName(raw, tr, store){
   return n.slice(0, 60);
 }
 function parseReceipt(text){
-  // OCR düzeltmeleri: tarih ve saatler silinir (fiyat sanılmasın); "Ix/lx" (1x) düzeltilir.
-  // "-£2.00" → "-2.00"; "99, 95" → "99,95"; ondalıklı adet sütunu "2,00 CALCETINES" → "2 x CALCETINES".
+  // OCR düzeltmeleri: tarih ve saatler silinir (fiyat sanılmasın); "Ix/lx" (1x) düzeltilir; "-£2.00" → "-2.00"; "99, 95" → "99,95";
+  // "1'290.00" → "1290.00"; ondalıklı adet sütunu "2,00 CALCETINES" → "2 x CALCETINES".
   // Tarih/saat yalnız başına duruyorsa silinir ("9.90:29.70" içindeki "90:29" saat değildir).
   const clean = l => l.replace(/(?<![\d.,])\d{1,2}[./-]\d{1,2}[./-]\d{2,4}(?![\d.,])/g, ' ').replace(/(?<![\d.,])\d{1,2}:\d{2}(:\d{2})?(?![\d.,])/g, ' ').replace(/^\s*[Il|]\s*[xX]\s+/, '1x ')
-    .replace(/-\s*[€£$¥₺]\s*(?=\d)/g, '-').replace(/(\d)([.,])\s+(\d{2})(?!\d)/g, '$1$2$3').replace(/^\s*([1-9]\d?)[.,]0{2,3}\s+(?=\p{L})/u, '$1 x ');
+    .replace(/-\s*[€£$¥₺]\s*(?=\d)/g, '-').replace(/(\d)([.,])\s+(\d{2})(?!\d)/g, '$1$2$3').replace(/(\d)['’](\d{3})(?!\d)/g, '$1$2').replace(/^\s*([1-9]\d?)[.,]0{2,3}\s+(?=\p{L})/u, '$1 x ');
   const lines = text.split(/\n/).map(l => clean(l).trim()).filter(Boolean);
   const T = text.toUpperCase();
   const tr = /[İŞĞış]|\bTOPLAM\b|\bKDV\b|TAR[İI]H|NAK[İI]T|KRED[İI]/.test(text);
-  const amtRe = /-?\d{1,3}(?:[.,\s]\d{3})*[.,]\d{2}(?!\d)|-?\d+[.,]\d{2}(?!\d)/g;
+  // Adet sütunu varsa ("1 145,00") boşluk binlik ayırıcı sayılmaz; yoksa sayılır ("2 899,00").
+  const colQty = lines.some(l => RC_QTYCOL.test(l) && !/\d[.,]\d{2}/.test(l)), colRef = lines.some(l => /^(REF|ART|SKU|COD)/i.test(l) && !/\d[.,]\d{2}/.test(l));
+  const amtRe = colQty ? /-?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}(?!\d)|-?\d+[.,]\d{2}(?!\d)/g : /-?\d{1,3}(?:[.,\s]\d{3})*[.,]\d{2}(?!\d)|-?\d+[.,]\d{2}(?!\d)/g;
   const toNum = m => { const t = m.replace(/\s/g, ''), k = t.match(/^(-?)(.*)[.,](\d{2})$/); return k ? (k[1] ? -1 : 1) * parseFloat(k[2].replace(/[.,]/g, '') + '.' + k[3]) : NaN; };
   const amts = l => (l.match(amtRe) || []).map(toNum).filter(v => !isNaN(v));
   const pos = l => amts(l).filter(x => x > 0);
-  // Toplam
+  const isTotal = l => RC_TOTAL.test(l) && !RC_SUB.test(l) && !RC_DISC.test(l) && !(RC_VAT.test(l) && !RC_INCL.test(l));
+  // Toplam: toplam satırlarından ödeme satırından önceki sonuncusu.
   let amount = 0, sub = 0;
   for (const l of lines){
     const v = pos(l); if (!v.length) continue;
     if (RC_SUB.test(l)){ sub = sub || Math.max(...v); continue; }
-    if (!amount && RC_TOTAL.test(l) && !RC_DISC.test(l) && !(RC_VAT.test(l) && !RC_INCL.test(l))) amount = Math.max(...v);
+    if (isTotal(l)){ amount = Math.max(...v); continue; }
+    if (amount && (RC_PAY.test(l) || RC_CHANGE.test(l))) break;
   }
   if (!amount){
     const pay = lines.find(l => RC_PAY.test(l) && !RC_CHANGE.test(l) && pos(l).length), chg = lines.find(l => RC_CHANGE.test(l) && pos(l).length);
@@ -2372,24 +2389,33 @@ function parseReceipt(text){
   }
   const currency = /€|\bEUR/.test(T) ? 'EUR' : /₺|\bTL\b|TRY/.test(T) || tr ? 'TRY' : /£|GBP/.test(T) ? 'GBP' : /CHF/.test(T) ? 'CHF'
     : /USD|\$/.test(T) ? 'USD' : /RMB|CNY|元/.test(T) ? 'CNY' : /JPY|円|¥/.test(T) ? 'JPY'
-    : /\b(IVA|TOTALE|SCONTO|CONTANTI|SUMME|MWST|TVA|TTC|IMPORTE|DESCONTO|MULTIBANCO|EUROS?)\b/.test(T) ? 'EUR' : null;
-  // Mağaza: ürünlerden önceki satırlardan biri bilinen bir markaysa o; değilse ilk anlamlı satır.
+    : /\b(IVA|TOTALE|SCONTO|CONTANTI|SUMME|MWST|TVA|TTC|IMPORTE|DESCONTO|MULTIBANCO|EUROS?|TOTAAL|BTW|PINNEN)\b|ΣΥΝΟΛΟ|ΦΠΑ/.test(T) ? 'EUR' : null;
+  // Mağaza: ürünlerden önceki satırlardan biri bilinen bir markaysa o; değilse ilk anlamlı satır (outlet merkezi adı değil).
   const firstItem = lines.findIndex(l => pos(l).length && !RC_SKIP.test(l) && !RC_TOTAL.test(l));
   const head = lines.slice(0, firstItem < 0 ? 6 : Math.min(firstItem, 8));
-  const brandLine = head.map(l => brandAt(l.replace(/^(COMERCIO|MERCHANT|ESTABLECIMIENTO|NEGOZIO|ESERCENTE|İŞYERİ)\s*:?\s*/i, ''))).find(Boolean);
-  const nameLine = head.find(l => /\p{L}{3,}/u.test(l) && !pos(l).length && !RC_TOTAL.test(l) && !RC_SKIP.test(l) && !RC_VAT.test(l));
-  const desc = brandLine ? brandLine.name : nameLine ? rcCase(nameLine.replace(/^(COMERCIO|MERCHANT|ESTABLECIMIENTO|NEGOZIO|ESERCENTE|İŞYERİ)\s*:?\s*/i, '').replace(/\s+/g, ' '), tr).slice(0, 40) : null;
+  const unPrefix = l => l.replace(/^(COMERCIO|MERCHANT|ESTABLECIMIENTO|NEGOZIO|ESERCENTE|İŞYERİ)\s*:?\s*/i, '');
+  const brandLine = head.map(l => brandAt(unPrefix(l))).find(Boolean);
+  const nameLine = head.find(l => /\p{L}{3,}/u.test(l) && !pos(l).length && !RC_TOTAL.test(l) && !RC_SKIP.test(l) && !RC_VAT.test(l) && !RC_CENTER.test(l)) || head.find(l => /\p{L}{3,}/u.test(l) && !RC_SKIP.test(l));
+  const desc = brandLine ? brandLine.name : nameLine ? rcCase(unPrefix(nameLine).replace(/\s+/g, ' '), tr).slice(0, 40) : null;
   const store = brandLine ? brandLine.name : null;
   // Ürünler
-  const items = [], orphans = []; let pending = null, seen = false;
+  const items = [], orphans = []; let pending = null, seen = false, preQty = null;
   const qtyOf = s0 => {
     let m = s0.match(/^\s*([1-9]\d{0,2})\s*[xX×*@]\s*/); if (m) return [+m[1], s0.slice(m[0].length), true];
     m = s0.match(/^\s*([1-9]\d?)\s+(?=\p{L})/u); if (m && +m[1] <= 20) return [+m[1], s0.slice(m[0].length), false];
-    m = s0.match(/\s([1-9]\d{0,2})\s*[xX×*@]\s*$/) || s0.match(/\s[xX×]\s*([1-9]\d{0,2})\s*$/) || s0.match(/\s([1-9]\d{0,2})\s*(UN|UD|UDS|PZ|PCS|STK|ST|AD|ADET)\.?\s*$/i);
+    m = s0.match(/\s([1-9]\d{0,2})\s*[xX×*@]\s*$/) || s0.match(/\s[xX×]\s*([1-9]\d{0,2})\s*$/) || s0.match(/\s([1-9]\d{0,2})\s*(UN|UD|UDS|PZ|PCS|STK|ST|AD|ADET)\.?\s*$/i)
+      || (colQty ? s0.match(/\s([1-9]\d{0,2})\s*$/) : null);
     if (m) return [+m[1], s0.slice(0, m.index), true];
     return [1, s0, false];
   };
-  for (const l of lines){
+  const add = (raw, price, qty, extra) => {
+    if (preQty && qty === 1 && Math.abs(price - preQty.q * preQty.u) < .02) qty = preQty.q;   // üstteki "2 AD X 249,99"
+    preQty = null;
+    const nm = rcName(raw, tr, store); if (!/\p{L}{2,}/u.test(nm)) return null;
+    const it = {name:qty > 1 ? `${nm} ×${qty}` : nm, price, list:price, ...extra}; items.push(it); seen = true; return it;
+  };
+  const cleanLabel = s0 => s0.replace(amtRe, ' ').replace(/[€$£¥₺:()*]/g, ' ').replace(/(^|\s)-?\d{1,3}%/g, ' ').replace(/\s+/g, ' ').trim();
+  for (let l of lines){
     const v = amts(l), p = v.filter(x => x > 0);
     if (RC_TOTAL.test(l) || RC_SUB.test(l)){ if (seen) break; pending = null; continue; }
     if (RC_DISC.test(l) || (!p.length && v.length)){
@@ -2401,7 +2427,8 @@ function parseReceipt(text){
       }
       pending = null; continue;
     }
-    if (RC_META.test(l)) continue;                                               // ürün kodu, beden: üstteki ad beklemede kalır
+    if (RC_META.test(l) && !p.length) continue;                                  // ürün kodu, beden: üstteki ad beklemede kalır
+    if (RC_META.test(l)) l = l.replace(RC_META, '').replace(/^[\s.:-]*\S*\d\S*\s+/, '');   // "Art.-Nr. 50489234 Sakko Slim 549,00"
     if (!/\p{L}{2,}/u.test(l) && !p.length){
       // Harfsiz, okunabilir fiyatı olmayan satır (OCR'ın bozduğu "2x :19,.99..39; 98"): bekleyen ürün kaybolmasın, fiyatı sonra toplamdan bulunur.
       if (pending && /\d/.test(l)){ const q = l.match(/^\s*([1-9]\d?)\s*(?:[xX×*@]|\s)/); orphans.push({at:items.length, raw:pending, qty:q ? +q[1] : 0}); pending = null; }
@@ -2412,20 +2439,38 @@ function parseReceipt(text){
       const cont = pending && /^\s*[1-9]\d{0,2}\s*[xX×*@]/.test(pending) && !/^\s*[1-9]\d{0,2}\s*[xX×*@]/.test(l) && pending.length < 60;
       pending = /\p{L}{2,}/u.test(l) ? (cont ? pending + ' ' + l : l) : null; continue;
     }
-    const lastStr = (l.match(amtRe) || []).pop(), label = l.slice(0, l.lastIndexOf(lastStr)).replace(amtRe, ' ').replace(/[€$£¥₺:()*]/g, ' ').replace(/(^|\s)-?\d{1,3}%/g, ' ').replace(/\s+/g, ' ').trim();
+    if (colRef) l = l.replace(/^\s*[A-Z]{0,3}\d{2,}[A-Z\d-]*\s+(?=\p{L})/iu, '');      // REF sütunu: "K100 PELOTAS XLITE"
+    // "Polo Classic 49,95 statt 89,95": ödenen, işaretten önceki tutar.
+    const st = l.match(RC_STATT);
+    if (st){ const before = l.slice(0, st.index), bp = amts(before).filter(x => x > 0); if (bp.length){ const lb = before.slice(0, before.lastIndexOf((before.match(amtRe) || []).pop()));
+      const [q, rest] = qtyOf(cleanLabel(lb)); add(rest, bp[bp.length - 1], q); pending = null; continue; } }
+    // Outlet fiyatı: "Was £… Now £…" (adla aynı satırda) ya da alt satırda "PRECIO OUTLET 62,93" (son ürünün fiyatı olur).
+    const op = l.match(RC_OUTP), rp = l.match(RC_RRP), mk = [op, rp].filter(Boolean).sort((a, b) => a.index - b.index)[0];
+    if (mk){
+      const nameTxt = cleanLabel(l.slice(0, mk.index)), last = p[p.length - 1];
+      if (/\p{L}{2,}/u.test(nameTxt) && !nameTxt.split(' ').every(w => RC_GENERIC.test(w))){ const [q, rest] = qtyOf(nameTxt); add(rest, last, q, op ? {} : {rrp:true}); pending = null; continue; }
+      if (op){ const it = items[items.length - 1];
+        if (it && (it.rrp || !pending)){ it.price = it.list = last; delete it.rrp; continue; }
+        if (pending){ const [q, rest] = qtyOf(pending); add(rest, last, q); pending = null; continue; }
+        continue; }
+      if (pending){ const [q, rest] = qtyOf(pending); add(rest, last, q, {rrp:true}); pending = null; continue; }
+      continue;
+    }
+    const lastStr = (l.match(amtRe) || []).pop(), label = cleanLabel(l.slice(0, l.lastIndexOf(lastStr)));
     const generic = label.split(' ').map(w => w.replace(/^[^\p{L}\p{N}@%]+|[^\p{L}\p{N}@%]+$/gu, '')).filter(Boolean).every(w => /^[\d.,%*@x×\/-]+$/i.test(w) || RC_GENERIC.test(w));
     let raw, qty = 1, unit = false;
     if (generic){
-      if (!pending) continue;
-      const [q] = qtyOf(label + ' '); const [q2, rest] = qtyOf(pending);
+      const [q] = qtyOf(label + ' ');
+      // Ürünün üstündeki adet satırı ("2 AD X 249,99"): adet bir sonraki ürüne yazılır.
+      if (!pending){ if (q > 1 || /[xX×@]/.test(label)) preQty = {q, u:p[p.length - 1]}; continue; }
+      const [q2, rest] = qtyOf(pending);
       qty = q > 1 ? q : q2; raw = rest; unit = p.length === 1 && (RC_UNIT.test(label) || q > 1);   // tek tutar = birim fiyat; iki tutar = birim + satır toplamı
     } else { const [q, rest] = qtyOf(label); qty = q; raw = rest; }
     pending = null;
     // Birim fiyat ve satır toplamı yan yanaysa adet aradaki orandır (OCR "@" işaretini bozsa da: "3:8: 9.90:29.70" → 3).
     if (qty === 1 && p.length >= 2){ const k = p[p.length - 1] / p[p.length - 2]; if (k >= 1.99 && k <= 99.01 && Math.abs(k - Math.round(k)) < .01) qty = Math.round(k); }
-    const last = p[p.length - 1], price = qty > 1 && unit ? Math.round(last * qty * 100) / 100 : last;
-    const nm = rcName(raw, tr, store); if (!/\p{L}{2,}/u.test(nm)) continue;
-    items.push({name:qty > 1 ? `${nm} ×${qty}` : nm, price, list:price}); seen = true;
+    const last = p[p.length - 1];
+    add(raw, qty > 1 && unit ? Math.round(last * qty * 100) / 100 : last, qty);
   }
   // OCR onarımı (ara toplam ya da toplamla sağlama): toplamdan büyük tek bir ürün fiyatı yanlış okunmuştur ("89.99" → "891.00");
   // fiyatı hiç okunamayan tek bir ürün varsa eksik tutar onundur. İkisi de diğer ürünler toplamdan düşülerek bulunur.
@@ -2472,7 +2517,7 @@ async function readReceipt(dataUrl){
   const {data} = await Promise.race([Tess.recognize(img, lang), new Promise((_, no) => setTimeout(() => no({code:'timeout'}), 90000))]);
   return parseReceipt(data.text || '');
 }
-const OCR_LANG = {ES:'spa', IT:'ita', FR:'fra', DE:'deu', AT:'deu', CH:'deu', PT:'por', TR:'tur', NL:'nld', BE:'fra', PL:'pol', CZ:'ces', HR:'hrv', SE:'swe', DK:'dan', NO:'nor', HU:'hun'};
+const OCR_LANG = {ES:'spa', IT:'ita', FR:'fra', DE:'deu', AT:'deu', CH:'deu', PT:'por', TR:'tur', NL:'nld', BE:'fra', PL:'pol', CZ:'ces', HR:'hrv', SE:'swe', DK:'dan', NO:'nor', HU:'hun', GR:'ell'};
 // Fotoğraf okumadan önce hazırlanır: gri tonlama, kontrast açma ve 1600–2200 px genişliğe ölçekleme (küçük yazı büyür,
 // çok büyük fotoğraf yavaşlatmaz). Tesseract'ın rakamları karıştırması (89.99 → 891.00) belirgin şekilde azalır.
 function ocrImage(dataUrl){
@@ -2898,6 +2943,15 @@ const BRANDS = [
   ['Brooks', null, 'brooksrunning.com'], ['Hoka', null, 'hoka.com'], ['On|On Running', null, 'on.com'], ['Merrell', null, 'merrell.com'], ['Quechua', null, 'decathlon.com'],
   ['Estée Lauder|Estee Lauder', null, 'esteelauder.com'], ['Clinique', null, 'clinique.com'], ["L'Occitane|Loccitane", null, 'loccitane.com'], ['The Body Shop', null, 'thebodyshop.com'],
   ['Kiehl\'s|Kiehls', null, 'kiehls.com'], ['Bath & Body Works', null, 'bathandbodyworks.com'], ['Yves Rocher', null, 'yves-rocher.com'], ['Primor', null, 'primor.eu'],
+  ['Bogner', null, 'bogner.com'], ['Escada', null, 'escada.com'], ['Joop', null, 'joop.com'], ['Strellson', null, 'strellson.com'], ["Marc O'Polo|Marc O Polo", null, 'marc-o-polo.com'],
+  ['s.Oliver|S Oliver', null, 'soliver.com'], ['Tom Tailor', null, 'tom-tailor.com'], ['Wolford', null, 'wolford.com'], ['Falke', null, 'falke.com'], ['Liu Jo', null, 'liujo.com'], ['Pinko', null, 'pinko.com'],
+  ['Twinset', null, 'twinset.com'], ['Patrizia Pepe', null, 'patriziapepe.com'], ['Coccinelle', null, 'coccinelle.com'], ['Bally', null, 'bally.com'], ['Ferragamo|Salvatore Ferragamo', null, 'ferragamo.com'],
+  ['Etro', null, 'etro.com'], ['Missoni', null, 'missoni.com'], ['Zegna|Ermenegildo Zegna', null, 'zegna.com'], ['Brunello Cucinelli', null, 'brunellocucinelli.com'], ['Moschino', null, 'moschino.com'],
+  ['Roberto Cavalli', null, 'robertocavalli.com'], ['Trussardi', null, 'trussardi.com'], ['Kenzo', null, 'kenzo.com'], ['Lancel', null, 'lancel.com'], ['Zadig & Voltaire|Zadig', null, 'zadig-et-voltaire.com'],
+  ['The Kooples', null, 'thekooples.com'], ['Ba&sh|Bash', null, 'ba-sh.com'], ['Claudie Pierlot', null, 'claudiepierlot.com'], ['Hogan', null, 'hogan.com'], ['Scalpers', null, 'scalperscompany.com'],
+  ['El Ganso', null, 'elganso.com'], ['Pedro del Hierro', null, 'pedrodelhierro.com'], ['Adolfo Dominguez', null, 'adolfodominguez.com'], ['Bimba y Lola', null, 'bimbaylola.com'], ['Pikolinos', null, 'pikolinos.com'],
+  ['Mustang', null, 'mustang-jeans.com'], ['Jack & Jones', null, 'jackjones.com'], ['Vero Moda', null, 'veromoda.com'], ['Only', null, 'only.com'], ['Le Creuset', null, 'lecreuset.com'],
+  ['WMF', null, 'wmf.com'], ['Villeroy & Boch', null, 'villeroy-boch.com'], ['Zwilling', null, 'zwilling.com'], ['Fissler', null, 'fissler.com'], ['Sandro', null, 'sandro-paris.com'], ['Camper', null, 'camper.com'],
 ];
 // Mağaza adı sadeleştirilir (harf büyüklüğü, aksan, boşluk ve noktalama yok sayılır): "The North Face Outlet", "Northface" aynı markayı bulur.
 const brandNorm = s => String(s || '').toLocaleLowerCase('tr').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
