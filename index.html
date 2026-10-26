@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026133858';</script>
-<script src="heybe-web.js?v=20261026133858"></script>
+<script>window.HEYBE_VER = '20261026134224';</script>
+<script src="heybe-web.js?v=20261026134224"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -335,7 +335,7 @@ textarea.copy{width:100%;min-height:180px;border:1.5px solid var(--line);border-
 body.ro .acts, body.ro .kacts, body.ro .callout [data-act=setmode], body.ro [data-act=editplan], body.ro [data-act=shoplimit],
 body.ro [data-act=rate], body.ro [data-act=addperson], body.ro .giftadd, body.ro .grow .x, body.ro .swdel{display:none}
 body.nomgr .swdel[data-delp]{display:none}
-body.ro .tfchip, body.ro .gchk, body.ro .wbtn, body.ro .emo{pointer-events:none}
+body.ro .tfbox, body.ro .gchk, body.ro .wbtn, body.ro .emo{pointer-events:none}
 body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro #shOutlet{pointer-events:none;opacity:.6}
 .here.muted{color:var(--muted)}
 .famctl{display:flex;gap:4px;flex:none}
@@ -384,9 +384,14 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .oplogo b{display:none;font-size:.58rem;font-weight:800;color:#333}
 .oplogo.nofav img{display:none}
 .oplogo.nofav b{display:inline}
-.row .opline{display:flex;align-items:center;gap:6px;margin-top:3px;color:var(--ink);font-weight:600;white-space:nowrap;min-width:0}
-.opline .oplogo{width:18px;height:18px;border-radius:5px}
-.opline .oplogo img{width:14px;height:14px}
+.tfbox{flex:none;margin-right:12px;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;max-width:42%}
+.tfbox .tfchip{margin:0}
+.srow2 .row .d{white-space:normal;overflow-wrap:anywhere}
+.amtin{display:block;font-size:.95rem;margin:1px 0}
+.amtin b{font-weight:700}
+.tfop{display:flex;align-items:center;gap:5px;font-size:.76rem;font-weight:700;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tfop .oplogo{width:18px;height:18px;border-radius:5px}
+.tfop .oplogo img{width:14px;height:14px}
 .opchips{display:flex;flex-wrap:wrap;gap:8px}
 .opchip{display:inline-flex;align-items:center;gap:7px}
 .chip[aria-pressed="true"] .oplogo{border-color:transparent}
@@ -425,7 +430,7 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
   .toast{animation:toastIn .25s cubic-bezier(.2,.8,.2,1) both}
   /* dokunuş: düğmeler hafifçe basılır, seçilen sekme simgesi küçük bir sıçrama yapar */
   .btn,.chip,.fab,.fbtn,.tfchip,.gchk,.emo,.row,nav.tabs button{transition:transform .12s ease,background-color .2s ease,color .2s ease}
-  .btn:active,.chip:active,.fab:active,.fbtn:active,.tfchip:active,.emo:active{transform:scale(.96)}
+  .btn:active,.chip:active,.fab:active,.fbtn:active,.tfbox:active,.emo:active{transform:scale(.96)}
   .row:active{transform:scale(.99)}
   nav.tabs button[aria-current="page"] svg{animation:pop .35s ease}
   .gchk[aria-pressed="true"]{animation:pop .3s ease}
@@ -2665,9 +2670,9 @@ function viewShopList(){
     h += `<div class="day"><span lang="en">${esc(o)}</span> · ${e0(list.reduce((a, i) => a + shopEur(i), 0))}</div><div class="list">` + list.map(i => {
       const r = ref[i.id], sp = tfStep(i);
       return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
-          <span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${r > 0 && i.op ? `<span class="m opline">${opLogo(i.op)}${esc(opName(i.op))}</span>` : ''}${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
-          <span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span></button>
-        ${r > 0 ? `<button class="tfchip t${sp}" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${TF_CHIP[sp]}</button>` : ''}</div>`;
+          ${r > 0 ? `<span class="amtin num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? ` · ${e0(shopEur(i))}` : ''}</span>` : ''}<span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
+          ${r > 0 ? '' : `<span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span>`}</button>
+        ${r > 0 ? `<button class="tfbox" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${i.op ? `<span class="tfop">${opLogo(i.op)}${esc(opName(i.op))}</span>` : ''}<span class="tfchip t${sp}">${TF_CHIP[sp]}</span></button>` : ''}</div>`;
     }).join('') + `</div>`;
   }
   h += opSummary(ref);
@@ -2682,7 +2687,7 @@ const LOGO_PATHS = {"adidas":"m24 19.535-8.697-15.07-4.659 2.687 7.145 12.383Zm-
 // simgesi gösterilir (Google'ın simge servisi; giden tek bilgi sitenin adı). Simge yüklenemezse baş harfli renkli kutu.
 const BRANDS = [
   ['Nike', 'nike', 'nike.com'], ['Adidas', 'adidas', 'adidas.com'], ['Puma', 'puma', 'puma.com'], ['Zara|Zara Home', 'zara', 'zara.com'], ['H&M|HM', 'handm', 'hm.com'],
-  ['New Balance', 'newbalance', 'newbalance.com'], ['The North Face|North Face|TNF', 'thenorthface', 'thenorthface.com'], ['Under Armour', 'underarmour', 'underarmour.com'],
+  ['New Balance|NB', 'newbalance', 'newbalance.com'], ['The North Face|North Face|TNF', 'thenorthface', 'thenorthface.com'], ['Under Armour', 'underarmour', 'underarmour.com'],
   ['Reebok', 'reebok', 'reebok.com'], ['Fila', 'fila', 'fila.com'], ['Jordan|Nike Jordan|Air Jordan', 'jordan', 'nike.com'], ['Apple|Apple Store', 'apple', 'apple.com'],
   ['Samsung', 'samsung', 'samsung.com'], ['Uniqlo', 'uniqlo', 'uniqlo.com'], ['Pandora', 'pandora', 'pandora.net'], ['IKEA', 'ikea', 'ikea.com'],
   ['Dior|Christian Dior', 'dior', 'dior.com'], ['Helly Hansen', 'hellyhansen', 'hellyhansen.com'], ['Carrefour', 'carrefour', 'carrefour.com'], ['Lidl', 'lidl', 'lidl.com'],
