@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026233835';</script>
-<script src="heybe-web.js?v=20261026233835"></script>
+<script>window.HEYBE_VER = '20261026234246';</script>
+<script src="heybe-web.js?v=20261026234246"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -340,7 +340,7 @@ textarea.copy{width:100%;min-height:180px;border:1.5px solid var(--line);border-
 .seg.four button{font-size:.78rem;padding:9px 2px}
 /* arşiv: değiştiren düğmeler gizli, alanlar pasif */
 body.ro .acts, body.ro .kacts, body.ro .callout [data-act=setmode], body.ro [data-act=editplan], body.ro [data-act=shoplimit],
-body.ro [data-act=rate], body.ro [data-act=addperson], body.ro .giftadd, body.ro .grow .x, body.ro .swdel{display:none}
+body.ro [data-act=rate], body.ro [data-act=addperson], body.ro .giftadd, body.ro .swdel{display:none}
 body.nomgr .swdel[data-delp]{display:none}
 body.ro .tfbox, body.ro .gchk, body.ro .wbtn, body.ro .emo{pointer-events:none}
 body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro #shOutlet{pointer-events:none;opacity:.6}
@@ -377,6 +377,8 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .srow2{display:flex;align-items:center}
 .swr>.srow2{position:relative;z-index:1;background:var(--row-bg,var(--surface));touch-action:pan-y;transition:transform .2s ease}
 .swr>.srow2.drag{transition:none}
+.swr>.grow{position:relative;z-index:1;background:var(--row-bg,var(--surface));touch-action:pan-y;transition:transform .2s ease;-webkit-user-select:none;user-select:none}
+.swr>.grow.drag{transition:none}
 .sexp+.swr,.swr+.sexp{border-top:1px solid var(--line)}
 .sexp{background:var(--sunk)}
 .sexp.anim{animation:sexpIn .26s ease-out}
@@ -3365,8 +3367,8 @@ function viewMine(){
     <h2>Nereye ne kadar</h2><div class="card bars">` + [...rows.map(([c, v]) => [c.icon + ' ' + c.name, v]), ...(M.shop ? [['🛍️ Kişisel alışveriş', M.shop]] : [])]
       .sort((a, b) => b[1] - a[1]).map(([l, v]) => `<div class="bar"><div class="top2"><span>${l}</span><span class="num"><b>${eu(v)}</b></span></div>
         <div class="track"><div class="fill" style="width:${(v * 100 / max).toFixed(1)}%"></div></div></div>`).join('')
-    + `</div><h2>🧍 Sadece bana harcamalar</h2>` + ((SH.solo || []).length ? `<div class="list">` + SH.solo.slice().sort((a, b) => b.at - a.at).map(x => `<button class="row" data-solo="${x.id}"><span class="ic">${iconOf(x)}</span>
-        <span class="mid"><span class="d">${esc(x.desc)}</span><span class="m">${dayLabel(x.at)}</span></span><span class="amt num"><b>${money(x.amount, x.cur)}</b></span></button>`).join('') + `</div>`
+    + `</div><h2>🧍 Sadece bana harcamalar</h2>` + ((SH.solo || []).length ? `<div class="list">` + SH.solo.slice().sort((a, b) => b.at - a.at).map(x => `<div class="swr"><button class="swdel l" data-delsolo="${x.id}" tabindex="-1">Sil</button><button class="swdel r" data-delsolo="${x.id}" tabindex="-1">Sil</button><button class="row" data-solo="${x.id}"><span class="ic">${iconOf(x)}</span>
+        <span class="mid"><span class="d">${esc(x.desc)}</span><span class="m">${dayLabel(x.at)}</span></span><span class="amt num"><b>${money(x.amount, x.cur)}</b></span></button></div>`).join('') + `</div>`
         : `<p class="hint">Kendi kahven, kendi taksin gibi bölüşülmeyen harcamaları Harcamalar sekmesinde <b>+ Harcama</b> → <b>🔒 Sadece bana</b> ile ekle; bu özete girer, kimse görmez.</p>`)
     + `<p class="hint">Ortak harcamalarda senin payın + sadece sana ait alışveriş ve harcamalar. Bu özet sadece sende görünür.</p>`
     + (RC_LEARN.size || RC_LINES.size ? `<p class="hint">📚 Fiş düzeltmelerinden öğrendiklerim: ${RC_LEARN.size} kelime, ${RC_LINES.size} ürün adı · <button class="link" data-act="forgetlearn">${forgetSure ? 'Emin misin? Hepsini unut' : 'unut'}</button></p>` : '')
@@ -3392,10 +3394,10 @@ function viewGifts(){
     ${G.length ? `<div class="stats num"><div><small>Hediye</small><b>${G.length}</b></div><div><small>Alındı</small><b class="pos">${done}</b></div><div><small>Tahmini</small><b>${e0(est)}</b></div></div>` + bar(G.length ? done / G.length : 0, '') : `<p class="tip">Gitmeden önce kime ne almak istediğini yaz; aldıkça işaretle.</p>`}
     <div class="giftadd"><input class="inp" id="gWho" placeholder="Kime? (ör. annem)" value="${esc(giftDraft.who)}" autocomplete="off"><input class="inp" id="gWhat" placeholder="Ne? (ör. parfüm)" value="${esc(giftDraft.what)}" autocomplete="off">
       <input class="inp num" id="gEst" inputmode="decimal" placeholder="~ €" value="${esc(giftDraft.est)}" autocomplete="off"><button class="btn sm pri" data-act="addgift">Ekle</button></div></section>`;
-  if (G.length) h += `<div class="list">` + G.slice().sort((a, b) => a.done - b.done).map(g => `<div class="grow ${g.done ? 'done1' : ''}">
+  if (G.length) h += `<div class="list">` + G.slice().sort((a, b) => a.done - b.done).map(g => `<div class="swr"><button class="swdel l" data-delgift="${g.id}" tabindex="-1">Sil</button><button class="swdel r" data-delgift="${g.id}" tabindex="-1">Sil</button><div class="grow ${g.done ? 'done1' : ''}">
       <button type="button" class="gchk" data-gift="${g.id}" aria-pressed="${!!g.done}" aria-label="${g.done ? 'Alınmadı yap' : 'Alındı'}">${g.done ? '✓' : ''}</button>
-      <span class="mid"><b>${esc(g.who)}</b><span class="m">${esc(g.what)}${g.est ? ` · ~${e0(g.est)}` : ''}</span></span>
-      <button type="button" class="x" data-giftrm="${g.id}" aria-label="Sil">×</button></div>`).join('') + `</div>`;
+      <span class="mid"><b>${esc(g.who)}</b><span class="m">${esc(g.what)}${g.est ? ` · ~${e0(g.est)}` : ''}</span></span></div></div>`).join('') + `</div>`
+    + `<p class="hint">Silmek için hediyeyi sağa ya da sola kaydır.</p>`;
   return h;
 }
 // ✈️ Dönüş günü (ve bir gün önce) tax-free formlarını hatırlatır.
@@ -3490,6 +3492,27 @@ function shopExpHtml(i, refI, hit){
   }).join('');
   return `<div class="sexp${shopJust === i.id ? ' anim' : ''}">${rows || `<p class="hint sexph">Ürün eklenmemiş. Fişin fotoğrafından ya da elle <b>✏️ Düzenle</b>’den ekleyebilirsin.</p>`}
     <div class="sexpa"><button class="btn sm" data-shop="${i.id}">✏️ Düzenle</button>${photo ? `<button class="btn sm" data-shopphoto="${i.id}">🧾 Fişi gör</button>` : ''}</div></div>`;
+}
+// Kaydırarak silinen diğer kayıtlar (hediye, sadece bana harcama, kaydı olmayan katılımcı) da 6 saniye "Geri al" ile geri gelir.
+let gUndo = null;
+function finishGUndo(){ if (!gUndo) return; clearTimeout(gUndo.timer); gUndo = null; }
+function swipeGone(sel, run){
+  const box = document.querySelector(sel)?.closest('.swr');
+  if (box && !calm() && !box.dataset.going){ box.dataset.going = '1'; box.style.height = box.offsetHeight + 'px'; void box.offsetHeight; box.classList.add('going'); box.style.height = '0px'; return setTimeout(run, 230); }
+  run();
+}
+function softDelete(label, remove, restore){
+  finishGUndo(); remove(); swOpen = null; render();
+  gUndo = {restore, tid:S.tid, timer:setTimeout(finishGUndo, 6000)};
+  toast(`${label} silindi`, {act:'gundo', label:'Geri al', ms:6000});
+}
+// Liste (hediyeler, sadece bana harcamalar) içinden kaydırarak silme: dizideki yeri saklanır, geri alınınca oraya döner.
+function swipeListDelete(attr, id, arr, label){
+  swipeGone(`.swr [${attr}="${id}"]`, () => {
+    const L = arr(), k = L.findIndex(x => x.id === id); if (k < 0) return;
+    const x = L[k];
+    softDelete(label(x), () => { arr().splice(arr().indexOf(x), 1); saveShop(); }, () => { const M = arr(); if (!M.some(y => y.id === x.id)) M.splice(Math.min(k, M.length), 0, x); saveShop(); });
+  });
 }
 // Kaydırarak silinen alışveriş birkaç saniye "Geri al" ile geri getirilebilir; süre dolunca fiş fotoğrafı da silinir.
 let shopUndo = null;
@@ -3683,7 +3706,19 @@ function askDeletePerson(id){
   if (myUid && !isManager()) return toast('Bu ayarı değiştirme yetkin yok.');
   if (S.people.length <= 1) return toast('Seyahatte en az bir katılımcı kalmalı.');
   swClose();
-  if (!personUses(id)) return removePerson(id, null);
+  if (!personUses(id)){
+    // Kaydı olmayan katılımcı hemen silinir, 6 saniye geri alınabilir (kaydı olan için önce ne yapılacağı sorulur).
+    const k = S.people.findIndex(p => p.id === id), p = S.people[k], holder = S.trip.holder, me = S.me;
+    removePerson(id, null); finishGUndo();
+    gUndo = {tid:S.tid, timer:setTimeout(finishGUndo, 6000), restore:() => {
+      if (S.people.some(q => q.id === p.id)) return;
+      S.people.splice(Math.min(k, S.people.length), 0, p); S.trip.holder = holder;
+      if (S.me !== me){ S.me = me; try { localStorage.setItem(meKey(S.tid), me); } catch(_) {} }
+      logEvent(`katılımcıyı geri getirdi: ${p.name}`); save();
+    }};
+    toast(`${p.name} silindi`, {act:'gundo', label:'Geri al', ms:6000});
+    return;
+  }
   openSheet({mode:'delperson', pid:id, target:null});
 }
 function mergePerson(from, to){
@@ -4390,14 +4425,14 @@ function toggleHelp(btn){
 // ---- kaydırarak silme ----
 // Satır yatay kaydırılınca takip eder; yarıdan fazla kaydırılırsa açık kalır ve "Sil" görünür.
 // Dikey hareket sayfayı kaydırır. Açık satıra ya da başka bir satıra dokunmak satırı kapatır.
-const SW = 96;
+const SW = 96, SWROW = '.swr > .row, .swr > .srow2, .swr > .grow';   // kayan satırlar: kayıt, alışveriş, hediye
 let sw = null, swOpen = null, swEat = false;
 function swSet(row, x, drag){ row.classList.toggle('drag', !!drag); row.style.transform = x ? `translateX(${x}px)` : ''; row._x = x; }
 function swClose(){ if (swOpen && swOpen.isConnected) swSet(swOpen, 0); swOpen = null; }
 document.addEventListener('pointerdown', ev => {
   swEat = false;
   if (isRO()){ sw = null; return; }
-  const row = ev.target.closest('.swr > .row, .swr > .srow2');
+  const row = ev.target.closest(SWROW);
   if (swOpen && row !== swOpen && !ev.target.closest('.swdel')){ swClose(); if (row) swEat = true; }
   if (!row || ev.button > 0) return;
   // Arkasında görünür "Sil" yoksa (ör. yetkisi olmayana katılımcı satırı) satır kaymaz, boşluk açılmaz.
@@ -4460,13 +4495,13 @@ function showPhoto(src){
 
 // ---- olaylar ----
 document.addEventListener('click', ev => {
-  if (swEat){ swEat = false; if (ev.target.closest('.swr > .row, .swr > .srow2')) return; }
-  if (swOpen && ev.target.closest('.swr > .row, .swr > .srow2') === swOpen && !ev.target.closest('.swdel')){ swClose(); return; }
+  if (swEat){ swEat = false; if (ev.target.closest(SWROW)) return; }
+  if (swOpen && ev.target.closest(SWROW) === swOpen && !ev.target.closest('.swdel')){ swClose(); return; }
   const t = ev.target.closest('button, .scrim, img[data-act]'); if (!t) return;
   if (t.classList.contains('scrim') && ev.target !== t) return;
   const d = t.dataset;
   if (d.act !== 'archive') confirmArc = false;
-  if (isRO() && (d.edit || d.del || d.delshop || d.delp || d.payto || d.shop || d.solo || d.gift || d.giftrm || d.tf || d.emo || RO_ACTS.has(d.act))){
+  if (isRO() && (d.edit || d.del || d.delshop || d.delgift || d.delsolo || d.delp || d.payto || d.shop || d.solo || d.gift || d.tf || d.emo || RO_ACTS.has(d.act))){
     toast('🗄️ Bu seyahat arşivde, sadece görüntülenebilir. Değiştirmek için Seyahat sekmesinden arşivden çıkar.'); return;
   }
   if (!isManager() && (d.delp || d.fam || d.admin || MGR_ACTS.has(d.act))){ mgrOnly(); return; }
@@ -4494,12 +4529,13 @@ document.addEventListener('click', ev => {
   }
   if (d.shopx){ if (shopOpen.has(d.shopx)) shopOpen.delete(d.shopx); else { shopOpen.add(d.shopx); shopJust = d.shopx; } render(); shopJust = null; return; }
   if (d.delshop){ shopDelete(d.delshop); return; }
+  if (d.delgift){ swipeListDelete('data-delgift', d.delgift, () => SH.gifts, g => `🎁 ${g.who}`); return; }
+  if (d.delsolo){ swipeListDelete('data-delsolo', d.delsolo, () => SH.solo, x => x.desc); return; }
   if (d.shopphoto){ const ph = getShopPhoto(d.shopphoto); if (ph) showPhoto(ph); return; }
   if (d.shopret !== undefined && form && form.mode === 'shop'){ form.ret = d.shopret === '1'; drawSheetKeep(); return; }
   if (d.opf !== undefined){ shopOpF = shopOpF === d.opf ? null : d.opf; render(); return; }
   if (d.solo){ startSolo(SH.solo.find(x => x.id === d.solo)); return; }
   if (d.gift){ const g = SH.gifts.find(x => x.id === d.gift); g.done = !g.done; saveShop(); render(); if (g.done) toast(`🎁 ${g.who} için alındı`); return; }
-  if (d.giftrm){ SH.gifts = SH.gifts.filter(x => x.id !== d.giftrm); saveShop(); render(); return; }
   if (d.tf){ openSheet({mode:'tfform', iid:d.tf}); return; }
   // Tax-free formu penceresi: şirket ve adım tek dokunuşla; aynı mağaza + gün formundaki bütün alışverişlere yazılır.
   if (d.tfop !== undefined || d.tfst !== undefined){
@@ -4620,6 +4656,9 @@ document.addEventListener('click', ev => {
         if (!S.entries.some(x => x.id === e.id)) S.entries.splice(Math.min(i, S.entries.length), 0, e);
         logEvent(`geri getirdi: ${e.kind === 'expense' ? e.desc : 'kayıt'}`); render(); toast('Geri alındı');
       }
+      break;
+    case 'gundo':
+      if (gUndo && gUndo.tid === S.tid){ const r = gUndo.restore; finishGUndo(); r(); render(); toast('Geri alındı'); }
       break;
     case 'shopundo':
       if (shopUndo && shopUndo.tid === S.tid){
