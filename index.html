@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026191948';</script>
-<script src="heybe-web.js?v=20261026191948"></script>
+<script>window.HEYBE_VER = '20261026193303';</script>
+<script src="heybe-web.js?v=20261026193303"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2725,7 +2725,7 @@ function parseReceipt(text, retPass){
   // "1'290.00" → "1290.00"; ondalıklı adet sütunu "2,00 CALCETINES" → "2 x CALCETINES".
   // Tarih/saat yalnız başına duruyorsa silinir ("9.90:29.70" içindeki "90:29" saat değildir).
   const clean = l => l.replace(/(?<![\d.,])\d{1,2}[./-]\d{1,2}[./-]\d{2,4}(?![\d.,])/g, ' ').replace(/(?<![\d.,])\d{1,2}:\d{2}(:\d{2})?(?![\d.,])/g, ' ').replace(/^\s*[Il|]\s*[xX]\s+/, '1x ')
-    .replace(/(^|\s)[C{\[](?=\d+(?:[.,]\d{3})*[.,]\d{2}(?!\d))/g, '$1€')   // OCR "€" → "C", "{" ("C175,78", "{56.50")
+    .replace(/(^|\s)[C{\[(](?=\d+(?:[.,]\d{3})*[.,]\d{2}(?!\d))/g, '$1€')   // OCR "€" → "C", "{", "(" ("C175,78", "{56.50")
     .replace(/(^|\s)[$£§]\s?(\d{2})(?![\d.,])/g, '$1%$2')   // kuruşsuz "$30": OCR'ın bozduğu "%30" (fiyatlar hep kuruşlu yazılır)
     .replace(/-\s*[€£$¥₺]\s*(?=\d)/g, '-').replace(/(\d)([.,])\s+(\d{2})(?!\d)/g, '$1$2$3').replace(/(\d)['’](\d{3})(?!\d)/g, '$1$2').replace(/^\s*([1-9]\d?)[.,]0{2,3}\s+(?=\p{L})/u, '$1 x ');
   const lines = text.split(/\n/).map(l => clean(l).trim()).filter(Boolean);
@@ -2788,7 +2788,7 @@ function parseReceipt(text, retPass){
   const desc = brandLine ? brandLine.name : nameLine ? rcCase(unPrefix(nameLine).replace(/\s+/g, ' '), tr).slice(0, 40) : null;
   const store = brandLine ? brandLine.name : null;
   // Ürünler
-  const items = [], orphans = []; let pending = null, seen = false, preQty = null, inItem = false;   // inItem: son satırlar bir ürünün detayı
+  const items = [], orphans = []; let genDisc = false, stopAt = lines.length, pending = null, seen = false, preQty = null, inItem = false;   // inItem: son satırlar bir ürünün detayı
   let lastLead = 0;                                   // satır başındaki çıplak sayı: adet ya da sıra numarası olabilir
   const qtyOf = s0 => {
     lastLead = 0;
@@ -2806,16 +2806,21 @@ function parseReceipt(text, retPass){
     const it = {name:qty > 1 ? `${nm} ×${qty}` : nm, nm, price, list:price, orig, qty, hdr:price, lead:lastLead, ...extra}; lastLead = 0; items.push(it); seen = true; inItem = true; return it;
   };
   const cleanLabel = s0 => s0.replace(amtRe, ' ').replace(/[€$£¥₺:()*]/g, ' ').replace(/(^|\s)-?\d{1,3}%/g, ' ').replace(/(^|\s)-?%\s*\d{1,3}/g, ' ').replace(/\s+/g, ' ').trim();
-  const pctOf = s0 => { const m = s0.match(/%\s*(\d{1,2})(?!\d)|(?<![\d.,])(\d{1,2})\s*%/); return m ? +(m[1] || m[2]) : 0; };   // "-40%" ya da Türkçe "-%40"
+  const pctOf = s0 => { s0 = s0.replace(/(^|\s)[xX](\d{2})(?![\d.,])/g, '$1%$2'); const m = s0.match(/%\s*(\d{1,2})(?!\d)|(?<![\d.,])(\d{1,2})\s*%/); return m ? +(m[1] || m[2]) : 0; };   // "-40%" ya da Türkçe "-%40"
   const sumNow = () => items.reduce((a, x) => a + x.price, 0);
   // Birim fiyat ve satır toplamı yan yanaysa ("Tanesi €66.00 €132.00") adet aradaki orandır. Satır başındaki sayı adet de
   // olabilir sıra numarası da ("1 POLO", "2 CHEVRON"); bu kesin oran onu düzeltir (1 de olabilir: "Each €69.30 €69.30").
   // İki tutar eşitse ikisi de satır toplamıdır ("Total €45.00 €45.00"); adet o zaman önceki birim fiyattan bulunur (15,00 × 3).
   // Oran tam olmalı: satır toplamı birim × adetten en çok yuvarlama kadar (adet başına yarım kuruş) sapar; 179,70 / 59,85 = 3,0025 adet değildir.
-  const isMul = (a, u, n) => n >= 1 && n <= 99 && Math.abs(a - u * n) <= .006 + .005 * n;
+  const isMul = (a, u, n) => n >= 1 && n <= 99 && Math.abs(a - u * n) < .006;
+  const oneDigit = (a, b) => { const x = a.toFixed(2), y = b.toFixed(2); return x.length === y.length && [...x].filter((c, i) => c !== y[i]).length === 1; };
   const qtyFix = (it, p) => { if (p.length < 2 || p[p.length - 2] <= 0) return; const a = p[p.length - 1]; let u = p[p.length - 2], n = Math.round(a / u);
     if (n === 1 && Math.abs(a - u) < .006){ const v = (it.cands || []).find(x => x > 0 && x < a - .01 && Math.round(a / x) >= 2 && isMul(a, x, Math.round(a / x))); if (v){ u = v; n = Math.round(a / v); } }
-    if (isMul(a, u, n)){ it.qtyOk = true; setQty(it, n); } };
+    if (isMul(a, u, n)){ it.qtyOk = it.lock = true; setQty(it, n); return; }
+    // OCR satır toplamında tek rakamı bozmuşsa ("€89.97" → "€39.97"): birim fiyat bir üst satırdaki liste fiyatı × indirimle
+    // doğrulanıyorsa (49,99 × %60 = 29,99) ve okunan toplam birim × adetten tek rakamla ayrılıyorsa doğrusu birim × adettir.
+    const q = it.qty || 1, L = Math.round(u * q * 100) / 100;
+    if (it.uExp && Math.abs(u - it.uExp) < .006 && oneDigit(a, L)){ it.price = it.list = L; it.qtyOk = it.lock = true; } };
   const setQty = (it, n) => { if (n !== (it.qty || 1)){ it.qty = n; it.name = n > 1 ? `${it.nm} ×${n}` : it.nm; } };
   for (let [li, l] of lines.entries()){
     const v = amts(l), p = v.filter(x => x > 0);
@@ -2824,7 +2829,7 @@ function parseReceipt(text, retPass){
       // Fişin ara toplamı ("Summe 688,80" = bütün ürünlerin toplamı) son ürünün fiyatını aştığı için bu sayılmaz.
       const it = items[items.length - 1], a = p[p.length - 1];
       if (inItem && it && a && isTotal(l) && li < totalIdx && a <= Math.max(it.list, it.hdr * (it.qty || 1)) + .01){ it.price = it.list = a; it.cands = [...(it.cands || []), ...p]; qtyFix(it, p); continue; }
-      if (seen) break; pending = null; continue;
+      if (seen){ stopAt = li; break; } pending = null; continue;
     }
     if ((RC_DISC.test(l) && !RC_OUTP.test(l)) || (!p.length && v.length)){   // "İndirimli fiyat" outlet fiyatıdır, indirim satırı değil
       // İndirim kelimesi olmayan, adı olan eksi satır iade/değişimde geri verilen üründür ("RETURN TOWEL -6.00", "CAMISA LINO -59,99").
@@ -2834,10 +2839,12 @@ function parseReceipt(text, retPass){
       // Ürünün hemen altındaki yüzdeli indirim o ürüne uygulanır (tutar yüzdeyle uyuşuyorsa); diğerleri genel indirimdir.
       const pct = pctOf(l), d = Math.abs(v.filter(x => x < 0).pop() || 0), it = items[items.length - 1];
       if (it && pct) it.pcts = [...(it.pcts || []), pct];
+      let onItem = false;
       if (it && it.list > 0 && !it.disc && pct){
-        if (d && Math.abs(d - it.list * pct / 100) <= .02){ it.price = it.list = Math.round((it.list - d) * 100) / 100; it.disc = true; }
-        else if (!d){ it.price = it.list = Math.round(it.list * (100 - pct)) / 100; it.disc = true; }
+        if (d && Math.abs(d - it.list * pct / 100) <= .02){ it.price = it.list = Math.round((it.list - d) * 100) / 100; it.disc = true; onItem = true; }
+        else if (!d){ it.price = it.list = Math.round(it.list * (100 - pct)) / 100; it.disc = true; it.uExp = Math.round(it.hdr * (100 - pct)) / 100; onItem = true; }
       }
+      if (!onItem && (d || pct)) genDisc = true;                                  // ürüne uymayan indirim satırı: fişin genel indirimi
       pending = null; continue;
     }
     if (RC_META.test(l) && !p.length) continue;                                  // ürün kodu, beden: üstteki ad beklemede kalır
@@ -2854,7 +2861,7 @@ function parseReceipt(text, retPass){
       const lw = l.replace(/[\p{L}01]+/gu, t => /\p{L}[01]+\p{L}/u.test(t) ? t.replace(/1/g, 'i').replace(/0/g, 'o') : t);   // "Or1jinal" → "Orijinal"
       const pc = pctOf(l.replace(/(^|\s)[xX×](\d{1,2})(?!\d)/, '$1%$2')), ws = (lw.match(/\p{L}{2,}/gu) || []);
       if (ws.length && ws.every(w => RC_GENERIC.test(w) || RC_DETAIL.test(w) || RC_DISC.test(w))){
-        const it = items[items.length - 1]; if (pc && it.list > 0 && !it.disc){ it.price = it.list = Math.round(it.list * (100 - pc)) / 100; it.disc = true; it.pcts = [...(it.pcts || []), pc]; }
+        const it = items[items.length - 1]; if (pc && it.list > 0 && !it.disc){ it.price = it.list = Math.round(it.list * (100 - pc)) / 100; it.disc = true; it.pcts = [...(it.pcts || []), pc]; it.uExp = Math.round(it.hdr * (100 - pc)) / 100; }
         continue;
       }
     }
@@ -2896,7 +2903,7 @@ function parseReceipt(text, retPass){
           const pc = pctOf(l), a = p[p.length - 1];
           it.cands = [...(it.cands || []), ...p]; if (pc) it.pcts = [...(it.pcts || []), pc];
           if (p.length >= 2){ it.price = it.list = a; qtyFix(it, p); }
-          else if (RC_UNIT.test(label) || pc){ let b = RC_UNIT.test(label) && (it.qty || 1) > 1 ? a * it.qty : a; if (pc) b = b * (100 - pc) / 100; it.price = it.list = Math.round(b * 100) / 100; }
+          else if (RC_UNIT.test(label) || pc){ let b = RC_UNIT.test(label) && (it.qty || 1) > 1 ? a * it.qty : a; if (pc){ b = b * (100 - pc) / 100; it.uExp = Math.round(a * (100 - pc)) / 100; } it.price = it.list = Math.round(b * 100) / 100; }
           continue;
         }
         if (q > 1) preQty = {q, u:p[p.length - 1]};
@@ -2908,8 +2915,11 @@ function parseReceipt(text, retPass){
     pending = null;
     // Birim fiyat ve satır toplamı yan yanaysa adet aradaki orandır (OCR "@" işaretini bozsa da: "3:8: 9.90:29.70" → 3).
     if (qty === 1 && p.length >= 2){ const k = p[p.length - 1] / p[p.length - 2]; if (k >= 1.99 && k <= 99.01 && Math.abs(k - Math.round(k)) < .01) qty = Math.round(k); }
-    const last = p[p.length - 1];
-    add(raw, qty > 1 && unit ? Math.round(last * qty * 100) / 100 : last, qty);
+    const last = p[p.length - 1], pc0 = generic && unit ? pctOf(l) : 0;
+    // "3 ABRIGO LARGO" + "Tanesi €49.99 %40": birim fiyat × adet, yüzde indirimi düşülür; indirimli birim fiyat sonra doğrulamada kullanılır.
+    const it0 = add(raw, Math.round((unit && qty > 1 ? last * qty : last) * (100 - pc0)) / 100, qty);
+    if (it0 && pc0){ it0.pcts = [pc0]; it0.cands = [last]; it0.hdr = last; it0.uExp = Math.round(last * (100 - pc0)) / 100; }
+    if (it0 && p.length >= 2){ it0.cands = [...(it0.cands || []), ...p]; qtyFix(it0, p); }                                    // aynı satırda birim + satır toplamı
   }
   // OCR onarımı (ara toplam ya da toplamla sağlama): toplamdan büyük tek bir ürün fiyatı yanlış okunmuştur ("89.99" → "891.00");
   // fiyatı hiç okunamayan tek bir ürün varsa eksik tutar onundur. İkisi de diğer ürünler toplamdan düşülerek bulunur.
@@ -2939,6 +2949,7 @@ function parseReceipt(text, retPass){
       const ms = free ? [1, 2, 3, 4, 5] : q > 1 ? [1, q] : [1];
       for (const b of base) for (const m of ms){ const qq = free ? m : q;
         out.push({c:Math.round(b * m * 100), q:qq}); for (const pc of pcs) out.push({c:Math.round(b * m * (100 - pc)), q:qq}); }
+      if (it.lock) return [{c:Math.round(it.price * 100), q, d:0}];      // birim × adet = satır toplamı kesin: dokunulmaz
       const seen = new Set(), c0 = Math.round(it.price * 100);
       return out.filter(o => o.c > 0 && !seen.has(o.c) && seen.add(o.c)).map(o => ({...o, d:o.c === c0 && o.q === q ? 0 : 1}));
     });
@@ -2975,12 +2986,16 @@ function parseReceipt(text, retPass){
   // (kuruş farkı en pahalıya). Geri verilen (eksi) satırlar olduğu gibi kalır.
   const P = items.filter(x => x.price > 0), sum = P.reduce((a, x) => a + x.price, 0), target = r2(amount - items.filter(x => x.price < 0).reduce((a, x) => a + x.price, 0));
   let disc = 0;
-  if (amount && P.length && sum > target + .01 && sum <= target * 2.5){
+  // Fişte genel indirim izi (ürüne uymayan indirim satırı ya da ödenenden büyük ara toplam) yoksa fark dağıtılmaz: ürünler
+  // fişte yazdığı gibi kalır, uyuşmazlık bildirilir (fişin kendisi tutarsız olabilir: satırlar 252,70, TOTAL 126,35).
+  const discProof = genDisc || (sub && sub > amount + .01) || lines.slice(stopAt).some(l => RC_DISC.test(l) && (pctOf(l) || amts(l).some(x => x < 0)));
+  const mismatch = amount && P.length && sum > target + .01 && !discProof ? r2(sum) : 0;   // eksikse (ABD satış vergisi gibi) uyuşmazlık değildir
+  if (amount && P.length && sum > target + .01 && sum <= target * 2.5 && !mismatch){
     const f = target / sum; disc = Math.round((1 - f) * 100);
     let acc = 0; P.forEach(x => { x.price = Math.round(x.list * f * 100) / 100; acc += x.price; });
     const big = P.reduce((a, b) => b.list > a.list ? b : a); big.price = Math.round((big.price + target - acc) * 100) / 100;
   }
-  return {amount:amount || null, currency, desc, items:items.slice(0, 40).map(({name, price, orig}) => ({name, price, orig})), disc, sub:sub || null};
+  return {amount:amount || null, currency, desc, items:items.slice(0, 40).map(({name, price, orig}) => ({name, price, orig})), disc, sub:sub || null, ...(mismatch ? {mismatch} : {})};
 }
 async function readReceipt(dataUrl){
   if (sampleFn && sampleImg){
@@ -3065,7 +3080,8 @@ async function scanReceipt(){
     }
     else if (r.desc && !f.desc.trim()){ f.desc = String(r.desc).slice(0, 60); if (!f.catManual) f.cat = guessCat(f.desc, S.learned); }
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
-    toast(r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : 'Fişten dolduruldu; tutarı bir kontrol et.');
+    toast(r.mismatch && f.mode === 'shop' ? `⚠️ Fişteki ürünlerin toplamı (${money(r.mismatch, f.cur)}) fişin toplamını (${money(Number(r.amount), f.cur)}) tutmuyor; ürünler fişte yazdığı gibi bırakıldı, kontrol et.`
+      : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : 'Fişten dolduruldu; tutarı bir kontrol et.');
   } catch(e){
     const c = e && e.code;
     if (c !== 'cancelled') toast(c === 'exchange' ? '🔁 Değişim fişi: ödenen ya da geri alınan fark yok, kayıt gerekmiyor.' : c === 'noocr' ? 'Fişi okumak için Claude izni gerekiyor; izin vermediysen tutarı elle yaz.' : c === 'timeout' ? 'Fiş okuyucu yanıt vermedi; tutarı elle yaz.' : c === 'unreadable' ? 'Fişteki toplam okunamadı; tutarı elle yaz.' : c === 'rate_limited' ? 'Şu an çok fazla istek var; biraz sonra dene.'
@@ -3538,11 +3554,12 @@ function startShop(i){
 function linesHtml(){
   const L = form.lines || [];
   if (!L.length) return `<button type="button" class="link" data-act="addline">🧾 Fişteki ürünleri ekle</button>`;
-  const sum = L.reduce((a, l) => a + (parseAmt(l.price) || 0), 0);
+  const sum = L.reduce((a, l) => a + (parseAmt(l.price) || 0), 0), paid = parseAmt(form.amount) || 0;
   return `<div class="f"><span class="lab">Fişteki ürünler (${L.length}) · ${money(sum, form.cur)}</span><div class="lines">`
     + L.map((l, i) => `<div class="lbox"><div class="lrow"><input class="inp" data-li="${i}" data-lf="name" value="${esc(l.name || '')}" placeholder="Ürün" aria-label="Ürün adı"><input class="inp num" data-li="${i}" data-lf="price" inputmode="decimal" value="${esc(l.price || '')}" placeholder="0,00" aria-label="Fiyat"><button type="button" class="x" data-lrm="${i}" aria-label="Çıkar">×</button></div>${l.orig ? `<span class="lorig">fişte: ${esc(l.orig)}</span>` : ''}`
         + (trOn() ? `<div class="lrow trrow"><span>🇹🇷</span><input class="inp num" data-li="${i}" data-lf="tr" inputmode="decimal" value="${esc(l.tr || '')}" placeholder="Türkiye’de kaç ₺?" aria-label="Türkiye fiyatı"><a class="btn sm" data-trq="${i}" href="#" target="_blank" rel="noopener">🔎 Ara</a></div>` : '') + `</div>`).join('')
     + `</div><button type="button" class="link" data-act="addline">+ ürün ekle</button>`
+    + (paid > 0 && Math.abs(sum - paid) > .01 ? `<span class="note">⚠️ Ürünlerin toplamı (${money(sum, form.cur)}) ödenen tutarı (${money(paid, form.cur)}) tutmuyor. Fişte ya da okumada bir hata olabilir; fiyatları fişle karşılaştır.</span>` : '')
     + (trOn() ? `<span class="note">🔎 Ara, ürünü Türkiye’de arar; gördüğün fiyatı yazarsan ne kadar kârlı olduğunu gösteririm. Fiyatı uygulama bulmaz, <b>senin girdiğin fiyat</b> kullanılır.</span>` : '') + `</div>`;
 }
 // Türkiye karşılaştırması kendi ülkende anlamsız.
