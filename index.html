@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026133443';</script>
-<script src="heybe-web.js?v=20261026133443"></script>
+<script>window.HEYBE_VER = '20261026133858';</script>
+<script src="heybe-web.js?v=20261026133858"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -372,17 +372,21 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .srow2 .row{flex:1;min-width:0}
 .tfchip{flex:none;margin-right:12px;border:1.5px solid var(--line);background:none;border-radius:99px;padding:5px 10px;font-size:.78rem;font-weight:700;color:var(--muted)}
 .tfchip{display:inline-flex;align-items:center;gap:6px}
+/* Durum renkleri sabit: ülke teması (ör. İtalya kırmızısı) turuncuyu kırmızıya kaydırmasın */
 .tfchip.t0{border-color:var(--neg);color:var(--neg)}
-.tfchip.t1{border-color:var(--sun);color:var(--sun-text)}
+.tfchip.t1{border-color:#D9820F;color:#B56A06}
 .tfchip.t2{border-color:#2A6FB0;color:#2A6FB0}
 .tfchip.t3{border-color:var(--pos);color:var(--pos)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tfchip.t1{border-color:#F0AE55;color:#F0AE55} :root:not([data-theme="light"]) .tfchip.t2{border-color:#6AA7E0;color:#6AA7E0}}
+:root[data-theme="dark"] .tfchip.t1{border-color:#F0AE55;color:#F0AE55} :root[data-theme="dark"] .tfchip.t2{border-color:#6AA7E0;color:#6AA7E0}
 .oplogo{width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;background:#fff;border:1px solid var(--line);overflow:hidden;flex:none;vertical-align:middle}
 .oplogo img{width:18px;height:18px;object-fit:contain}
 .oplogo b{display:none;font-size:.58rem;font-weight:800;color:#333}
 .oplogo.nofav img{display:none}
 .oplogo.nofav b{display:inline}
-.tfchip .oplogo{width:18px;height:18px;border-radius:5px}
-.tfchip .oplogo img{width:14px;height:14px}
+.row .opline{display:flex;align-items:center;gap:6px;margin-top:3px;color:var(--ink);font-weight:600;white-space:nowrap;min-width:0}
+.opline .oplogo{width:18px;height:18px;border-radius:5px}
+.opline .oplogo img{width:14px;height:14px}
 .opchips{display:flex;flex-wrap:wrap;gap:8px}
 .opchip{display:inline-flex;align-items:center;gap:7px}
 .chip[aria-pressed="true"] .oplogo{border-color:transparent}
@@ -2661,9 +2665,9 @@ function viewShopList(){
     h += `<div class="day"><span lang="en">${esc(o)}</span> · ${e0(list.reduce((a, i) => a + shopEur(i), 0))}</div><div class="list">` + list.map(i => {
       const r = ref[i.id], sp = tfStep(i);
       return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
-          <span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}${i.op ? ` · ${esc(opName(i.op))}` : ''}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
+          <span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${r > 0 && i.op ? `<span class="m opline">${opLogo(i.op)}${esc(opName(i.op))}</span>` : ''}${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
           <span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span></button>
-        ${r > 0 ? `<button class="tfchip t${sp}" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${opLogo(i.op)}${TF_CHIP[sp]}</button>` : ''}</div>`;
+        ${r > 0 ? `<button class="tfchip t${sp}" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${TF_CHIP[sp]}</button>` : ''}</div>`;
     }).join('') + `</div>`;
   }
   h += opSummary(ref);
