@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026185034';</script>
-<script src="heybe-web.js?v=20261026185034"></script>
+<script>window.HEYBE_VER = '20261026191948';</script>
+<script src="heybe-web.js?v=20261026191948"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2725,7 +2725,8 @@ function parseReceipt(text, retPass){
   // "1'290.00" → "1290.00"; ondalıklı adet sütunu "2,00 CALCETINES" → "2 x CALCETINES".
   // Tarih/saat yalnız başına duruyorsa silinir ("9.90:29.70" içindeki "90:29" saat değildir).
   const clean = l => l.replace(/(?<![\d.,])\d{1,2}[./-]\d{1,2}[./-]\d{2,4}(?![\d.,])/g, ' ').replace(/(?<![\d.,])\d{1,2}:\d{2}(:\d{2})?(?![\d.,])/g, ' ').replace(/^\s*[Il|]\s*[xX]\s+/, '1x ')
-    .replace(/(^|\s)C(?=\d{1,3}(?:[.,]\d{3})*[.,]\d{2}(?!\d))/g, '$1€')   // OCR "€" → "C" ("C175,78")
+    .replace(/(^|\s)[C{\[](?=\d+(?:[.,]\d{3})*[.,]\d{2}(?!\d))/g, '$1€')   // OCR "€" → "C", "{" ("C175,78", "{56.50")
+    .replace(/(^|\s)[$£§]\s?(\d{2})(?![\d.,])/g, '$1%$2')   // kuruşsuz "$30": OCR'ın bozduğu "%30" (fiyatlar hep kuruşlu yazılır)
     .replace(/-\s*[€£$¥₺]\s*(?=\d)/g, '-').replace(/(\d)([.,])\s+(\d{2})(?!\d)/g, '$1$2$3').replace(/(\d)['’](\d{3})(?!\d)/g, '$1$2').replace(/^\s*([1-9]\d?)[.,]0{2,3}\s+(?=\p{L})/u, '$1 x ');
   const lines = text.split(/\n/).map(l => clean(l).trim()).filter(Boolean);
   const T = text.toUpperCase();
@@ -2788,9 +2789,11 @@ function parseReceipt(text, retPass){
   const store = brandLine ? brandLine.name : null;
   // Ürünler
   const items = [], orphans = []; let pending = null, seen = false, preQty = null, inItem = false;   // inItem: son satırlar bir ürünün detayı
+  let lastLead = 0;                                   // satır başındaki çıplak sayı: adet ya da sıra numarası olabilir
   const qtyOf = s0 => {
+    lastLead = 0;
     let m = s0.match(/^\s*([1-9]\d{0,2})\s*[xX×*@]\s*/); if (m) return [+m[1], s0.slice(m[0].length), true];
-    m = s0.match(/^\s*([1-9]\d?)\s+(?=\p{L})/u); if (m && +m[1] <= 20) return [+m[1], s0.slice(m[0].length), false];
+    m = s0.match(/^\s*([1-9]\d?)\s+(?=\p{L})/u); if (m && +m[1] <= 20){ lastLead = +m[1]; return [+m[1], s0.slice(m[0].length), false]; }
     m = s0.match(/\s([1-9]\d{0,2})\s*[xX×*@]\s*$/) || s0.match(/\s[xX×]\s*([1-9]\d{0,2})\s*$/) || s0.match(/\s([1-9]\d{0,2})\s*(UN|UD|UDS|PZ|PCS|STK|ST|AD|ADET)\.?\s*$/i)
       || (colQty ? s0.match(/\s([1-9]\d{0,2})\s*$/) : null);
     if (m) return [+m[1], s0.slice(0, m.index), true];
@@ -2800,18 +2803,27 @@ function parseReceipt(text, retPass){
     if (preQty && qty === 1 && Math.abs(price - preQty.q * preQty.u) < .02) qty = preQty.q;   // üstteki "2 AD X 249,99"
     preQty = null;
     const orig = String(raw).replace(/\s+/g, ' ').trim(), nm = RC_LINES.get(rcKey(orig)) || rcName(raw, tr, store); if (!/\p{L}{2,}/u.test(nm)) return null;
-    const it = {name:qty > 1 ? `${nm} ×${qty}` : nm, price, list:price, orig, qty, hdr:price, ...extra}; items.push(it); seen = true; inItem = true; return it;
+    const it = {name:qty > 1 ? `${nm} ×${qty}` : nm, nm, price, list:price, orig, qty, hdr:price, lead:lastLead, ...extra}; lastLead = 0; items.push(it); seen = true; inItem = true; return it;
   };
   const cleanLabel = s0 => s0.replace(amtRe, ' ').replace(/[€$£¥₺:()*]/g, ' ').replace(/(^|\s)-?\d{1,3}%/g, ' ').replace(/(^|\s)-?%\s*\d{1,3}/g, ' ').replace(/\s+/g, ' ').trim();
-  const pctOf = s0 => { const m = s0.match(/%\s*(\d{1,2})(?!\d)|(\d{1,2})\s*%/); return m ? +(m[1] || m[2]) : 0; };   // "-40%" ya da Türkçe "-%40"
+  const pctOf = s0 => { const m = s0.match(/%\s*(\d{1,2})(?!\d)|(?<![\d.,])(\d{1,2})\s*%/); return m ? +(m[1] || m[2]) : 0; };   // "-40%" ya da Türkçe "-%40"
   const sumNow = () => items.reduce((a, x) => a + x.price, 0);
+  // Birim fiyat ve satır toplamı yan yanaysa ("Tanesi €66.00 €132.00") adet aradaki orandır. Satır başındaki sayı adet de
+  // olabilir sıra numarası da ("1 POLO", "2 CHEVRON"); bu kesin oran onu düzeltir (1 de olabilir: "Each €69.30 €69.30").
+  // İki tutar eşitse ikisi de satır toplamıdır ("Total €45.00 €45.00"); adet o zaman önceki birim fiyattan bulunur (15,00 × 3).
+  // Oran tam olmalı: satır toplamı birim × adetten en çok yuvarlama kadar (adet başına yarım kuruş) sapar; 179,70 / 59,85 = 3,0025 adet değildir.
+  const isMul = (a, u, n) => n >= 1 && n <= 99 && Math.abs(a - u * n) <= .006 + .005 * n;
+  const qtyFix = (it, p) => { if (p.length < 2 || p[p.length - 2] <= 0) return; const a = p[p.length - 1]; let u = p[p.length - 2], n = Math.round(a / u);
+    if (n === 1 && Math.abs(a - u) < .006){ const v = (it.cands || []).find(x => x > 0 && x < a - .01 && Math.round(a / x) >= 2 && isMul(a, x, Math.round(a / x))); if (v){ u = v; n = Math.round(a / v); } }
+    if (isMul(a, u, n)){ it.qtyOk = true; setQty(it, n); } };
+  const setQty = (it, n) => { if (n !== (it.qty || 1)){ it.qty = n; it.name = n > 1 ? `${it.nm} ×${n}` : it.nm; } };
   for (let [li, l] of lines.entries()){
     const v = amts(l), p = v.filter(x => x > 0);
     if (rcTotLike(l) || RC_SUB.test(l)){
       // Ürünün içindeki satır toplamı ("Toplam €40.00 €40.00"): fişin toplamından önce gelir ve ürünün (adetli) fiyatını aşmaz.
       // Fişin ara toplamı ("Summe 688,80" = bütün ürünlerin toplamı) son ürünün fiyatını aştığı için bu sayılmaz.
       const it = items[items.length - 1], a = p[p.length - 1];
-      if (inItem && it && a && isTotal(l) && li < totalIdx && a <= Math.max(it.list, it.hdr * (it.qty || 1)) + .01){ it.price = it.list = a; it.cands = [...(it.cands || []), ...p]; continue; }
+      if (inItem && it && a && isTotal(l) && li < totalIdx && a <= Math.max(it.list, it.hdr * (it.qty || 1)) + .01){ it.price = it.list = a; it.cands = [...(it.cands || []), ...p]; qtyFix(it, p); continue; }
       if (seen) break; pending = null; continue;
     }
     if ((RC_DISC.test(l) && !RC_OUTP.test(l)) || (!p.length && v.length)){   // "İndirimli fiyat" outlet fiyatıdır, indirim satırı değil
@@ -2839,7 +2851,8 @@ function parseReceipt(text, retPass){
     if (!p.length && inItem && items.length){
       // Ürünün altındaki tutarsız detay satırı: "Orijinal fiyat %30" (OCR'da "X30"), "Tanesi indirimli -%20". Yeni ürün değildir;
       // yüzde varsa ürüne indirim olarak uygulanır (sonraki satırda kesin fiyat gelirse o geçerli olur).
-      const pc = pctOf(l.replace(/(^|\s)[xX×](\d{1,2})(?!\d)/, '$1%$2')), ws = (l.match(/\p{L}{2,}/gu) || []);
+      const lw = l.replace(/[\p{L}01]+/gu, t => /\p{L}[01]+\p{L}/u.test(t) ? t.replace(/1/g, 'i').replace(/0/g, 'o') : t);   // "Or1jinal" → "Orijinal"
+      const pc = pctOf(l.replace(/(^|\s)[xX×](\d{1,2})(?!\d)/, '$1%$2')), ws = (lw.match(/\p{L}{2,}/gu) || []);
       if (ws.length && ws.every(w => RC_GENERIC.test(w) || RC_DETAIL.test(w) || RC_DISC.test(w))){
         const it = items[items.length - 1]; if (pc && it.list > 0 && !it.disc){ it.price = it.list = Math.round(it.list * (100 - pc)) / 100; it.disc = true; it.pcts = [...(it.pcts || []), pc]; }
         continue;
@@ -2882,7 +2895,7 @@ function parseReceipt(text, retPass){
         if (inItem && it && it.price > 0){
           const pc = pctOf(l), a = p[p.length - 1];
           it.cands = [...(it.cands || []), ...p]; if (pc) it.pcts = [...(it.pcts || []), pc];
-          if (p.length >= 2) it.price = it.list = a;
+          if (p.length >= 2){ it.price = it.list = a; qtyFix(it, p); }
           else if (RC_UNIT.test(label) || pc){ let b = RC_UNIT.test(label) && (it.qty || 1) > 1 ? a * it.qty : a; if (pc) b = b * (100 - pc) / 100; it.price = it.list = Math.round(b * 100) / 100; }
           continue;
         }
@@ -2915,18 +2928,49 @@ function parseReceipt(text, retPass){
   // Sağlama: ürünlerin satır toplamları ödenen tutarı tutmuyorsa (OCR bir rakamı bozmuş ya da bir detay satırı kaçmış olabilir)
   // her ürünün olası fiyatlarından (başlık fiyatı, × adet, alt satır tutarları, yüzde indirimli halleri) toplamı tam tutturan
   // kombinasyon aranır; bulunursa o fiyatlar kullanılır. Ara toplam ürünlerin toplamını tutuyorsa bu genel indirimdir, dokunulmaz.
+  // Satırlar 1, 2, 3… diye numaralıysa baştaki sayı sıra numarasıdır, adet değil: adet ancak birim fiyat ile satır toplamının
+  // oranından (qtyFix) ya da aşağıdaki sağlamadan anlaşılır.
+  const seqNo = items.length && items.every((x, i) => x.lead === i + 1);
   if (amount && items.length && items.length <= 12 && !items.some(x => x.price < 0) && Math.abs(sumNow() - amount) > .009 && !(sub && Math.abs(sumNow() - sub) < .02)){
-    const C = Math.round(amount * 100), opts = items.map(it => {
-      const q = it.qty || 1, base = [it.price, ...(it.cands || []), it.hdr].filter(x => x > 0), pcs = it.pcts || [], out = [];
-      for (const b of base) for (const m of q > 1 ? [1, q] : [1]){ out.push(b * m); for (const pc of pcs) out.push(b * m * (100 - pc) / 100); }
-      return [...new Set(out.map(x => Math.round(x * 100)))].filter(x => x > 0 && x <= C);
+    // Her ürünün olası fiyatları {c: kuruş, q: o fiyatın anlattığı adet, d: okunandan farklı mı}; önce okunan fiyat, sonra alttan
+    // yukarı alt satır tutarları (son satır genelde indirimli kesin fiyattır), en son başlık fiyatı denenir.
+    const opts = items.map(it => {
+      const q = it.qty || 1, free = seqNo && !it.qtyOk, base = [it.price, ...(it.cands || []).slice().reverse(), it.hdr].filter(x => x > 0), pcs = it.pcts || [], out = [];
+      const ms = free ? [1, 2, 3, 4, 5] : q > 1 ? [1, q] : [1];
+      for (const b of base) for (const m of ms){ const qq = free ? m : q;
+        out.push({c:Math.round(b * m * 100), q:qq}); for (const pc of pcs) out.push({c:Math.round(b * m * (100 - pc)), q:qq}); }
+      const seen = new Set(), c0 = Math.round(it.price * 100);
+      return out.filter(o => o.c > 0 && !seen.has(o.c) && seen.add(o.c)).map(o => ({...o, d:o.c === c0 && o.q === q ? 0 : 1}));
     });
-    const memo = new Set(), pick = [];
-    const go = (i, left) => { if (i === items.length) return left === 0; const k = i + ':' + left; if (memo.has(k)) return false;
-      for (const o of opts[i]) if (o <= left){ pick[i] = o; if (go(i + 1, left - o)) return true; }
+    const pick = [];
+    let memo = new Set();
+    // En az ürünün fiyatını değiştiren çözüm seçilir (budget: değişebilecek ürün sayısı); rastlantısal tutan kombinasyonlar elenir.
+    let budget = 0;
+    const go = (i, left, b = budget) => { if (i === items.length) return left === 0; const k = i + ':' + left + ':' + b; if (memo.has(k)) return false;
+      for (const o of opts[i]) if (o.c <= left && o.d <= b){ pick[i] = o; if (go(i + 1, left - o.c, b - o.d)) return true; }
       memo.add(k); return false; };
-    if (go(0, C)) items.forEach((it, i) => { it.price = it.list = pick[i] / 100; });
+    const solve = C => { for (budget = 1; budget <= items.length; budget++){ memo = new Set(); if (go(0, C)) return true; } return false; };
+    const use = () => items.forEach((it, i) => { it.price = it.list = pick[i].c / 100; if (seqNo && !it.qtyOk){ setQty(it, pick[i].q); it.solvedQ = true; } });
+    // Hedef: ödenen tutar; fişte ara toplam + genel indirim varsa ara toplam (indirim sonra oranla dağıtılır).
+    const targets = [...new Set([sub && sub > amount ? sub : 0, amount].filter(x => x > 0).map(x => Math.round(x * 100)))];
+    let done = false;
+    for (const C of targets) if (solve(C)){ use(); done = true; break; }
+    if (!done && items.length >= 2){
+      // Tutmuyorsa: alt satırla doğrulanmamış tek bir "ürün" aslında ürün değildir (OCR'ın bozduğu detay satırı, "Or1jinal $30").
+      // Onsuz toplam tam tutuyorsa o satır atılır.
+      out: for (const C of targets) for (let j = items.length - 1; j >= 0; j--){
+        const it = items[j]; if (it.cands || it.pcts) continue;
+        const keep = opts[j]; opts[j] = [{c:0, q:1, d:0}];
+        if (solve(C)){ use(); items.splice(j, 1); break out; }
+        opts[j] = keep;
+      }
+    }
   }
+  // Sıra numaralı fişte adedi doğrulanmamış ürün: son fiyat bir birim fiyatın (indirimli hali dahil) tam katıysa adet odur, değilse 1.
+  if (seqNo) items.forEach(it => { if (it.qtyOk || it.solvedQ) return;
+    const us = [it.hdr, ...(it.cands || [])].filter(x => x > 0).flatMap(u => [u, ...(it.pcts || []).map(pc => Math.round(u * (100 - pc)) / 100)]);
+    const n = us.map(u => Math.round(it.price / u)).find((k, j) => k >= 2 && k <= 9 && Math.abs(it.price - Math.round(us[j] * k * 100) / 100) < .006);
+    setQty(it, n || 1); });
   // Genel indirim: alınan (artı) ürünlerin toplamı, ödenen + geri verilenlerden büyükse fark alınanlara oranla dağıtılır
   // (kuruş farkı en pahalıya). Geri verilen (eksi) satırlar olduğu gibi kalır.
   const P = items.filter(x => x.price > 0), sum = P.reduce((a, x) => a + x.price, 0), target = r2(amount - items.filter(x => x.price < 0).reduce((a, x) => a + x.price, 0));
