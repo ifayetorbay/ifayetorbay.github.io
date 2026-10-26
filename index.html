@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026193303';</script>
-<script src="heybe-web.js?v=20261026193303"></script>
+<script>window.HEYBE_VER = '20261026193933';</script>
+<script src="heybe-web.js?v=20261026193933"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2329,7 +2329,7 @@ const RC_SUB = /SUB ?-?TOTA|ARA ?TOPLAM|ZWISCHENSUMME|SOUS[- ]?TOTAL|BASE IMPONI
 const RC_VAT = rcKw('V\\.?A\\.?T\\.?|I\\.?V\\.?A\\.?|K\\.?D\\.?V|TAX|SALES TAX|MWST|TVA|UST|BTW|DPH|ΦΠΑ|PTU');
 const RC_INCL = /INCL|INCLU[IÍ]DO|INCLUSO|INCLUS|TTC|INKL|ENTHALTEN|DAH[İI]L/i;
 const RC_DISC = new RegExp('(?<![\\p{L}\\d])(?:DISCOUNT|DESCUENTO|DESCONTO|SCONTO|RABATT?|REMISE|[İI]ND[İI]R[İI]M|PROMO|REBAJA|SAVING|DEVOLUCI|STORNO|KORTING|SLEVA|ΕΚΠΤΩΣ|PASSPORT|REFUND|CUP[OÓ]N|COUPON|VOUCHER|GUTSCHEIN|AHORRO|RISPARMIO|ERSPARNIS|[ÉE]CONOMIE)|(?<![\\p{L}\\d])(?:DTO|OFF|RETURN|RESO|İADE)(?![\\p{L}])', 'iu');
-const RC_PAY = rcKw('PAID|PAGADO|PAGATO|PAGAMENTO|BEZAHLT|PAY[ÉE]|ÖDENEN|CARD|TARJETA|VISA|MASTERCARD|MAESTRO|AMEX|CB|CARTA|KART|KARTI|KARTE|KREDITKARTE|GIROCARD|CASH|EFECTIVO|CONTANTI|BAR|NAK[İI]T|MULTIBANCO|EC|PIN|PINNEN|CONTANT|KARTA|ΚΑΡΤΑ|KAPTA|ΜΕΤΡΗΤΑ|CONTACTLESS|ENTREGADO|VALE|VALE DE COMPRA|BUONO|GUTSCHEIN|GIFT CARD|GIFTCARD|STORE CREDIT|TARJETA REGALO|CARTE CADEAU|CARTÃO PRESENTE');
+const RC_PAY = rcKw('PAID|PAGADO|PAGATO|PAGAMENTO|BEZAHLT|PAY[ÉE]|ÖDENEN|CARD|TARJETA|VISA|MASTERCARD|MAESTRO|AMEX|CB|CARTA|KART|KARTI|KARTE|KREDITKARTE|GIROCARD|CASH|EFECTIVO|CONTANTI|BAR|NAK[İI]T|MULTIBANCO|EC|PIN|PINNEN|CONTANT|KARTA|ΚΑΡΤΑ|KAPTA|ΜΕΤΡΗΤΑ|CONTACTLESS|ENTREGADO|VALE|VALE DE COMPRA|BUONO|GUTSCHEIN|GIFT CARD|GIFTCARD|STORE CREDIT|TARJETA REGALO|CARTE CADEAU|CARTÃO PRESENTE|CARTÃO|CARTAO|CARTE|CARTE BANCAIRE|DEBIT|D[ÉE]BITO|CR[ÉE]DITO|CREDIT CARD|APPLE PAY|GOOGLE PAY|BIZUM');
 const RC_CHANGE = /(?<![\p{L}])(CHANGE|CAMBIO|RESTO|R[ÜU]CKGELD|MONNAIE|TROCO|WISSELGELD|ΡΕΣΤΑ|VRÁCENO)(?![\p{L}])|PARA [ÜU]ST[ÜU]/iu;
 const RC_SKIP = rcKw('NIF|CIF|N\\.I\\.F|TEL[FÉ]?|PHONE|FAX|DATE|FECHA|DATA|DATUM|TAR[İI]H|TIME|HORA|ORA|UHRZEIT|SAAT|TICKET|TIQUE|RECIBO|RECEIPT|RICEVUTA|FACTURA|FATURA|RECHNUNG|BELEG|BON|BON-NR|BONNUMMER|SCONTRINO|ÚČTENKA|ΑΠΟΔΕΙΞΗ|F[İI]Ş|CASHIER|CAJERO|CAMARERO|CASSA|KASA|AUTH|AUTORIZACI[OÓ]N|TERMINAL|TPV|AID|OP|MESA|GRACIAS|THANK|GRAZIE|MERCI|DANKE|TEŞEKKÜR|TAX FREE');
 const RC_META = /^(ART(?:[IÍ]CULO|ICLE|IKEL)?\.?-?(?:NR\.?)?|REF|SKU|EAN|COD(?:IGO|ICE)?|C[ÓO]DIGO|STYLE|BARCODE|TALLA|SIZE|TAGLIA|GR[ÖO]SSE|TAILLE|BEDEN|COLOU?R|COLORE|FARBE|COULEUR|RENK)(?![\p{L}])/iu;
@@ -2776,6 +2776,27 @@ function parseReceipt(text, retPass){
     const pay = lines.find(l => RC_PAY.test(l) && !RC_CHANGE.test(l) && pos(l).length), chg = lines.find(l => RC_CHANGE.test(l) && pos(l).length);
     if (pay){ const p = Math.max(...pos(pay)), c = chg ? Math.max(...pos(chg)) : 0; amount = c && c < p ? Math.round((p - c) * 100) / 100 : p; }
   }
+  // Toplamın sağlaması: TOTAL satırı, ödeme satırı (PAGADO, kart) ve "ara toplam − indirim" hesabından ikisi aynı, TOTAL farklıysa
+  // OCR TOTAL'i bozmuştur ("127,47" → "121,41" ya da "1 127,47"); çoğunluğun tutarı alınır.
+  let payV = 0, calc = 0;
+  if (amount && totalIdx >= 0){
+    const payL = lines.slice(totalIdx + 1).find(l => RC_PAY.test(l) && !RC_CHANGE.test(l) && !RC_VAT.test(l) && pos(l).length), pv = payL ? Math.max(...pos(payL)) : 0; payV = pv;
+    const subI = lines.findIndex(l => RC_SUB.test(l) && pos(l).length);
+    const dsum = subI >= 0 && subI < totalIdx ? lines.slice(subI + 1, totalIdx).filter(l => RC_DISC.test(l)).reduce((a, l) => a + Math.abs(amts(l).filter(x => x < 0).pop() || 0), 0) : 0;
+    calc = sub && dsum ? Math.round((sub - dsum) * 100) / 100 : 0;
+    // İndirim satırının yüzdesi de oy verir: "DESCUENTO (-15%)" × ara toplam (OCR indirim tutarını da bozmuş olabilir: "-22,90").
+    const dp = subI >= 0 && subI < totalIdx ? lines.slice(subI + 1, totalIdx).filter(l => RC_DISC.test(l)).map(l => { const m = l.match(/(?<![\d.,])(\d{1,2})\s*%|%\s*(\d{1,2})(?!\d)/); return m ? +(m[1] || m[2]) : 0; }).find(Boolean) : 0;
+    const calcP = sub && dp ? Math.round((sub - Math.round(sub * dp) / 100) * 100) / 100 : 0;
+    if (calcP && payV && Math.abs(calcP - payV) < .01) calc = calcP;
+    const eq = (a, b) => a && b && Math.abs(a - b) < .01;
+    // Benzer: tek rakam farkı ya da başa eklenmiş fazladan rakam ("1127,47" ↔ "127,47").
+    const sim = (a, b) => { const x = a.toFixed(2), y = b.toFixed(2); return x.length === y.length ? [...x].filter((c, i) => c !== y[i]).length === 1 : x.endsWith(y) || y.endsWith(x); };
+    if (!eq(amount, payV) && !eq(amount, calc)){
+      if (eq(payV, calc)) amount = payV;
+      else if (payV && !calc && payV < amount && sim(amount, payV)) amount = payV;   // ödeme toplamdan az olamaz (nakitte fazlası olur)
+      else if (calc && !payV && sim(amount, calc)) amount = calc;
+    }
+  }
   const currency = /€|\bEUR/.test(T) ? 'EUR' : /₺|\bTL\b|TRY/.test(T) || tr ? 'TRY' : /£|GBP/.test(T) ? 'GBP' : /CHF/.test(T) ? 'CHF'
     : /USD|\$/.test(T) ? 'USD' : /RMB|CNY|元/.test(T) ? 'CNY' : /JPY|円|¥/.test(T) ? 'JPY'
     : /\b(IVA|TOTALE|SCONTO|CONTANTI|SUMME|MWST|TVA|TTC|IMPORTE|DESCONTO|MULTIBANCO|EUROS?|TOTAAL|BTW|PINNEN|ABONO)\b|ΣΥΝΟΛΟ|ΦΠΑ|DEVOLUCI/.test(T) ? 'EUR' : null;
@@ -2788,7 +2809,7 @@ function parseReceipt(text, retPass){
   const desc = brandLine ? brandLine.name : nameLine ? rcCase(unPrefix(nameLine).replace(/\s+/g, ' '), tr).slice(0, 40) : null;
   const store = brandLine ? brandLine.name : null;
   // Ürünler
-  const items = [], orphans = []; let genDisc = false, stopAt = lines.length, pending = null, seen = false, preQty = null, inItem = false;   // inItem: son satırlar bir ürünün detayı
+  const items = [], orphans = []; let genDisc = false, stopAt = lines.length, pendHead = null, pendBroken = false, pending = null, seen = false, preQty = null, inItem = false;   // inItem: son satırlar bir ürünün detayı
   let lastLead = 0;                                   // satır başındaki çıplak sayı: adet ya da sıra numarası olabilir
   const qtyOf = s0 => {
     lastLead = 0;
@@ -2829,7 +2850,7 @@ function parseReceipt(text, retPass){
       // Fişin ara toplamı ("Summe 688,80" = bütün ürünlerin toplamı) son ürünün fiyatını aştığı için bu sayılmaz.
       const it = items[items.length - 1], a = p[p.length - 1];
       if (inItem && it && a && isTotal(l) && li < totalIdx && a <= Math.max(it.list, it.hdr * (it.qty || 1)) + .01){ it.price = it.list = a; it.cands = [...(it.cands || []), ...p]; qtyFix(it, p); continue; }
-      if (seen){ stopAt = li; break; } pending = null; continue;
+      if (seen){ stopAt = li; if (pending && pendBroken) orphans.push({at:items.length, raw:pendHead, qty:0}); break; } pending = null; continue;
     }
     if ((RC_DISC.test(l) && !RC_OUTP.test(l)) || (!p.length && v.length)){   // "İndirimli fiyat" outlet fiyatıdır, indirim satırı değil
       // İndirim kelimesi olmayan, adı olan eksi satır iade/değişimde geri verilen üründür ("RETURN TOWEL -6.00", "CAMISA LINO -59,99").
@@ -2851,7 +2872,7 @@ function parseReceipt(text, retPass){
     if (RC_META.test(l)) l = l.replace(RC_META, '').replace(/^[\s.:-]*\S*\d\S*\s+/, '');   // "Art.-Nr. 50489234 Sakko Slim 549,00"
     if (!/\p{L}{2,}/u.test(l) && !p.length){
       // Harfsiz, okunabilir fiyatı olmayan satır (OCR'ın bozduğu "2x :19,.99..39; 98"): bekleyen ürün kaybolmasın, fiyatı sonra toplamdan bulunur.
-      if (pending && /\d/.test(l)){ const q = l.match(/^\s*([1-9]\d?)\s*(?:[xX×*@]|\s)/); orphans.push({at:items.length, raw:pending, qty:q ? +q[1] : 0}); pending = null; }
+      if (pending && /\d/.test(l) && (seen || /^\s*[1-9]\d{0,2}\s*[xX×*@]/.test(pending) || /\d[.,:]\d{2}/.test(l))){ const q = l.match(/^\s*([1-9]\d?)\s*(?:[xX×*@]|\s)/); orphans.push({at:items.length, raw:pending, qty:q ? +q[1] : 0}); pending = null; }
       continue;
     }
     if (RC_SKIP.test(l) || RC_PAY.test(l) || RC_CHANGE.test(l) || RC_VAT.test(l)){ pending = null; inItem = false; continue; }
@@ -2867,7 +2888,12 @@ function parseReceipt(text, retPass){
     }
     if (!p.length){
       inItem = false;
-      const cont = pending && /^\s*[1-9]\d{0,2}\s*[xX×*@]/.test(pending) && !/^\s*[1-9]\d{0,2}\s*[xX×*@]/.test(l) && pending.length < 60;
+      const qx = /^\s*[1-9]\d{0,2}\s*[xX×*@]/, cont = pending && qx.test(pending) && !qx.test(l) && pending.length < 60;
+      // "1x NB 574 CORE" + "Precio Unitario: 89,9 €" (OCR bir rakamı yuttu): fiyat okunamadı ama ürün vardır; sonraki ürün gelince
+      // fiyatı sonra ara toplamdan bulunmak üzere saklanır.
+      if (cont && (RC_UNIT.test(l) || /\d[.,]\d/.test(l))) pendBroken = true;
+      if (pending && pendBroken && qx.test(pending) && !cont){ orphans.push({at:items.length, raw:pendHead, qty:0}); pendBroken = false; }
+      if (!cont){ pendBroken = false; pendHead = l; }
       pending = /\p{L}{2,}/u.test(l) ? (cont ? pending + ' ' + l : l) : null; continue;
     }
     if (colRef) l = l.replace(/^\s*[A-Z]{0,3}\d{2,}[A-Z\d-]*\s+(?=\p{L})/iu, '');      // REF sütunu: "K100 PELOTAS XLITE"
@@ -2921,6 +2947,10 @@ function parseReceipt(text, retPass){
     if (it0 && pc0){ it0.pcts = [pc0]; it0.cands = [last]; it0.hdr = last; it0.uExp = Math.round(last * (100 - pc0)) / 100; }
     if (it0 && p.length >= 2){ it0.cands = [...(it0.cands || []), ...p]; qtyFix(it0, p); }                                    // aynı satırda birim + satır toplamı
   }
+  // Ürünlerin toplamı da oy verir: TOTAL ne ödeme ne de ürünlerin toplamını tutuyor, ama ödeme (ya da ara toplam − indirim) ürünlerin
+  // toplamına eşitse TOTAL yanlış okunmuştur ("TOTAL 350,28" / "VISA 344,28", ürünler 344,28).
+  { const S0 = Math.round(sumNow() * 100) / 100, eq2 = (a, b) => a && b && Math.abs(a - b) < .01;
+    if (items.length && amount && !eq2(amount, S0) && !eq2(amount, sub) && (eq2(payV, S0) || eq2(calc, S0))) amount = S0; }
   // OCR onarımı (ara toplam ya da toplamla sağlama): toplamdan büyük tek bir ürün fiyatı yanlış okunmuştur ("89.99" → "891.00");
   // fiyatı hiç okunamayan tek bir ürün varsa eksik tutar onundur. İkisi de diğer ürünler toplamdan düşülerek bulunur.
   const ref = sub || amount, tot = () => items.reduce((a, x) => a + x.price, 0), r2 = v => Math.round(v * 100) / 100;
@@ -2966,6 +2996,14 @@ function parseReceipt(text, retPass){
     const targets = [...new Set([sub && sub > amount ? sub : 0, amount].filter(x => x > 0).map(x => Math.round(x * 100)))];
     let done = false;
     for (const C of targets) if (solve(C)){ use(); done = true; break; }
+    if (!done){
+      // Tutmuyorsa: tek bir ürünün fiyatında OCR tek rakamı bozmuş olabilir ("89,99" → "89,39"); hedeften diğerleri düşülünce kalan,
+      // o ürünün okunan fiyatından tek rakamla ayrılıyorsa doğrusu odur.
+      const od = (a, b) => { const x = a.toFixed(2), y = b.toFixed(2); return x.length === y.length && [...x].filter((c, i) => c !== y[i]).length === 1; };
+      fix: for (const C of targets) for (const it of items){ if (it.lock) continue;
+        const rem = Math.round(C - (Math.round(sumNow() * 100) - Math.round(it.price * 100))) / 100;
+        if (rem > 0 && od(rem, it.price)){ it.price = it.list = rem; done = true; break fix; } }
+    }
     if (!done && items.length >= 2){
       // Tutmuyorsa: alt satırla doğrulanmamış tek bir "ürün" aslında ürün değildir (OCR'ın bozduğu detay satırı, "Or1jinal $30").
       // Onsuz toplam tam tutuyorsa o satır atılır.
