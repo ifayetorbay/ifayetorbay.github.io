@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026200946';</script>
-<script src="heybe-web.js?v=20261026200946"></script>
+<script>window.HEYBE_VER = '20261026233835';</script>
+<script src="heybe-web.js?v=20261026233835"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -375,6 +375,26 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .gchk[aria-pressed="true"]{background:var(--pos);border-color:var(--pos)}
 .grow .x{width:30px;height:30px}
 .srow2{display:flex;align-items:center}
+.swr>.srow2{position:relative;z-index:1;background:var(--row-bg,var(--surface));touch-action:pan-y;transition:transform .2s ease}
+.swr>.srow2.drag{transition:none}
+.sexp+.swr,.swr+.sexp{border-top:1px solid var(--line)}
+.sexp{background:var(--sunk)}
+.sexp.anim{animation:sexpIn .26s ease-out}
+@keyframes sexpIn{from{opacity:0;transform:translateY(-8px)}}
+.sexp .lline:first-child{border-top:0}
+.sexpa{display:flex;gap:8px;flex-wrap:wrap;padding:8px 14px 12px 64px}
+.sexph{margin:0;padding:10px 14px 0 64px}
+.lline.hit{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.chev{display:inline-block;margin-left:6px;font-size:.95em;color:var(--accent-text);transform:rotate(-90deg);transition:transform .2s}
+[aria-expanded=true] .chev{transform:none}
+.pseg{position:relative;display:flex;background:var(--sunk);border-radius:16px;padding:4px;margin:2px 0 14px}
+.pseg::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:12px;background:var(--accent);box-shadow:0 6px 16px -6px var(--accent);transform:translateX(calc(var(--i,0)*100%));transition:transform .32s cubic-bezier(.3,1.35,.5,1)}
+.pseg button{position:relative;z-index:1;flex:1;border:0;background:none;padding:9px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:700;font-size:.86rem;color:var(--muted);transition:color .2s}
+.pseg .pic{font-size:1.4rem;line-height:1;transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.pseg button[aria-pressed=true]{color:#fff}
+.pseg button[aria-pressed=true] .pic{transform:scale(1.18)}
+.pbadge{position:absolute;top:3px;left:calc(50% + 10px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--neg);color:#fff;font-size:.7rem;line-height:18px;font-weight:800;box-shadow:0 0 0 2px var(--sunk)}
+@media (prefers-reduced-motion:reduce){.pseg::before,.pseg .pic,.chev{transition:none}.sexp.anim{animation:none}}
 .srow2+.srow2{border-top:1px solid var(--line)}
 .srow2 .row{flex:1;min-width:0}
 .tfchip{flex:none;margin-right:12px;border:1.5px solid var(--line);background:none;border-radius:99px;padding:5px 10px;font-size:.78rem;font-weight:700;color:var(--muted)}
@@ -1020,7 +1040,7 @@ function render(){
   v.innerHTML = tab === 'list' ? viewList(C) : tab === 'settle' ? viewSettle(C) : tab === 'sum' ? viewSum(C) : tab === 'shop' ? viewShop() : viewTrip();
   const viewKey = tab + '|' + (tab === 'shop' ? shopView : '') + '|' + S.tid;
   if (viewKey !== lastView){ lastView = viewKey; animateEnter(v); }
-  if (flashId){ const el = v.querySelector(`[data-edit="${flashId}"], [data-shop="${flashId}"]`), big = isBig(S.entries.find(x => x.id === flashId)); flashId = null;
+  if (flashId){ const el = v.querySelector(`[data-edit="${flashId}"], [data-shop="${flashId}"], [data-shopx="${flashId}"]`), big = isBig(S.entries.find(x => x.id === flashId)); flashId = null;
     if (el && !calm()){ const c = big ? 'flashbig' : 'flash'; el.classList.add(c); setTimeout(() => el.classList.remove(c), 1500); } if (big) bigPulse(); }
   save();
 }
@@ -3348,62 +3368,22 @@ function viewMine(){
     + `</div><h2>🧍 Sadece bana harcamalar</h2>` + ((SH.solo || []).length ? `<div class="list">` + SH.solo.slice().sort((a, b) => b.at - a.at).map(x => `<button class="row" data-solo="${x.id}"><span class="ic">${iconOf(x)}</span>
         <span class="mid"><span class="d">${esc(x.desc)}</span><span class="m">${dayLabel(x.at)}</span></span><span class="amt num"><b>${money(x.amount, x.cur)}</b></span></button>`).join('') + `</div>`
         : `<p class="hint">Kendi kahven, kendi taksin gibi bölüşülmeyen harcamaları Harcamalar sekmesinde <b>+ Harcama</b> → <b>🔒 Sadece bana</b> ile ekle; bu özete girer, kimse görmez.</p>`)
-    + `<p class="hint">Ortak harcamalarda senin payın + sadece sana ait alışveriş ve harcamalar. Bu özet sadece sende görünür.</p>`;
-}
-function viewShop(){
-  const opt = [['list', '🛍️ Alışveriş'], ['items', '🧾 Ürünler'], ['gifts', '🎁 Hediye'], ['mine', '👤 Özetim']];
-  const segs = `<div class="seg wide four" role="group" aria-label="Görünüm">${opt.map(([k, l]) => `<button type="button" data-shopview="${k}" aria-pressed="${shopView === k}">${l}</button>`).join('')}</div>`;
-  return `<p class="privline">🔒 <b>Kişisel</b> · bu sekmeyi sadece sen görürsün</p>` + segs + airportHtml() + (shopView === 'mine' ? viewMine() : shopView === 'items' ? viewItems() : shopView === 'gifts' ? viewGifts() : viewShopList());
-}
-// 🧾 Ürünler: bütün fişlerdeki ürünler, mağaza mağaza.
-// Ürünler: fişlerden (ya da elle) eklenen ürünler. Ürün ya da mağaza adıyla aranır; tarihe göre mağaza mağaza,
-// ya da düz liste olarak en pahalıdan ucuza veya Türkiye fiyatına göre en kârlıdan (tax-free dahil) sıralanır.
-let itemQ = '', itemSort = 'date', forgetSure = false;
-function itemRows(){
-  const {ref} = shopCalc(), out = [];
-  for (const i of SH.items) for (const l of i.lines || []){
-    const eur = shopSign(i) * (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)), net = eur * (1 - (ref[i.id] || 0) / (shopEur(i) || 1)) * S.trip.rate;
-    out.push({i, l, eur, net, gain:l.tr > 0 && !i.ret ? l.tr - net : null});
-  }
-  return out;
-}
-function viewItems(){
-  const all = itemRows();
-  if (!all.length) return `<div class="card done">Henüz ürün yok. 🧾<br>Alışveriş eklerken fişin fotoğrafını çekip <b>✨ Fişten doldur</b>'a basarsan fişteki ürünler burada listelenir. Alışverişi <b>🛍️ Alışveriş</b> sekmesinden eklersin; ürünleri o alışverişin içinden elle de yazabilirsin.</div>`;
-  const hasTR = all.some(r => r.gain !== null);
-  if (itemSort === 'gain' && !hasTR) itemSort = 'date';
-  const sorts = [['date', '📅 Tarih'], ['price', '💶 En pahalı'], ...(hasTR ? [['gain', '🇹🇷 En kârlı']] : [])];
-  return `<div class="isearch"><input class="inp" id="itemQ" type="search" placeholder="🔍 Ürün ya da mağaza ara (fişteki yazıyla da)" value="${esc(itemQ)}" autocomplete="off" enterkeyhint="search">
-    <div class="seg wide" role="group" aria-label="Sıralama">${sorts.map(([k, l]) => `<button type="button" data-isort="${k}" aria-pressed="${itemSort === k}">${l}</button>`).join('')}</div></div>
-    <div id="itemRes">${itemResults(all)}</div>`
-    + (RC_LEARN.size || RC_LINES.size ? `<p class="hint">📚 Düzeltmelerinden öğrendiklerim: ${RC_LEARN.size} kelime, ${RC_LINES.size} ürün adı · <button class="link" data-act="forgetlearn">${forgetSure ? 'Emin misin? Hepsini unut' : 'unut'}</button></p>` : '')
+    + `<p class="hint">Ortak harcamalarda senin payın + sadece sana ait alışveriş ve harcamalar. Bu özet sadece sende görünür.</p>`
+    + (RC_LEARN.size || RC_LINES.size ? `<p class="hint">📚 Fiş düzeltmelerinden öğrendiklerim: ${RC_LEARN.size} kelime, ${RC_LINES.size} ürün adı · <button class="link" data-act="forgetlearn">${forgetSure ? 'Emin misin? Hepsini unut' : 'unut'}</button></p>` : '')
     + (RC_SHARED.size ? `<p class="hint">🌍 Ortak sözlük: arkadaşlarının ve Heybe kullanıcılarının öğrettiği ${RC_SHARED.size} kelime de kullanılıyor.</p>` : '');
 }
-function itemResults(all = itemRows()){
-  // Arama harf işaretlerinden ve I/ı farkından bağımsız: "tailleur" fişteki "TAILLEUR"u, "cafe" "CAFÉ"yi bulur.
-  const fold = t => String(t || '').toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
-  const q = fold(itemQ.trim()), hit = t => fold(t).includes(q);
-  const rows = q ? all.filter(r => hit(r.l.name) || hit(r.l.orig) || hit(r.i.store) || hit(r.i.outlet)) : all;
-  if (!rows.length) return `<p class="hint">“${esc(itemQ.trim())}” ile eşleşen ürün yok.</p>`;
-  const nShop = new Set(rows.map(r => r.i.id)).size;
-  let h = `<p class="hint">${rows.length} ürün · ${nShop} fiş${itemSort === 'date' ? '. Bir mağazaya dokunarak ürünleri düzeltebilirsin.' : ''}</p>`;
-  if (itemSort === 'date'){
-    const by = new Map();
-    rows.slice().sort((a, b) => b.i.at - a.i.at).forEach(r => { if (!by.has(r.i.id)) by.set(r.i.id, []); by.get(r.i.id).push(r); });
-    for (const [, list] of by){
-      const i = list[0].i;
-      h += `<div class="day"><span lang="en">${esc(i.store)}</span> · ${dayLabel(i.at)}</div>
-      <div class="list"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${i.lines.length} ürün${i.ret ? ' · ↩️ ürün iadesi' : ''}</span><span class="m">${esc(i.outlet || '')}</span></span><span class="amt num"><b>${money(shopAmt(i), i.cur)}</b></span></button>
-      ${list.map(r => `<div class="lline"><span>${lineName(r.l.name)}${r.l.tr > 0 && !i.ret ? `<small>${trBadge({tr:r.l.tr, net:r.net})}</small>` : ''}</span><b class="num">${money(shopSign(i) * r.l.price, i.cur)}</b></div>`).join('')}</div>`;
-    }
-    return h;
-  }
-  // Düz liste: en pahalı ya da en kârlı (Türkiye fiyatı girilmemiş ürünler kârlı sıralamasında en altta).
-  const list = rows.slice().sort(itemSort === 'price' ? (a, b) => b.eur - a.eur : (a, b) => (b.gain ?? -Infinity) - (a.gain ?? -Infinity) || b.eur - a.eur);
-  return h + `<div class="list">` + list.map(r => `<button class="row" data-shop="${r.i.id}">${brandTile(r.i.store)}<span class="mid"><span class="d">${lineName(r.l.name)}</span>
-      <span class="m"><span lang="en">${esc(r.i.store)}</span> · ${dayLabel(r.i.at)}${r.i.ret ? ' · ↩️ ürün iadesi' : ''}</span>${r.gain !== null ? `<span class="m tag">${trBadge({tr:r.l.tr, net:r.net})} · ${r.gain >= 0 ? `≈ ${nf0.format(r.gain)} ₺ kâr` : `≈ ${nf0.format(-r.gain)} ₺ fazla`}</span>` : ''}</span>
-      <span class="amt num"><b>${money(shopSign(r.i) * r.l.price, r.i.cur)}</b>${r.i.cur !== 'EUR' ? `<small>${e0(r.eur)}</small>` : ''}</span></button>`).join('') + `</div>`;
+// Kişisel sekmesinin üç görünümü. Seçilinin arkasındaki renkli vurgu yeni seçilene kayar (psegFrom: önceki sıra).
+// Rozetler: tax-free formu bekleyen mağaza sayısı ve henüz alınmamış hediye sayısı.
+const PSEG = [['list', '🛍️', 'Alışveriş'], ['gifts', '🎁', 'Hediye'], ['mine', '👤', 'Özetim']];
+let psegFrom = null;
+function viewShop(){
+  if (!PSEG.some(x => x[0] === shopView)) shopView = 'list';
+  const {ref} = shopCalc(), idx = PSEG.findIndex(x => x[0] === shopView), from = psegFrom === null ? idx : psegFrom; psegFrom = null;
+  const badge = {list:new Set(SH.items.filter(i => !i.ret && ref[i.id] > 0 && tfStep(i) < 3).map(shopGroup)).size, gifts:SH.gifts.filter(g => !g.done).length};
+  const segs = `<div class="pseg" role="group" aria-label="Görünüm" style="--i:${from}" data-to="${idx}">${PSEG.map(([k, ic, l]) => `<button type="button" data-shopview="${k}" aria-pressed="${shopView === k}"><span class="pic" aria-hidden="true">${ic}</span>${l}${badge[k] ? `<span class="pbadge" aria-label="${badge[k]} bekleyen">${badge[k]}</span>` : ''}</button>`).join('')}</div>`;
+  return `<p class="privline">🔒 <b>Kişisel</b> · bu sekmeyi sadece sen görürsün</p>` + segs + airportHtml() + (shopView === 'mine' ? viewMine() : shopView === 'gifts' ? viewGifts() : viewShopList());
 }
+let forgetSure = false;
 // 🎁 Hediye listesi: gitmeden kime ne alınacağı yazılır, alınınca işaretlenir.
 let giftDraft = {who:'', what:'', est:''};
 function viewGifts(){
@@ -3467,6 +3447,70 @@ function opSummary(ref){
       ${opLogo(o.op)}<span class="mid"><b>${esc(opName(o.op))}</b><span class="m">${o.n} form${o.c[0] ? ` · ${o.c[0]} alınmadı` : ''}${o.c[1] ? ` · ${o.c[1]} onaylatılacak` : ''}${o.c[2] ? ` · ${o.c[2]} iade bekliyor` : ''}${o.c[3] ? ` · ${o.c[3]} iade alındı` : ''}${o.rets ? ` · ${o.rets} ürün iadesi düşüldü` : ''}</span></span><b class="num">≈ ${e0(o.ref)}</b></button>`).join('')
     + `</div>${L.length > 1 ? `<div class="ln num"><span>Toplam</span><b>≈ ${e0(L.reduce((a, o) => a + o.ref, 0))}</b></div>` : ''}${L.some(o => o.op === '') ? `<p class="tip">Şirketi seçmek için satırdaki tax-free düğmesine dokun; formun üstünde yazar.</p>` : ''}</section>`;
 }
+// Alışveriş satırları (arama kutusuna yazıldıkça yalnız bu kısım yenilenir). Satıra dokununca ürünleri açılır;
+// sola/sağa kaydırınca "Sil" görünür. Aramada eşleşen alışverişler açık gelir, eşleşen ürün vurgulanır.
+let shopQ = '', shopOpen = new Set(), shopJust = null;
+const foldTR = t => String(t || '').toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
+function shopRowsHtml(){
+  const {T, ref, short} = shopCalc(), q = foldTR(shopQ.trim()), hit = t => !!q && foldTR(t).includes(q);
+  const match = i => !q || hit(i.store) || hit(i.outlet) || (i.lines || []).some(l => hit(l.name) || hit(l.orig));
+  const byOutlet = {};
+  let h = '';
+  if (shopOpF !== null) h += `<p class="hint">Sadece <b>${esc(opName(shopOpF))}</b> gösteriliyor · <button class="link" data-opf="${shopOpF}">hepsini göster</button></p>`;
+  SH.items.filter(i => (shopOpF === null || (ref[i.id] > 0 && (i.op || '') === shopOpF)) && match(i)).sort((a, b) => b.at - a.at).forEach(i => { const k = i.outlet || 'Diğer mağazalar'; (byOutlet[k] = byOutlet[k] || []).push(i); });
+  for (const [o, list] of Object.entries(byOutlet)){
+    h += `<div class="day"><span lang="en">${esc(o)}</span> · ${e0(list.reduce((a, i) => a + shopEur(i), 0))}</div><div class="list">` + list.map(i => { const open = !!q || shopOpen.has(i.id); return shopWrap(i, (() => {
+      const r = ref[i.id], sp = tfStep(i);
+      if (i.ret) return `<div class="srow2"><button class="row ret" data-shopx="${i.id}" aria-expanded="${open}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}<span class="chev" aria-hidden="true">▾</span></span>
+          <span class="m">${dayLabel(i.at)} · <b class="retb">↩️ Ürün iadesi</b>${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>
+          <span class="m">${r < 0 ? `tax-free ${e0(r)} (formdan düşüldü)` : retLink[i.id] && tfLost.has(retLink[i.id]) ? 'bu iadeyle form alt sınırın altına düştü; tax-free kalmadı' : 'tax-free’ye etkisi yok'}</span></span>
+          <span class="amt num"><b>${money(shopAmt(i), i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span></button></div>`;
+      if (tfLost.has(shopGroup(i)) && !i.ret) return `<div class="srow2"><button class="row" data-shopx="${i.id}" aria-expanded="${open}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}<span class="chev" aria-hidden="true">▾</span></span>
+          <span class="m">${dayLabel(i.at)} · ↩️ bir kısmı iade edildi</span><span class="m"><b class="retb">Tax-free kalmadı:</b> iade sonrası tutar ${T.name} alt sınırının (${money(T.min, T.cur)}) altında; mağazada formu iptal ettir.</span></span>
+          <span class="amt num"><b>${money(i.amount, i.cur)}</b></span></button></div>`;
+      return `<div class="srow2"><button class="row" data-shopx="${i.id}" aria-expanded="${open}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}<span class="chev" aria-hidden="true">▾</span></span>
+          ${r > 0 ? `<span class="amtin num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? ` · ${e0(shopEur(i))}` : ''}</span>` : ''}<span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}${Object.values(retLink).includes(shopGroup(i)) ? ' · ↩️ bir kısmı iade edildi' : ''}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
+          ${r > 0 ? '' : `<span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span>`}</button>
+        ${r > 0 ? `<button class="tfbox" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${i.op ? `<span class="tfop">${opLogo(i.op)}${esc(opName(i.op))}</span>` : ''}<span class="tfchip t${sp}">${TF_CHIP[sp]}</span></button>` : ''}</div>`;
+    })(), open, ref, hit); }).join('') + `</div>`;
+  }
+  if (q && !h) return `<p class="hint">“${esc(shopQ.trim())}” ile eşleşen alışveriş yok.</p>`;
+  return h;
+}
+function shopWrap(i, row, open, ref, hit){
+  return `<div class="swr sshop"><button class="swdel l" data-delshop="${i.id}" tabindex="-1">Sil</button><button class="swdel r" data-delshop="${i.id}" tabindex="-1">Sil</button>${row}</div>`
+    + (open ? shopExpHtml(i, ref[i.id], hit) : '');
+}
+// Açılan alışveriş: ürünler fiş sırasıyla; Türkiye fiyatı girilmişse tax-free payı düşülmüş fiyata göre ucuz/pahalı.
+function shopExpHtml(i, refI, hit){
+  const keep = 1 - (refI > 0 ? refI : 0) / (shopEur(i) || 1), photo = getShopPhoto(i.id);
+  const rows = (i.lines || []).map(l => {
+    const net = shopSign(i) * (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)) * keep * S.trip.rate;
+    return `<div class="lline${hit(l.name) || hit(l.orig) ? ' hit' : ''}"><span>${lineName(l.name)}${l.tr > 0 && !i.ret ? `<small>${trBadge({tr:l.tr, net})}</small>` : ''}</span><b class="num">${money(shopSign(i) * l.price, i.cur)}</b></div>`;
+  }).join('');
+  return `<div class="sexp${shopJust === i.id ? ' anim' : ''}">${rows || `<p class="hint sexph">Ürün eklenmemiş. Fişin fotoğrafından ya da elle <b>✏️ Düzenle</b>’den ekleyebilirsin.</p>`}
+    <div class="sexpa"><button class="btn sm" data-shop="${i.id}">✏️ Düzenle</button>${photo ? `<button class="btn sm" data-shopphoto="${i.id}">🧾 Fişi gör</button>` : ''}</div></div>`;
+}
+// Kaydırarak silinen alışveriş birkaç saniye "Geri al" ile geri getirilebilir; süre dolunca fiş fotoğrafı da silinir.
+let shopUndo = null;
+function finishShopUndo(){ if (!shopUndo) return; clearTimeout(shopUndo.timer); setShopPhoto(shopUndo.it.id, null); shopUndo = null; }
+function shopDelete(id){
+  const run = () => {
+    const k = SH.items.findIndex(x => x.id === id); if (k < 0) return;
+    finishShopUndo();
+    const it = SH.items.splice(k, 1)[0]; shopOpen.delete(id); swOpen = null; saveShop(); render();
+    shopUndo = {it, k, tid:S.tid, timer:setTimeout(finishShopUndo, 6000)};
+    toast(`${it.store} silindi`, {act:'shopundo', label:'Geri al', ms:6000});
+  };
+  const box = document.querySelector(`.swr [data-delshop="${id}"]`)?.closest('.swr');
+  if (box && !calm() && !box.dataset.going){
+    const ex = box.nextElementSibling; if (ex && ex.classList.contains('sexp')) ex.remove();
+    box.dataset.going = '1'; box.style.height = box.offsetHeight + 'px'; void box.offsetHeight;
+    box.classList.add('going'); box.style.height = '0px';
+    return setTimeout(run, 230);
+  }
+  run();
+}
 function viewShopList(){
   const {T, ref, short, total, refund} = shopCalc();
   const grp = f => new Set(SH.items.filter(i => ref[i.id] > 0 && f(i)).map(shopGroup)).size;
@@ -3491,25 +3535,8 @@ function viewShopList(){
     + (tfOpen || tfWait ? `<p class="tip">🧾 ${tfOpen ? `<b>${tfOpen}</b> mağazada tax-free formu henüz alınmadı` : ''}${tfOpen && tfWait ? ' · ' : ''}${tfWait ? `<b>${tfWait}</b> iade bekliyor` : ''}.</p>` : '')
     + `</section>`;
   if (!SH.items.length) return h + `<div class="card done">Henüz alışveriş yok. 🛍️<br>Sağ alttaki <b>+ Alışveriş</b> ile mağazayı ve tutarı ekle; fişin fotoğrafını çekersen tutarı ben okurum.</div>`;
-  const byOutlet = {};
-  if (shopOpF !== null) h += `<p class="hint">Sadece <b>${esc(opName(shopOpF))}</b> gösteriliyor · <button class="link" data-opf="${shopOpF}">hepsini göster</button></p>`;
-  SH.items.filter(i => shopOpF === null || (ref[i.id] > 0 && (i.op || '') === shopOpF)).sort((a, b) => b.at - a.at).forEach(i => { const k = i.outlet || 'Diğer mağazalar'; (byOutlet[k] = byOutlet[k] || []).push(i); });
-  for (const [o, list] of Object.entries(byOutlet)){
-    h += `<div class="day"><span lang="en">${esc(o)}</span> · ${e0(list.reduce((a, i) => a + shopEur(i), 0))}</div><div class="list">` + list.map(i => {
-      const r = ref[i.id], sp = tfStep(i);
-      if (i.ret) return `<div class="srow2"><button class="row ret" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
-          <span class="m">${dayLabel(i.at)} · <b class="retb">↩️ Ürün iadesi</b>${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>
-          <span class="m">${r < 0 ? `tax-free ${e0(r)} (formdan düşüldü)` : retLink[i.id] && tfLost.has(retLink[i.id]) ? 'bu iadeyle form alt sınırın altına düştü; tax-free kalmadı' : 'tax-free’ye etkisi yok'}</span></span>
-          <span class="amt num"><b>${money(shopAmt(i), i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span></button></div>`;
-      if (tfLost.has(shopGroup(i)) && !i.ret) return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
-          <span class="m">${dayLabel(i.at)} · ↩️ bir kısmı iade edildi</span><span class="m"><b class="retb">Tax-free kalmadı:</b> iade sonrası tutar ${T.name} alt sınırının (${money(T.min, T.cur)}) altında; mağazada formu iptal ettir.</span></span>
-          <span class="amt num"><b>${money(i.amount, i.cur)}</b></span></button></div>`;
-      return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
-          ${r > 0 ? `<span class="amtin num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? ` · ${e0(shopEur(i))}` : ''}</span>` : ''}<span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}${Object.values(retLink).includes(shopGroup(i)) ? ' · ↩️ bir kısmı iade edildi' : ''}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
-          ${r > 0 ? '' : `<span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span>`}</button>
-        ${r > 0 ? `<button class="tfbox" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${i.op ? `<span class="tfop">${opLogo(i.op)}${esc(opName(i.op))}</span>` : ''}<span class="tfchip t${sp}">${TF_CHIP[sp]}</span></button>` : ''}</div>`;
-    }).join('') + `</div>`;
-  }
+  if (SH.items.length > 1) h += `<div class="isearch"><input class="inp" id="shopQ" type="search" placeholder="🔍 Ürün ya da mağaza ara (fişteki yazıyla da)" value="${esc(shopQ)}" autocomplete="off" enterkeyhint="search"></div>`;
+  h += `<div id="shopRes">${shopRowsHtml()}</div>`;
   h += opSummary(ref);
   h += `<h2>Alışveriş raporu</h2><div class="two"><button class="btn" data-act="shoppdf">📄 PDF indir</button><button class="btn" data-act="shopxlsx">📊 Excel indir</button></div>
     <p class="hint">Özet, mağazalar, yerler, tax-free durumu, fiş fiş ürünler ve hediye listesi. Sadece senin alışverişlerin.</p>`;
@@ -4370,7 +4397,7 @@ function swClose(){ if (swOpen && swOpen.isConnected) swSet(swOpen, 0); swOpen =
 document.addEventListener('pointerdown', ev => {
   swEat = false;
   if (isRO()){ sw = null; return; }
-  const row = ev.target.closest('.swr > .row');
+  const row = ev.target.closest('.swr > .row, .swr > .srow2');
   if (swOpen && row !== swOpen && !ev.target.closest('.swdel')){ swClose(); if (row) swEat = true; }
   if (!row || ev.button > 0) return;
   // Arkasında görünür "Sil" yoksa (ör. yetkisi olmayana katılımcı satırı) satır kaymaz, boşluk açılmaz.
@@ -4433,13 +4460,13 @@ function showPhoto(src){
 
 // ---- olaylar ----
 document.addEventListener('click', ev => {
-  if (swEat){ swEat = false; if (ev.target.closest('.swr > .row')) return; }
-  if (swOpen && ev.target.closest('.swr > .row') === swOpen && !ev.target.closest('.swdel')){ swClose(); return; }
+  if (swEat){ swEat = false; if (ev.target.closest('.swr > .row, .swr > .srow2')) return; }
+  if (swOpen && ev.target.closest('.swr > .row, .swr > .srow2') === swOpen && !ev.target.closest('.swdel')){ swClose(); return; }
   const t = ev.target.closest('button, .scrim, img[data-act]'); if (!t) return;
   if (t.classList.contains('scrim') && ev.target !== t) return;
   const d = t.dataset;
   if (d.act !== 'archive') confirmArc = false;
-  if (isRO() && (d.edit || d.del || d.delp || d.payto || d.shop || d.solo || d.gift || d.giftrm || d.tf || d.emo || RO_ACTS.has(d.act))){
+  if (isRO() && (d.edit || d.del || d.delshop || d.delp || d.payto || d.shop || d.solo || d.gift || d.giftrm || d.tf || d.emo || RO_ACTS.has(d.act))){
     toast('🗄️ Bu seyahat arşivde, sadece görüntülenebilir. Değiştirmek için Seyahat sekmesinden arşivden çıkar.'); return;
   }
   if (!isManager() && (d.delp || d.fam || d.admin || MGR_ACTS.has(d.act))){ mgrOnly(); return; }
@@ -4460,8 +4487,14 @@ document.addEventListener('click', ev => {
   if (d.del){ swipeDelete(d.del); return; }
   if (d.payto){ startPay(d.payfrom, d.payto); return; }
   if (d.shop){ startShop(SH.items.find(i => i.id === d.shop)); return; }
-  if (d.shopview){ shopView = d.shopview; render(); return; }
-  if (d.isort){ itemSort = d.isort; render(); return; }
+  if (d.shopview){
+    psegFrom = PSEG.findIndex(x => x[0] === shopView); shopView = d.shopview; render();
+    requestAnimationFrame(() => { const g = document.querySelector('.pseg[data-to]'); if (g) g.style.setProperty('--i', g.dataset.to); });
+    return;
+  }
+  if (d.shopx){ if (shopOpen.has(d.shopx)) shopOpen.delete(d.shopx); else { shopOpen.add(d.shopx); shopJust = d.shopx; } render(); shopJust = null; return; }
+  if (d.delshop){ shopDelete(d.delshop); return; }
+  if (d.shopphoto){ const ph = getShopPhoto(d.shopphoto); if (ph) showPhoto(ph); return; }
   if (d.shopret !== undefined && form && form.mode === 'shop'){ form.ret = d.shopret === '1'; drawSheetKeep(); return; }
   if (d.opf !== undefined){ shopOpF = shopOpF === d.opf ? null : d.opf; render(); return; }
   if (d.solo){ startSolo(SH.solo.find(x => x.id === d.solo)); return; }
@@ -4588,6 +4621,13 @@ document.addEventListener('click', ev => {
         logEvent(`geri getirdi: ${e.kind === 'expense' ? e.desc : 'kayıt'}`); render(); toast('Geri alındı');
       }
       break;
+    case 'shopundo':
+      if (shopUndo && shopUndo.tid === S.tid){
+        const {it, k} = shopUndo; clearTimeout(shopUndo.timer); shopUndo = null;
+        if (!SH.items.some(x => x.id === it.id)) SH.items.splice(Math.min(k, SH.items.length), 0, it);
+        saveShop(); render(); toast('Geri alındı');
+      }
+      break;
     case 'save': submit(); break;
     case 'rate': fetchRate(true); break;
     case 'viewphoto': showPhoto(form.photo); break;
@@ -4671,7 +4711,7 @@ function drawSheetKeep(){
 document.addEventListener('input', ev => {
   const el = ev.target;
   if (el.id === 'planInp' && planDraft){ planDraft.v = el.value; return; }
-  if (el.id === 'itemQ'){ itemQ = el.value; const r = document.getElementById('itemRes'); if (r) r.innerHTML = itemResults(); return; }
+  if (el.id === 'shopQ'){ shopQ = el.value; const r = document.getElementById('shopRes'); if (r) r.innerHTML = shopRowsHtml(); return; }
   if (el.id === 'gWho' || el.id === 'gWhat' || el.id === 'gEst'){ giftDraft[{gWho:'who', gWhat:'what', gEst:'est'}[el.id]] = el.value; return; }
   if (form){
     if (el.id === 'fRate'){ const r = parseAmt(el.value); if (r > 0) form.rate = r; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); return; }
