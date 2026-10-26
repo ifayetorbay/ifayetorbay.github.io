@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026125855';</script>
-<script src="heybe-web.js?v=20261026125855"></script>
+<script>window.HEYBE_VER = '20261026131149';</script>
+<script src="heybe-web.js?v=20261026131149"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -190,6 +190,12 @@ details.more .list{background:var(--bg);--row-bg:var(--bg)}
 .step button{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:none;font-weight:700;font-size:1rem}
 .step b{min-width:28px;text-align:center}
 .whochips{display:flex;flex-direction:column;gap:10px}
+.seg.kinds button{font-size:.82rem;padding:9px 4px;line-height:1.2}
+.row.solo{background:color-mix(in srgb,var(--sunk) 55%,var(--surface))}
+.row.solo .m{color:var(--accent-text)}
+.isearch{display:flex;flex-direction:column;gap:8px}
+.isearch .inp{padding:10px 14px}
+.row .tag{display:block;font-size:.78rem;margin-top:1px}
 .emoh{margin:12px 0 6px}
 .emogrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .emogrid button{aspect-ratio:1;font-size:1.45rem;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:0}
@@ -955,10 +961,10 @@ function render(){
   document.body.classList.toggle('nomgr', !isManager());
   { const sb = document.querySelector('nav.tabs [data-tab=settle]'); sb.hidden = isFamily(); if (isFamily() && tab === 'settle') tab = 'list';
     document.querySelector('nav.tabs .in').style.gridTemplateColumns = `repeat(${isFamily() ? 4 : 5},1fr)`; }
-  fab.hidden = tab === 'trip' || isRO() || (tab === 'shop' && shopView === 'items');
-  const shopFab = {mine:['+ Sadece bana', 'addsolo'], gifts:['+ Hediye', 'giftfocus']}[shopView] || ['+ Alışveriş', 'addshop'];
-  fab.textContent = tab === 'settle' ? '+ Ödeme' : tab === 'shop' ? shopFab[0] : '+ Harcama';
-  fab.dataset.act = tab === 'settle' ? 'pay' : tab === 'shop' ? shopFab[1] : 'add';
+  // Her görünümde tek ekleme yolu: Kişisel'de düğme yalnız Alışveriş'te (Hediye'nin kendi formu var, "Sadece bana" + Harcama'da).
+  fab.hidden = tab === 'trip' || isRO() || (tab === 'shop' && shopView !== 'list');
+  fab.textContent = tab === 'settle' ? '+ Ödeme' : tab === 'shop' ? '+ Alışveriş' : '+ Harcama';
+  fab.dataset.act = tab === 'settle' ? 'pay' : tab === 'shop' ? 'addshop' : 'add';
   const C = compute(S, startOfToday());
   const v = document.getElementById('view');
   S.people.forEach(rememberEmoji);
@@ -1139,7 +1145,8 @@ function viewList(C){
     <div class="v num">${eu(Math.abs(C.kasaLeft))}</div><div class="h">${short ? 'Kasadan harcanan, konulandan fazla. Kasaya para ekleyin.' : `${nm(S.trip.holder)} tutuyor`}</div></div>
     <div class="kacts"><button class="btn sun" data-act="kasa">Kasaya ekle</button>${hasKasa ? `<button class="btn sm" data-act="kasaempty">Kasayı boşalt</button>` : ''}</div></section>`;
   }
-  const es = [...S.entries].sort((a,b) => b.at - a.at);
+  // "Sadece bana" kayıtları bu kişinin özel alanından gelir; yalnız onun listesinde görünür, toplamlara girmez.
+  const es = [...S.entries, ...(SH.solo || []).map(x => ({...x, kind:'solo'}))].sort((a,b) => b.at - a.at);
   if (!es.length) return h + `<div class="card done">Henüz harcama yok. İlk kahveyi kim ısmarlıyor? ☕<br>Sağ alttaki <b>+ Harcama</b> ile başla.</div>`;
   // Önce seyahat günleri (en yeni üstte), en altta "Seyahat öncesi" bölümü.
   const isPre = e => e.kind === 'expense' && phaseOf(e, S) === 'pre';
@@ -1160,6 +1167,9 @@ function viewList(C){
 
 // Her satır sağa ya da sola kaydırılınca arkasındaki "Sil" düğmesi görünür.
 function rowHtml(e){
+  if (e.kind === 'solo') return `<button class="row solo" data-solo="${e.id}"><span class="ic">${iconOf(e)}</span>
+    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">🔒 Sadece sende · bölüşülmez</span></span>
+    <span class="amt num"><b>${money(e.amount, e.cur)}</b>${e.cur === 'EUR' ? '' : `<small>${eu(Math.round(e.amount / e.rate * 100))}</small>`}</span></button>`;
   return `<div class="swr"><button class="swdel l" data-del="${e.id}" tabindex="-1">Sil</button><button class="swdel r" data-del="${e.id}" tabindex="-1">Sil</button>${rowInner(e)}</div>`;
 }
 function rowInner(e){
@@ -1486,9 +1496,10 @@ function drawSheet(){
         // Görünen kısa etiket; asıl seçim üstündeki görünmez kutuda (telefonun kendi listesi açılır).
         `<label class="cursel" data-on="${isOther(f.cur)}"><span>${isOther(f.cur) ? symOf(f.cur) : 'Diğer ▾'}</span><select id="fCur" aria-label="Diğer para birimi"><option value="">Diğer</option>${OTHER_CURS.map(([c, sym, name]) => `<option value="${c}" ${f.cur === c ? 'selected' : ''}>${sym === c ? c : sym + ' ' + c} · ${name}</option>`).join('')}</select></label>`}</div></div>
       <span class="note num" id="fConv">${convNote()}</span></div>`;
-  // Yeni kayıtta en üstte tür seçimi: harcama mı, birine para mı gönderildi.
-  const kindSeg = !isFamily() && ((f.mode === 'expense' && !f.id) || (f.mode === 'transfer' && f.pick))
-    ? `<div class="seg wide" role="group" aria-label="Kayıt türü"><button type="button" data-kind="exp" aria-pressed="${f.mode === 'expense'}">🧾 Harcama</button><button type="button" data-kind="pay" aria-pressed="${f.mode === 'transfer'}">💸 Para gönderdim</button></div>` : '';
+  // Yeni kayıtta en üstte tür seçimi: ortak harcama mı, birine para mı gönderildi, yoksa sadece kendine mi harcandı.
+  const kinds = [['exp', '🧾 Harcama', 'expense'], ...(isFamily() ? [] : [['pay', '💸 Para gönderdim', 'transfer']]), ['solo', '🔒 Sadece bana', 'solo']];
+  const kindSeg = (f.mode === 'expense' && !f.id) || (f.mode === 'transfer' && f.pick) || (f.mode === 'solo' && !f.id)
+    ? `<div class="seg wide kinds" role="group" aria-label="Kayıt türü">${kinds.map(([k, l, m]) => `<button type="button" data-kind="${k}" aria-pressed="${f.mode === m}">${l}</button>`).join('')}</div>` : '';
   if (f.mode === 'expense'){
     // Sade form: varsayılanlar hazır gelir, sadece değiştirmek istenene dokunulur.
     const n = f.among.length, everyone = n === S.people.length, cat = catById(f.cat);
@@ -1552,7 +1563,7 @@ function drawSheet(){
     const c = catById(guessCat(f.desc, S.learned));
     body = `<div class="f"><label for="fSolo">Ne için?</label><input class="inp" id="fSolo" placeholder="ör. kendi kahvem, taksi" value="${esc(f.desc)}" autocomplete="off">
         <span class="note" id="fSoloCat">${c.icon} ${c.name}</span></div>` + amountBlock + rateBlock() + `<div class="rows">${dateBlock(f)}</div>
-      <p class="note">🔒 Sadece sende görünür; bölüşülmez, ortak hesaba girmez. “Benim özetim”e eklenir.</p>`;
+      <p class="note">🔒 Bunu kimse görmez, hesaplaşmaya ve ortak bütçeye girmez. Harcamalar listesinde yalnız sende 🔒 ile görünür; Kişisel → Özetim'e eklenir.</p>`;
   } else if (f.mode === 'newtrip'){
     const nk = f.kind || 'friends', fams = nk === 'families';
     body = `<div class="seg wide" role="group" aria-label="Kimlerle">${[['friends','👫 Arkadaşlar'],['family','👨‍👩‍👧 Ailem'],['families','👨‍👩‍👧‍👦 Aileler']].map(([k, l]) => `<button type="button" data-nkind="${k}" aria-pressed="${nk === k}">${l}</button>`).join('')}</div>
@@ -1617,7 +1628,7 @@ function drawSheet(){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? 'Sadece bana · düzenle' : 'Sadece bana harcama', shop: f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
   const saveLbl = {expense:'Kaydet', delperson:'Aktar ve sil', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
@@ -1779,7 +1790,7 @@ function submit(){
     const id = f.id || uid(), old2 = SH.solo.find(x => x.id === id);
     const x = {id, at:atFromDay(f.date, old2 && old2.at), desc:f.desc.trim(), cat:guessCat(f.desc, S.learned), amount:a, cur:f.cur, rate:f.cur === 'EUR' ? 1 : rate};
     if (old2) SH.solo[SH.solo.indexOf(old2)] = x; else SH.solo.push(x);
-    saveShop(); closeSheet(); tab = 'shop'; shopView = 'mine'; render(); return toast(`🧍 ${x.desc} ${money(a, f.cur)} · sadece sende`);
+    saveShop(); closeSheet(); render(); return toast(`🔒 ${x.desc} ${money(a, f.cur)} · sadece sende`);
   }
   if (f.mode === 'shop'){
     if (!f.store.trim()) return fail('Mağaza adını yaz.');
@@ -2448,7 +2459,7 @@ function viewMine(){
         <div class="track"><div class="fill" style="width:${(v * 100 / max).toFixed(1)}%"></div></div></div>`).join('')
     + `</div><h2>🧍 Sadece bana harcamalar</h2>` + ((SH.solo || []).length ? `<div class="list">` + SH.solo.slice().sort((a, b) => b.at - a.at).map(x => `<button class="row" data-solo="${x.id}"><span class="ic">${iconOf(x)}</span>
         <span class="mid"><span class="d">${esc(x.desc)}</span><span class="m">${dayLabel(x.at)}</span></span><span class="amt num"><b>${money(x.amount, x.cur)}</b></span></button>`).join('') + `</div>`
-        : `<p class="hint">Kendi kahven, kendi taksin gibi bölüşülmeyen harcamaları sağ alttaki <b>+ Sadece bana</b> ile ekle; bu özete girer, kimse görmez.</p>`)
+        : `<p class="hint">Kendi kahven, kendi taksin gibi bölüşülmeyen harcamaları Harcamalar sekmesinde <b>+ Harcama</b> → <b>🔒 Sadece bana</b> ile ekle; bu özete girer, kimse görmez.</p>`)
     + `<p class="hint">Ortak harcamalarda senin payın + sadece sana ait alışveriş ve harcamalar. Bu özet sadece sende görünür.</p>`;
 }
 function viewShop(){
@@ -2457,14 +2468,49 @@ function viewShop(){
   return `<p class="privline">🔒 <b>Kişisel</b> · bu sekmeyi sadece sen görürsün</p>` + segs + airportHtml() + (shopView === 'mine' ? viewMine() : shopView === 'items' ? viewItems() : shopView === 'gifts' ? viewGifts() : viewShopList());
 }
 // 🧾 Ürünler: bütün fişlerdeki ürünler, mağaza mağaza.
+// Ürünler: fişlerden (ya da elle) eklenen ürünler. Ürün ya da mağaza adıyla aranır; tarihe göre mağaza mağaza,
+// ya da düz liste olarak en pahalıdan ucuza veya Türkiye fiyatına göre en kârlıdan (tax-free dahil) sıralanır.
+let itemQ = '', itemSort = 'date';
+function itemRows(){
+  const {ref} = shopCalc(), out = [];
+  for (const i of SH.items) for (const l of i.lines || []){
+    const eur = i.cur === 'EUR' ? l.price : l.price / (i.rate || 1), net = eur * (1 - (ref[i.id] || 0) / (shopEur(i) || 1)) * S.trip.rate;
+    out.push({i, l, eur, net, gain:l.tr > 0 ? l.tr - net : null});
+  }
+  return out;
+}
 function viewItems(){
-  const withL = SH.items.filter(i => (i.lines || []).length).sort((a, b) => b.at - a.at);
-  if (!withL.length) return `<div class="card done">Henüz ürün yok. 🧾<br>Alışveriş eklerken fişin fotoğrafını çekip <b>✨ Fişten doldur</b>'a basarsan fişteki ürünler burada listelenir. Alışverişi <b>🛍️ Alışveriş</b> sekmesinden eklersin; ürünleri o alışverişin içinden elle de yazabilirsin.</div>`;
-  const n = withL.reduce((a, i) => a + i.lines.length, 0);
-  return `<p class="hint">${n} ürün · ${withL.length} fiş. Bir mağazaya dokunarak ürünleri düzeltebilirsin.</p>` + withL.map(i => `<div class="day"><span lang="en">${esc(i.store)}</span> · ${dayLabel(i.at)}</div>
-    <div class="list"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${i.lines.length} ürün</span><span class="m">${esc(i.outlet || '')}</span></span><span class="amt num"><b>${money(i.amount, i.cur)}</b></span></button>
-    ${i.lines.map(l => { const keep = 1 - (shopCalc().ref[i.id] || 0) / (shopEur(i) || 1), net = (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)) * keep * S.trip.rate;
-      return `<div class="lline"><span>${esc(l.name)}${l.tr > 0 ? `<small>${trBadge({tr:l.tr, net})}</small>` : ''}</span><b class="num">${money(l.price, i.cur)}</b></div>`; }).join('')}</div>`).join('');
+  const all = itemRows();
+  if (!all.length) return `<div class="card done">Henüz ürün yok. 🧾<br>Alışveriş eklerken fişin fotoğrafını çekip <b>✨ Fişten doldur</b>'a basarsan fişteki ürünler burada listelenir. Alışverişi <b>🛍️ Alışveriş</b> sekmesinden eklersin; ürünleri o alışverişin içinden elle de yazabilirsin.</div>`;
+  const hasTR = all.some(r => r.gain !== null);
+  if (itemSort === 'gain' && !hasTR) itemSort = 'date';
+  const sorts = [['date', '📅 Tarih'], ['price', '💶 En pahalı'], ...(hasTR ? [['gain', '🇹🇷 En kârlı']] : [])];
+  return `<div class="isearch"><input class="inp" id="itemQ" type="search" placeholder="🔍 Ürün ya da mağaza ara" value="${esc(itemQ)}" autocomplete="off" enterkeyhint="search">
+    <div class="seg wide" role="group" aria-label="Sıralama">${sorts.map(([k, l]) => `<button type="button" data-isort="${k}" aria-pressed="${itemSort === k}">${l}</button>`).join('')}</div></div>
+    <div id="itemRes">${itemResults(all)}</div>`;
+}
+function itemResults(all = itemRows()){
+  const q = itemQ.trim().toLocaleLowerCase('tr'), hit = t => String(t || '').toLocaleLowerCase('tr').includes(q);
+  const rows = q ? all.filter(r => hit(r.l.name) || hit(r.i.store) || hit(r.i.outlet)) : all;
+  if (!rows.length) return `<p class="hint">“${esc(itemQ.trim())}” ile eşleşen ürün yok.</p>`;
+  const nShop = new Set(rows.map(r => r.i.id)).size;
+  let h = `<p class="hint">${rows.length} ürün · ${nShop} fiş${itemSort === 'date' ? '. Bir mağazaya dokunarak ürünleri düzeltebilirsin.' : ''}</p>`;
+  if (itemSort === 'date'){
+    const by = new Map();
+    rows.slice().sort((a, b) => b.i.at - a.i.at).forEach(r => { if (!by.has(r.i.id)) by.set(r.i.id, []); by.get(r.i.id).push(r); });
+    for (const [, list] of by){
+      const i = list[0].i;
+      h += `<div class="day"><span lang="en">${esc(i.store)}</span> · ${dayLabel(i.at)}</div>
+      <div class="list"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${i.lines.length} ürün</span><span class="m">${esc(i.outlet || '')}</span></span><span class="amt num"><b>${money(i.amount, i.cur)}</b></span></button>
+      ${list.map(r => `<div class="lline"><span>${esc(r.l.name)}${r.l.tr > 0 ? `<small>${trBadge({tr:r.l.tr, net:r.net})}</small>` : ''}</span><b class="num">${money(r.l.price, i.cur)}</b></div>`).join('')}</div>`;
+    }
+    return h;
+  }
+  // Düz liste: en pahalı ya da en kârlı (Türkiye fiyatı girilmemiş ürünler kârlı sıralamasında en altta).
+  const list = rows.slice().sort(itemSort === 'price' ? (a, b) => b.eur - a.eur : (a, b) => (b.gain ?? -Infinity) - (a.gain ?? -Infinity) || b.eur - a.eur);
+  return h + `<div class="list">` + list.map(r => `<button class="row" data-shop="${r.i.id}">${brandTile(r.i.store)}<span class="mid"><span class="d">${esc(r.l.name)}</span>
+      <span class="m"><span lang="en">${esc(r.i.store)}</span> · ${dayLabel(r.i.at)}</span>${r.gain !== null ? `<span class="m tag">${trBadge({tr:r.l.tr, net:r.net})} · ${r.gain >= 0 ? `≈ ${nf0.format(r.gain)} ₺ kâr` : `≈ ${nf0.format(-r.gain)} ₺ fazla`}</span>` : ''}</span>
+      <span class="amt num"><b>${money(r.l.price, r.i.cur)}</b>${r.i.cur !== 'EUR' ? `<small>${e0(r.eur)}</small>` : ''}</span></button>`).join('') + `</div>`;
 }
 // 🎁 Hediye listesi: gitmeden kime ne alınacağı yazılır, alınınca işaretlenir.
 let giftDraft = {who:'', what:'', est:''};
@@ -2653,7 +2699,7 @@ function removePerson(id, target){
 // Arşivlenen seyahat salt okunurdur: ekleme, düzenleme, silme ve ödeme kapalı; sadece görüntülenir.
 // Ayar seyahatle birlikte buluta gider, herkeste arşivde görünür. Seyahat sekmesinden geri açılabilir.
 const isRO = () => !!(S.trip && S.trip.closed);
-const RO_ACTS = new Set(['add', 'pay', 'addshop', 'addsolo', 'giftfocus', 'addgift', 'kasa', 'kasaempty', 'paid', 'editplan', 'saveplan', 'shoplimit', 'saveshoplimit',
+const RO_ACTS = new Set(['add', 'pay', 'addshop', 'addgift', 'kasa', 'kasaempty', 'paid', 'editplan', 'saveplan', 'shoplimit', 'saveshoplimit',
   'setmode', 'addperson', 'scan', 'plus', 'addline', 'rate', 'copyamt']);
 let confirmArc = false, tripMore = false;   // tripMore: Seyahat kartındaki ••• (arşivle, sil) açık mı
 
@@ -3370,6 +3416,7 @@ document.addEventListener('click', ev => {
   if (d.payto){ startPay(d.payfrom, d.payto); return; }
   if (d.shop){ startShop(SH.items.find(i => i.id === d.shop)); return; }
   if (d.shopview){ shopView = d.shopview; render(); return; }
+  if (d.isort){ itemSort = d.isort; render(); return; }
   if (d.solo){ startSolo(SH.solo.find(x => x.id === d.solo)); return; }
   if (d.gift){ const g = SH.gifts.find(x => x.id === d.gift); g.done = !g.done; saveShop(); render(); if (g.done) toast(`🎁 ${g.who} için alındı`); return; }
   if (d.giftrm){ SH.gifts = SH.gifts.filter(x => x.id !== d.giftrm); saveShop(); render(); return; }
@@ -3435,7 +3482,14 @@ document.addEventListener('click', ev => {
       const x = ((form.extra = form.extra || [])[+d.nfam] = form.extra[+d.nfam] || {}), k = d.fk, min = k === 'size' ? 1 : 0;
       x[k] = (x[k] || min) >= 9 ? min : (x[k] || min) + 1; drawSheetKeep(); return;
     }
-    if (d.kind){ if (d.kind === 'pay' && form.mode !== 'transfer') startPay(); else if (d.kind === 'exp' && form.mode !== 'expense') startExpense(); return; }
+    if (d.kind){
+      // Tür değişince yazılmış tutar, para birimi ve açıklama korunur.
+      const keep = {amount:form.amount || '', cur:form.cur, desc:form.desc || ''};
+      if (d.kind === 'pay' && form.mode !== 'transfer') startPay();
+      else if (d.kind === 'exp' && form.mode !== 'expense'){ startExpense(); Object.assign(form, keep, keep.desc ? {cat:guessCat(keep.desc, S.learned)} : {}); drawSheetKeep(); }
+      else if (d.kind === 'solo' && form.mode !== 'solo') openSheet({mode:'solo', ...keep, rate:null, date:isoDay(Date.now())});
+      return;
+    }
     if (d.pfrom || d.pto){
       if (d.pfrom){ form.from = d.pfrom; if (form.to === d.pfrom){ const p = totalPlan().plan.find(q => q.from === d.pfrom); form.to = p ? p.to : (S.people.find(q => q.id !== d.pfrom) || {}).id; } }
       else form.to = d.pto;
@@ -3450,8 +3504,6 @@ document.addEventListener('click', ev => {
   switch (d.act){
     case 'add': startExpense(); break;
     case 'addshop': startShop(); break;
-    case 'addsolo': startSolo(); break;
-    case 'giftfocus': { const i = document.getElementById('gWho'); if (i){ i.scrollIntoView({block:'center'}); i.focus(); } break; }
     case 'addgift': {
       if (!giftDraft.who.trim() && !giftDraft.what.trim()){ toast('Kime ve ne alacağını yaz.'); break; }
       const est = parseAmt(giftDraft.est);
@@ -3566,6 +3618,7 @@ function drawSheetKeep(){
 document.addEventListener('input', ev => {
   const el = ev.target;
   if (el.id === 'planInp' && planDraft){ planDraft.v = el.value; return; }
+  if (el.id === 'itemQ'){ itemQ = el.value; const r = document.getElementById('itemRes'); if (r) r.innerHTML = itemResults(); return; }
   if (el.id === 'gWho' || el.id === 'gWhat' || el.id === 'gEst'){ giftDraft[{gWho:'who', gWhat:'what', gEst:'est'}[el.id]] = el.value; return; }
   if (form){
     if (el.id === 'fRate'){ const r = parseAmt(el.value); if (r > 0) form.rate = r; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); return; }
