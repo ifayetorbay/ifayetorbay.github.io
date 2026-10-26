@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026131149';</script>
-<script src="heybe-web.js?v=20261026131149"></script>
+<script>window.HEYBE_VER = '20261026131629';</script>
+<script src="heybe-web.js?v=20261026131629"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1225,14 +1225,14 @@ function viewSettle(C){
     <span class="note">${mode === 'min' ? 'Seyahat öncesi + seyahatte, her şey dahil.' : 'Seyahat öncesi + seyahatte, her şey dahil. Her ödeme, kimin harcamasına ortak olduğuna göre.'}${locked ? ' Kur ilk ödemeyle sabitlendi.' : ''}</span>`
     // Daha az ödeme açıkken en üstte uyarı: ödemeler harcamayı yapana değil, birleştirilmiş kişiye gidiyor.
     + (mode === 'min' ? `<div class="callout warn"><b>⚠️ “Daha az ödeme” açık</b><span>Borçlar birleştirildi: bazı ödemeler harcamayı yapan kişiye değil, başka birine gidiyor. Herkesin göndereceği ve alacağı <b>toplam tutar aynı</b>.</span>
-        <button class="btn sm" data-act="setmode" data-m="direct">Doğrudan ödemeye dön (${nDirect} ödeme)</button></div>` : '');
+        ${canSetMode() ? `<button class="btn sm" data-act="setmode" data-m="direct">Doğrudan ödemeye dön (${nDirect} ödeme)</button>${modeNote()}` : '<span class="note">Seyahat başladı; hesaplaşma şekli artık sabit.</span>'}</div>` : '');
   if (!plan.length) h += `<div class="done">Hesaplar tertemiz ✨<br>Kimsenin kimseye borcu yok.</div>`;
   else if (!mine.length) h += `<div class="done">Senin hesabın denk 👌<br>Göndereceğin ya da alacağın bir şey yok.</div>`;
   else h += mine.map(([p, i]) => payHtml(p, i, R)).join('');
   // Doğrudan yöntemdeyken, ödeme sayısı gerçekten azalıyorsa açıklamalı öneri kutusu.
-  if (mode !== 'min' && nShort < nDirect) h += `<div class="callout"><b>💡 ${nDirect} yerine ${nShort} ödemeyle de kapanabilir</b>
+  if (mode !== 'min' && nShort < nDirect && canSetMode()) h += `<div class="callout"><b>💡 ${nDirect} yerine ${nShort} ödemeyle de kapanabilir</b>
     <span>Borçlar birleştirilir: daha az havale yapılır, herkesin toplam tutarı aynı kalır; sadece <b>kime</b> gönderileceği değişir. Seçim herkes için geçerlidir.</span>
-    <button class="btn sm" data-act="setmode" data-m="min">Daha az ödemeye geç</button></div>`;
+    <button class="btn sm" data-act="setmode" data-m="min">Daha az ödemeye geç</button>${modeNote()}</div>`;
   if (!locked) h += `<button class="link" data-act="rate">${rateBusy ? 'Kur güncelleniyor…' : 'Kuru güncelle'}</button>`;
   h += `</section>`;
   if (others.length) h += `<details class="more" id="dOthers" ${openDet.dOthers ? 'open' : ''}><summary>Diğerlerinin ödemeleri (${others.length})</summary><div class="inner"><div class="list">`
@@ -1427,6 +1427,11 @@ const isManager = () => isTripAdmin() || !!(myUid && (S.trip.admins || []).inclu
 const ownerName = () => { const p = S.people.find(q => q.uid && q.uid === S.trip.ownerUid); return p ? rawName(p.id) : ''; };
 const MGR_BINDS = new Set(['name', 'country', 'start', 'end', 'kasaOn', 'kind', 'kidHalf', 'holder']);
 const MGR_ACTS = new Set(['addperson', 'archive', 'deltrip']);
+// Hesaplaşma şekli: herkes deneyip öğrensin diye seyahatteki ilk harcamaya kadar herkes değiştirebilir; sonra yalnız
+// kurucu ve yardımcı kurucu (sunucuda da docs_trip_guard aynı kuralı uygular).
+const settleLocked = () => S.entries.some(e => e.kind === 'expense' && phaseOf(e, S) === 'trip');
+const canSetMode = () => isManager() || !settleLocked();
+const modeNote = () => settleLocked() ? '' : '<span class="note">Seyahatteki ilk harcamaya kadar herkes değiştirebilir; sonra sabitlenir.</span>';
 function mgrOnly(){ toast('Bu ayarı değiştirme yetkin yok.'); render(); }
 function claimPerson(id){
   S.people.forEach(p => { if (p.uid === myUid) delete p.uid; });
@@ -3556,6 +3561,7 @@ document.addEventListener('click', ev => {
     case 'shopxlsx': exportShopXlsx(); break;
     case 'plus': { const i = document.getElementById('fAmt'); if (i){ i.value = i.value.replace(/[+\s]*$/, '') + '+'; form.amount = i.value; i.focus(); } break; }
     case 'setmode':
+      if (!canSetMode()){ toast('Seyahat başladı; hesaplaşma şekli artık sabit.'); render(); break; }
       S.trip.settleMode = d.m === 'min' ? 'min' : 'direct'; render();
       logEvent(d.m === 'min' ? 'hesaplaşmayı “daha az ödeme”ye aldı' : 'hesaplaşmayı “doğrudan ödeme”ye aldı');
       toast(d.m === 'min' ? 'Daha az ödemeyle gösteriliyor; herkesin toplamı aynı.' : 'Doğrudan ödemeye dönüldü.'); break;
