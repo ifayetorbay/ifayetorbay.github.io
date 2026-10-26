@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026180423';</script>
-<script src="heybe-web.js?v=20261026180423"></script>
+<script>window.HEYBE_VER = '20261026180913';</script>
+<script src="heybe-web.js?v=20261026180913"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1870,7 +1870,7 @@ function submit(){
     if (!f.store.trim()) return fail('Mağaza adını yaz.');
     const id = f.id || uid(), oldI = SH.items.find(i => i.id === id);
     const at = atFromDay(f.date, oldI && oldI.at), same = SH.items.find(x => x.id !== id && shopGroup(x) === shopGroup({store:f.store, at}));
-    const lines = (f.lines || []).map(l => { const t = parsePlan(l.tr || ''); return {name:String(l.name || '').trim(), price:parseAmt(l.price), tr:t > 0 ? Math.round(t) : null}; }).filter(l => l.name && l.price > 0);
+    const lines = (f.lines || []).map(l => { const t = parsePlan(l.tr || ''); return {name:String(l.name || '').trim(), price:parseAmt(l.price), tr:t > 0 ? Math.round(t) : null}; }).filter(l => l.name && l.price && !isNaN(l.price));   // eksi satır: değişimde geri verilen ürün
     const tr = lines.length ? 0 : parsePlan(f.tr || '');
     const item = {id, at, tr:tr > 0 ? Math.round(tr) : null, lines, store:f.store.trim(), outlet:(f.outlet || '').trim(), amount:a, cur:f.cur, rate:f.cur === 'EUR' ? 1 : rate, noTF:!!f.noTF, tf:oldI ? oldI.tf || 0 : same ? same.tf || 0 : 0, stamp:!!((oldI || same || {}).stamp), hasPhoto:!!f.photo,
       op:f.op || (same && same.op) || (f.opSet ? '' : lastOp(f.store)) || ''};
@@ -2303,8 +2303,8 @@ const RC_TOTAL = rcKw('TOTAL|TOTALE|TOPLAM|GESAMT|GESAMTSUMME|GESAMTBETRAG|ENDBE
 const RC_SUB = /SUB ?-?TOTA|ARA ?TOPLAM|ZWISCHENSUMME|SOUS[- ]?TOTAL|BASE IMPONIBLE|MEZISOU|ΥΠΟΣΥΝΟΛΟ/i;
 const RC_VAT = rcKw('V\\.?A\\.?T\\.?|I\\.?V\\.?A\\.?|K\\.?D\\.?V|TAX|SALES TAX|MWST|TVA|UST|BTW|DPH|ΦΠΑ|PTU');
 const RC_INCL = /INCL|INCLU[IÍ]DO|INCLUSO|INCLUS|TTC|INKL|ENTHALTEN|DAH[İI]L/i;
-const RC_DISC = new RegExp('(?<![\\p{L}\\d])(?:DISCOUNT|DESCUENTO|DESCONTO|SCONTO|RABATT?|REMISE|İNDİRİM|INDIRIM|PROMO|REBAJA|SAVING|DEVOLUCI|STORNO|KORTING|SLEVA|ΕΚΠΤΩΣ|PASSPORT|REFUND)|(?<![\\p{L}\\d])(?:DTO|OFF|RETURN|RESO|İADE)(?![\\p{L}])', 'iu');
-const RC_PAY = rcKw('PAID|PAGADO|PAGATO|PAGAMENTO|BEZAHLT|PAY[ÉE]|ÖDENEN|CARD|TARJETA|VISA|MASTERCARD|MAESTRO|AMEX|CB|CARTA|KART|KARTI|KARTE|KREDITKARTE|GIROCARD|CASH|EFECTIVO|CONTANTI|BAR|NAK[İI]T|MULTIBANCO|EC|PIN|PINNEN|CONTANT|KARTA|ΚΑΡΤΑ|KAPTA|ΜΕΤΡΗΤΑ|CONTACTLESS|ENTREGADO');
+const RC_DISC = new RegExp('(?<![\\p{L}\\d])(?:DISCOUNT|DESCUENTO|DESCONTO|SCONTO|RABATT?|REMISE|İNDİRİM|INDIRIM|PROMO|REBAJA|SAVING|DEVOLUCI|STORNO|KORTING|SLEVA|ΕΚΠΤΩΣ|PASSPORT|REFUND|CUP[OÓ]N|COUPON|VOUCHER|GUTSCHEIN|AHORRO|RISPARMIO|ERSPARNIS|[ÉE]CONOMIE)|(?<![\\p{L}\\d])(?:DTO|OFF|RETURN|RESO|İADE)(?![\\p{L}])', 'iu');
+const RC_PAY = rcKw('PAID|PAGADO|PAGATO|PAGAMENTO|BEZAHLT|PAY[ÉE]|ÖDENEN|CARD|TARJETA|VISA|MASTERCARD|MAESTRO|AMEX|CB|CARTA|KART|KARTI|KARTE|KREDITKARTE|GIROCARD|CASH|EFECTIVO|CONTANTI|BAR|NAK[İI]T|MULTIBANCO|EC|PIN|PINNEN|CONTANT|KARTA|ΚΑΡΤΑ|KAPTA|ΜΕΤΡΗΤΑ|CONTACTLESS|ENTREGADO|VALE|VALE DE COMPRA|BUONO|GUTSCHEIN|GIFT CARD|GIFTCARD|STORE CREDIT|TARJETA REGALO|CARTE CADEAU|CARTÃO PRESENTE');
 const RC_CHANGE = /(?<![\p{L}])(CHANGE|CAMBIO|RESTO|R[ÜU]CKGELD|MONNAIE|TROCO|WISSELGELD|ΡΕΣΤΑ|VRÁCENO)(?![\p{L}])|PARA [ÜU]ST[ÜU]/iu;
 const RC_SKIP = rcKw('NIF|CIF|N\\.I\\.F|TEL[FÉ]?|PHONE|FAX|DATE|FECHA|DATA|DATUM|TAR[İI]H|TIME|HORA|ORA|UHRZEIT|SAAT|TICKET|TIQUE|RECIBO|RECEIPT|RICEVUTA|FACTURA|FATURA|RECHNUNG|BELEG|BON|BON-NR|BONNUMMER|SCONTRINO|ÚČTENKA|ΑΠΟΔΕΙΞΗ|F[İI]Ş|CASHIER|CAJERO|CAMARERO|CASSA|KASA|AUTH|AUTORIZACI[OÓ]N|TERMINAL|TPV|AID|OP|MESA|GRACIAS|THANK|GRAZIE|MERCI|DANKE|TEŞEKKÜR|TAX FREE');
 const RC_META = /^(ART(?:[IÍ]CULO|ICLE|IKEL)?\.?-?(?:NR\.?)?|REF|SKU|EAN|COD(?:IGO|ICE)?|C[ÓO]DIGO|STYLE|BARCODE|TALLA|SIZE|TAGLIA|GR[ÖO]SSE|TAILLE|BEDEN|COLOU?R|COLORE|FARBE|COULEUR|RENK)(?![\p{L}])/iu;
@@ -2316,6 +2316,8 @@ const RC_OUTP = rcKw('PRECIO OUTLET|PREZZO OUTLET|PRIX OUTLET|OUTLET ?PRICE|OUTL
 const RC_STATT = rcKw('STATT|ANSTATT|INSTEAD OF|AU LIEU DE|INVECE DI|EN LUGAR DE|YER[İI]NE');
 // İade fişi: başlıkta bu kelimelerden biri ya da toplamı eksi. Ürünler ve tutar artı okunur, sonuç {ret:true}.
 const RC_RET_W = 'RETURN|REFUND|DEVOLUCI[OÓ]N|ABONO|NOTA DE CR[EÉ]DITO|NOTA DI CREDITO|RESO|STORNO|R[ÜU]CKGABE|GUTSCHRIFT|RETOUR|REMBOURSEMENT|AVOIR|[İI]ADE|DEVOLU[ÇC][ÃA]O|TERUGGAVE|ΕΠΙΣΤΡΟΦΗ|CREDIT NOTE|VR[ÁA]CEN[ÍI]';
+// İade fişinde yeniden basılan ürünlerden iade edileni gösteren işaret ("31,99 DEVUELTO").
+const RC_RETMARK = /(?<![\p{L}])(DEVUELT[OA]S?|RETURNED|ZUR[ÜU]CKGEGEBEN|RENDU|DEVOLVID[OA]|RESTITUIT[OA]|İADE ED[İI]LD[İI])(?![\p{L}])/iu;
 const RC_RET = new RegExp(`(?<![\\p{L}])(?:${RC_RET_W})(?![\\p{L}])`, 'iu'), RC_RET_G = new RegExp(RC_RET.source, 'giu');
 const RC_QTYCOL = rcKw('AANTAL|QTY|QTD|CANT\\.?|UDS|MENGE|QT[ÀA]|QTÉ|ADET|STK|MNOŽSTVÍ|ΠΟΣ');
 // OCR bozmalarına dayanıklı: "Unit Prices", "Pr1ce", "Precio Unit." da birim fiyat etiketi sayılır.
@@ -2644,16 +2646,24 @@ function parseReceipt(text, retPass){
     const headRet = lines.slice(0, firstPriced < 0 ? lines.length : firstPriced).some(l => RC_RET.test(l));
     const totRet = lines.some(l => RC_TOTAL.test(l) && !RC_SUB.test(l) && amts(l).some(x => x < 0) && !amts(l).some(x => x > 0));
     if (headRet || totRet){
-      const t2 = lines.map(l => {
-        const disc = RC_DISC.test(l.replace(RC_RET_G, ' '));
-        l = l.replace(RC_RET_G, ' ').replace(/(^|[\s:(])[-+]\s*(?=\d)/g, '$1');
+      // Ürün satırı: tutarı ve harfi olan, toplam/ödeme/vergi/indirim olmayan satır.
+      const itemLine = l => amts(l).length && /\p{L}{2,}/u.test(l.replace(RC_RET_G, ' ')) && !RC_TOTAL.test(l) && !RC_SUB.test(l) && !RC_PAY.test(l) && !RC_CHANGE.test(l) && !RC_VAT.test(l) && !RC_SKIP.test(l) && !RC_DISC.test(l.replace(RC_RET_G, ' '));
+      const IL = lines.filter(itemLine), mixed = IL.some(l => amts(l).some(x => x < 0)) && IL.some(l => amts(l).every(x => x > 0)), marked = IL.some(l => RC_RETMARK.test(l));
+      const t2 = lines.filter(l => !(marked && itemLine(l) && !RC_RETMARK.test(l))).map(l => {
+        const disc = RC_DISC.test(l.replace(RC_RET_G, ' ')), it = itemLine(l);
+        l = l.replace(RC_RET_G, ' ').replace(RC_RETMARK, ' ');
+        // Değişimde fark iade edildiyse: iade edilen ürün artı, yeni alınan eksi olur (kayıt net farkla "ürün iadesi").
+        if (mixed && it) return l.replace(amtRe, m => m.startsWith('-') ? m.slice(1) : '-' + m);
+        l = l.replace(/(^|[\s:(])[-+]\s*(?=\d)/g, '$1');
         return disc ? l.replace(amtRe, m => '-' + m) : l;
       }).join('\n');
-      return {...parseReceipt(t2, true), ret:true};
+      const r = parseReceipt(t2, true);
+      return {...r, currency:r.currency || parseReceipt(text.replace(/-/g, ' '), true).currency, ret:true};   // iade kelimeleri silinince dil ipucu kaybolmasın
     }
   }
-  // Toplam: toplam satırlarından ödeme satırından önceki sonuncusu.
+  // Toplam: toplam satırlarından ödeme satırından önceki sonuncusu. Toplamı 0,00 olan fiş farksız değişimdir.
   let amount = 0, sub = 0;
+  const zeroTotal = lines.some(l => isTotal(l) && amts(l).length && amts(l).every(x => x === 0));
   for (const l of lines){
     const v = pos(l); if (!v.length) continue;
     if (RC_SUB.test(l)){ sub = sub || Math.max(...v); continue; }
@@ -2666,7 +2676,7 @@ function parseReceipt(text, retPass){
   }
   const currency = /€|\bEUR/.test(T) ? 'EUR' : /₺|\bTL\b|TRY/.test(T) || tr ? 'TRY' : /£|GBP/.test(T) ? 'GBP' : /CHF/.test(T) ? 'CHF'
     : /USD|\$/.test(T) ? 'USD' : /RMB|CNY|元/.test(T) ? 'CNY' : /JPY|円|¥/.test(T) ? 'JPY'
-    : /\b(IVA|TOTALE|SCONTO|CONTANTI|SUMME|MWST|TVA|TTC|IMPORTE|DESCONTO|MULTIBANCO|EUROS?|TOTAAL|BTW|PINNEN)\b|ΣΥΝΟΛΟ|ΦΠΑ/.test(T) ? 'EUR' : null;
+    : /\b(IVA|TOTALE|SCONTO|CONTANTI|SUMME|MWST|TVA|TTC|IMPORTE|DESCONTO|MULTIBANCO|EUROS?|TOTAAL|BTW|PINNEN|ABONO)\b|ΣΥΝΟΛΟ|ΦΠΑ|DEVOLUCI/.test(T) ? 'EUR' : null;
   // Mağaza: ürünlerden önceki satırlardan biri bilinen bir markaysa o; değilse ilk anlamlı satır (outlet merkezi adı değil).
   const firstItem = lines.findIndex(l => pos(l).length && !RC_SKIP.test(l) && !RC_TOTAL.test(l));
   const head = lines.slice(0, firstItem < 0 ? 6 : Math.min(firstItem, 8));
@@ -2696,9 +2706,13 @@ function parseReceipt(text, retPass){
     const v = amts(l), p = v.filter(x => x > 0);
     if (RC_TOTAL.test(l) || RC_SUB.test(l)){ if (seen) break; pending = null; continue; }
     if (RC_DISC.test(l) || (!p.length && v.length)){
+      // İndirim kelimesi olmayan, adı olan eksi satır iade/değişimde geri verilen üründür ("RETURN TOWEL -6.00", "CAMISA LINO -59,99").
+      const neg = v.filter(x => x < 0).pop(), nl = l.replace(RC_RET_G, ' ');
+      if (neg && !RC_DISC.test(nl)){ const lb = cleanLabel(nl.slice(0, nl.lastIndexOf((nl.match(amtRe) || []).pop())));
+        if (/\p{L}{2,}/u.test(lb)){ const [q, rest] = qtyOf(lb); add(rest, neg, q); pending = null; continue; } }
       // Ürünün hemen altındaki yüzdeli indirim o ürüne uygulanır (tutar yüzdeyle uyuşuyorsa); diğerleri genel indirimdir.
       const pct = +((l.match(/(\d{1,2})\s*%/) || [])[1] || 0), d = Math.abs(v.filter(x => x < 0).pop() || 0), it = items[items.length - 1];
-      if (it && !it.disc && pct){
+      if (it && it.list > 0 && !it.disc && pct){
         if (d && Math.abs(d - it.list * pct / 100) <= .02){ it.price = it.list = Math.round((it.list - d) * 100) / 100; it.disc = true; }
         else if (!d){ it.price = it.list = Math.round(it.list * (100 - pct)) / 100; it.disc = true; }
       }
@@ -2753,22 +2767,24 @@ function parseReceipt(text, retPass){
   // fiyatı hiç okunamayan tek bir ürün varsa eksik tutar onundur. İkisi de diğer ürünler toplamdan düşülerek bulunur.
   const ref = sub || amount, tot = () => items.reduce((a, x) => a + x.price, 0), r2 = v => Math.round(v * 100) / 100;
   if (ref && items.length >= 2 && !orphans.length){
-    const bad = items.filter(x => x.price > ref + .01);
+    const bad = items.filter(x => x.price > ref + .01 && !items.some(y => y.price < 0));
     if (bad.length === 1){ const rem = r2(ref - (tot() - bad[0].price)); if (rem > 0) bad[0].price = bad[0].list = rem; }
   }
   if (ref && orphans.length === 1){
     const o = orphans[0], rem = r2(ref - tot());
     if (rem > .01){ const q = o.qty || (qtyOf(o.raw)[0]), nm = rcName(qtyOf(o.raw)[1], tr, store); items.splice(o.at, 0, {name:q > 1 ? `${nm} ×${q}` : nm, price:rem, list:rem}); }
   }
+  if (zeroTotal && !amount) return {amount:0, currency, desc, items:items.slice(0, 40).map(({name, price}) => ({name, price})), disc:0, sub:null, exchange:true};
   if (!amount && items.length) amount = Math.round(items.reduce((a, x) => a + x.price, 0) * 100) / 100;
   if (!amount) for (const l of lines) for (const x of pos(l)) if (x > amount && x < 1e7) amount = x;
-  // Genel indirim: ürünlerin toplamı ödenen tutardan büyükse fark ürünlere oranla dağıtılır (kuruş farkı en pahalıya).
-  const sum = items.reduce((a, x) => a + x.price, 0);
+  // Genel indirim: alınan (artı) ürünlerin toplamı, ödenen + geri verilenlerden büyükse fark alınanlara oranla dağıtılır
+  // (kuruş farkı en pahalıya). Geri verilen (eksi) satırlar olduğu gibi kalır.
+  const P = items.filter(x => x.price > 0), sum = P.reduce((a, x) => a + x.price, 0), target = r2(amount - items.filter(x => x.price < 0).reduce((a, x) => a + x.price, 0));
   let disc = 0;
-  if (amount && items.length && sum > amount + .01 && sum <= amount * 2.5){
-    const f = amount / sum; disc = Math.round((1 - f) * 100);
-    let acc = 0; items.forEach(x => { x.price = Math.round(x.list * f * 100) / 100; acc += x.price; });
-    const big = items.reduce((a, b) => b.list > a.list ? b : a); big.price = Math.round((big.price + amount - acc) * 100) / 100;
+  if (amount && P.length && sum > target + .01 && sum <= target * 2.5){
+    const f = target / sum; disc = Math.round((1 - f) * 100);
+    let acc = 0; P.forEach(x => { x.price = Math.round(x.list * f * 100) / 100; acc += x.price; });
+    const big = P.reduce((a, b) => b.list > a.list ? b : a); big.price = Math.round((big.price + target - acc) * 100) / 100;
   }
   return {amount:amount || null, currency, desc, items:items.slice(0, 40).map(({name, price}) => ({name, price})), disc, sub:sub || null};
 }
@@ -2825,6 +2841,7 @@ async function scanReceipt(){
   try {
     const r = await readReceipt(f.photo);
     if (form !== f) return;
+    if (r && r.exchange) throw {code:'exchange'};
     if (!r || !(Number(r.amount) > 0)) throw {code:'unreadable'};
     if (r.ret && f.mode !== 'shop'){ f.scanning = false; drawSheetKeep(); toast('Bu bir iade fişi. Alışveriş iadesi ise Kişisel → Alışveriş’ten “↩️ Ürün iadesi” olarak ekle; ortak harcama ise o harcamayı düzenle.'); return; }
     if (CURS.some(c => c[0] === r.currency) && r.currency !== f.cur) setCur(r.currency);
@@ -2833,14 +2850,14 @@ async function scanReceipt(){
       if (r.ret) f.ret = true;
       if (r.desc && !f.store.trim()) f.store = String(r.desc).slice(0, 40);
       if (Array.isArray(r.items) && r.items.length && !(f.lines || []).some(l => l.name))
-        f.lines = r.items.filter(x => x && x.name && Number(x.price) > 0).slice(0, 40).map(x => ({name:String(x.name).slice(0, 40), price:nf.format(Number(x.price))}));
+        f.lines = r.items.filter(x => x && x.name && Number(x.price)).slice(0, 40).map(x => ({name:String(x.name).slice(0, 40), price:nf.format(Number(x.price))}));
     }
     else if (r.desc && !f.desc.trim()){ f.desc = String(r.desc).slice(0, 60); if (!f.catManual) f.cat = guessCat(f.desc, S.learned); }
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : 'Fişten dolduruldu; tutarı bir kontrol et.');
   } catch(e){
     const c = e && e.code;
-    if (c !== 'cancelled') toast(c === 'noocr' ? 'Fişi okumak için Claude izni gerekiyor; izin vermediysen tutarı elle yaz.' : c === 'timeout' ? 'Fiş okuyucu yanıt vermedi; tutarı elle yaz.' : c === 'unreadable' ? 'Fişteki toplam okunamadı; tutarı elle yaz.' : c === 'rate_limited' ? 'Şu an çok fazla istek var; biraz sonra dene.'
+    if (c !== 'cancelled') toast(c === 'exchange' ? '🔁 Değişim fişi: ödenen ya da geri alınan fark yok, kayıt gerekmiyor.' : c === 'noocr' ? 'Fişi okumak için Claude izni gerekiyor; izin vermediysen tutarı elle yaz.' : c === 'timeout' ? 'Fiş okuyucu yanıt vermedi; tutarı elle yaz.' : c === 'unreadable' ? 'Fişteki toplam okunamadı; tutarı elle yaz.' : c === 'rate_limited' ? 'Şu an çok fazla istek var; biraz sonra dene.'
       : e && e.message === 'indirilemedi' ? 'Fiş okuyucu indirilemedi; internet bağlantını kontrol et.' : 'Fiş okunamadı; tutarı elle yaz.');
   }
   f.scanning = false; if (form === f) drawSheetKeep();
@@ -2987,7 +3004,7 @@ function taxInfo(){ const c = themeCountry(); return c && TAXFREE[c[0]] ? {code:
 // Her alışverişin tahmini iadesi; en az tutar aynı mağaza + aynı gün toplamına bakılır.
 // Ürün iadesinin tax-free etkisi: aynı mağazanın (iadeden önceki en yakın) tax-free'li formundan iade edilen tutarın KDV payı düşülür;
 // o formun tahmini iadesinden fazlası düşülmez. Tax-free'li alışverişi yoksa etkisi yoktur. retLink: iade → bağlandığı form.
-let retLink = {};
+let retLink = {}, tfLost = new Set();   // tfLost: iade sonrası alt sınırın altında kalan formlar
 function shopCalc(){
   const T = taxInfo(), groups = {};
   SH.items.forEach(i => { if (i.ret) return; const k = shopGroup(i); (groups[k] = groups[k] || []).push(i); });
@@ -2998,17 +3015,25 @@ function shopCalc(){
     const ok = T && T.vat > 0 && (!canCheck || sumCur >= T.min);
     g.forEach(i => { ref[i.id] = ok && !i.noTF ? shopEur(i) * T.vat / (1 + T.vat) * REFUND_SHARE : 0; if (T && T.vat > 0 && canCheck && !ok && !i.noTF) short[i.id] = T.min - sumCur; });
   }
-  retLink = {};
+  retLink = {}; tfLost = new Set();
   const left = {}; for (const k in groups) left[k] = groups[k].reduce((a, i) => a + (ref[i.id] || 0), 0);
   const sk = x => x.store.trim().toLocaleLowerCase('tr');
   SH.items.filter(i => i.ret).sort((a, b) => a.at - b.at).forEach(r => {
     ref[r.id] = 0;
     const cands = Object.keys(groups).filter(k => left[k] > .005 && sk(groups[k][0]) === sk(r));
-    const k = cands.filter(k => groups[k][0].at <= r.at + 864e5).sort((a, b) => groups[b][0].at - groups[a][0].at)[0] || cands[0];
+    const d0 = t => new Date(t).setHours(0, 0, 0, 0);   // takvim günü: iade, aynı gün ya da önceki günlerdeki alışverişe bağlanır
+    const k = cands.filter(k => d0(groups[k][0].at) <= d0(r.at)).sort((a, b) => groups[b][0].at - groups[a][0].at)[0] || cands[0];
     if (!k || !T || !(T.vat > 0) || r.noTF) return;
     const v = Math.max(shopEur(r) * T.vat / (1 + T.vat) * REFUND_SHARE, -left[k]);
     ref[r.id] = v; left[k] += v; retLink[r.id] = k;
   });
+  // İade sonrası formdaki net tutar ülkenin alt sınırının altına düşerse form geçersizdir: o formun tax-free'si tamamen düşer.
+  for (const k of new Set(Object.values(retLink))){
+    const g = groups[k], rs = SH.items.filter(r => retLink[r.id] === k), cur = T.cur;
+    if (!(T.min > 0) || !(cur === 'EUR' || [...g, ...rs].every(i => i.cur === cur))) continue;
+    const val = i => cur === 'EUR' ? shopEur(i) : shopSign(i) * i.amount, net = g.reduce((a, i) => a + val(i), 0) + rs.reduce((a, i) => a + val(i), 0);
+    if (net < T.min - .005){ tfLost.add(k); g.forEach(i => { ref[i.id] = 0; }); rs.forEach(r => { ref[r.id] = 0; }); }
+  }
   const total = SH.items.reduce((a, i) => a + shopEur(i), 0), refund = Object.values(ref).reduce((a, v) => a + v, 0);
   return {T, ref, short, total, refund};
 }
@@ -3191,8 +3216,11 @@ function viewShopList(){
       const r = ref[i.id], sp = tfStep(i);
       if (i.ret) return `<div class="srow2"><button class="row ret" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
           <span class="m">${dayLabel(i.at)} · <b class="retb">↩️ Ürün iadesi</b>${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>
-          <span class="m">${r < 0 ? `tax-free ${e0(r)} (formdan düşüldü)` : 'tax-free’ye etkisi yok'}</span></span>
+          <span class="m">${r < 0 ? `tax-free ${e0(r)} (formdan düşüldü)` : retLink[i.id] && tfLost.has(retLink[i.id]) ? 'bu iadeyle form alt sınırın altına düştü; tax-free kalmadı' : 'tax-free’ye etkisi yok'}</span></span>
           <span class="amt num"><b>${money(shopAmt(i), i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span></button></div>`;
+      if (tfLost.has(shopGroup(i)) && !i.ret) return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
+          <span class="m">${dayLabel(i.at)} · ↩️ bir kısmı iade edildi</span><span class="m"><b class="retb">Tax-free kalmadı:</b> iade sonrası tutar ${T.name} alt sınırının (${money(T.min, T.cur)}) altında; mağazada formu iptal ettir.</span></span>
+          <span class="amt num"><b>${money(i.amount, i.cur)}</b></span></button></div>`;
       return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
           ${r > 0 ? `<span class="amtin num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? ` · ${e0(shopEur(i))}` : ''}</span>` : ''}<span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}${Object.values(retLink).includes(shopGroup(i)) ? ' · ↩️ bir kısmı iade edildi' : ''}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
           ${r > 0 ? '' : `<span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span>`}</button>
