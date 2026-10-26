@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026132525';</script>
-<script src="heybe-web.js?v=20261026132525"></script>
+<script>window.HEYBE_VER = '20261026133443';</script>
+<script src="heybe-web.js?v=20261026133443"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -371,8 +371,29 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .srow2+.srow2{border-top:1px solid var(--line)}
 .srow2 .row{flex:1;min-width:0}
 .tfchip{flex:none;margin-right:12px;border:1.5px solid var(--line);background:none;border-radius:99px;padding:5px 10px;font-size:.78rem;font-weight:700;color:var(--muted)}
+.tfchip{display:inline-flex;align-items:center;gap:6px}
+.tfchip.t0{border-color:var(--neg);color:var(--neg)}
 .tfchip.t1{border-color:var(--sun);color:var(--sun-text)}
-.tfchip.t2{border-color:var(--pos);color:var(--pos)}
+.tfchip.t2{border-color:#2A6FB0;color:#2A6FB0}
+.tfchip.t3{border-color:var(--pos);color:var(--pos)}
+.oplogo{width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;background:#fff;border:1px solid var(--line);overflow:hidden;flex:none;vertical-align:middle}
+.oplogo img{width:18px;height:18px;object-fit:contain}
+.oplogo b{display:none;font-size:.58rem;font-weight:800;color:#333}
+.oplogo.nofav img{display:none}
+.oplogo.nofav b{display:inline}
+.tfchip .oplogo{width:18px;height:18px;border-radius:5px}
+.tfchip .oplogo img{width:14px;height:14px}
+.opchips{display:flex;flex-wrap:wrap;gap:8px}
+.opchip{display:inline-flex;align-items:center;gap:7px}
+.chip[aria-pressed="true"] .oplogo{border-color:transparent}
+.steps{display:flex;flex-direction:column;gap:6px}
+.tstep{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);background:none;border-radius:12px;padding:10px 12px;text-align:left}
+.tstep .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);font-weight:800;font-size:.85rem;flex:none}
+.tstep .mid{display:flex;flex-direction:column}
+.tstep .m{font-size:.8rem;color:var(--muted)}
+.tstep.done .dot{background:var(--pos);color:#fff}
+.tstep[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
+.tstep[aria-pressed=true] .dot{background:var(--accent);color:var(--accent-ink)}
 .shoph .f{gap:5px}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
 .confetti i{position:absolute;top:-14px;width:8px;height:13px;border-radius:2px;animation:fall linear forwards}
@@ -1653,11 +1674,18 @@ function drawSheet(){
     // Başka bir katılımcının emojisi soluk görünür ve seçilemez (herkesinki ayrı kalsın).
     const mine = emojiOf(f.pid), used = new Set(S.people.filter(q => q.id !== f.pid).map(q => emojiOf(q.id)));
     body = EMOJI_SETS.map(([n, list]) => `<p class="note emoh">${n}</p><div class="emogrid">${list.map(x => `<button type="button" data-pickemo="${x}" aria-pressed="${x === mine}" ${used.has(x) ? 'disabled' : ''}>${x}</button>`).join('')}</div>`).join('');
+  } else if (f.mode === 'tfform'){
+    const i = SH.items.find(x => x.id === f.iid), grp = SH.items.filter(x => shopGroup(x) === shopGroup(i)), {ref} = shopCalc();
+    const sp = tfStep(i), r = grp.reduce((a, x) => a + (ref[x.id] || 0), 0), v = grp.reduce((a, x) => a + shopEur(x), 0);
+    body = `<p class="note"><b>${esc(i.store)}</b> · ${dayLabel(i.at)}${grp.length > 1 ? ` · ${grp.length} alışveriş` : ''} · ${e0(v)} · tahmini iade <b>≈ ${e0(r)}</b></p>
+      <div class="f"><span class="lab">Şirket</span><div class="opchips">${[...tfOps(), ''].map(k => `<button type="button" class="chip opchip" data-tfop="${k}" aria-pressed="${(i.op || '') === k}">${opLogo(k)}${k ? TF_OPS[k] : 'Bilmiyorum'}</button>`).join('')}</div>
+        <span class="note">Formun üstünde yazar.</span></div>
+      <div class="f"><span class="lab">Durum</span><div class="steps">${TF_STEPS.map(([t, h], k) => `<button type="button" class="tstep${k < sp ? ' done' : ''}" data-tfst="${k}" aria-pressed="${k === sp}"><span class="dot">${k < sp ? '✓' : k + 1}</span><span class="mid"><b>${t}</b><span class="m">${h}</span></span></button>`).join('')}</div></div>`;
   } else if (f.mode === 'share'){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
   const saveLbl = {expense:'Kaydet', delperson:'Aktar ve sil', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
@@ -1827,9 +1855,10 @@ function submit(){
     const at = atFromDay(f.date, oldI && oldI.at), same = SH.items.find(x => x.id !== id && shopGroup(x) === shopGroup({store:f.store, at}));
     const lines = (f.lines || []).map(l => { const t = parsePlan(l.tr || ''); return {name:String(l.name || '').trim(), price:parseAmt(l.price), tr:t > 0 ? Math.round(t) : null}; }).filter(l => l.name && l.price > 0);
     const tr = lines.length ? 0 : parsePlan(f.tr || '');
-    const item = {id, at, tr:tr > 0 ? Math.round(tr) : null, lines, store:f.store.trim(), outlet:(f.outlet || '').trim(), amount:a, cur:f.cur, rate:f.cur === 'EUR' ? 1 : rate, noTF:!!f.noTF, tf:oldI ? oldI.tf || 0 : same ? same.tf || 0 : 0, hasPhoto:!!f.photo,
+    const item = {id, at, tr:tr > 0 ? Math.round(tr) : null, lines, store:f.store.trim(), outlet:(f.outlet || '').trim(), amount:a, cur:f.cur, rate:f.cur === 'EUR' ? 1 : rate, noTF:!!f.noTF, tf:oldI ? oldI.tf || 0 : same ? same.tf || 0 : 0, stamp:!!((oldI || same || {}).stamp), hasPhoto:!!f.photo,
       op:f.op || (same && same.op) || (f.opSet ? '' : lastOp(f.store)) || ''};
     if (!item.op) delete item.op;
+    if (!item.stamp) delete item.stamp;
     if (f.photoChanged) setShopPhoto(id, f.photo);
     if (oldI) SH.items[SH.items.indexOf(oldI)] = item; else SH.items.push(item);
     if (item.op) SH.items.forEach(x => { if (shopGroup(x) === shopGroup(item)) x.op = item.op; });
@@ -2564,13 +2593,13 @@ function airportHtml(){
   const today = isoDay(Date.now()), tom = isoDay(Date.now() + 864e5);
   if (today !== S.trip.end && tom !== S.trip.end) return '';
   const {ref, T} = shopCalc(), stores = (f) => [...new Set(SH.items.filter(i => ref[i.id] > 0 && f(i)).map(i => i.store))];
-  const toStamp = stores(i => i.tf === 1), noForm = stores(i => !(i.tf >= 1));
+  const toStamp = stores(i => tfStep(i) === 1), noForm = stores(i => tfStep(i) === 0);
   if (!toStamp.length && !noForm.length) return '';
   const eu = T && ['ES','IT','FR','DE','GR','PT','NL','IE','AT','BE','HR','CZ','HU','PL','SE','DK'].includes(T.code);
   return `<section class="kasa short"><div><div class="t">✈️ ${today === S.trip.end ? 'Bugün' : 'Yarın'} dönüş</div>
     <div class="h">${toStamp.length ? `<b>${toStamp.length}</b> tax-free formunu ${eu ? 'AB’den son çıkışta' : 'ülkeden çıkarken'} gümrükte (kiosk) onaylatmayı unutma: ${esc(toStamp.join(', '))}.` : ''}
     ${noForm.length ? ` ${noForm.length} mağazada form alınmadı: ${esc(noForm.join(', '))}.` : ''}
-    ${(() => { const L = opGroups(ref).map(o => ({...o, open:o.stores.filter(x => x.tf !== 2)})).filter(o => o.open.length);
+    ${(() => { const L = opGroups(ref).map(o => ({...o, open:o.stores.filter(x => x.st < 3)})).filter(o => o.open.length);
       return L.length ? ` Sonra iadeyi al: ${L.map(o => `<b>${esc(opName(o.op))}</b> (${o.open.length} form, ≈ ${e0(o.open.reduce((a, x) => a + x.ref, 0))})`).join(', ')}.` : ''; })()}</div></div>
     <div class="kacts"><button class="btn sm" data-tab="shop">Göster</button></div></section>`;
 }
@@ -2589,21 +2618,22 @@ function savingsHtml(){
 let shopOpF = null;
 function opGroups(ref){
   const g = {};
-  SH.items.forEach(i => { if (!(ref[i.id] > 0)) return; const k = shopGroup(i); const o = g[k] = g[k] || {op:i.op || '', ref:0, tf:i.tf || 0, store:i.store}; o.ref += ref[i.id]; if (i.op) o.op = i.op; });
+  SH.items.forEach(i => { if (!(ref[i.id] > 0)) return; const k = shopGroup(i); const o = g[k] = g[k] || {op:i.op || '', ref:0, v:0, st:tfStep(i), store:i.store, at:i.at}; o.ref += ref[i.id]; o.v += shopEur(i); if (i.op) o.op = i.op; });
   const by = {};
-  Object.values(g).forEach(x => { const o = by[x.op] = by[x.op] || {op:x.op, ref:0, n:0, got:0, paid:0, stores:[]}; o.ref += x.ref; o.n++; if (x.tf >= 1) o.got++; if (x.tf === 2) o.paid++; o.stores.push(x); });
+  // n: form sayısı; c: adım adım form sayısı; paidRef: alınan iade; v: alışveriş tutarı.
+  Object.values(g).forEach(x => { const o = by[x.op] = by[x.op] || {op:x.op, ref:0, v:0, n:0, c:[0, 0, 0, 0], paidRef:0, stores:[]}; o.ref += x.ref; o.v += x.v; o.n++; o.c[x.st]++; if (x.st === 3) o.paidRef += x.ref; o.stores.push(x); });
   return Object.values(by).sort((a, b) => (a.op === '') - (b.op === '') || b.ref - a.ref);
 }
 function opSummary(ref){
   const L = opGroups(ref); if (!L.length) return '';
   return `<section class="budget"><div class="bhead"><span>Şirkete göre iade</span></div><div class="oplist">` + L.map(o => `<button type="button" class="oprow" data-opf="${o.op}" aria-pressed="${shopOpF === o.op}">
-      <span class="mid"><b>${esc(opName(o.op))}</b><span class="m">${o.n} form${o.got ? ` · ${o.got} form alındı` : ''}${o.paid ? ` · ${o.paid} iade alındı` : ''}</span></span><b class="num">≈ ${e0(o.ref)}</b></button>`).join('')
-    + `</div>${L.some(o => o.op === '') ? `<p class="tip">Şirketi seçmek için alışverişe dokun; formun üstünde yazar.</p>` : ''}</section>`;
+      ${opLogo(o.op)}<span class="mid"><b>${esc(opName(o.op))}</b><span class="m">${o.n} form${o.c[0] ? ` · ${o.c[0]} alınmadı` : ''}${o.c[1] ? ` · ${o.c[1]} onaylatılacak` : ''}${o.c[2] ? ` · ${o.c[2]} iade bekliyor` : ''}${o.c[3] ? ` · ${o.c[3]} iade alındı` : ''}</span></span><b class="num">≈ ${e0(o.ref)}</b></button>`).join('')
+    + `</div>${L.length > 1 ? `<div class="ln num"><span>Toplam</span><b>≈ ${e0(L.reduce((a, o) => a + o.ref, 0))}</b></div>` : ''}${L.some(o => o.op === '') ? `<p class="tip">Şirketi seçmek için satırdaki tax-free düğmesine dokun; formun üstünde yazar.</p>` : ''}</section>`;
 }
 function viewShopList(){
   const {T, ref, short, total, refund} = shopCalc();
   const grp = f => new Set(SH.items.filter(i => ref[i.id] > 0 && f(i)).map(shopGroup)).size;
-  const tfOpen = grp(i => !(i.tf >= 1)), tfWait = grp(i => i.tf === 1);
+  const tfOpen = grp(i => tfStep(i) === 0), tfWait = grp(i => tfStep(i) === 1 || tfStep(i) === 2);
   const sugg = (T && OUTLETS[T.code]) || [];
   const sv = (() => { const cs = SH.items.map(i => trCompare(i, ref[i.id])).filter(Boolean); return cs.length ? {gain:cs.reduce((a, c) => a + c.tr - c.net, 0), n:cs.reduce((a, c) => a + c.n, 0)} : null; })();
   let h = !SH.items.length ? '' : `<section class="hero"><div><div class="lbl">🛍️ Alışverişlerin</div><div class="big num">${e0(total)}</div>
@@ -2623,20 +2653,20 @@ function viewShopList(){
     + (T && T.note && T.vat > 0 ? `<p class="tip">${esc(T.note)}</p>` : '')
     + (tfOpen || tfWait ? `<p class="tip">🧾 ${tfOpen ? `<b>${tfOpen}</b> mağazada tax-free formu henüz alınmadı` : ''}${tfOpen && tfWait ? ' · ' : ''}${tfWait ? `<b>${tfWait}</b> iade bekliyor` : ''}.</p>` : '')
     + `</section>`;
-  h += opSummary(ref);
   if (!SH.items.length) return h + `<div class="card done">Henüz alışveriş yok. 🛍️<br>Sağ alttaki <b>+ Alışveriş</b> ile mağazayı ve tutarı ekle; fişin fotoğrafını çekersen tutarı ben okurum.</div>`;
   const byOutlet = {};
   if (shopOpF !== null) h += `<p class="hint">Sadece <b>${esc(opName(shopOpF))}</b> gösteriliyor · <button class="link" data-opf="${shopOpF}">hepsini göster</button></p>`;
   SH.items.filter(i => shopOpF === null || (ref[i.id] > 0 && (i.op || '') === shopOpF)).sort((a, b) => b.at - a.at).forEach(i => { const k = i.outlet || 'Diğer mağazalar'; (byOutlet[k] = byOutlet[k] || []).push(i); });
   for (const [o, list] of Object.entries(byOutlet)){
     h += `<div class="day"><span lang="en">${esc(o)}</span> · ${e0(list.reduce((a, i) => a + shopEur(i), 0))}</div><div class="list">` + list.map(i => {
-      const r = ref[i.id], st = i.tf === 2 ? '💶 iade alındı' : i.tf === 1 ? '✓ form alındı' : 'form al';
+      const r = ref[i.id], sp = tfStep(i);
       return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
           <span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}${i.op ? ` · ${esc(opName(i.op))}` : ''}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
           <span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span></button>
-        ${r > 0 ? `<button class="tfchip t${i.tf || 0}" data-tf="${i.id}">${st}</button>` : ''}</div>`;
+        ${r > 0 ? `<button class="tfchip t${sp}" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${opLogo(i.op)}${TF_CHIP[sp]}</button>` : ''}</div>`;
     }).join('') + `</div>`;
   }
+  h += opSummary(ref);
   h += `<h2>Alışveriş raporu</h2><div class="two"><button class="btn" data-act="shoppdf">📄 PDF indir</button><button class="btn" data-act="shopxlsx">📊 Excel indir</button></div>
     <p class="hint">Özet, mağazalar, yerler, tax-free durumu, fiş fiş ürünler ve hediye listesi. Sadece senin alışverişlerin.</p>`;
   return h;
@@ -3212,11 +3242,13 @@ function shopReportData(){
   if (stores.length > 7) donut.push({name:'Diğer', v:stores.slice(7).reduce((a, s0) => a + s0.v, 0), color:PAL[7]});
   const ou = {}; items.forEach(i => { const k = i.outlet || 'Diğer mağazalar'; ou[k] = (ou[k] || 0) + c100(shopEur(i)); });
   const outlets = Object.entries(ou).sort((a, b) => b[1] - a[1]).map(([label, v]) => ({label, v}));
-  const gm = {}; items.forEach(i => { if (!(ref[i.id] > 0)) return; const k = shopGroup(i); const g = gm[k] = gm[k] || {store:i.store, at:i.at, v:0, ref:0, tf:i.tf || 0, op:''}; g.v += shopEur(i); g.ref += ref[i.id]; if (i.op) g.op = i.op; });
-  const groups = Object.values(gm).sort((a, b) => a.at - b.at);
+  const gm = {}; items.forEach(i => { if (!(ref[i.id] > 0)) return; const k = shopGroup(i); const g = gm[k] = gm[k] || {store:i.store, at:i.at, v:0, ref:0, tf:tfStep(i), op:''}; g.v += shopEur(i); g.ref += ref[i.id]; if (i.op) g.op = i.op; });
+  // Şirket şirket: önce iadesi büyük şirket, "seçilmedi" en sonda; şirket içinde tarih sırası.
+  const ops = opGroups(ref), opRank = Object.fromEntries(ops.map((o, k) => [o.op, k]));
+  const groups = Object.values(gm).sort((a, b) => opRank[a.op] - opRank[b.op] || a.at - b.at);
   const cs = items.map(i => trCompare(i, ref[i.id])).filter(Boolean), gain = cs.reduce((a, c) => a + c.tr - c.net, 0);
   const tc = themeCountry();
-  return {T, ref, total, refund, items, stores, donut, outlets, groups, gain, trN:cs.reduce((a, c) => a + c.n, 0), lines:items.reduce((a, i) => a + (i.lines || []).length, 0),
+  return {T, ref, total, refund, items, stores, donut, outlets, groups, ops, gain, trN:cs.reduce((a, c) => a + c.n, 0), lines:items.reduce((a, i) => a + (i.lines || []).length, 0),
     accent:tc ? tc[2] : '#0B6B6B', colorOf:name => (st[name.trim()] || {}).color || '#999999'};
 }
 // Tax-free şirketleri (araştırma 2026-10: İspanya spain.info resmî listesi, Fransa douane.gouv.fr resmî listesi; diğer
@@ -3225,11 +3257,26 @@ function shopReportData(){
 const TF_OPS = {gb:'Global Blue', planet:'Planet', innova:'Innova Tax Free', ttf:'Travel Tax Free', eci:'El Corte Inglés', taxrefund:'TaxRefund.it',
   izivat:'Izivat', skiptax:'Skiptax', fair:'Fair Tax Free', revenir:'Revenir', wevat:'Wevat (uygulama)', diger:'Diğer şirket'};
 const TF_BY_COUNTRY = {ES:['gb', 'planet', 'innova', 'ttf', 'eci'], IT:['gb', 'planet', 'taxrefund'], FR:['gb', 'planet', 'innova', 'izivat', 'skiptax', 'fair', 'revenir', 'wevat']};
+const TF_DOM = {gb:'globalblue.com', planet:'weareplanet.com', innova:'innovataxfree.com', ttf:'traveltaxfree.com', eci:'elcorteingles.es', taxrefund:'taxrefund.it',
+  izivat:'izivat.com', skiptax:'skiptax.com', fair:'fairtaxfree.fr', revenir:'revenir.io', wevat:'wevat.com'};
+// Şirketin küçük logosu (sitesinin simgesi; gelmezse baş harfler). Şirket seçilmemişse boş.
+function opLogo(k){
+  if (!k || !TF_OPS[k]) return '';
+  const ini = esc(TF_OPS[k].split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase());
+  return TF_DOM[k] && !favBad.has(TF_DOM[k]) ? `<span class="oplogo"><img class="favimg" data-dom="${TF_DOM[k]}" src="https://www.google.com/s2/favicons?domain=${TF_DOM[k]}&amp;sz=64" alt="" referrerpolicy="no-referrer"><b>${ini}</b></span>`
+    : `<span class="oplogo nofav"><b>${ini}</b></span>`;
+}
+// Tax-free formunun adımları (gerçek süreç): mağazadan formu al → AB'den son çıkışta gümrükte onaylat → iadeyi al.
+// Kayıtta i.tf (0 alınmadı, 1 form bende, 2 iade alındı; eski sürümlerle uyumlu) ve i.stamp (gümrükte onaylandı) tutulur.
+const tfStep = i => i.tf === 2 ? 3 : i.tf === 1 ? (i.stamp ? 2 : 1) : 0;
+const TF_STEPS = [['Form alınmadı', 'Mağazadan tax-free formunu iste.'], ['Form bende', 'AB’den son çıkışta gümrükte (kiosk) onaylat.'], ['Onaylandı', 'İade bekleniyor; karta iade haftalar sürebilir.'], ['İade alındı', 'Para geldi 💶']];
+const TF_CHIP = ['Form al ›', 'Form bende', 'Onaylandı', 'İade alındı'];
+function setStep(i, st){ i.tf = st === 3 ? 2 : st >= 1 ? 1 : 0; if (st === 2 || st === 3) i.stamp = true; else delete i.stamp; }
 const tfOps = () => { const T = taxInfo(); return [...(TF_BY_COUNTRY[T && T.code] || ['gb', 'planet']), 'diger']; };
 const opName = k => TF_OPS[k] || 'Şirket seçilmedi';
 // Bu mağazada daha önce seçilen şirket (yeni alışverişte kendiliğinden gelir).
 const lastOp = store => { const k = (store || '').trim().toLocaleLowerCase('tr'); const x = SH.items.slice().sort((a, b) => b.at - a.at).find(i => i.op && i.store.trim().toLocaleLowerCase('tr') === k); return x ? x.op : ''; };
-const TF_LABEL = ['Form alınmadı', 'Form alındı', 'İade alındı'], TF_COLOR = ['#B23A26', '#C97A12', '#1B7A4F'];
+const TF_LABEL = TF_STEPS.map(x => x[0]), TF_COLOR = ['#B23A26', '#C97A12', '#2A6FB0', '#1B7A4F'];
 function logoSlug(store){ const b = brandOf(store); return b && b.slug || null; }
 // Marka logosu (gömülü yol) ya da baş harfli renkli daire.
 function drawBrand(x, store, X, Y, S2, color){
@@ -3283,17 +3330,31 @@ function shopPdfPages(){
     x.fillText(D.T ? `${D.T.name}: KDV %${Math.round(D.T.vat * 1000) / 10}${D.T.min ? `, aynı mağaza ve gün en az ${money(D.T.min, D.T.cur)}` : ', en az tutar yok'}. Form başına bir satır.` : '', M, y); y += 30;
     const hdr = () => { x.fillStyle = D.accent; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 20);
       [['Mağaza', M + 70], ['Tarih', M + 470], ['Tutar', M + 720, 'right'], ['Tahmini iade', M + 890, 'right'], ['Durum', W - M - 16, 'right']].forEach(([t, cx, al]) => { x.textAlign = al || 'left'; x.fillText(t, cx, y + 29); }); x.textAlign = 'left'; y += 54; };
+    // Şirkete göre iade: şirket başına form sayısı, alışveriş, tahmini iade, alınan; en altta toplam.
+    { const cols = [['Şirket', M + 16], ['Form', M + 470, 'right'], ['Alışveriş', M + 650, 'right'], ['Tahmini iade', M + 860, 'right'], ['Alınan', W - M - 16, 'right']];
+      title('Şirkete göre iade', 120 + D.ops.length * 50);
+      x.fillStyle = D.accent; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 20);
+      cols.forEach(([t, cx, al]) => { x.textAlign = al || 'left'; x.fillText(t, cx, y + 29); }); x.textAlign = 'left'; y += 54;
+      const row = (vals, bold, shade) => { if (shade){ x.fillStyle = RPT.soft; x.fillRect(M, y - 6, W - 2 * M, 48); }
+        x.fillStyle = RPT.ink; x.font = FONT(bold ? 800 : 600, 21); vals.forEach((v, k) => { x.textAlign = cols[k][2] || 'left'; x.fillText(k ? v : fit(v, 420, FONT(bold ? 800 : 600, 21)), cols[k][1], y + 24); }); x.textAlign = 'left'; y += 48; };
+      D.ops.forEach((o, k) => row([opName(o.op), String(o.n), e0(o.v), '≈ ' + e0(o.ref), o.paidRef ? e0(o.paidRef) : '—'], false, k % 2));
+      x.strokeStyle = RPT.ink; x.lineWidth = 2; x.beginPath(); x.moveTo(M, y - 4); x.lineTo(W - M, y - 4); x.stroke(); y += 6;
+      row(['Toplam', String(D.ops.reduce((a, o) => a + o.n, 0)), e0(D.ops.reduce((a, o) => a + o.v, 0)), '≈ ' + e0(D.ops.reduce((a, o) => a + o.ref, 0)), e0(D.ops.reduce((a, o) => a + o.paidRef, 0))], true);
+      y += 30; title('Formlar (şirket şirket)', 200); }
     hdr();
+    let lastOp = null;
     D.groups.forEach((g, i) => { if (y + 56 > H - M){ page(); hdr(); }
+      if (g.op !== lastOp){ lastOp = g.op; const o = D.ops.find(q => q.op === g.op) || {n:0, ref:0}; if (y + 110 > H - M){ page(); hdr(); }
+        x.fillStyle = RPT.ink; x.font = FONT(800, 22); x.fillText(`${opName(g.op)}  ·  ${o.n} form  ·  ≈ ${e0(o.ref)}`, M + 4, y + 22); y += 40; }
       if (i % 2){ x.fillStyle = RPT.soft; x.fillRect(M, y - 6, W - 2 * M, 54); }
       drawBrand(x, g.store, M + 12, y - 2, 40, D.colorOf(g.store));
-      x.fillStyle = RPT.ink; x.font = FONT(600, 21); x.fillText(fit(g.store + (g.op ? ' · ' + opName(g.op) : ''), 390, FONT(600, 21)), M + 70, y + 26);
+      x.fillStyle = RPT.ink; x.font = FONT(600, 21); x.fillText(fit(g.store, 390, FONT(600, 21)), M + 70, y + 26);
       x.font = FONT(400, 20); x.fillText(new Date(g.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}), M + 470, y + 26);
       x.textAlign = 'right'; x.fillText(e0(g.v), M + 720, y + 26); x.fillText('≈ ' + e0(g.ref), M + 890, y + 26);
       const lb = TF_LABEL[g.tf], col = TF_COLOR[g.tf]; x.font = FONT(700, 18); const pw = x.measureText(lb).width + 28;
       x.fillStyle = mixHex(col, '#ffffff', .85); rr(x, W - M - 16 - pw, y + 2, pw, 34, 17); x.fill(); x.fillStyle = col; x.fillText(lb, W - M - 30, y + 26); x.textAlign = 'left'; y += 54; });
     y += 20;
-    const open = D.groups.filter(g => g.tf < 2).length;
+    const open = D.groups.filter(g => g.tf < 3).length;
     if (open){ x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 120, 14); x.fill(); x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(`🧾 ${open} formun iadesi bekliyor`, M + 24, y + 40);
       x.fillStyle = RPT.muted; x.font = FONT(400, 19); x.fillText('Formu mağazadan al → AB’den son çıkışta gümrükte (kiosk) onaylat → iadeni al.', M + 24, y + 74);
       x.fillText('Tutarlar tahminidir (KDV payının %60’ı); kesin tutarı mağaza ve aracı şirket söyler.', M + 24, y + 102); y += 150; }
@@ -3364,9 +3425,9 @@ async function exportShopXlsx(){
     {header:'Tahmini iade', width:13}, {header:'Tax-free', width:15}, {header:'Şirket', width:17}, {header:'Ürün', width:7}, {header:'Türkiye fiyatı', width:14}, {header:'Fark', width:9}];
   head(a.getRow(1));
   D.items.forEach(i => { const r0 = D.ref[i.id] || 0, c = trCompare(i, r0);
-    const r = a.addRow([new Date(i.at), i.store, i.outlet || '', i.amount, i.cur, shopEur(i), r0, r0 > 0 ? TF_LABEL[i.tf || 0] : (i.noTF ? 'yok' : 'sınır altı'), r0 > 0 && i.op ? opName(i.op) : '', (i.lines || []).length, c ? c.tr : null, c ? 1 - c.net / c.tr : null]);
+    const r = a.addRow([new Date(i.at), i.store, i.outlet || '', i.amount, i.cur, shopEur(i), r0, r0 > 0 ? TF_LABEL[tfStep(i)] : (i.noTF ? 'yok' : 'sınır altı'), r0 > 0 && i.op ? opName(i.op) : '', (i.lines || []).length, c ? c.tr : null, c ? 1 - c.net / c.tr : null]);
     r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(4).numFmt = '#,##0.00'; r.getCell(6).numFmt = EUR; r.getCell(7).numFmt = EUR; r.getCell(11).numFmt = TRY; r.getCell(12).numFmt = '0%';
-    r.getCell(2).fill = tint(D.colorOf(i.store)); if (r0 > 0) r.getCell(8).font = {bold:true, color:{argb:'FF' + TF_COLOR[i.tf || 0].slice(1)}}; });
+    r.getCell(2).fill = tint(D.colorOf(i.store)); if (r0 > 0) r.getCell(8).font = {bold:true, color:{argb:'FF' + TF_COLOR[tfStep(i)].slice(1)}}; });
   const n = D.items.length; const t = a.addRow(['', 'Toplam', '', '', '', {formula:`SUM(F2:F${n + 1})`}, {formula:`SUM(G2:G${n + 1})`}]); t.font = {bold:true}; t.getCell(6).numFmt = EUR; t.getCell(7).numFmt = EUR;
   a.autoFilter = {from:'A1', to:`L${n + 1}`};
   // Ürünler
@@ -3384,6 +3445,13 @@ async function exportShopXlsx(){
   D.stores.forEach(s0 => { const r = m.addRow([s0.name, s0.n, s0.v / 100, s0.ref / 100, s0.v / (D.total * 100 || 1)]); r.getCell(3).numFmt = EUR; r.getCell(4).numFmt = EUR; r.getCell(5).numFmt = '0%'; r.getCell(1).fill = tint(s0.color); });
   try { m.addConditionalFormatting({ref:`C2:C${D.stores.length + 1}`, rules:[{type:'dataBar', cfvo:[{type:'min'}, {type:'max'}], color:{argb:A}}]}); } catch(_) {}
   // Tax-free
+  if (D.ops.length){ const s2 = wb.addWorksheet('Şirketler', {views:[{state:'frozen', ySplit:1}]});
+    s2.columns = [{header:'Şirket', width:22}, {header:'Form', width:8}, {header:'Alışveriş', width:14}, {header:'Tahmini iade', width:15}, {header:'Alınan iade', width:14}, {header:'Bekleyen iade', width:15},
+      {header:'Alınmadı', width:10}, {header:'Onaylatılacak', width:14}, {header:'İade bekliyor', width:14}, {header:'İade alındı', width:12}];
+    head(s2.getRow(1));
+    D.ops.forEach(o => { const r = s2.addRow([opName(o.op), o.n, o.v, o.ref, o.paidRef, o.ref - o.paidRef, ...o.c]); [3, 4, 5, 6].forEach(k => r.getCell(k).numFmt = EUR); });
+    const n2 = D.ops.length + 1, tr2 = s2.addRow(['Toplam', ...['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].map(c => ({formula:`SUM(${c}2:${c}${n2})`}))]);
+    tr2.font = {bold:true}; [3, 4, 5, 6].forEach(k => tr2.getCell(k).numFmt = EUR); tr2.eachCell(c => { c.border = {top:{style:'medium'}}; }); }
   if (D.groups.length){ const f = wb.addWorksheet('Tax-free'); f.columns = [{header:'Mağaza', width:24}, {header:'Tarih', width:12}, {header:'Tutar', width:13}, {header:'Tahmini iade', width:14}, {header:'Durum', width:16}, {header:'Şirket', width:18}];
     head(f.getRow(1));
     D.groups.forEach(g => { const r = f.addRow([g.store, new Date(g.at), g.v, g.ref, TF_LABEL[g.tf], g.op ? opName(g.op) : '']); r.getCell(2).numFmt = 'dd.mm.yyyy'; r.getCell(3).numFmt = EUR; r.getCell(4).numFmt = EUR;
@@ -3543,12 +3611,14 @@ document.addEventListener('click', ev => {
   if (d.solo){ startSolo(SH.solo.find(x => x.id === d.solo)); return; }
   if (d.gift){ const g = SH.gifts.find(x => x.id === d.gift); g.done = !g.done; saveShop(); render(); if (g.done) toast(`🎁 ${g.who} için alındı`); return; }
   if (d.giftrm){ SH.gifts = SH.gifts.filter(x => x.id !== d.giftrm); saveShop(); render(); return; }
-  if (d.tf){
-    // Tax-free adımları: form al → form alındı → iade alındı → baştan.
-    const i = SH.items.find(x => x.id === d.tf), g = shopGroup(i), next = ((i.tf || 0) + 1) % 3;
-    SH.items.forEach(x => { if (shopGroup(x) === g) x.tf = next; }); saveShop(); render();
-    if (i.tf === 1) toast('Formu sakla; AB’den son çıkışta gümrükte onaylat.'); if (i.tf === 2) toast('İade alındı 💶');
-    return;
+  if (d.tf){ openSheet({mode:'tfform', iid:d.tf}); return; }
+  // Tax-free formu penceresi: şirket ve adım tek dokunuşla; aynı mağaza + gün formundaki bütün alışverişlere yazılır.
+  if (d.tfop !== undefined || d.tfst !== undefined){
+    const i = SH.items.find(x => x.id === form.iid); if (!i) return;
+    const grp = SH.items.filter(x => shopGroup(x) === shopGroup(i));
+    if (d.tfop !== undefined) grp.forEach(x => { if (d.tfop) x.op = d.tfop; else delete x.op; });
+    else { const st = +d.tfst; grp.forEach(x => setStep(x, st)); if (st === 1) toast('Formu sakla; AB’den son çıkışta gümrükte onaylat.'); if (st === 3) toast('İade alındı 💶'); }
+    saveShop(); drawSheetKeep(); render(); return;
   }
   if (d.help){ toggleHelp(t); return; }
   if (d.plancur){ planDraft.cur = d.plancur; render(); const i = document.getElementById('planInp'); if (i) i.focus(); return; }
