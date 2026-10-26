@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026181258';</script>
-<script src="heybe-web.js?v=20261026181258"></script>
+<script>window.HEYBE_VER = '20261026181922';</script>
+<script src="heybe-web.js?v=20261026181922"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1885,7 +1885,7 @@ function submit(){
     // Kullanıcı fişten gelen bir adı düzelttiyse öğren (sonraki fişlerde böyle gelir).
     const learned = []; let named = 0;
     lines.forEach(l => { if (l.orig && l.auto && l.name !== l.auto){ learned.push(...rcLearnFrom(l.orig, l.auto, l.name)); named++; l.auto = l.name; } });
-    if (named) saveLearn();
+    if (named){ saveLearn(); shareLearned(learned); }
     saveShop(); flashId = id; closeSheet(); tab = 'shop'; render();
     const r = shopCalc().ref[id];
     if (learned.length) return toast(`📚 Öğrendim: ${learned.slice(0, 3).map(([w, t]) => `“${w.toLocaleLowerCase('tr')}” → ${t}`).join(', ')}. Sonraki fişlerde böyle yazacağım.`);
@@ -2574,7 +2574,8 @@ const RC_DICT_SRC = [
 ];
 // Kullanıcının düzeltmelerinden öğrenilenler (bu telefonda; sözlükten önce bakılır) ve ürün adı hafızası
 // (fişteki yazı → kullanıcının verdiği ad). Testlerde boştur; uygulama açılışta yükler (loadLearn).
-const RC_LEARN = new Map(), RC_LINES = new Map();
+// RC_SHARED: ortak sözlük (web sürümünde sunucudan: seyahat arkadaşlarının ve en az 2 kişinin öğrettikleri).
+const RC_LEARN = new Map(), RC_LINES = new Map(), RC_SHARED = new Map();
 const rcKey = s => String(s).toLocaleLowerCase('en').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/ß/g, 'ss').replace(/['’]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const RC_DICT = (() => { const m = new Map(); for (const e of RC_DICT_SRC){ const [k, tr, c, icon, ws] = e.split('|');
   for (const w of ws.split(',')){ const key = rcKey(w); if (key && !m.has(key)) m.set(key, {k, tr, c:c || tr, icon}); } } return m; })();
@@ -2586,12 +2587,12 @@ function lineName(name){
   const [m, d] = String(name).split(' · '), icon = rcIconOf(d || m);
   return `${icon ? `<span class="lic" aria-hidden="true">${icon}</span>` : ''}<b>${esc(m)}</b>${d ? ` <span class="ldesc">· ${esc(d)}</span>` : ''}`;
 }
-const rcLook = key => RC_LEARN.get(key) || RC_DICT.get(key);
+const rcLook = key => RC_LEARN.get(key) || RC_SHARED.get(key) || RC_DICT.get(key);
 // Düzeltmeden öğrenme. orig: fişteki yazı, auto: uygulamanın verdiği ad, user: kullanıcının düzelttiği ad.
 // 1) Ürün adı hafızası: aynı fiş yazısı tekrar gelirse kullanıcının adı kullanılır.
 // 2) Çevrilmemiş kelimeyi çevirmiş ("Sandro Tailleur · ceket" → "Sandro · takım ceket"): tailleur = takım.
 // 3) Bir çeviriyi değiştirmiş ("· şişme ceket" → "· kapitone ceket"): fişteki karşılığı (acolchada) = kapitone.
-// Döner: öğrenilen [kelime, Türkçe] çiftleri.
+// Döner: öğrenilen [kelime, Türkçe, anahtar, tür] dörtlüleri.
 function rcLearnFrom(orig, auto, user){
   const strip = x => String(x || '').replace(/\s*×\d+$/, '').trim();
   auto = strip(auto); user = strip(user);
@@ -2602,7 +2603,7 @@ function rcLearnFrom(orig, auto, user){
   const removed = am.filter(w => !um.some(x => low(x) === low(w)));
   if (removed.length === 1 && ad.length && ad.every(w => ud.includes(w))){
     const added = ud.filter(w => !ad.includes(w)), key = rcKey(removed[0]);
-    if (added.length && added.length <= 3 && key.length >= 3){ RC_LEARN.set(key, {k:'F', tr:added.join(' '), c:added.join(' '), icon:''}); learned.push([removed[0], added.join(' ')]); }
+    if (added.length && added.length <= 3 && key.length >= 3){ RC_LEARN.set(key, {k:'F', tr:added.join(' '), c:added.join(' '), icon:''}); learned.push([removed[0], added.join(' '), key, 'F']); }
   }
   if (!removed.length && ad.length && ad.length === ud.length){
     const ot = rcKey(orig).split(' ');
@@ -2610,7 +2611,7 @@ function rcLearnFrom(orig, auto, user){
       if (w === ud[i]) return;
       for (let L = 3; L >= 1; L--) for (let j = 0; j + L <= ot.length; j++){
         const key = ot.slice(j, j + L).join(' '), e = rcLook(key);
-        if (e && e.tr.split(' ').includes(w)){ const tr = e.tr.split(' ').map(x => x === w ? ud[i] : x).join(' '); RC_LEARN.set(key, {...e, tr, c:tr}); learned.push([key, tr]); return; }
+        if (e && e.tr.split(' ').includes(w)){ const tr = e.tr.split(' ').map(x => x === w ? ud[i] : x).join(' '); RC_LEARN.set(key, {...e, tr, c:tr}); learned.push([key, tr, key, e.k]); return; }
       }
     });
   }
@@ -2856,6 +2857,18 @@ const LEARN_KEY = 'heybe-ogrenilen';
 function loadLearn(){ try { const d = JSON.parse(localStorage.getItem(LEARN_KEY) || '{}'); (d.w || []).forEach(([k, e]) => RC_LEARN.set(k, e)); (d.l || []).forEach(([k, n]) => RC_LINES.set(k, n)); } catch(_) {} }
 function saveLearn(){ try { localStorage.setItem(LEARN_KEY, JSON.stringify({w:[...RC_LEARN], l:[...RC_LINES].slice(-500)})); } catch(_) {} }
 loadLearn();
+// Ortak sözlük: öncelik sırası kendi öğrettiklerin > seyahat arkadaşlarınınki > herkesinki (en az 2 kişi) > yerleşik sözlük.
+// Gönderilen yalnız kelime eşleşmesidir ("tailleur" → "takım"); ürün adı hafızası bu telefonda kalır.
+function loadShared(){
+  const W = window.claude && window.claude.words; if (!W) return;
+  W.load().then(rows => { RC_SHARED.clear(); for (const sc of ['all', 'trip', 'mine']) rows.filter(r => r.scope === sc).forEach(r => RC_SHARED.set(r.key, {k:r.kind, tr:r.tr, c:r.tr, icon:''})); if (tab === 'shop') render(); });
+}
+function shareLearned(learned){
+  const W = window.claude && window.claude.words; if (!W) return;
+  const rows = learned.map(([w, tr, key, k]) => ({key, kind:k, tr})).filter(r => /^[a-z]+( [a-z]+){0,3}$/.test(r.key) && r.key.length >= 3 && r.key.length <= 40 && r.tr.length <= 40);
+  if (rows.length) W.add(rows);
+}
+loadShared();
 const OCR_LANG = {ES:'spa', IT:'ita', FR:'fra', DE:'deu', AT:'deu', CH:'deu', PT:'por', TR:'tur', NL:'nld', BE:'fra', PL:'pol', CZ:'ces', HR:'hrv', SE:'swe', DK:'dan', NO:'nor', HU:'hun', GR:'ell'};
 // Fotoğraf okumadan önce hazırlanır: gri tonlama, kontrast açma ve 1600–2200 px genişliğe ölçekleme (küçük yazı büyür,
 // çok büyük fotoğraf yavaşlatmaz). Tesseract'ın rakamları karıştırması (89.99 → 891.00) belirgin şekilde azalır.
@@ -3142,7 +3155,8 @@ function viewItems(){
   return `<div class="isearch"><input class="inp" id="itemQ" type="search" placeholder="🔍 Ürün ya da mağaza ara (fişteki yazıyla da)" value="${esc(itemQ)}" autocomplete="off" enterkeyhint="search">
     <div class="seg wide" role="group" aria-label="Sıralama">${sorts.map(([k, l]) => `<button type="button" data-isort="${k}" aria-pressed="${itemSort === k}">${l}</button>`).join('')}</div></div>
     <div id="itemRes">${itemResults(all)}</div>`
-    + (RC_LEARN.size || RC_LINES.size ? `<p class="hint">📚 Düzeltmelerinden öğrendiklerim: ${RC_LEARN.size} kelime, ${RC_LINES.size} ürün adı · <button class="link" data-act="forgetlearn">${forgetSure ? 'Emin misin? Hepsini unut' : 'unut'}</button></p>` : '');
+    + (RC_LEARN.size || RC_LINES.size ? `<p class="hint">📚 Düzeltmelerinden öğrendiklerim: ${RC_LEARN.size} kelime, ${RC_LINES.size} ürün adı · <button class="link" data-act="forgetlearn">${forgetSure ? 'Emin misin? Hepsini unut' : 'unut'}</button></p>` : '')
+    + (RC_SHARED.size ? `<p class="hint">🌍 Ortak sözlük: arkadaşlarının ve Heybe kullanıcılarının öğrettiği ${RC_SHARED.size} kelime de kullanılıyor.</p>` : '');
 }
 function itemResults(all = itemRows()){
   // Arama harf işaretlerinden ve I/ı farkından bağımsız: "tailleur" fişteki "TAILLEUR"u, "cafe" "CAFÉ"yi bulur.

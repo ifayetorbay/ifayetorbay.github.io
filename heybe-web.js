@@ -3,6 +3,7 @@
 //  - db:      trips/<tid>, entries/<id>, log/<id> → public.docs; data/users/<uid>/<id> → public.private_docs
 //  - user:    hesapsız (anonim) Supabase girişi; kimlik bu tarayıcıda saklanır
 //  - assets:  fiş fotoğrafları → "photos" kovası (tahmin edilemez dosya adı)
+//  - words:   ortak sözlük → public.learned_words (yalnız learn_word / heybe_words işlevleriyle; web/sql/ortak-sozluk.sql)
 // Seyahate davetle katılınır: ?katil=<tid>.<anahtar>. Güvenlik sunucudaki satır kurallarındadır (üye olmayan okuyamaz).
 (function(){
   const URL0 = 'https://mongmlrsjvrbgfpxtrtv.supabase.co';
@@ -131,6 +132,11 @@
       const {data, error} = m[1] === 'kurucu' ? await sb.rpc('claim_trip', {t, k}) : await sb.rpc('join_trip', {t, k});
       if (error || !data) return {ok:false, tid:t};
       refreshAll(); return {ok:true, tid:t};
+    },
+    // Ortak sözlük (fiş düzeltmelerinden öğrenilen kelimeler; ürün adı/fiyat değil). Sunucuda işlev yoksa boş döner.
+    words:{
+      async load(){ try { await ready; const {data, error} = await sb.rpc('heybe_words'); return error ? [] : data || []; } catch(_) { return []; } },
+      async add(rows){ try { await ready; for (const r of rows) await sb.rpc('learn_word', {k:r.key, kd:r.kind, t:r.tr}); } catch(_) {} }
     },
     takeJoined(){ try { const t = localStorage.getItem(JOIN_KEY); localStorage.removeItem(JOIN_KEY); return t; } catch(_) { return null; } },
     joinFailed:() => !!window.__heybeJoinFailed
