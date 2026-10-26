@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026234246';</script>
-<script src="heybe-web.js?v=20261026234246"></script>
+<script>window.HEYBE_VER = '20261026235653';</script>
+<script src="heybe-web.js?v=20261026235653"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -719,13 +719,14 @@ function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(_) 
 const photoKey = id => 'yol-hesabi-foto-' + id;
 function getPhoto(id){ try { return localStorage.getItem(photoKey(id)); } catch(_) { return null; } }
 function setPhoto(id, data){ try { if (data) localStorage.setItem(photoKey(id), data); else localStorage.removeItem(photoKey(id)); return true; } catch(_) { return false; } }
-async function shrinkPhoto(file){
+// Saklanan fotoğraf 1100 px (telefonda yer kaplamasın); fiş okumaya ayrıca daha net bir kopya gider (yalnız okurken, saklanmaz).
+async function shrinkPhoto(file, max = 1100, q = 0.62){
   const url = URL.createObjectURL(file), img = new Image();
   await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = url; });
-  const s = Math.min(1, 1100 / Math.max(img.width, img.height));
+  const s = Math.min(1, max / Math.max(img.width, img.height));
   const c = document.createElement('canvas'); c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
   c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-  return c.toDataURL('image/jpeg', 0.62);
+  return c.toDataURL('image/jpeg', q);
 }
 
 function sample(){
@@ -3139,7 +3140,7 @@ async function scanReceipt(){
   f.scanning = true; drawSheetKeep();
   if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast(cloudOcr && window.claude && window.claude.receipt ? 'Fiş okunuyor…' : 'Fiş telefonda okunuyor; ilk seferde biraz sürebilir…');
   try {
-    const r = await readReceipt(f.photo);
+    const r = await readReceipt(f.photoHi || f.photo);
     if (form !== f) return;
     if (r && r.exchange) throw {code:'exchange'};
     if (!r || !(Number(r.amount) > 0)) throw {code:'unreadable'};
@@ -4670,7 +4671,7 @@ document.addEventListener('click', ev => {
     case 'save': submit(); break;
     case 'rate': fetchRate(true); break;
     case 'viewphoto': showPhoto(form.photo); break;
-    case 'rmphoto': form.photo = null; form.photoChanged = true; drawSheetKeep(); break;
+    case 'rmphoto': form.photo = form.photoHi = null; form.photoChanged = true; drawSheetKeep(); break;
     case 'togglecat': form.showCat = !form.showCat; drawSheetKeep(); break;
     case 'togglepayer': form.showPayer = !form.showPayer; drawSheetKeep(); break;
     case 'toggleamong': form.showAmong = !form.showAmong; drawSheetKeep(); break;
@@ -4802,7 +4803,7 @@ document.addEventListener('change', async ev => {
   if (form && el.id === 'fCur'){ if (el.value) setCur(el.value); drawSheetKeep(); return; }
   if (form && el.id === 'fSettle'){ form.settleTL = el.checked; if (el.checked && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
   if (form && el.id === 'fPhoto' && el.files && el.files[0]){
-    try { form.photo = await shrinkPhoto(el.files[0]); form.photoChanged = true; drawSheetKeep(); }
+    try { form.photo = await shrinkPhoto(el.files[0]); form.photoHi = await shrinkPhoto(el.files[0], 2000, 0.85).catch(() => null); form.photoChanged = true; drawSheetKeep(); }
     catch(_) { document.getElementById('fErr').textContent = 'Fotoğraf açılamadı. Başka bir fotoğraf dene.'; }
     return;
   }
