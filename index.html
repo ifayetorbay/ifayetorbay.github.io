@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026175124';</script>
-<script src="heybe-web.js?v=20261026175124"></script>
+<script>window.HEYBE_VER = '20261026175614';</script>
+<script src="heybe-web.js?v=20261026175614"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -192,6 +192,8 @@ details.more .list{background:var(--bg);--row-bg:var(--bg)}
 .whochips{display:flex;flex-direction:column;gap:10px}
 .seg.kinds button{font-size:.82rem;padding:9px 4px;line-height:1.2}
 .row.solo{background:color-mix(in srgb,var(--sunk) 55%,var(--surface))}
+.row.ret .amt b{color:var(--neg)}
+.retb{color:var(--neg);font-weight:700}
 .row.solo .m{color:var(--accent-text)}
 .isearch{display:flex;flex-direction:column;gap:8px}
 .oplist{display:flex;flex-direction:column}
@@ -1600,7 +1602,9 @@ function drawSheet(){
     body = amountBlock + (f.from === 'kasa' ? '' : noteBlock()) + `<p class="note">${nm(f.from)} → ${nm(f.to)} ödemesi${f.cur === 'TRY' ? `, kur 1 € = ${nf4.format(f.rate)} ₺` : ''}. Bankadan gönderdiğin tutar farklıysa düzeltebilirsin.</p>`;
   } else if (f.mode === 'shop'){
     const stores = [...new Set(SH.items.map(i => i.store))];
-    body = `<div class="f"><label for="fStore">Mağaza</label><input class="inp" id="fStore" list="fStores" placeholder="ör. Nike, Zara, Massimo Dutti" value="${esc(f.store)}" autocomplete="off">
+    body = `<div class="seg wide" role="group" aria-label="Kayıt türü"><button type="button" data-shopret="0" aria-pressed="${!f.ret}">🛍️ Alışveriş</button><button type="button" data-shopret="1" aria-pressed="${!!f.ret}">↩️ Ürün iadesi</button></div>`
+      + (f.ret ? `<p class="note">İade ettiğin tutarı artı yaz. Alışverişlerinden düşülür; aynı mağazada tax-free'li alışverişin varsa tahmini tax-free iadesinden de KDV payı düşülür.</p>` : '')
+      + `<div class="f"><label for="fStore">Mağaza</label><input class="inp" id="fStore" list="fStores" placeholder="ör. Nike, Zara, Massimo Dutti" value="${esc(f.store)}" autocomplete="off">
         <datalist id="fStores">${stores.map(x => `<option value="${esc(x)}">`).join('')}</datalist></div>`
       + amountBlock + rateBlock()
       + `<div class="rows">${dateBlock(f)}</div>`
@@ -1694,7 +1698,7 @@ function drawSheet(){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
   const saveLbl = {expense:'Kaydet', delperson:'Aktar ve sil', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
@@ -1866,11 +1870,12 @@ function submit(){
     const tr = lines.length ? 0 : parsePlan(f.tr || '');
     const item = {id, at, tr:tr > 0 ? Math.round(tr) : null, lines, store:f.store.trim(), outlet:(f.outlet || '').trim(), amount:a, cur:f.cur, rate:f.cur === 'EUR' ? 1 : rate, noTF:!!f.noTF, tf:oldI ? oldI.tf || 0 : same ? same.tf || 0 : 0, stamp:!!((oldI || same || {}).stamp), hasPhoto:!!f.photo,
       op:f.op || (same && same.op) || (f.opSet ? '' : lastOp(f.store)) || ''};
+    if (f.ret){ item.ret = true; delete item.op; delete item.tf; delete item.stamp; item.tr = null; }
     if (!item.op) delete item.op;
     if (!item.stamp) delete item.stamp;
     if (f.photoChanged) setShopPhoto(id, f.photo);
     if (oldI) SH.items[SH.items.indexOf(oldI)] = item; else SH.items.push(item);
-    if (item.op) SH.items.forEach(x => { if (shopGroup(x) === shopGroup(item)) x.op = item.op; });
+    if (item.op && !item.ret) SH.items.forEach(x => { if (!x.ret && shopGroup(x) === shopGroup(item)) x.op = item.op; });
     if (item.outlet) SH.outlet = item.outlet;
     saveShop(); flashId = id; closeSheet(); tab = 'shop'; render();
     const r = shopCalc().ref[id];
@@ -2305,6 +2310,9 @@ const RC_CENTER = /VILLAGE|DESIGNER OUTLET|OUTLET ?CITY|THE MALL|FASHION (?:OUTL
 const RC_RRP = rcKw('PVP|RRP|WAS|UVP|PREZZO PIENO|PREZZO DI LISTINO|PRIX INITIAL|ANCIEN PRIX|PRIX CONSEILL[ÉE]|ORIGINAL PRICE|PRECIO ORIGINAL|PRECIO ANTERIOR|LISTENPREIS|ADVIESPRIJS');
 const RC_OUTP = rcKw('PRECIO OUTLET|PREZZO OUTLET|PRIX OUTLET|OUTLET ?PRICE|OUTLETPREIS|OUTLETPRIJS|IHR PREIS|PRIX VILLAGE|NOUVEAU PRIX|NOW|AHORA|PREZZO SCONTATO|PREZZO FINALE|PRECIO FINAL|SALE PRICE|YOUR PRICE|VOTRE PRIX|JETZT');
 const RC_STATT = rcKw('STATT|ANSTATT|INSTEAD OF|AU LIEU DE|INVECE DI|EN LUGAR DE|YER[İI]NE');
+// İade fişi: başlıkta bu kelimelerden biri ya da toplamı eksi. Ürünler ve tutar artı okunur, sonuç {ret:true}.
+const RC_RET_W = 'RETURN|REFUND|DEVOLUCI[OÓ]N|ABONO|NOTA DE CR[EÉ]DITO|NOTA DI CREDITO|RESO|STORNO|R[ÜU]CKGABE|GUTSCHRIFT|RETOUR|REMBOURSEMENT|AVOIR|[İI]ADE|DEVOLU[ÇC][ÃA]O|TERUGGAVE|ΕΠΙΣΤΡΟΦΗ|CREDIT NOTE|VR[ÁA]CEN[ÍI]';
+const RC_RET = new RegExp(`(?<![\\p{L}])(?:${RC_RET_W})(?![\\p{L}])`, 'iu'), RC_RET_G = new RegExp(RC_RET.source, 'giu');
 const RC_QTYCOL = rcKw('AANTAL|QTY|QTD|CANT\\.?|UDS|MENGE|QT[ÀA]|QTÉ|ADET|STK|MNOŽSTVÍ|ΠΟΣ');
 // OCR bozmalarına dayanıklı: "Unit Prices", "Pr1ce", "Precio Unit." da birim fiyat etiketi sayılır.
 const RC_GENERIC = /^(KG|G|GR|L|ML|UN|UD|UDS|PZ|PCS|ST|STK|AD|ADET|EUR|EUROS?|UNIT\w*|PR[I1L]C\w*|PREC\w*|UNITARIO|UNITAIRE|PREZZ\w*|PREIS|EINZELPREIS|PRIX|B[İI]R[İI]M|F[İI]YAT|IMPORTE|PVP|P|U|C|E|X|@)$/i;
@@ -2359,7 +2367,7 @@ function rcName(raw, tr, store){
   if (store && !RC_MULTI.has(store) && !brandNorm(n).startsWith(brandNorm(store)) && !brandAt(n)) n = store + ' ' + n;
   return n.slice(0, 60);
 }
-function parseReceipt(text){
+function parseReceipt(text, retPass){
   // OCR düzeltmeleri: tarih ve saatler silinir (fiyat sanılmasın); "Ix/lx" (1x) düzeltilir; "-£2.00" → "-2.00"; "99, 95" → "99,95";
   // "1'290.00" → "1290.00"; ondalıklı adet sütunu "2,00 CALCETINES" → "2 x CALCETINES".
   // Tarih/saat yalnız başına duruyorsa silinir ("9.90:29.70" içindeki "90:29" saat değildir).
@@ -2375,6 +2383,21 @@ function parseReceipt(text){
   const amts = l => (l.match(amtRe) || []).map(toNum).filter(v => !isNaN(v));
   const pos = l => amts(l).filter(x => x > 0);
   const isTotal = l => RC_TOTAL.test(l) && !RC_SUB.test(l) && !RC_DISC.test(l) && !(RC_VAT.test(l) && !RC_INCL.test(l));
+  // İade fişi: eksi işaretleri kaldırılır, iade kelimeleri silinir ("TOTAL DEVOLUCIÓN -31,99" → "TOTAL 31,99"); iadede indirim
+  // satırları ters yöndedir ("+8,00"), onlar eksi yapılır. Sonra normal fiş gibi okunur.
+  if (!retPass){
+    const firstPriced = lines.findIndex(l => amts(l).length && !RC_SKIP.test(l));
+    const headRet = lines.slice(0, firstPriced < 0 ? lines.length : firstPriced).some(l => RC_RET.test(l));
+    const totRet = lines.some(l => RC_TOTAL.test(l) && !RC_SUB.test(l) && amts(l).some(x => x < 0) && !amts(l).some(x => x > 0));
+    if (headRet || totRet){
+      const t2 = lines.map(l => {
+        const disc = RC_DISC.test(l.replace(RC_RET_G, ' '));
+        l = l.replace(RC_RET_G, ' ').replace(/(^|[\s:(])[-+]\s*(?=\d)/g, '$1');
+        return disc ? l.replace(amtRe, m => '-' + m) : l;
+      }).join('\n');
+      return {...parseReceipt(t2, true), ret:true};
+    }
+  }
   // Toplam: toplam satırlarından ödeme satırından önceki sonuncusu.
   let amount = 0, sub = 0;
   for (const l of lines){
@@ -2501,6 +2524,7 @@ async function readReceipt(dataUrl){
       return await sampleFn.json('Bu fotoğraf bir harcama fişi ya da faturası. Ödenen TOPLAM tutarı, para birimini, 2-4 kelimelik kısa bir Türkçe açıklamayı (mağaza fişiyse mağaza adını) ve fişteki ürünleri (en fazla 30) çıkar. Ürün adı fişteki model adıdır; sonuna türünü Türkçe parantezle ekle (ör. "Nike Air Max Systm (Ayakkabı)"). '
       + '"Unit Price/Precio Unitario" gibi satırlar ürün değil, üstündeki ürünün fiyatıdır; "1x" adettir. Ara toplam, KDV/IVA, ödeme, para üstü ve indirim satırları ürün değildir. '
       + 'Fişte indirim varsa (ör. outlet %20) ürün fiyatlarını indirimli yaz; ürünlerin toplamı ödenen toplama eşit olsun. '
+      + 'İade fişiyse (devolución, refund, Rückgabe, reso, avoir, iade…) tutarları artı yaz ve "ret": true ekle. '
       + 'Sadece şu biçimde JSON döndür: {"amount": 23.5, "currency": "EUR", "desc": "Restoranda akşam yemeği", "items": [{"name": "Tişört", "price": 19.99}]}. currency şunlardan biri olmalı: ' + CURS.map(c => c[0]).join(', ')
       + '. Toplam okunamıyorsa {"amount": null} döndür.', {images:[dataUrlToBlob(dataUrl)], modelTier:'quick'});
     } catch(e){
@@ -2548,14 +2572,17 @@ async function scanReceipt(){
     const r = await readReceipt(f.photo);
     if (form !== f) return;
     if (!r || !(Number(r.amount) > 0)) throw {code:'unreadable'};
+    if (r.ret && f.mode !== 'shop'){ f.scanning = false; drawSheetKeep(); toast('Bu bir iade fişi. Alışveriş iadesi ise Kişisel → Alışveriş’ten “↩️ Ürün iadesi” olarak ekle; ortak harcama ise o harcamayı düzenle.'); return; }
     if (CURS.some(c => c[0] === r.currency) && r.currency !== f.cur) setCur(r.currency);
     f.amount = nf.format(Number(r.amount));
     if (f.mode === 'shop'){
+      if (r.ret) f.ret = true;
       if (r.desc && !f.store.trim()) f.store = String(r.desc).slice(0, 40);
       if (Array.isArray(r.items) && r.items.length && !(f.lines || []).some(l => l.name))
         f.lines = r.items.filter(x => x && x.name && Number(x.price) > 0).slice(0, 40).map(x => ({name:String(x.name).slice(0, 40), price:nf.format(Number(x.price))}));
     }
     else if (r.desc && !f.desc.trim()){ f.desc = String(r.desc).slice(0, 60); if (!f.catManual) f.cat = guessCat(f.desc, S.learned); }
+    if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : 'Fişten dolduruldu; tutarı bir kontrol et.');
   } catch(e){
     const c = e && e.code;
@@ -2696,14 +2723,20 @@ async function syncShopIn(){
 }
 async function syncShopOut(){ const ref = await shopRef(); if (ref) try { await ref.set(clone(SH)); } catch(_) {} }
 
-const shopEur = i => i.cur === 'EUR' ? i.amount : i.amount / (i.rate || 1);
+// Ürün iadesi (i.ret): tutar kayıtta artı durur, hesapta eksi sayılır.
+const shopSign = i => i.ret ? -1 : 1;
+const shopEur = i => shopSign(i) * (i.cur === 'EUR' ? i.amount : i.amount / (i.rate || 1));
+const shopAmt = i => shopSign(i) * i.amount;
 // Tax-free formu mağaza + gün başına bir tanedir; durum o gruptaki bütün alışverişlere birlikte yazılır.
 const shopGroup = i => i.store.trim().toLocaleLowerCase('tr') + '|' + new Date(i.at).toDateString();
 function taxInfo(){ const c = themeCountry(); return c && TAXFREE[c[0]] ? {code:c[0], name:c[1], vat:TAXFREE[c[0]][0], min:TAXFREE[c[0]][1], cur:TAXFREE[c[0]][2], note:TAXFREE[c[0]][3]} : null; }
 // Her alışverişin tahmini iadesi; en az tutar aynı mağaza + aynı gün toplamına bakılır.
+// Ürün iadesinin tax-free etkisi: aynı mağazanın (iadeden önceki en yakın) tax-free'li formundan iade edilen tutarın KDV payı düşülür;
+// o formun tahmini iadesinden fazlası düşülmez. Tax-free'li alışverişi yoksa etkisi yoktur. retLink: iade → bağlandığı form.
+let retLink = {};
 function shopCalc(){
   const T = taxInfo(), groups = {};
-  SH.items.forEach(i => { const k = shopGroup(i); (groups[k] = groups[k] || []).push(i); });
+  SH.items.forEach(i => { if (i.ret) return; const k = shopGroup(i); (groups[k] = groups[k] || []).push(i); });
   const ref = {}, short = {};
   for (const k in groups){
     const g = groups[k], sumCur = T && T.cur !== 'EUR' ? g.filter(i => i.cur === T.cur).reduce((a, i) => a + i.amount, 0) : g.reduce((a, i) => a + shopEur(i), 0);
@@ -2711,6 +2744,17 @@ function shopCalc(){
     const ok = T && T.vat > 0 && (!canCheck || sumCur >= T.min);
     g.forEach(i => { ref[i.id] = ok && !i.noTF ? shopEur(i) * T.vat / (1 + T.vat) * REFUND_SHARE : 0; if (T && T.vat > 0 && canCheck && !ok && !i.noTF) short[i.id] = T.min - sumCur; });
   }
+  retLink = {};
+  const left = {}; for (const k in groups) left[k] = groups[k].reduce((a, i) => a + (ref[i.id] || 0), 0);
+  const sk = x => x.store.trim().toLocaleLowerCase('tr');
+  SH.items.filter(i => i.ret).sort((a, b) => a.at - b.at).forEach(r => {
+    ref[r.id] = 0;
+    const cands = Object.keys(groups).filter(k => left[k] > .005 && sk(groups[k][0]) === sk(r));
+    const k = cands.filter(k => groups[k][0].at <= r.at + 864e5).sort((a, b) => groups[b][0].at - groups[a][0].at)[0] || cands[0];
+    if (!k || !T || !(T.vat > 0) || r.noTF) return;
+    const v = Math.max(shopEur(r) * T.vat / (1 + T.vat) * REFUND_SHARE, -left[k]);
+    ref[r.id] = v; left[k] += v; retLink[r.id] = k;
+  });
   const total = SH.items.reduce((a, i) => a + shopEur(i), 0), refund = Object.values(ref).reduce((a, v) => a + v, 0);
   return {T, ref, short, total, refund};
 }
@@ -2760,8 +2804,8 @@ let itemQ = '', itemSort = 'date';
 function itemRows(){
   const {ref} = shopCalc(), out = [];
   for (const i of SH.items) for (const l of i.lines || []){
-    const eur = i.cur === 'EUR' ? l.price : l.price / (i.rate || 1), net = eur * (1 - (ref[i.id] || 0) / (shopEur(i) || 1)) * S.trip.rate;
-    out.push({i, l, eur, net, gain:l.tr > 0 ? l.tr - net : null});
+    const eur = shopSign(i) * (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)), net = eur * (1 - (ref[i.id] || 0) / (shopEur(i) || 1)) * S.trip.rate;
+    out.push({i, l, eur, net, gain:l.tr > 0 && !i.ret ? l.tr - net : null});
   }
   return out;
 }
@@ -2787,16 +2831,16 @@ function itemResults(all = itemRows()){
     for (const [, list] of by){
       const i = list[0].i;
       h += `<div class="day"><span lang="en">${esc(i.store)}</span> · ${dayLabel(i.at)}</div>
-      <div class="list"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${i.lines.length} ürün</span><span class="m">${esc(i.outlet || '')}</span></span><span class="amt num"><b>${money(i.amount, i.cur)}</b></span></button>
-      ${list.map(r => `<div class="lline"><span>${esc(r.l.name)}${r.l.tr > 0 ? `<small>${trBadge({tr:r.l.tr, net:r.net})}</small>` : ''}</span><b class="num">${money(r.l.price, i.cur)}</b></div>`).join('')}</div>`;
+      <div class="list"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${i.lines.length} ürün${i.ret ? ' · ↩️ ürün iadesi' : ''}</span><span class="m">${esc(i.outlet || '')}</span></span><span class="amt num"><b>${money(shopAmt(i), i.cur)}</b></span></button>
+      ${list.map(r => `<div class="lline"><span>${esc(r.l.name)}${r.l.tr > 0 && !i.ret ? `<small>${trBadge({tr:r.l.tr, net:r.net})}</small>` : ''}</span><b class="num">${money(shopSign(i) * r.l.price, i.cur)}</b></div>`).join('')}</div>`;
     }
     return h;
   }
   // Düz liste: en pahalı ya da en kârlı (Türkiye fiyatı girilmemiş ürünler kârlı sıralamasında en altta).
   const list = rows.slice().sort(itemSort === 'price' ? (a, b) => b.eur - a.eur : (a, b) => (b.gain ?? -Infinity) - (a.gain ?? -Infinity) || b.eur - a.eur);
   return h + `<div class="list">` + list.map(r => `<button class="row" data-shop="${r.i.id}">${brandTile(r.i.store)}<span class="mid"><span class="d">${esc(r.l.name)}</span>
-      <span class="m"><span lang="en">${esc(r.i.store)}</span> · ${dayLabel(r.i.at)}</span>${r.gain !== null ? `<span class="m tag">${trBadge({tr:r.l.tr, net:r.net})} · ${r.gain >= 0 ? `≈ ${nf0.format(r.gain)} ₺ kâr` : `≈ ${nf0.format(-r.gain)} ₺ fazla`}</span>` : ''}</span>
-      <span class="amt num"><b>${money(r.l.price, r.i.cur)}</b>${r.i.cur !== 'EUR' ? `<small>${e0(r.eur)}</small>` : ''}</span></button>`).join('') + `</div>`;
+      <span class="m"><span lang="en">${esc(r.i.store)}</span> · ${dayLabel(r.i.at)}${r.i.ret ? ' · ↩️ ürün iadesi' : ''}</span>${r.gain !== null ? `<span class="m tag">${trBadge({tr:r.l.tr, net:r.net})} · ${r.gain >= 0 ? `≈ ${nf0.format(r.gain)} ₺ kâr` : `≈ ${nf0.format(-r.gain)} ₺ fazla`}</span>` : ''}</span>
+      <span class="amt num"><b>${money(shopSign(r.i) * r.l.price, r.i.cur)}</b>${r.i.cur !== 'EUR' ? `<small>${e0(r.eur)}</small>` : ''}</span></button>`).join('') + `</div>`;
 }
 // 🎁 Hediye listesi: gitmeden kime ne alınacağı yazılır, alınınca işaretlenir.
 let giftDraft = {who:'', what:'', est:''};
@@ -2843,16 +2887,22 @@ function savingsHtml(){
 let shopOpF = null;
 function opGroups(ref){
   const g = {};
-  SH.items.forEach(i => { if (!(ref[i.id] > 0)) return; const k = shopGroup(i); const o = g[k] = g[k] || {op:i.op || '', ref:0, v:0, st:tfStep(i), store:i.store, at:i.at}; o.ref += ref[i.id]; o.v += shopEur(i); if (i.op) o.op = i.op; });
+  SH.items.forEach(i => {
+    if (i.ret ? !ref[i.id] : !(ref[i.id] > 0)) return;
+    const k = i.ret ? retLink[i.id] : shopGroup(i); if (!k) return;
+    const o = g[k] = g[k] || {op:'', ref:0, v:0, st:0, store:i.store, at:i.at, rets:0};
+    o.ref += ref[i.id]; o.v += shopEur(i);
+    if (i.ret) o.rets = (o.rets || 0) + 1; else { o.st = tfStep(i); o.store = i.store; o.at = i.at; if (i.op) o.op = i.op; }
+  });
   const by = {};
   // n: form sayısı; c: adım adım form sayısı; paidRef: alınan iade; v: alışveriş tutarı.
-  Object.values(g).forEach(x => { const o = by[x.op] = by[x.op] || {op:x.op, ref:0, v:0, n:0, c:[0, 0, 0, 0], paidRef:0, stores:[]}; o.ref += x.ref; o.v += x.v; o.n++; o.c[x.st]++; if (x.st === 3) o.paidRef += x.ref; o.stores.push(x); });
+  Object.values(g).forEach(x => { const o = by[x.op] = by[x.op] || {op:x.op, ref:0, v:0, n:0, c:[0, 0, 0, 0], paidRef:0, rets:0, stores:[]}; o.ref += x.ref; o.v += x.v; o.n++; o.c[x.st]++; o.rets += x.rets || 0; if (x.st === 3) o.paidRef += x.ref; o.stores.push(x); });
   return Object.values(by).sort((a, b) => (a.op === '') - (b.op === '') || b.ref - a.ref);
 }
 function opSummary(ref){
   const L = opGroups(ref); if (!L.length) return '';
   return `<section class="budget"><div class="bhead"><span>Şirkete göre iade</span></div><div class="oplist">` + L.map(o => `<button type="button" class="oprow" data-opf="${o.op}" aria-pressed="${shopOpF === o.op}">
-      ${opLogo(o.op)}<span class="mid"><b>${esc(opName(o.op))}</b><span class="m">${o.n} form${o.c[0] ? ` · ${o.c[0]} alınmadı` : ''}${o.c[1] ? ` · ${o.c[1]} onaylatılacak` : ''}${o.c[2] ? ` · ${o.c[2]} iade bekliyor` : ''}${o.c[3] ? ` · ${o.c[3]} iade alındı` : ''}</span></span><b class="num">≈ ${e0(o.ref)}</b></button>`).join('')
+      ${opLogo(o.op)}<span class="mid"><b>${esc(opName(o.op))}</b><span class="m">${o.n} form${o.c[0] ? ` · ${o.c[0]} alınmadı` : ''}${o.c[1] ? ` · ${o.c[1]} onaylatılacak` : ''}${o.c[2] ? ` · ${o.c[2]} iade bekliyor` : ''}${o.c[3] ? ` · ${o.c[3]} iade alındı` : ''}${o.rets ? ` · ${o.rets} ürün iadesi düşüldü` : ''}</span></span><b class="num">≈ ${e0(o.ref)}</b></button>`).join('')
     + `</div>${L.length > 1 ? `<div class="ln num"><span>Toplam</span><b>≈ ${e0(L.reduce((a, o) => a + o.ref, 0))}</b></div>` : ''}${L.some(o => o.op === '') ? `<p class="tip">Şirketi seçmek için satırdaki tax-free düğmesine dokun; formun üstünde yazar.</p>` : ''}</section>`;
 }
 function viewShopList(){
@@ -2885,8 +2935,12 @@ function viewShopList(){
   for (const [o, list] of Object.entries(byOutlet)){
     h += `<div class="day"><span lang="en">${esc(o)}</span> · ${e0(list.reduce((a, i) => a + shopEur(i), 0))}</div><div class="list">` + list.map(i => {
       const r = ref[i.id], sp = tfStep(i);
+      if (i.ret) return `<div class="srow2"><button class="row ret" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
+          <span class="m">${dayLabel(i.at)} · <b class="retb">↩️ Ürün iadesi</b>${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>
+          <span class="m">${r < 0 ? `tax-free ${e0(r)} (formdan düşüldü)` : 'tax-free’ye etkisi yok'}</span></span>
+          <span class="amt num"><b>${money(shopAmt(i), i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span></button></div>`;
       return `<div class="srow2"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${esc(i.store)}</span>
-          ${r > 0 ? `<span class="amtin num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? ` · ${e0(shopEur(i))}` : ''}</span>` : ''}<span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
+          ${r > 0 ? `<span class="amtin num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? ` · ${e0(shopEur(i))}` : ''}</span>` : ''}<span class="m">${dayLabel(i.at)}${r > 0 ? ` · iade ≈ ${e0(r)}${Object.values(retLink).includes(shopGroup(i)) ? ' · ↩️ bir kısmı iade edildi' : ''}` : short[i.id] > 0 ? ` · tax-free için ${money(short[i.id], T.cur)} daha` : i.noTF ? ' · tax-free yok' : ''}${(i.lines || []).length ? ` · ${i.lines.length} ürün` : ''}</span>${(() => { const c = trCompare(i, r); return c ? `<span class="m">${trBadge(c)}${c.n > 1 ? ` (${c.n} ürün)` : ''}</span>` : ''; })()}</span>
           ${r > 0 ? '' : `<span class="amt num"><b>${money(i.amount, i.cur)}</b>${i.cur !== 'EUR' ? `<small>${e0(shopEur(i))}</small>` : ''}</span>`}</button>
         ${r > 0 ? `<button class="tfbox" data-tf="${i.id}" aria-label="Tax-free formu: ${i.op ? esc(opName(i.op)) + ', ' : ''}${TF_LABEL[sp]}">${i.op ? `<span class="tfop">${opLogo(i.op)}${esc(opName(i.op))}</span>` : ''}<span class="tfchip t${sp}">${TF_CHIP[sp]}</span></button>` : ''}</div>`;
     }).join('') + `</div>`;
@@ -2980,7 +3034,7 @@ function favFail(img){ favBad.add(img.dataset.dom); img.parentNode.classList.add
 document.addEventListener('load', ev => { const t = ev.target; if (t.classList && t.classList.contains('favimg') && t.naturalWidth < 32) favFail(t); }, true);
 document.addEventListener('error', ev => { const t = ev.target; if (t.classList && t.classList.contains('favimg')) favFail(t); }, true);
 function startShop(i){
-  if (i) openSheet({mode:'shop', id:i.id, date:isoDay(i.at), tr:i.tr ? nf0.format(i.tr) : '', lines:(i.lines || []).map(l => ({name:l.name, price:nf.format(l.price), tr:l.tr ? nf0.format(l.tr) : ''})), store:i.store, outlet:i.outlet || '', amount:nf.format(i.amount), cur:i.cur, rate:i.cur === 'EUR' ? null : i.rate, noTF:!!i.noTF, op:i.op || '', opSet:true, photo:getShopPhoto(i.id), photoChanged:false});
+  if (i) openSheet({mode:'shop', id:i.id, date:isoDay(i.at), tr:i.tr ? nf0.format(i.tr) : '', lines:(i.lines || []).map(l => ({name:l.name, price:nf.format(l.price), tr:l.tr ? nf0.format(l.tr) : ''})), store:i.store, outlet:i.outlet || '', amount:nf.format(i.amount), cur:i.cur, rate:i.cur === 'EUR' ? null : i.rate, noTF:!!i.noTF, op:i.op || '', opSet:true, ret:!!i.ret, photo:getShopPhoto(i.id), photoChanged:false});
   else openSheet({mode:'shop', date:isoDay(Date.now()), store:'', outlet:SH.outlet, amount:'', cur:'EUR', noTF:false, photo:null, photoChanged:false});
 }
 // Fişteki ürünler: fişten doldurunca gelir, elle de eklenip düzeltilebilir.
@@ -3000,6 +3054,7 @@ const trQuery = (store, name) => 'https://www.google.com/search?hl=tr&gl=tr&q=' 
 // Türkiye fiyatı karşılaştırması (senin girdiğin fiyatlarla): ürün ürün girildiyse onlar, girilmediyse fişin tamamı.
 // Net = ödenen − payına düşen tahmini tax-free iadesi, bugünkü kurla TL.
 function trCompare(i, refI){
+  if (i.ret) return null;
   const toE = v => i.cur === 'EUR' ? v : v / (i.rate || 1), keep = 1 - (refI || 0) / (shopEur(i) || 1);
   const L = (i.lines || []).filter(l => l.tr > 0);
   if (L.length) return {tr:L.reduce((a, l) => a + l.tr, 0), net:L.reduce((a, l) => a + toE(l.price) * keep, 0) * S.trip.rate, n:L.length};
@@ -3604,7 +3659,7 @@ function shopPdfPages(){
     x.fillStyle = RPT.muted; x.font = FONT(400, 18);
     const r = D.ref[i.id] || 0, c = trCompare(i, r);
     x.fillText(fit(`${new Date(i.at).toLocaleDateString('tr-TR', {day:'numeric', month:'long'})}${i.outlet ? ' · ' + i.outlet : ''}${r > 0 ? ' · iade ≈ ' + e0(r) : i.noTF ? ' · tax-free yok' : ''}${c ? ` · 🇹🇷 ${nf0.format(c.tr)} ₺` : ''}`, 680, FONT(400, 18)), M + 86, y + 64);
-    x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(800, 26); x.fillText(money(i.amount, i.cur), W - M - 20, y + 38);
+    x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(800, 26); x.fillText(money(shopAmt(i), i.cur), W - M - 20, y + 38);
     if (i.cur !== 'EUR'){ x.fillStyle = RPT.muted; x.font = FONT(500, 18); x.fillText(e0(shopEur(i)), W - M - 20, y + 64); }
     x.textAlign = 'left'; y += 92;
     if (!L.length){ x.fillStyle = RPT.muted; x.font = FONT(400, 18); x.fillText('Ürün ayrıntısı girilmemiş.', M + 86, y + 14); y += 36; }
@@ -3659,7 +3714,7 @@ async function exportShopXlsx(){
     {header:'Tahmini iade', width:13}, {header:'Tax-free', width:15}, {header:'Şirket', width:17}, {header:'Ürün', width:7}, {header:'Türkiye fiyatı', width:14}, {header:'Fark', width:9}];
   head(a.getRow(1));
   D.items.forEach(i => { const r0 = D.ref[i.id] || 0, c = trCompare(i, r0);
-    const r = a.addRow([new Date(i.at), i.store, i.outlet || '', i.amount, i.cur, shopEur(i), r0, r0 > 0 ? TF_LABEL[tfStep(i)] : (i.noTF ? 'yok' : 'sınır altı'), r0 > 0 && i.op ? opName(i.op) : '', (i.lines || []).length, c ? c.tr : null, c ? 1 - c.net / c.tr : null]);
+    const r = a.addRow([new Date(i.at), i.store + (i.ret ? ' (ürün iadesi)' : ''), i.outlet || '', shopAmt(i), i.cur, shopEur(i), r0, i.ret ? (r0 ? 'formdan düşüldü' : 'etkisi yok') : r0 > 0 ? TF_LABEL[tfStep(i)] : (i.noTF ? 'yok' : 'sınır altı'), r0 > 0 && i.op ? opName(i.op) : '', (i.lines || []).length, c ? c.tr : null, c ? 1 - c.net / c.tr : null]);
     r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(4).numFmt = '#,##0.00'; r.getCell(6).numFmt = EUR; r.getCell(7).numFmt = EUR; r.getCell(11).numFmt = TRY; r.getCell(12).numFmt = '0%';
     r.getCell(2).fill = tint(D.colorOf(i.store)); if (r0 > 0) r.getCell(8).font = {bold:true, color:{argb:'FF' + TF_COLOR[tfStep(i)].slice(1)}}; });
   const n = D.items.length; const t = a.addRow(['', 'Toplam', '', '', '', {formula:`SUM(F2:F${n + 1})`}, {formula:`SUM(G2:G${n + 1})`}]); t.font = {bold:true}; t.getCell(6).numFmt = EUR; t.getCell(7).numFmt = EUR;
@@ -3841,6 +3896,7 @@ document.addEventListener('click', ev => {
   if (d.shop){ startShop(SH.items.find(i => i.id === d.shop)); return; }
   if (d.shopview){ shopView = d.shopview; render(); return; }
   if (d.isort){ itemSort = d.isort; render(); return; }
+  if (d.shopret !== undefined && form && form.mode === 'shop'){ form.ret = d.shopret === '1'; drawSheetKeep(); return; }
   if (d.opf !== undefined){ shopOpF = shopOpF === d.opf ? null : d.opf; render(); return; }
   if (d.solo){ startSolo(SH.solo.find(x => x.id === d.solo)); return; }
   if (d.gift){ const g = SH.gifts.find(x => x.id === d.gift); g.done = !g.done; saveShop(); render(); if (g.done) toast(`🎁 ${g.who} için alındı`); return; }
