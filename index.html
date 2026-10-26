@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026175614';</script>
-<script src="heybe-web.js?v=20261026175614"></script>
+<script>window.HEYBE_VER = '20261026180423';</script>
+<script src="heybe-web.js?v=20261026180423"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -204,6 +204,10 @@ details.more .list{background:var(--bg);--row-bg:var(--bg)}
 .oprow[aria-pressed=true]{box-shadow:inset 3px 0 0 var(--accent);padding-left:10px}
 .isearch .inp{padding:10px 14px}
 .row .tag{display:block;font-size:.78rem;margin-top:1px}
+.lic{margin-right:6px}
+.ldesc{color:var(--muted);font-weight:500}
+.lline b{color:var(--ink);font-weight:600}
+.lline>b.num{white-space:nowrap;flex:none}
 .emoh{margin:12px 0 6px}
 .emogrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .emogrid button{aspect-ratio:1;font-size:1.45rem;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:0}
@@ -2317,21 +2321,262 @@ const RC_QTYCOL = rcKw('AANTAL|QTY|QTD|CANT\\.?|UDS|MENGE|QT[ÀA]|QTÉ|ADET|STK|
 // OCR bozmalarına dayanıklı: "Unit Prices", "Pr1ce", "Precio Unit." da birim fiyat etiketi sayılır.
 const RC_GENERIC = /^(KG|G|GR|L|ML|UN|UD|UDS|PZ|PCS|ST|STK|AD|ADET|EUR|EUROS?|UNIT\w*|PR[I1L]C\w*|PREC\w*|UNITARIO|UNITAIRE|PREZZ\w*|PREIS|EINZELPREIS|PRIX|B[İI]R[İI]M|F[İI]YAT|IMPORTE|PVP|P|U|C|E|X|@)$/i;
 const RC_UNIT = /UNIT|PRECIO|PREZZO|EINZELPREIS|PRIX|B[İI]R[İI]M|PVP|@/i;
-// Türler: önce özel olan (POLO, T-SHIRT) sonra genel (SHIRT); pantolon takımdan önce ("PANTALON TRAJE" pantolondur). KEEP: Türkçede de kullanılan, adda kalan kelimeler.
-const RC_TYPES = [['SHOES?|SNEAKERS?|TRAINERS?|ZAPATILLAS?|ZAPATOS?|SCARPE|SCHUHE|CHAUSSURES|BASKETS?|PUMPS?|HEELS?|LOAFERS?|MOCASINES|MOCASSINI|MOCASSINS?|MULES?|ESPADRILLES?|D[ÉE]COLLET[ÉE]S?|BOTY', 'Ayakkabı'],
-  ['BOOTS?|BOTAS?|STIVALI|STIEFEL', 'Bot'], ['SANDALS?|SANDALIAS?|SANDALI|SANDALEN', 'Sandalet'],
-  ['HOODIE|SWEATSHIRT|SUDADERA|FELPA|SWEAT', 'Sweatshirt'], ['POLO', 'Polo tişört'], ['T-?SHIRTS?|CAMISETAS?|MAGLIETTA|TEE|TRIKO|TRIČKO', 'Tişört'], ['SHIRTS?|CAMISAS?|CAMICIA|HEMD|CHEMISE|OVERHEMD', 'Gömlek'],
-  ['JACKETS?|CHAQUETAS?|GIACCA|JACKE|\\p{L}*JACKE|VESTE|PARKA|ANORAK|COAT|ABRIGO|CAPPOTTO|BLAZER|PLUMAS?|SAKKO|SACO|AMERICANA|CASACO|JAS|BUNDA|MANTEL', 'Ceket / mont'], ['JEANS?|VAQUEROS?', 'Kot pantolon'],
-  ['PANTS|TROUSERS|PANTAL[OÓ]N(ES)?|PANTALONI|HOSE|JOGGERS?|CHINOS?|BROEK|KALHOTY|CAL[ÇC]AS', 'Pantolon'], ['SHORTS|BERMUDAS?|PANTALONCINI', 'Şort'], ['SUIT|ABITO|TRAJE|ANZUG|KOSTÜM|COMPLETO', 'Takım elbise'], ['DRESS|VESTIDO|VESTITO|KLEID|ROBE|JURK', 'Elbise'],
-  ['SKIRT|FALDA|GONNA|ROCK|JUPE|ROK', 'Etek'], ['SWEATER|JERSEY|JUMPER|MAGLIONE|PULL|PULLOVER|CARDIGAN|KNIT|TRUI|CAMISOLA', 'Kazak'], ['SOCKS|CALCETINES|CALZINI|SOCKEN|CHAUSSETTES|SOKKEN|MEIAS', 'Çorap'],
-  ['BACKPACK|MOCHILA|ZAINO|RUCKSACK|SAC A DOS|SAC À DOS', 'Sırt çantası'], ['BAGS?|BOLSA|BOLSO|BORSA|TASCHE|SAC|TOTE|HANDBAG|TAS', 'Çanta'], ['WALLET|CARTERA|PORTAFOGLIO|GELDB[ÖO]RSE|PORTEFEUILLE', 'Cüzdan'],
-  ['BELT|CINTUR[OÓ]N|CINTURA|G[ÜU]RTEL|CEINTURE|RIEM', 'Kemer'], ['CAP|HAT|GORRA|SOMBRERO|CAPPELLO|M[ÜU]TZE|BEANIE', 'Şapka'], ['SCARF|BUFANDA|SCIARPA|SCHAL|[ÉE]CHARPE|SJAAL', 'Atkı'],
-  ['TIES?|CORBATA|CRAVATTA|KRAWATTE|CRAVATE', 'Kravat'], ['NECKLACE|COLLANA|HALSKETTE|COLLIER|KETTE', 'Kolye'], ['EARRINGS?|PENDIENTES|ORECCHINI|OHRRINGE|BOUCLES', 'Küpe'],
-  ['BRACELET|PULSERA|BRACCIALE|ARMBAND', 'Bileklik'], ['RING|ANILLO|ANELLO|BAGUE', 'Yüzük'],
-  ['SUNGLASSES|GAFAS|OCCHIALI|SONNENBRILLE|LUNETTES', 'Güneş gözlüğü'], ['WATCH|RELOJ|OROLOGIO|UHR|MONTRE', 'Saat'], ['PERFUME|PERFUM|PARFUM|PROFUMO|EDT|EDP|EDC|COLONIA|COLOGNE', 'Parfüm'],
-  ['SWIMSUIT|SWIM|BA[ÑN]ADOR|BIKINI', 'Mayo'], ['UNDERWEAR|BOXERS?|BRIEFS', 'İç çamaşırı'], ['LEGGINGS?|MALLAS', 'Tayt'], ['GLOVES?|GUANTES|GUANTI|HANDSCHUHE', 'Eldiven']]
-  .map(([w, tr]) => [new RegExp(`(?<![\\p{L}\\d])(${w})(?![\\p{L}\\d])`, 'iu'), tr]);
-const RC_KEEP = /^(HOODIE|POLO|BOXERS?|LEGGINGS?|BIKINI|BLAZER|PARKA|CARDIGAN)$/i;
+// ---- ürün adı sözlüğü: fişteki yabancı kelimeler → Türkçe ----
+// Marka ve model olduğu gibi kalır; yalnız tarif eden kelimeler çevrilir: "ZARA CAMISA LINO" → "Zara · keten gömlek",
+// "BOGNER SKIJACKE DAMEN" → "Bogner · kadın kayak montu". Sözlükte olmayan kelime model adıdır ("Air Max", "530", "Marmont").
+// Ürün türü bulunamazsa hiçbir kelime çevrilmez ("Flat White" kahvesi "beyaz" olmaz). Model adı olarak sık geçen kelimeler
+// (FLEECE, SUEDE, PUZZLE, AIR, MAX, CLASSIC…) ve başka dilde başka anlama gelenler (PAN: İngilizce tava, İspanyolca ekmek) bilerek sözlükte yok.
+// Biçim: 'tür|Türkçe|birleşik hali|simge|kelimeler' (kelimeler EN, ES, IT, FR, DE, PT, NL; aksansız da eşleşir; çok kelimeli olabilir).
+// Türler: T ürün türü, M malzeme, C renk, G cinsiyet/yaş, F özellik, U kullanım ("koşu" + "ayakkabısı" → koşu ayakkabısı).
+const RC_DICT_SRC = [
+  // ayakkabı
+  'T|spor ayakkabı|spor ayakkabısı|👟|sneaker,sneakers,trainer,trainers,zapatilla,zapatillas,zapatillas deportivas,deportivas,scarpe da ginnastica,sneakers,baskets,basket,turnschuhe,turnschuh,ténis,tenis,tênis,sportschoenen,boty',
+  'T|ayakkabı|ayakkabısı|👟|shoe,shoes,zapato,zapatos,scarpa,scarpe,chaussure,chaussures,schuh,schuhe,sapato,sapatos,schoen,schoenen,calzado,calzature,footwear',
+  'T|koşu ayakkabısı|koşu ayakkabısı|👟|running shoes,running shoe,zapatillas running,zapatillas de running,scarpe da running,chaussures de running,laufschuhe,laufschuh,hardloopschoenen',
+  'T|topuklu ayakkabı|topuklu ayakkabısı|👠|pumps,pump,heels,heel,high heels,tacones,zapatos de tacon,salones,decollete,decolletes,escarpins,escarpin,pumps damen,sapatos de salto,hakken',
+  'T|loafer|loaferı|👞|loafer,loafers,slip on,slip-on,slipper loafer',
+  'T|makosen|makoseni|👞|moccasin,moccasins,mocasin,mocasines,mocassino,mocassini,mocassin,mocassins,mokassin,mokassins,mocassim,mocassins homme',
+  'T|klasik ayakkabı|ayakkabısı|👞|oxford shoes,derby,derbies,brogue,brogues,zapato de vestir,scarpe stringate,richelieu,richelieus,schnürschuhe',
+  'T|espadril|espadrili|👟|espadrille,espadrilles,alpargata,alpargatas,espadrillas,espadrilles femme',
+  'T|babet|babeti|🥿|ballerina,ballerinas,ballet flats,flats,bailarina,bailarinas,manoletinas,ballerine,ballerines,sabrinas',
+  'T|bot|botu|👢|boot,boots,bota,botas,botin,botines,stivale,stivali,stivaletti,bottes,bottines,bottine,stiefel,stiefeletten,laarzen,boots homme',
+  'T|çizme|çizmesi|👢|knee boots,botas altas,stivali alti,cuissardes,overknees',
+  'T|sandalet|sandaleti|👡|sandal,sandals,sandalia,sandalias,sandalo,sandali,sandale,sandales,sandalen,sandália,sandálias',
+  'T|terlik|terliği|🩴|slipper,slippers,slides,slide,flip flops,flip-flops,chanclas,chancletas,zapatillas de casa,pantuflas,ciabatte,ciabatta,infradito,pantoufles,tongs,claquettes,hausschuhe,pantoffeln,badelatschen,chinelos,havaianas,slippers heren',
+  'T|mules|mulesı|👡|mules,mule,zuecos,zueco,sabot,sabots,clogs,clog,klompen',
+  // üst giyim
+  'T|tişört|tişörtü|👕|t-shirt,tshirt,t-shirts,tee,tees,camiseta,camisetas,maglietta,magliette,t-shirt manica corta,tee-shirt,tshirt homme,shirt kurzarm,triko,tricko,camiseta basica',
+  'T|bisiklet yaka tişört|tişörtü|👕|crew neck t,crew neck tee,crewneck t-shirt',
+  'T|polo tişört|polo tişörtü|👕|polo,polos,polo shirt,polo shirts,polo de manga corta,poloshirt,polohemd,camisa polo',
+  'T|gömlek|gömleği|👔|shirt,shirts,camisa,camisas,camicia,camicie,chemise,chemises,hemd,hemden,overhemd,overhemden,button down',
+  'T|bluz|bluzu|👚|blouse,blouses,blusa,blusas,camicetta,camicette,chemisier,chemisiers,bluse,blusen,blousje,top,tops',
+  'T|atlet|atleti|🎽|tank top,tanktop,vest top,camiseta de tirantes,camiseta sin mangas,canotta,canottiera,debardeur,débardeur,unterhemd,regata,hemdje',
+  'T|kazak|kazağı|🧶|sweater,sweaters,jumper,jumpers,jersey,jerseis,suéter,sueter,maglione,maglioni,pull,pulls,pullover,pullovers,trui,truien,camisola,camisolas,strickpullover,knitwear',
+  'T|hırka|hırkası|🧶|cardigan,cardigans,cárdigan,chaqueta de punto,rebeca,cardigan uomo,gilet maglia,strickjacke,vest gebreid,casaco de malha',
+  'T|sweatshirt|sweatshirtü|👕|sweatshirt,sweatshirts,sweat,sudadera,sudaderas,felpa,felpe,sweatshirt homme,sweater hoodie,moletom',
+  'T|kapüşonlu sweatshirt|sweatshirtü|👕|hoodie,hoodies,hooded sweatshirt,sudadera con capucha,felpa con cappuccio,sweat à capuche,kapuzenpullover,kapuzensweatshirt,hoody,moletom com capuz',
+  'T|ceket|ceketi|🧥|jacket,jackets,chaqueta,chaquetas,cazadora,cazadoras,giacca,giacche,giubbotto,giubbino,veste,vestes,blouson,jacke,jacken,casaco,casacos,jaqueta,jas,jassen,sakko,sakkos,saco,americana,bunda',
+  'T|blazer ceket|blazer ceketi|🧥|blazer,blazers,americana de traje',
+  'T|kaban|kabanı|🧥|coat,coats,abrigo,abrigos,cappotto,cappotti,manteau,manteaux,mantel,mäntel,sobretudo,overcoat,peacoat,caban',
+  'T|trençkot|trençkotu|🧥|trench,trench coat,trenchcoat,gabardina,impermeable trench,trench-coat',
+  'T|parka|parkası|🧥|parka,parkas',
+  'T|şişme mont|şişme montu|🧥|down jacket,puffer jacket,puffer,plumas,plumífero,anorak plumas,piumino,piumini,doudoune,doudounes,daunenjacke,steppjacke,pufferjack,blusão acolchoado',
+  'T|kayak montu|kayak montu|🧥|ski jacket,chaqueta de esqui,giacca da sci,veste de ski,skijacke,skijas',
+  'T|yağmurluk|yağmurluğu|🧥|rain jacket,raincoat,chubasquero,impermeabile,k-way,regenjacke,regenjas,capa de chuva',
+  'T|mont|montu|🧥|anorak,windbreaker,cortavientos,giacca a vento,coupe-vent,windjacke,corta-vento,softshell,outdoorjacke',
+  'T|yelek|yeleği|🦺|vest,gilet,gilets,chaleco,chalecos,panciotto,weste,westen,colete,bodywarmer',
+  'T|takım elbise|takım elbisesi|🤵|suit,suits,traje,trajes,abito,completo,costume homme,anzug,anzüge,fato,pak,kostüm',
+  // alt giyim
+  'T|kot pantolon|kot pantolonu|👖|jeans,jean,vaqueros,vaquero,tejanos,denim jeans,jeans uomo,calças de ganga,spijkerbroek',
+  'T|pantolon|pantolonu|👖|pants,trousers,pantalon,pantalones,pantaloni,pantalone,pantalons,hose,hosen,calça,calças,broek,broeken,kalhoty,slacks',
+  'T|chino pantolon|chino pantolonu|👖|chino,chinos,pantalon chino,chino uomo',
+  'T|eşofman altı|eşofman altı|👖|joggers,jogger,jogging,joggingbroek,pantalon de chandal,pantalón de chándal,pantaloni tuta,jogginghose,sweatpants,track pants,trackpants,calças de fato de treino',
+  'T|eşofman takımı|eşofman takımı|🏃|tracksuit,chandal,chándal,tuta,survêtement,survetement,trainingsanzug,trainingspak,fato de treino',
+  'T|şort|şortu|🩳|shorts,short,bermuda,bermudas,pantalón corto,pantalones cortos,pantaloncini,shorts uomo,kurze hose,calções,korte broek',
+  'T|tayt|taytı|🩱|leggings,legging,mallas,leggins,collant sport,leggings femme,tights sport',
+  'T|etek|eteği|👗|skirt,skirts,falda,faldas,gonna,gonne,jupe,jupes,rock,röcke,saia,saias,rok,rokken',
+  'T|elbise|elbisesi|👗|dress,dresses,vestido,vestidos,vestito,vestiti,abito donna,robe,robes,kleid,kleider,jurk,jurken',
+  'T|tulum|tulumu|👗|jumpsuit,jumpsuits,playsuit,mono,monos,tuta intera,combinaison,combinaisons,overall,jumpsuit damen,macacão',
+  // iç giyim, gece, deniz
+  'T|iç çamaşırı|iç çamaşırı|🩲|underwear,ropa interior,intimo,sous-vêtements,sous-vetements,unterwäsche,unterwasche,roupa interior,ondergoed',
+  'T|boxer|boxerı|🩲|boxer,boxers,boxer briefs,boxershorts,calzoncillos,boxer uomo,caleçon,calecons,boxers homme',
+  'T|slip|slipi|🩲|briefs,brief,slip,slips,bragas,braga,mutande,culotte,culottes,cuecas',
+  'T|sütyen|sütyeni|👙|bra,bras,sujetador,sujetadores,reggiseno,reggiseni,soutien-gorge,soutien gorge,bh,soutien,beha',
+  'T|çorap|çorabı|🧦|socks,sock,calcetines,calcetin,calzini,calzino,chaussettes,chaussette,socken,meias,meia,sokken',
+  'T|külotlu çorap|külotlu çorabı|🧦|tights,pantyhose,medias,panty,collant,collants,strumpfhose,strumpfhosen,meia-calça,panty dames',
+  'T|pijama|pijaması|🛌|pyjama,pyjamas,pajama,pajamas,pijama,pijamas,pigiama,pigiami,schlafanzug',
+  'T|pijama takımı|pijama takımı|🛌|pyjama set,pajama set,conjunto pijama,set pigiama,ensemble pyjama',
+  'T|bornoz|bornozu|🛁|bathrobe,robe de chambre,albornoz,accappatoio,peignoir,bademantel,roupão,badjas',
+  'T|mayo|mayosu|🩱|swimsuit,swimsuits,swimwear,bathing suit,bañador,banador,costume da bagno,maillot de bain,maillot,badeanzug,badpak,fato de banho',
+  'T|bikini|bikinisi|👙|bikini,bikinis',
+  'T|deniz şortu|deniz şortu|🩳|swim shorts,swim short,board shorts,boardshorts,bañador hombre,boxer mare,costume uomo,short de bain,badeshorts,zwembroek,calções de banho',
+  // aksesuar
+  'T|atkı|atkısı|🧣|scarf,scarves,bufanda,bufandas,sciarpa,sciarpe,écharpe,echarpe,écharpes,schal,schals,cachecol,sjaal,sjaals',
+  'T|şal|şalı|🧣|shawl,stole,foulard,foulards,pañuelo,panuelo,fular,stola,tuch,halstuch,lenço,omslagdoek',
+  'T|şapka|şapkası|👒|hat,hats,sombrero,sombreros,cappello,cappelli,chapeau,chapeaux,hut,hüte,chapéu,hoed',
+  'T|kep|kepi|🧢|cap,caps,baseball cap,gorra,gorras,cappellino,casquette,casquettes,kappe,basecap,boné,pet',
+  'T|bere|beresi|🧢|beanie,beanies,gorro,gorros,berretto,bonnet,bonnets,mütze,mutze,strickmütze,gorro de lã,muts',
+  'T|eldiven|eldiveni|🧤|gloves,glove,guantes,guante,guanti,gants,gant,handschuhe,handschuh,luvas,handschoenen',
+  'T|kemer|kemeri|🪢|belt,belts,cinturón,cinturon,cinturones,cintura,cinture,ceinture,ceintures,gürtel,gurtel,cinto,riem,riemen',
+  'T|kravat|kravatı|👔|tie,ties,necktie,corbata,corbatas,cravatta,cravatte,cravate,cravates,krawatte,krawatten,gravata,stropdas',
+  'T|papyon|papyonu|🎀|bow tie,bowtie,pajarita,papillon,noeud papillon,nœud papillon,fliege,laço,strik',
+  'T|cüzdan|cüzdanı|👛|wallet,wallets,purse,cartera,carteras,billetera,monedero,portafoglio,portafogli,portefeuille,portefeuilles,porte-monnaie,geldbörse,geldborse,portemonnaie,carteira,portemonnee',
+  'T|kartlık|kartlığı|💳|card holder,cardholder,card case,tarjetero,portacarte,porta carte,porte-cartes,porte cartes,kartenetui,porta-cartões,pasjeshouder',
+  'T|çanta|çantası|👜|bag,bags,handbag,handbags,bolsa,bolsas,bolso,bolsos,borsa,borse,borsetta,sac,sacs,sac à main,tasche,taschen,handtasche,mala,malas,tas,tassen,tote,tote bag,shopper,shopping bag',
+  'T|omuz çantası|omuz çantası|👜|shoulder bag,bandolera,bolso bandolera,borsa a tracolla,tracolla,sac bandoulière,sac bandouliere,umhängetasche,umhangetasche,mala de ombro,schoudertas',
+  'T|çapraz çanta|çapraz çantası|👜|crossbody,crossbody bag,cross body,messenger,messenger bag,bolso cruzado,borsa a spalla,sacoche',
+  'T|el çantası|el çantası|👝|clutch,clutches,pochette,pochettes,cartera de mano,bolso de mano,clutch bag',
+  'T|sırt çantası|sırt çantası|🎒|backpack,backpacks,rucksack,rucksacks,mochila,mochilas,zaino,zaini,sac a dos,sac à dos,rugzak',
+  'T|valiz|valizi|🧳|suitcase,suitcases,luggage,trolley,maleta,maletas,valigia,valigie,valise,valises,koffer,mala de viagem,cabin bag',
+  'T|seyahat çantası|seyahat çantası|🧳|travel bag,duffel,duffle,weekender,bolsa de viaje,borsone,sac de voyage,reisetasche,weekendtas',
+  'T|bel çantası|bel çantası|👝|belt bag,bum bag,waist bag,fanny pack,riñonera,rinonera,marsupio,banane,sac banane,bauchtasche,gürteltasche,heuptas',
+  'T|anahtarlık|anahtarlığı|🔑|keychain,key ring,keyring,key holder,llavero,portachiavi,porte-clés,porte-cles,schlüsselanhänger,schlusselanhanger,porta-chaves,sleutelhanger',
+  'T|şemsiye|şemsiyesi|☂️|umbrella,umbrellas,paraguas,ombrello,parapluie,regenschirm,schirm,guarda-chuva,paraplu',
+  'T|güneş gözlüğü|güneş gözlüğü|🕶️|sunglasses,sunglass,gafas de sol,gafas,occhiali da sole,occhiali,lunettes de soleil,lunettes,sonnenbrille,óculos de sol,oculos de sol,zonnebril',
+  'T|saat|saati|⌚|watch,watches,reloj,relojes,orologio,orologi,montre,montres,uhr,armbanduhr,relógio,relogio,horloge',
+  'T|kolye|kolyesi|📿|necklace,necklaces,collar,collares,collana,collane,collier,colliers,halskette,kette,colar,ketting',
+  'T|kolye ucu|kolye ucu|💎|pendant,pendants,colgante,colgantes,ciondolo,pendentif,anhänger,anhanger,pingente,hanger',
+  'T|küpe|küpesi|💎|earrings,earring,pendientes,pendiente,orecchini,orecchino,boucles d\'oreilles,boucles,ohrringe,ohrring,brincos,oorbellen',
+  'T|bileklik|bilekliği|📿|bracelet,bracelets,pulsera,pulseras,brazalete,bracciale,braccialetto,armband,armbänder,pulseira,armbandje',
+  'T|yüzük|yüzüğü|💍|ring,rings,anillo,anillos,anello,anelli,bague,bagues,ring damen,anel,anéis',
+  'T|broş|broşu|📌|brooch,broche,broches,spilla,spille,brosche,pregadeira',
+  'T|kol düğmesi|kol düğmesi|🔘|cufflinks,cufflink,gemelos,gemelli,boutons de manchette,manschettenknöpfe,botões de punho,manchetknopen',
+  // kozmetik
+  'T|parfüm|parfümü|🧴|perfume,perfumes,parfum,parfums,profumo,profumi,fragrance,eau de parfum,eau de toilette,edt,edp,edc,colonia,cologne,eau de cologne,duft',
+  'T|ruj|rujı|💄|lipstick,lipsticks,pintalabios,barra de labios,rossetto,rouge a levres,rouge à lèvres,lippenstift,batom,lippenstift',
+  'T|dudak parlatıcı|dudak parlatıcısı|💄|lip gloss,lipgloss,brillo de labios,gloss labbra,gloss',
+  'T|maskara|maskarası|💄|mascara,máscara de pestañas,mascara ciglia,mascara cils,wimperntusche',
+  'T|fondöten|fondöteni|💄|foundation,base de maquillaje,fondotinta,fond de teint,make-up foundation,base líquida',
+  'T|far paleti|far paleti|🎨|palette,eyeshadow palette,paleta de sombras,paleta,palette ombretti,palette yeux,lidschattenpalette',
+  'T|oje|ojesi|💅|nail polish,esmalte,esmalte de uñas,smalto,vernis à ongles,vernis,nagellack,verniz,nagellak',
+  'T|krem|kremi|🧴|cream,crema,creme,crème,moisturizer,hidratante,crema viso,crème visage,gesichtscreme,creme facial,dagcrème',
+  'T|serum|serumu|🧴|serum,sérum,siero',
+  'T|güneş kremi|güneş kremi|🧴|sunscreen,sun cream,protector solar,crema solare,crème solaire,creme solaire,sonnencreme,protetor solar,zonnebrand',
+  'T|şampuan|şampuanı|🧴|shampoo,shampoos,champú,champu,shampooing,shampoing,champô',
+  'T|losyon|losyonu|🧴|lotion,body lotion,loción,locion,lozione,lait corporel,körperlotion,loção',
+  'T|vücut spreyi|vücut spreyi|🧴|body mist,body spray,bruma corporal,brume',
+  // ev, mutfak, hediyelik
+  'T|tava|tavası|🍳|frying pan,skillet,sartén,sarten,padella,poêle,poele,pfanne,frigideira,koekenpan',
+  'T|tencere|tenceresi|🍲|pot,saucepan,casserole,olla,cacerola,pentola,casseruola,cocotte,topf,kochtopf,panela,kookpan',
+  'T|bıçak|bıçağı|🔪|knife,knives,cuchillo,cuchillos,coltello,coltelli,couteau,couteaux,messer,faca,facas,mes',
+  'T|kupa|kupası|☕|mug,mugs,cup,cups,taza,tazas,tazza,tazze,tasse,tasses,becher,caneca,chávena,mok',
+  'T|bardak|bardağı|🥛|glass,glasses,vaso,vasos,bicchiere,bicchieri,verre,verres,glas,gläser,copo,copos',
+  'T|tabak|tabağı|🍽️|plate,plates,plato,platos,piatto,piatti,assiette,assiettes,teller,prato,pratos,bord,borden',
+  'T|havlu|havlusu|🛁|towel,towels,toalla,toallas,asciugamano,asciugamani,serviette de bain,handtuch,handtücher,toalha,toalhas,handdoek',
+  'T|mum|mumu|🕯️|candle,candles,vela,velas,candela,candele,bougie,bougies,kerze,kerzen,kaars',
+  'T|battaniye|battaniyesi|🛏️|blanket,blankets,throw,manta,mantas,coperta,coperte,plaid,couverture,decke,decken,cobertor,deken',
+  'T|yastık|yastığı|🛏️|pillow,pillows,cushion,cushions,cojín,cojin,almohada,cuscino,cuscini,coussin,oreiller,kissen,almofada,kussen',
+  'T|nevresim|nevresimi|🛏️|bedding,duvet cover,funda nórdica,funda nordica,copripiumino,housse de couette,bettwäsche,dekbedovertrek',
+  'T|magnet|magneti|🧲|magnet,magnets,imán,iman,imanes,calamita,calamite,aimant,aimants,kühlschrankmagnet,íman,magneet',
+  'T|yelpaze|yelpazesi|🪭|fan,hand fan,abanico,abanicos,ventaglio,éventail,eventail,fächer,leque,waaier',
+  'T|kartpostal|kartpostalı|💌|postcard,postcards,postal,postales,cartolina,cartoline,carte postale,postkarte,cartão postal,ansichtkaart',
+  'T|oyuncak|oyuncağı|🧸|toy,toys,juguete,juguetes,giocattolo,giocattoli,jouet,jouets,spielzeug,brinquedo,speelgoed',
+  'T|peluş oyuncak|peluş oyuncağı|🧸|plush,teddy,teddy bear,peluche,peluches,kuscheltier,stofftier,pelúcia,knuffel',
+  // yiyecek (hediyelik)
+  'T|çikolata|çikolatası|🍫|chocolate,chocolates,cioccolato,cioccolata,cioccolatini,chocolat,chocolats,schokolade,pralinen,chocolade,bombones,pralines',
+  'T|şarap|şarabı|🍷|wine,vino,vini,vin,vins,wein,vinho,wijn',
+  'T|zeytinyağı|zeytinyağı|🫒|olive oil,aceite de oliva,aceite oliva,olio d\'oliva,olio di oliva,olio extravergine,huile d\'olive,olivenöl,olivenol,azeite,olijfolie',
+  'T|peynir|peyniri|🧀|cheese,queso,quesos,formaggio,formaggi,fromage,fromages,käse,kase,queijo,kaas',
+  'T|jambon|jambonu|🥓|ham,jamón,jamon,prosciutto,jambon,schinken,presunto,ham',
+  'T|bal|balı|🍯|honey,miel,miele,honig,mel,honing',
+  'T|kahve|kahvesi|☕|coffee beans,café en grano,caffè in grani,café en grains,kaffeebohnen,café em grão',
+  'T|çay|çayı|🍵|tea,té,te,thé,the,tee,chá,thee',
+  'T|turrón|turrónu|🍬|turron,turrón,torrone,nougat',
+  // elektronik
+  'T|kulaklık|kulaklığı|🎧|headphones,headphone,earphones,earbuds,auriculares,cuffie,auricolari,écouteurs,ecouteurs,casque,kopfhörer,kopfhorer,fones,auscultadores,koptelefoon,oordopjes',
+  'T|şarj aleti|şarj aleti|🔌|charger,chargers,cargador,caricabatterie,caricatore,chargeur,ladegerät,ladegerat,carregador,oplader',
+  'T|kablo|kablosu|🔌|cable,cables,cavo,câble,kabel,cabo',
+  'T|kılıf|kılıfı|📱|case,phone case,cover,funda,fundas,custodia,cover smartphone,coque,étui,etui,hülle,hulle,handyhülle,capa,capinha,hoesje',
+  'T|powerbank|powerbankı|🔋|power bank,powerbank,batería externa,bateria externa,batteria esterna,batterie externe',
+  // malzeme
+  'M|pamuk||🧵|cotton,algodón,algodon,cotone,coton,baumwolle,algodão,katoen,organic cotton',
+  'M|keten||🧵|linen,lino,lin,leinen,linho,linnen',
+  'M|yün||🧶|wool,lana,laine,wolle,lã,la,wol,merino wool',
+  'M|merinos||🧶|merino,merinos,merino wool',
+  'M|kaşmir||🧶|cashmere,cachemira,cachemire,kaschmir,caxemira,kasjmier',
+  'M|ipek||🧵|silk,seda,seta,soie,seide,zijde',
+  'M|deri||🧵|leather,piel,cuero,pelle,cuir,leder,couro,leer,genuine leather',
+  'M|süet||🧵|ante,serraje,scamosciato,camoscio,daim,wildleder,camurça,camurca',
+  'M|kot||🧵|denim,mezclilla,jeansstoff,ganga',
+  'M|kadife||🧵|velvet,terciopelo,velluto,velours,samt,veludo,fluweel',
+  'M|fitilli kadife||🧵|corduroy,pana,velluto a coste,velours côtelé,velours cotele,cord,cordstoff,bombazine',
+  'M|saten||🧵|satin,raso,satén,saten,satijn,cetim',
+  'M|dantel||🧵|lace,encaje,pizzo,dentelle,spitze,renda,kant',
+  'M|örme||🧶|knit,knitted,punto,de punto,maglia,tricot,strick,gestrickt,malha,gebreid',
+  'M|naylon||🧵|nylon,nailon,nilon',
+  'M|kaz tüyü||🪶|down,plumón,plumon,piuma d\'oca,duvet d\'oie,daunen,penas,dons',
+  'M|hasır||🧺|straw,paja,paglia,paille,stroh,palha,rotan,raffia,rafia',
+  'M|kanvas||🧵|canvas,lona,tela,toile,leinwand,lona',
+  'M|altın||🥇|gold,oro,or,golden,dorado,dorato,doré,goud,ouro',
+  'M|gümüş||🥈|silver,plata,argento,argent,silber,prata,zilver,sterling,sterling silver',
+  'M|çelik||🔩|steel,stainless steel,acero,acciaio,acier,stahl,aço,staal',
+  'M|seramik||🏺|ceramic,cerámica,ceramica,céramique,keramik,cerâmica,keramiek,porcelain,porcelana,porcellana,porcelaine,porzellan',
+  'M|cam||🥛|crystal,cristal,cristallo,kristall,vidrio,vetro,verre trempé',
+  // renk
+  'C|siyah||⚫|black,negro,negra,nero,nera,noir,noire,schwarz,preto,preta,zwart',
+  'C|beyaz||⚪|white,blanco,blanca,bianco,bianca,blanc,blanche,weiss,weiß,branco,branca,wit',
+  'C|lacivert||🔵|navy,navy blue,azul marino,blu navy,blu scuro,bleu marine,marine,marineblau,azul-marinho,donkerblauw',
+  'C|mavi||🔵|blue,azul,blu,bleu,blau,blauw,light blue,celeste,azzurro',
+  'C|kırmızı||🔴|red,rojo,roja,rosso,rossa,rouge,rot,vermelho,rood',
+  'C|bordo||🍷|burgundy,granate,bordeaux,bordò,bordo,weinrot',
+  'C|yeşil||🟢|green,verde,vert,verte,grün,grun,groen,olive,khaki green',
+  'C|haki||🟢|khaki,caqui,kaki',
+  'C|gri||⚪|grey,gray,gris,grigio,grigia,grau,cinza,cinzento,grijs,anthracite,antracita,antracite',
+  'C|bej||🟤|beige,camel,crudo,écru,ecru,sand,arena,sabbia,sable',
+  'C|kahverengi||🟤|brown,marrón,marron,marrone,brun,braun,castanho,bruin,chocolate brown',
+  'C|pembe||🩷|pink,rosa,rose,roze',
+  'C|sarı||🟡|yellow,amarillo,giallo,jaune,gelb,amarelo,geel',
+  'C|turuncu||🟠|orange,naranja,arancione,laranja,oranje',
+  'C|mor||🟣|purple,violet,morado,lila,viola,violeta,paars,roxo',
+  'C|krem||⚪|cream,ivory,marfil,avorio,ivoire,elfenbein,cru',
+  // cinsiyet, yaş
+  'G|erkek||👨|men,mens,men\'s,man,hombre,hombres,uomo,uomini,homme,hommes,herren,herr,homem,heren,male',
+  'G|kadın||👩|women,womens,women\'s,woman,ladies,lady,mujer,mujeres,donna,donne,femme,femmes,damen,dame,mulher,senhora,dames,female',
+  'G|çocuk||🧒|kids,kid,children,child,niños,ninos,infantil,bambino,bambini,bimbo,enfant,enfants,kinder,kind,criança,crianca,kinderen,junior,juniors',
+  'G|kız çocuk||👧|girl,girls,niña,bambina,bambine,fille,filles,mädchen,madchen,menina,meisje,meisjes',
+  'G|erkek çocuk||👦|boy,boys,niño,chico,ragazzo,garçon,garcon,junge,jungen,menino,jongen,jongens',
+  'G|bebek||👶|baby,babies,bebé,bebe,neonato,bébé,bebê,infant',
+  'G|unisex||🧑|unisex',
+  // özellik
+  'F|kısa kollu||✂️|short sleeve,short-sleeve,short sleeved,manga corta,manica corta,manches courtes,manche courte,kurzarm,manga curta,korte mouw,ss',
+  'F|uzun kollu||✂️|long sleeve,long-sleeve,long sleeved,manga larga,manica lunga,manches longues,langarm,manga comprida,lange mouw,ls',
+  'F|kolsuz||✂️|sleeveless,sin mangas,smanicato,sans manches,ärmellos,armellos,sem mangas,mouwloos',
+  'F|kapüşonlu||🧥|hooded,con capucha,con cappuccio,à capuche,a capuche,capuche,kapuze,com capuz,capuchon',
+  'F|su geçirmez||💧|waterproof,water resistant,water-repellent,impermeable,impermeabile,imperméable,impermeable,wasserdicht,wasserabweisend,impermeável,waterdicht',
+  'F|şişme||🧥|padded,quilted,puffer,acolchada,acolchado,acolchadas,imbottito,imbottita,trapuntato,matelassé,matelasse,doudoune,gesteppt,wattiert,acolchoado,gewatteerd',
+  'F|fermuarlı||🤐|zip,zipped,zip-up,full zip,half zip,cremallera,con cremallera,zip intera,mezza zip,zippé,zippe,reißverschluss,reissverschluss,com fecho,rits',
+  'F|çizgili||➖|striped,stripes,stripe,rayas,a rayas,de rayas,righe,a righe,rigato,rayé,raye,rayures,gestreift,streifen,listrado,risca,gestreept',
+  'F|baskılı||🖨️|print,printed,graphic,estampado,estampada,stampato,stampa,imprimé,imprime,imprimee,imprimée,bedruckt,print shirt,estampado,bedrukt',
+  'F|çiçekli||🌸|floral,flowers,flores,flor,fiori,floreale,fleurs,fleuri,fleurie,geblümt,geblumt,blumen,florido,bloemen',
+  'F|kareli||🏁|check,checked,plaid,tartan,cuadros,a cuadros,quadri,a quadri,carreaux,à carreaux,kariert,karo,xadrez,geruit',
+  'F|puantiyeli||⚪|polka dot,dots,lunares,pois,a pois,à pois,punkte,gepunktet,bolinhas,stippen',
+  'F|kısa||📏|short,corto,corta,corti,courte,court,kurz,kurze,curto,curta,kort',
+  'F|uzun||📏|long,largo,larga,lungo,lunga,longue,lang,lange,comprido',
+  'F|mini||📏|mini',
+  'F|midi||📏|midi',
+  'F|maxi||📏|maxi',
+  'F|dar kesim||📐|slim,slim fit,slim-fit,skinny,ajustado,entallado,aderente,ajusté,ajuste,cintré,schmal,justo,getailleerd',
+  'F|normal kesim||📐|regular,regular fit,regular-fit,recto,clásico,clasico,regolare,droit,coupe droite,gerade,normal,reto',
+  'F|bol kesim||📐|oversize,oversized,loose,relaxed,relaxed fit,wide,holgado,ancho,ampio,large,weit,folgado,wijd',
+  'F|yüksek bel||📐|high waist,high-waisted,talle alto,tiro alto,vita alta,taille haute,high rise,cintura alta,hoge taille',
+  'F|bisiklet yaka||👕|crew neck,crewneck,cuello redondo,girocollo,col rond,rundhals,gola redonda,ronde hals',
+  'F|v yaka||👕|v-neck,v neck,cuello pico,cuello en v,scollo a v,col v,v-ausschnitt,decote em v',
+  'F|balıkçı yaka||👕|turtleneck,roll neck,cuello alto,cuello vuelto,dolcevita,collo alto,col roulé,col roule,rollkragen,gola alta,col',
+  'F|saç örgü||🧶|cable knit,cable-knit,ochos,trecce,torsades,zopfmuster',
+  'F|küçük||📏|small,pequeño,pequeno,pequeña,piccolo,piccola,petit,petite,klein,pequena',
+  'F|büyük||📏|large size,grande,grand,groß,gross,groot,big',
+  'F|paket||📦|pack,pk,paquete,confezione,lot,packung,pacote,set de',
+  // kullanım (birleşik ad kurar: "koşu" + "ayakkabısı")
+  'U|koşu||🏃|running,run,correr,corsa,course,laufen,lauf,corrida,hardlopen',
+  'U|kayak||⛷️|ski,esquí,esqui,sci,skifahren',
+  'U|yürüyüş||🥾|hiking,trekking,senderismo,escursionismo,randonnée,randonnee,wandern,caminhada,wandel,outdoor',
+  'U|antrenman||🏋️|training,gym,entrenamiento,allenamento,entraînement,entrainement,fitness,treino',
+  'U|tenis||🎾|tennis,tenis padel,padel,pádel',
+  'U|futbol||⚽|football,soccer,fútbol,futbol,calcio,fußball,fussball,voetbal',
+  'U|basketbol||🏀|basketball,baloncesto,pallacanestro,basket-ball',
+  'U|golf||⛳|golf',
+  'U|yoga||🧘|yoga',
+  'U|bisiklet||🚲|cycling,bike,ciclismo,cyclisme,radsport,fiets',
+  'U|plaj||🏖️|beach,playa,spiaggia,plage,strand,praia',
+  'U|seyahat||🧳|travel,viaje,viaggio,voyage,reise,viagem,reis',
+  'U|omuz||👜|shoulder,hombro,spalla,épaule,schulter,ombro',
+  'U|kış||❄️|winter,invierno,inverno,hiver',
+  'U|yağmur||🌧️|rain,lluvia,pioggia,pluie,regen,chuva',
+];
+const rcKey = s => String(s).toLocaleLowerCase('en').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/ß/g, 'ss').replace(/['’]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+const RC_DICT = (() => { const m = new Map(); for (const e of RC_DICT_SRC){ const [k, tr, c, icon, ws] = e.split('|');
+  for (const w of ws.split(',')){ const key = rcKey(w); if (key && !m.has(key)) m.set(key, {k, tr, c:c || tr, icon}); } } return m; })();
+// Türün simgesi: tarifin sonundaki tür ("keten gömlek" → 👔). En uzun eşleşen tür kazanır.
+const RC_TYPE_ICONS = (() => { const m = new Map(); for (const v of RC_DICT.values()) if (v.k === 'T'){ m.set(v.tr, v.icon); m.set(v.c, v.icon); } return [...m].sort((a, b) => b[0].length - a[0].length); })();
+const rcIconOf = t => { const s0 = String(t).toLocaleLowerCase('tr').replace(/\s*×\d+$/, ''); const hit = RC_TYPE_ICONS.find(([k]) => s0 === k || s0.endsWith(' ' + k)); return hit ? hit[1] : ''; };
+// Fişten gelen ürün adı "Marka Model · türkçe tarif": kalın model, gri tarif, solda tür simgesi.
+function lineName(name){
+  const [m, d] = String(name).split(' · '), icon = rcIconOf(d || m);
+  return `${icon ? `<span class="lic" aria-hidden="true">${icon}</span>` : ''}<b>${esc(m)}</b>${d ? ` <span class="ldesc">· ${esc(d)}</span>` : ''}`;
+}
+// "3'lü", "5'li", "6'lı": sayının okunuşuna göre ek.
+function trNum(n){ const u = {1:'li', 2:'li', 3:'lü', 4:'lü', 5:'li', 6:'lı', 7:'li', 8:'li', 9:'lu'}, t = {10:'lu', 20:'li', 30:'lu', 40:'lı', 50:'li', 60:'lı', 70:'li', 80:'li', 90:'lı', 100:'lü'};
+  return `${n}'${u[n % 10] || t[n % 100] || t[n % 1000] || 'li'}`; }
 const RC_ABBR = /^(EDT|EDP|EDC|USB|LED|SPF|XXL|XL|UV|TV|HD|GG|NB|CK|LV|DNA|USA|UK)$/i;
 const RC_EN = /^(BASIC|SLIM|FIT|CLASSIC|DENIM|PRINT|LINEN|CARDIGAN|BIKINI|MINI|MIDI|MAXI|OVERSIZE|ORIGINAL|PREMIUM|SKINNY|REGULAR|VINTAGE|COTTON|SHIRT|SWEATSHIRT|HOODIE|JOGGER|BOMBER|LIMITED|EDITION|GRAPHIC|BIG|KIDS?|GIRL|MIX|PINK|WHITE|BLACK|STRING|STRIPED)$/i;
 // Çok markalı mağazalar: ürünün başına mağazanın adı eklenmez.
@@ -2353,19 +2598,28 @@ function rcName(raw, tr, store){
     .replace(/\s(XXS|XS|S|M|L|XL|XXL|XXXL|\d{2}\/\d{2})\s*$/i, '').replace(/[^\p{L}\p{N} .,&'()\/-]/gu, ' ').replace(/\s+/g, ' ').replace(/[\s.,-]+$/, '').trim();
   n = rcCase(n, tr);
   // Baştaki marka doğru yazılır (NB → New Balance, LEVI'S → Levi's).
-  const b = brandAt(n); if (b){ const w = n.split(' '); n = [b.name, ...w.slice(b.n)].join(' '); }
-  if (!tr){
-    const typeOf = t => (RC_TYPES.find(([re]) => re.test(t)) || [])[1];
-    const par = n.match(/\(([^)]*)\)\s*$/);
-    if (par){ const t = typeOf(par[1]); if (t) n = n.slice(0, par.index).trim() + ` (${t})`; }
-    else { const t = typeOf(n); if (t){
-      const w = n.split(' '), last = w[w.length - 1];
-      if (w.length > 1 && typeOf(last) === t && !RC_KEEP.test(last)) w.pop();
-      n = w.join(' ') + ` (${t})`; } }
+  let brand = null, words = n.split(' ').filter(Boolean);
+  const b = brandAt(n); if (b){ brand = b.name; words = words.slice(b.n); }
+  const head = brand || (store && !RC_MULTI.has(store) && !brandNorm(n).startsWith(brandNorm(store)) ? store : null);
+  const out = (model, desc) => { const m = [head, model].filter(Boolean).join(' ').trim(); return (m ? m + (desc ? ' · ' + desc : '') : desc ? desc[0].toLocaleUpperCase('tr') + desc.slice(1) : '').slice(0, 70); };
+  if (tr) return out(words.join(' '), '');                                         // Türkçe fiş: ad olduğu gibi
+  // Kelimeler sözlükte aranır (önce 4, 3, 2 kelimelik ifadeler); bulunamayanlar model adıdır. Parantez içi de tarif sayılır.
+  const toks = words.map(w => ({w:w.replace(/[()]/g, ''), par:/^\(|\)$/.test(w)})).filter(t => t.w);
+  const found = [], model = [];
+  for (let i = 0; i < toks.length;){
+    let hit = null, len = 0;
+    for (let L = Math.min(4, toks.length - i); L >= 1 && !hit; L--){ const e = RC_DICT.get(rcKey(toks.slice(i, i + L).map(t => t.w).join(' '))); if (e){ hit = e; len = L; } }
+    const pk = !hit && toks[i].w.match(/^(\d{1,3})-?(PACK|PK|P|ER-?PACK|PZ|PCS|PIEZAS|PEZZI)$/i);
+    if (pk){ found.push({k:'F', tr:trNum(+pk[1]), par:toks[i].par}); i++; continue; }
+    if (hit){ found.push({...hit, par:toks[i].par}); i += len; } else { model.push(toks[i].w); i++; }
   }
-  // Tek markalı mağazada ürün adında marka yoksa başa eklenir (Nike mağazasında "Air Max" → "Nike Air Max").
-  if (store && !RC_MULTI.has(store) && !brandNorm(n).startsWith(brandNorm(store)) && !brandAt(n)) n = store + ' ' + n;
-  return n.slice(0, 60);
+  // Ürün türü yoksa çeviri yapılmaz (ad olduğu gibi). Birden çok tür varsa parantez dışındaki ilk tür ("PANTALON TRAJE" → pantolon).
+  const types = found.filter(f => f.k === 'T'), type = types.find(f => !f.par) || types[0];
+  if (!type) return out(toks.map(t => t.w).join(' '), '');
+  const pick = k => [...new Set(found.filter(f => f.k === k).map(f => f.tr))];
+  const use = pick('U')[0], noun = use ? `${use} ${type.c}` : type.tr;
+  const desc = [...pick('G'), ...pick('C'), ...pick('F'), ...pick('M'), noun].join(' ').replace(/\s+/g, ' ');
+  return out(model.join(' '), desc);
 }
 function parseReceipt(text, retPass){
   // OCR düzeltmeleri: tarih ve saatler silinir (fiyat sanılmasın); "Ix/lx" (1x) düzeltilir; "-£2.00" → "-2.00"; "99, 95" → "99,95";
@@ -2521,7 +2775,7 @@ function parseReceipt(text, retPass){
 async function readReceipt(dataUrl){
   if (sampleFn && sampleImg){
     try {
-      return await sampleFn.json('Bu fotoğraf bir harcama fişi ya da faturası. Ödenen TOPLAM tutarı, para birimini, 2-4 kelimelik kısa bir Türkçe açıklamayı (mağaza fişiyse mağaza adını) ve fişteki ürünleri (en fazla 30) çıkar. Ürün adı fişteki model adıdır; sonuna türünü Türkçe parantezle ekle (ör. "Nike Air Max Systm (Ayakkabı)"). '
+      return await sampleFn.json('Bu fotoğraf bir harcama fişi ya da faturası. Ödenen TOPLAM tutarı, para birimini, 2-4 kelimelik kısa bir Türkçe açıklamayı (mağaza fişiyse mağaza adını) ve fişteki ürünleri (en fazla 30) çıkar. Ürün adı: marka ve model fişteki gibi kalır, ardından " · " ve Türkçe kısa tarif (renk, malzeme, tür; ör. "Nike Air Max Systm · ayakkabı", "Zara · keten gömlek", "Bogner · kadın kayak montu"). '
       + '"Unit Price/Precio Unitario" gibi satırlar ürün değil, üstündeki ürünün fiyatıdır; "1x" adettir. Ara toplam, KDV/IVA, ödeme, para üstü ve indirim satırları ürün değildir. '
       + 'Fişte indirim varsa (ör. outlet %20) ürün fiyatlarını indirimli yaz; ürünlerin toplamı ödenen toplama eşit olsun. '
       + 'İade fişiyse (devolución, refund, Rückgabe, reso, avoir, iade…) tutarları artı yaz ve "ret": true ekle. '
@@ -2832,13 +3086,13 @@ function itemResults(all = itemRows()){
       const i = list[0].i;
       h += `<div class="day"><span lang="en">${esc(i.store)}</span> · ${dayLabel(i.at)}</div>
       <div class="list"><button class="row" data-shop="${i.id}">${brandTile(i.store)}<span class="mid"><span class="d">${i.lines.length} ürün${i.ret ? ' · ↩️ ürün iadesi' : ''}</span><span class="m">${esc(i.outlet || '')}</span></span><span class="amt num"><b>${money(shopAmt(i), i.cur)}</b></span></button>
-      ${list.map(r => `<div class="lline"><span>${esc(r.l.name)}${r.l.tr > 0 && !i.ret ? `<small>${trBadge({tr:r.l.tr, net:r.net})}</small>` : ''}</span><b class="num">${money(shopSign(i) * r.l.price, i.cur)}</b></div>`).join('')}</div>`;
+      ${list.map(r => `<div class="lline"><span>${lineName(r.l.name)}${r.l.tr > 0 && !i.ret ? `<small>${trBadge({tr:r.l.tr, net:r.net})}</small>` : ''}</span><b class="num">${money(shopSign(i) * r.l.price, i.cur)}</b></div>`).join('')}</div>`;
     }
     return h;
   }
   // Düz liste: en pahalı ya da en kârlı (Türkiye fiyatı girilmemiş ürünler kârlı sıralamasında en altta).
   const list = rows.slice().sort(itemSort === 'price' ? (a, b) => b.eur - a.eur : (a, b) => (b.gain ?? -Infinity) - (a.gain ?? -Infinity) || b.eur - a.eur);
-  return h + `<div class="list">` + list.map(r => `<button class="row" data-shop="${r.i.id}">${brandTile(r.i.store)}<span class="mid"><span class="d">${esc(r.l.name)}</span>
+  return h + `<div class="list">` + list.map(r => `<button class="row" data-shop="${r.i.id}">${brandTile(r.i.store)}<span class="mid"><span class="d">${lineName(r.l.name)}</span>
       <span class="m"><span lang="en">${esc(r.i.store)}</span> · ${dayLabel(r.i.at)}${r.i.ret ? ' · ↩️ ürün iadesi' : ''}</span>${r.gain !== null ? `<span class="m tag">${trBadge({tr:r.l.tr, net:r.net})} · ${r.gain >= 0 ? `≈ ${nf0.format(r.gain)} ₺ kâr` : `≈ ${nf0.format(-r.gain)} ₺ fazla`}</span>` : ''}</span>
       <span class="amt num"><b>${money(shopSign(r.i) * r.l.price, r.i.cur)}</b>${r.i.cur !== 'EUR' ? `<small>${e0(r.eur)}</small>` : ''}</span></button>`).join('') + `</div>`;
 }
