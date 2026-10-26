@@ -3,6 +3,7 @@
 //  - db:      trips/<tid>, entries/<id>, log/<id> → public.docs; data/users/<uid>/<id> → public.private_docs
 //  - user:    hesapsız (anonim) Supabase girişi; kimlik bu tarayıcıda saklanır
 //  - assets:  fiş fotoğrafları → "photos" kovası (tahmin edilemez dosya adı)
+//  - receipt: fiş fotoğrafı → "fis-oku" Edge Function → Claude (yalnız üyeler, günlük kota; web/sql/fis-okuma.sql)
 //  - words:   ortak sözlük → public.learned_words (yalnız learn_word / heybe_words işlevleriyle; web/sql/ortak-sozluk.sql)
 // Seyahate davetle katılınır: ?katil=<tid>.<anahtar>. Güvenlik sunucudaki satır kurallarındadır (üye olmayan okuyamaz).
 (function(){
@@ -137,6 +138,14 @@
     words:{
       async load(){ try { await ready; const {data, error} = await sb.rpc('heybe_words'); return error ? [] : data || []; } catch(_) { return []; } },
       async add(rows){ try { await ready; for (const r of rows) await sb.rpc('learn_word', {k:r.key, kd:r.kind, t:r.tr}); } catch(_) {} }
+    },
+    // Fiş okuma: fotoğraf "fis-oku" sunucu işleviyle Claude'a okutulur (web/functions/fis-oku). Kota dolduysa {code:'quota'}.
+    async receipt(image, country){
+      await ready;
+      const {data, error} = await sb.functions.invoke('fis-oku', {body:{image, country}});
+      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : 'cloud'}; }
+      if (!data || data.error) throw {code:'cloud'};
+      return data;
     },
     takeJoined(){ try { const t = localStorage.getItem(JOIN_KEY); localStorage.removeItem(JOIN_KEY); return t; } catch(_) { return null; } },
     joinFailed:() => !!window.__heybeJoinFailed

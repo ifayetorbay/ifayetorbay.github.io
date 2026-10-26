@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026193933';</script>
-<script src="heybe-web.js?v=20261026193933"></script>
+<script>window.HEYBE_VER = '20261026200946';</script>
+<script src="heybe-web.js?v=20261026200946"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2274,10 +2274,16 @@ async function inviteFriends(){
 }
 
 // ---- fişten doldur ----
-// Fiş fotoğrafından tutar, para birimi ve açıklama okunur. Claude varsa (görüntüleyenin kendi hesabı, ilk kullanımda
-// izin sorulur) onunla; yoksa — Claude hesabı olmayanlar, ileride uygulama mağazası sürümü — telefonun kendisinde
-// Tesseract ile okunur: ilk kullanımda birkaç MB indirilir, fotoğraf hiçbir sunucuya gönderilmez.
-let sampleFn = null, sampleImg = false;
+// Fiş fotoğrafından tutar, para birimi ve açıklama okunur. claude.ai'de görüntüleyenin kendi Claude hesabıyla (ilk kullanımda
+// izin sorulur); web sürümünde Heybe'nin sunucusu üzerinden Claude ile (fis-oku, yalnız seyahat üyeleri); ikisi de olmazsa
+// telefonun kendisinde Tesseract ile okunur: ilk kullanımda birkaç MB indirilir, fotoğraf hiçbir sunucuya gönderilmez.
+let sampleFn = null, sampleImg = false, cloudOcr = true;
+// Sunucudan (Claude) gelen sonuç: sayılar temizlenir; ürünlerin toplamı ödenenden büyükse uyuşmazlık bildirilir (fiş tutarsız olabilir).
+function rcCloudCheck(r){
+  const items = (Array.isArray(r.items) ? r.items : []).map(x => ({name:String(x.name || '').slice(0, 70), price:Math.round(Number(x.price) * 100) / 100})).filter(x => x.name && x.price);
+  const sum = Math.round(items.reduce((a, x) => a + x.price, 0) * 100) / 100, amount = Math.round(Number(r.amount) * 100) / 100;
+  return {amount, currency:r.currency, desc:r.desc, items, ret:!!r.ret, disc:0, ...(items.length && sum > amount + .01 ? {mismatch:sum} : {})};
+}
 async function startSample(){
   if (!window.claude || !window.claude.use) return;
   try { sampleFn = await window.claude.use('sample'); } catch(_) { sampleFn = null; }
@@ -3051,6 +3057,14 @@ async function readReceipt(dataUrl){
     }
   }
   if (IN_CLAUDE) throw {code:'noocr'};
+  // Web sürümü: fotoğraf Heybe'nin sunucusu üzerinden Claude'a okutulur (yalnız seyahat üyeleri, günlük kotayla). Olmazsa
+  // (kota, bağlantı, kredi bitti) telefondaki okumaya geçilir.
+  if (cloudOcr && window.claude && window.claude.receipt){
+    try {
+      const c = themeCountry(), r = await window.claude.receipt(dataUrl, c && c[0]);
+      if (r && Number(r.amount) > 0) return rcCloudCheck(r);
+    } catch(e){ if (e && e.code === 'quota') cloudOcr = false; }
+  }
   const Tess = await loadTess(), img = await ocrImage(dataUrl);
   // İngilizceye ek olarak seyahat ülkesinin dili (ñ, ç, ş, ü… doğru okunsun); ilk kullanımda birkaç MB iner.
   const c = themeCountry(), lang = 'eng' + (c && OCR_LANG[c[0]] ? '+' + OCR_LANG[c[0]] : '');
@@ -3101,7 +3115,7 @@ function ocrImage(dataUrl){
 async function scanReceipt(){
   const f = form; if (!f || f.scanning) return;
   f.scanning = true; drawSheetKeep();
-  if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast('Fiş telefonda okunuyor; ilk seferde biraz sürebilir…');
+  if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast(cloudOcr && window.claude && window.claude.receipt ? 'Fiş okunuyor…' : 'Fiş telefonda okunuyor; ilk seferde biraz sürebilir…');
   try {
     const r = await readReceipt(f.photo);
     if (form !== f) return;
