@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027205413';</script>
-<script src="heybe-web.js?v=20261027205413"></script>
+<script>window.HEYBE_VER = '20261027210059';</script>
+<script src="heybe-web.js?v=20261027210059"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -728,15 +728,40 @@ function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(_) 
 // Fiş fotoğrafları buluta yüklenene kadar bu cihazda ayrı anahtarlarda tutulur.
 const photoKey = id => 'yol-hesabi-foto-' + id;
 function getPhoto(id){ try { return localStorage.getItem(photoKey(id)); } catch(_) { return null; } }
+// Beklenmeyen hata: açık form taslak olarak saklanır, kısa bir not gösterilir (30 sn'de en fazla bir kez). Son 20 hata bu
+// cihazda tutulur; Seyahat sekmesinin altından kopyalanıp gönderilebilir (arkadaşların telefonlarındaki sorunları bulmak için).
+const ERR_KEY = 'heybe-hatalar'; let errAt = 0;
+const errLog = () => { try { return JSON.parse(localStorage.getItem(ERR_KEY) || '[]'); } catch(_) { return []; } };
+function noteError(msg, where, loud){
+  try { const L = errLog(); L.push({t:Date.now(), m:String(msg || '?').slice(0, 300), w:String(where || '').slice(0, 160), tab:typeof tab === 'string' ? tab : '', f:typeof form === 'object' && form ? form.mode : ''}); localStorage.setItem(ERR_KEY, JSON.stringify(L.slice(-20))); } catch(_) {}
+  try { if (typeof saveDraft === 'function') saveDraft(); } catch(_) {}
+  if (loud && Date.now() - errAt > 30000 && typeof toast === 'function'){ errAt = Date.now(); try { toast('Bir şey ters gitti; yazdıkların saklandı. Sürerse Seyahat sekmesinin altındaki hata kaydını gönder.'); } catch(_) {} }
+}
+window.addEventListener('error', ev => { if (ev.filename && !ev.filename.startsWith(location.origin)) return; noteError(ev.message, (ev.filename || '').split('/').pop() + ':' + ev.lineno + ':' + ev.colno, true); });
+window.addEventListener('unhandledrejection', ev => { const r = ev.reason; noteError(r && (r.message || r.code) || r, r && r.stack ? String(r.stack).split('\n').slice(0, 2).join(' ') : 'promise', false); });
+function errLogHtml(){
+  const L = errLog(); if (!L.length) return '';
+  return `<p class="hint">🛠 Bu telefonda ${L.length} hata kaydı var (en sonuncusu ${new Date(L[L.length - 1].t).toLocaleString('tr-TR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}). · <button class="link" data-act="errcopy">kopyala</button> · <button class="link" data-act="errclear">temizle</button></p>`;
+}
 function setPhoto(id, data){ try { if (data) localStorage.setItem(photoKey(id), data); else localStorage.removeItem(photoKey(id)); return true; } catch(_) { return false; } }
-// Saklanan fotoğraf 1100 px (telefonda yer kaplamasın); fiş okumaya ayrıca daha net bir kopya gider (yalnız okurken, saklanmaz).
-async function shrinkPhoto(file, max = 1100, q = 0.62){
+// Fiş fotoğrafı bir kez açılır, iki boyda çıkar: saklanan 1100 px (telefonda yer kaplamasın) ve fiş okumaya giden 2000 px
+// (yalnız okurken, saklanmaz). Tuvaller iş bitince sıfırlanır: iPhone Safari'nin tuval belleği sınırlıdır, Android de çok
+// bellek kullanan sekmeyi kapatır. 12 MP kamera fotoğrafı tek açılışta ~48 MB tutar; iki kez açmak sayfayı düşürebiliyordu.
+async function photoSizes(file){
   const url = URL.createObjectURL(file), img = new Image();
-  await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = url; });
-  const s = Math.min(1, max / Math.max(img.width, img.height));
-  const c = document.createElement('canvas'); c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
-  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-  return c.toDataURL('image/jpeg', q);
+  try {
+    await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = url; });
+    const draw = (src, w0, h0, max, q) => {
+      const s = Math.min(1, max / Math.max(w0, h0)), c = document.createElement('canvas');
+      c.width = Math.round(w0 * s); c.height = Math.round(h0 * s);
+      c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+      return [c, c.toDataURL('image/jpeg', q)];
+    };
+    const [hc, hi] = draw(img, img.naturalWidth || img.width, img.naturalHeight || img.height, 2000, 0.85);
+    const [lc, lo] = draw(hc, hc.width, hc.height, 1100, 0.62);
+    hc.width = hc.height = lc.width = lc.height = 0;
+    return {lo, hi};
+  } finally { URL.revokeObjectURL(url); img.src = ''; }
 }
 
 function sample(){
@@ -1474,6 +1499,7 @@ function viewTrip(){
   </div></div>`).join('')}</div>
   ${isFamilies() ? `<p class="hint">👤 yetişkin, 🧒 çocuk sayısı: dokundukça artar (en fazla 9, sonra başa döner). Yeni harcamalar bu sayılara göre bölünür.</p>` : ''}
   ${mg ? `<button class="btn block" data-act="addperson">${isFamilies() ? '+ Aile ekle' : '+ Kişi ekle'}</button>` : ''}
+  ${errLogHtml()}
   ${window.HEYBE_VER ? `<p class="hint" style="text-align:center;opacity:.7">Heybe · sürüm ${window.HEYBE_VER.replace(/^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d).*/, '$3.$2 $4:$5')}</p>` : ''}
   ${S.sample ? `<p class="hint">Şu an örnek bir Roma gezisi görüyorsun. Üstteki “+ Yeni” ile kendi isimlerinizle sıfırdan başlayabilirsin.</p>` : ''}`;
 }
@@ -1506,7 +1532,6 @@ const isTripAdmin = () => !myUid ? true : S.trip.ownerUid ? S.trip.ownerUid === 
 // yetki verdiği yardımcı kurucular (trip.admins) değiştirir. Bütçe, kur ve kişinin kendi emojisi herkese açık;
 // büyük harcama sınırı herkesin kendi telefonunda. Sunucu da aynı kuralı uygular (docs_trip_guard).
 const isManager = () => isTripAdmin() || !!(myUid && (S.trip.admins || []).includes(myUid));
-const ownerName = () => { const p = S.people.find(q => q.uid && q.uid === S.trip.ownerUid); return p ? rawName(p.id) : ''; };
 const MGR_BINDS = new Set(['name', 'country', 'start', 'end', 'kasaOn', 'kind', 'kidHalf', 'holder']);
 const MGR_ACTS = new Set(['addperson', 'archive', 'deltrip']);
 // Hesaplaşma şekli: herkes deneyip öğrensin diye 1. günün sonuna kadar (2. gün 00:00, telefonun saatiyle) herkes
@@ -1565,19 +1590,27 @@ function closeSheet(){
 
 // Yarım kalan kayıt: sayfa yenilense ya da telefon uygulamayı kapatsa bile formdaki bilgiler kaybolmaz.
 // (Fiş fotoğrafı taslağa girmez; çok yer kaplar.)
-const DRAFT = 'yol-hesabi-taslak';
+// Yarım kalan form taslağı: Android kamerayı açınca tarayıcıyı arka planda kapatabiliyor, dönünce sayfa baştan yükleniyor.
+// Harcama, alışveriş ve "sadece bana" formları her değişiklikte saklanır, açılışta geri getirilir. Seçilen fotoğrafın küçük
+// kopyası da ayrı anahtarda tutulur (sığmazsa taslak fotoğrafsız kalır).
+const DRAFT = 'yol-hesabi-taslak', DRAFT_PHOTO = DRAFT + '-foto', DRAFT_MODES = ['expense', 'kasa', 'transfer', 'shop', 'solo'];
 function saveDraft(){
-  if (!form || !['expense','kasa','transfer'].includes(form.mode)) return;
-  try { const {photo, ...rest} = form; localStorage.setItem(DRAFT, JSON.stringify({...rest, photoChanged:false, savedAt:Date.now()})); } catch(_) {}
+  if (!form || !DRAFT_MODES.includes(form.mode)) return;
+  try { const {photo, photoHi, placeRes, ...rest} = form; localStorage.setItem(DRAFT, JSON.stringify({...rest, savedAt:Date.now()})); } catch(_) {}
 }
-function clearDraft(){ try { localStorage.removeItem(DRAFT); } catch(_) {} }
+function saveDraftPhoto(d){ try { if (d) localStorage.setItem(DRAFT_PHOTO, d); else localStorage.removeItem(DRAFT_PHOTO); } catch(_) {} }
+function clearDraft(){ try { localStorage.removeItem(DRAFT); localStorage.removeItem(DRAFT_PHOTO); } catch(_) {} }
 function restoreDraft(){
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT) || 'null');
     if (!d || Date.now() - d.savedAt > 864e5 || !S.people.length || isRO()) return clearDraft();
     if (d.placeState === 'loading') d.placeState = d.place ? 'ok' : 'off';
     d.placeBusy = false; d.placeSearch = false; d.placeRes = null;
-    if (d.id){ const e = S.entries.find(x => x.id === d.id); if (!e) return clearDraft(); d.photo = photoSrc(e); }
+    const coll = d.mode === 'shop' ? SH.items : d.mode === 'solo' ? SH.solo : S.entries;
+    if (d.id && !coll.some(x => x.id === d.id)) return clearDraft();
+    let ph = null; try { ph = localStorage.getItem(DRAFT_PHOTO); } catch(_) {}
+    d.photo = d.photoChanged ? ph : d.id ? (d.mode === 'shop' ? getShopPhoto(d.id) : d.mode === 'solo' ? null : photoSrc(S.entries.find(x => x.id === d.id))) : null;
+    d.scanning = false; d.photoHi = null;
     openSheet(d); toast('Yarım kalan kayıt geri getirildi');
   } catch(_) { clearDraft(); }
 }
@@ -2146,7 +2179,7 @@ function emptyState(){
 }
 // Açık seyahatten çıkmadan önce bekleyen yazmayı bitirir, sonra build() ile yeni seyahati kurar.
 async function enterTrip(build, toTab){
-  finishUndo(); await pushNow(); stashTrip();
+  finishGUndo(); await pushNow(); stashTrip();
   build(); loadMe(); loadLogs(); loadShop();
   tab = toTab || 'list'; themeNow = null; render(); window.scrollTo(0,0); maybeAskWho(); rateCheck(30 * 6e4);
 }
@@ -3166,7 +3199,8 @@ function ocrImage(dataUrl){
   return new Promise(ok => {
     const im = new Image();
     im.onload = () => {
-      const w0 = im.naturalWidth, k = w0 < 1600 ? 1600 / w0 : w0 > 2200 ? 2200 / w0 : 1, W = Math.round(w0 * k), H = Math.round(im.naturalHeight * k);
+      // Uzun fişte tuval 4000 px boyu geçmez (12 MP'lik tuval + piksel kopyası eski telefonlarda sekmeyi düşürüyordu).
+      const w0 = im.naturalWidth, k = Math.min(w0 < 1600 ? 1600 / w0 : w0 > 2200 ? 2200 / w0 : 1, 4000 / im.naturalHeight), W = Math.round(w0 * k), H = Math.round(im.naturalHeight * k);
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
       x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, W, H);
       const d = x.getImageData(0, 0, W, H), a = d.data, hist = new Uint32Array(256);
@@ -3177,7 +3211,7 @@ function ocrImage(dataUrl){
       n = 0; for (let g = 255; g >= 0; g--){ n += hist[g]; if (n > N * .02){ hi = g; break; } }
       const span = Math.max(1, hi - lo);
       for (let i = 0; i < a.length; i += 4){ const v = Math.max(0, Math.min(255, (a[i] - lo) * 255 / span)); a[i] = a[i + 1] = a[i + 2] = v; }
-      x.putImageData(d, 0, 0); ok(cv.toDataURL('image/png'));
+      x.putImageData(d, 0, 0); const out = cv.toDataURL('image/png'); cv.width = cv.height = 0; ok(out);
     };
     im.onerror = () => ok(dataUrl); im.src = dataUrl;
   });
@@ -3541,17 +3575,23 @@ function shopExpHtml(i, refI, hit){
   return `<div class="sexp${shopJust === i.id ? ' anim' : ''}">${rows || `<p class="hint sexph">Ürün eklenmemiş. Fişin fotoğrafından ya da elle <b>✏️ Düzenle</b>’den ekleyebilirsin.</p>`}
     <div class="sexpa"><button class="btn sm" data-shop="${i.id}">✏️ Düzenle</button>${photo ? `<button class="btn sm" data-shopphoto="${i.id}">🧾 Fişi gör</button>` : ''}</div></div>`;
 }
-// Kaydırarak silinen diğer kayıtlar (hediye, sadece bana harcama, kaydı olmayan katılımcı) da 6 saniye "Geri al" ile geri gelir.
+// Kaydırarak silme, her liste için tek düzen (harcama, alışveriş, hediye, sadece bana harcama, kaydı olmayan katılımcı):
+// satır kapanarak kaybolur, kayıt silinir, 6 saniye "Geri al" görünür. Süre dolunca (ya da yeni bir silmede) expire çalışır
+// (ör. fiş fotoğrafı silinir); geri alınırsa çalışmaz.
 let gUndo = null;
-function finishGUndo(){ if (!gUndo) return; clearTimeout(gUndo.timer); gUndo = null; }
+function finishGUndo(){ if (!gUndo) return; clearTimeout(gUndo.timer); const x = gUndo.expire; gUndo = null; if (x) x(); }
 function swipeGone(sel, run){
   const box = document.querySelector(sel)?.closest('.swr');
-  if (box && !calm() && !box.dataset.going){ box.dataset.going = '1'; box.style.height = box.offsetHeight + 'px'; void box.offsetHeight; box.classList.add('going'); box.style.height = '0px'; return setTimeout(run, 230); }
+  if (box && !calm() && !box.dataset.going){
+    const ex = box.nextElementSibling; if (ex && ex.classList.contains('sexp')) ex.remove();   // açık alışverişin ürünleri
+    box.dataset.going = '1'; box.style.height = box.offsetHeight + 'px'; void box.offsetHeight; box.classList.add('going'); box.style.height = '0px';
+    return setTimeout(run, 230);
+  }
   run();
 }
-function softDelete(label, remove, restore){
+function softDelete(label, remove, restore, expire){
   finishGUndo(); remove(); swOpen = null; render();
-  gUndo = {restore, tid:S.tid, timer:setTimeout(finishGUndo, 6000)};
+  gUndo = {restore, expire, tid:S.tid, timer:setTimeout(finishGUndo, 6000)};
   toast(`${label} silindi`, {act:'gundo', label:'Geri al', ms:6000});
 }
 // Liste (hediyeler, sadece bana harcamalar) içinden kaydırarak silme: dizideki yeri saklanır, geri alınınca oraya döner.
@@ -3562,25 +3602,14 @@ function swipeListDelete(attr, id, arr, label){
     softDelete(label(x), () => { arr().splice(arr().indexOf(x), 1); saveShop(); }, () => { const M = arr(); if (!M.some(y => y.id === x.id)) M.splice(Math.min(k, M.length), 0, x); saveShop(); });
   });
 }
-// Kaydırarak silinen alışveriş birkaç saniye "Geri al" ile geri getirilebilir; süre dolunca fiş fotoğrafı da silinir.
-let shopUndo = null;
-function finishShopUndo(){ if (!shopUndo) return; clearTimeout(shopUndo.timer); setShopPhoto(shopUndo.it.id, null); shopUndo = null; }
 function shopDelete(id){
-  const run = () => {
+  swipeGone(`.swr [data-delshop="${id}"]`, () => {
     const k = SH.items.findIndex(x => x.id === id); if (k < 0) return;
-    finishShopUndo();
-    const it = SH.items.splice(k, 1)[0]; shopOpen.delete(id); swOpen = null; saveShop(); render();
-    shopUndo = {it, k, tid:S.tid, timer:setTimeout(finishShopUndo, 6000)};
-    toast(`${it.store} silindi`, {act:'shopundo', label:'Geri al', ms:6000});
-  };
-  const box = document.querySelector(`.swr [data-delshop="${id}"]`)?.closest('.swr');
-  if (box && !calm() && !box.dataset.going){
-    const ex = box.nextElementSibling; if (ex && ex.classList.contains('sexp')) ex.remove();
-    box.dataset.going = '1'; box.style.height = box.offsetHeight + 'px'; void box.offsetHeight;
-    box.classList.add('going'); box.style.height = '0px';
-    return setTimeout(run, 230);
-  }
-  run();
+    const it = SH.items[k];
+    softDelete(it.store, () => { SH.items.splice(SH.items.indexOf(it), 1); shopOpen.delete(id); saveShop(); },
+      () => { if (!SH.items.some(x => x.id === it.id)) SH.items.splice(Math.min(k, SH.items.length), 0, it); saveShop(); },
+      () => setShopPhoto(it.id, null));
+  });
 }
 function viewShopList(){
   const {T, ref, short, total, refund} = shopCalc();
@@ -3743,7 +3772,6 @@ const famWeight = p => (p.size || 1) + (p.kids || 0) * (S.trip.kidHalf ? .5 : 1)
 const headcount = () => S.people.reduce((a, p) => a + (isFamilies() ? (p.size || 1) + (p.kids || 0) : 1), 0) || 1;
 const defaultWeights = () => { if (!isFamilies()) return null; const w = Object.fromEntries(S.people.filter(p => famWeight(p) !== 1).map(p => [p.id, famWeight(p)])); return Object.keys(w).length ? w : null; };
 const peopleLabel = () => isFamilies() ? `${S.people.length} aile · ${headcount()} kişi` : isFamily() ? `aile · ${S.people.length} kişi` : `${S.people.length} kişi`;
-const famSize = p => `👤 ${p.size || 1}${p.kids ? ` · 🧒 ${p.kids}` : ''}`;
 
 // ---- katılımcı silme ----
 // Kaydı olmayan katılımcı doğrudan silinir. Kaydı varsa (ödediği, payı olduğu, gönderdiği/aldığı) silmeden önce
@@ -4510,28 +4538,18 @@ function swEnd(ev){
 document.addEventListener('pointerup', swEnd);
 document.addEventListener('pointercancel', swEnd);
 
-// Silinen kayıt birkaç saniye "Geri al" ile geri getirilebilir; süre dolunca fiş fotoğrafı da silinir.
-let undo = null;
-function finishUndo(){ if (!undo) return; clearTimeout(undo.timer); setPhoto(undo.e.id, null); undo = null; }
+// Kaydırarak silinen harcama, kasa kaydı ya da ödeme 6 saniye "Geri al" ile geri gelir; süre dolunca fiş fotoğrafı da silinir.
 function swipeDelete(id){
   const e = S.entries.find(x => x.id === id); if (!e) return;
   if (e.kind === 'kasa' && kasaWouldGoNegative(e, true)){ swClose(); return toast('Bu kaydı silersen kasa eksiye düşer, çünkü bu para kasadan harcanmış.'); }
-  finishUndo();
-  const box = document.querySelector(`.swr [data-edit="${id}"]`)?.closest('.swr');
-  if (box && !calm() && !box.dataset.going){
-    // Satır önce sola kayıp kapanır, sonra kayıt silinir (alttakiler yukarı kayarak yerini alır).
-    box.dataset.going = '1'; box.style.height = box.offsetHeight + 'px'; void box.offsetHeight;
-    box.classList.add('going'); box.style.height = '0px';
-    return setTimeout(() => { delete box.dataset.going; swipeDelete2(e); }, 230);
-  }
-  swipeDelete2(e);
-}
-function swipeDelete2(e){
-  const i = S.entries.indexOf(e); if (i < 0) return;
-  S.entries.splice(i, 1); swOpen = null; render();
-  logEvent(`sildi: ${e.kind === 'expense' ? e.desc : 'kayıt'} · ${money(e.amount, e.cur)}`);
-  undo = {e, i, tid:S.tid, timer:setTimeout(finishUndo, 6000)};
-  toast(`${e.kind === 'expense' ? e.desc : 'Kayıt'} silindi`, {act:'undo', label:'Geri al', ms:6000});
+  swipeGone(`.swr [data-edit="${id}"]`, () => {
+    const i = S.entries.indexOf(e); if (i < 0) return;
+    const what = e.kind === 'expense' ? e.desc : 'kayıt';
+    softDelete(e.kind === 'expense' ? e.desc : 'Kayıt',
+      () => { S.entries.splice(S.entries.indexOf(e), 1); logEvent(`sildi: ${what} · ${money(e.amount, e.cur)}`); },
+      () => { if (!S.entries.some(x => x.id === e.id)) S.entries.splice(Math.min(i, S.entries.length), 0, e); logEvent(`geri getirdi: ${what}`); },
+      () => setPhoto(e.id, null));
+  });
 }
 function showPhoto(src){
   const v = document.createElement('div'); v.className = 'viewer';
@@ -4707,27 +4725,16 @@ document.addEventListener('click', ev => {
       editPlan = true; planDraft = {v:S.trip.plan ? nf0.format(S.trip.plan) : '', cur:planCurOf()}; render();
       { const i = document.getElementById('planInp'); if (i){ i.focus(); i.select(); } } break;
     case 'saveplan': savePlan(); break;
-    case 'undo':
-      if (undo && undo.tid === S.tid){
-        const {e, i} = undo; clearTimeout(undo.timer); undo = null;
-        if (!S.entries.some(x => x.id === e.id)) S.entries.splice(Math.min(i, S.entries.length), 0, e);
-        logEvent(`geri getirdi: ${e.kind === 'expense' ? e.desc : 'kayıt'}`); render(); toast('Geri alındı');
-      }
-      break;
+    case 'errcopy':
+      copyText(`Heybe hata kaydı · ${navigator.userAgent}\n` + errLog().map(e => `${new Date(e.t).toISOString()} [${e.tab}${e.f ? '/' + e.f : ''}] ${e.m} @ ${e.w}`).join('\n'), 'Hata kaydı kopyalandı; bana yapıştırıp gönderebilirsin.'); break;
+    case 'errclear': try { localStorage.removeItem(ERR_KEY); } catch(_) {} render(); break;
     case 'gundo':
-      if (gUndo && gUndo.tid === S.tid){ const r = gUndo.restore; finishGUndo(); r(); render(); toast('Geri alındı'); }
-      break;
-    case 'shopundo':
-      if (shopUndo && shopUndo.tid === S.tid){
-        const {it, k} = shopUndo; clearTimeout(shopUndo.timer); shopUndo = null;
-        if (!SH.items.some(x => x.id === it.id)) SH.items.splice(Math.min(k, SH.items.length), 0, it);
-        saveShop(); render(); toast('Geri alındı');
-      }
+      if (gUndo && gUndo.tid === S.tid){ const r = gUndo.restore; clearTimeout(gUndo.timer); gUndo = null; r(); render(); toast('Geri alındı'); }
       break;
     case 'save': submit(); break;
     case 'rate': fetchRate(true); break;
     case 'viewphoto': showPhoto(form.photo); break;
-    case 'rmphoto': form.photo = form.photoHi = null; form.photoChanged = true; drawSheetKeep(); break;
+    case 'rmphoto': form.photo = form.photoHi = null; form.photoChanged = true; saveDraftPhoto(null); drawSheetKeep(); break;
     case 'togglecat': form.showCat = !form.showCat; drawSheetKeep(); break;
     case 'togglepayer': form.showPayer = !form.showPayer; drawSheetKeep(); break;
     case 'toggleamong': form.showAmong = !form.showAmong; drawSheetKeep(); break;
@@ -4865,7 +4872,8 @@ document.addEventListener('change', async ev => {
   if (form && el.id === 'fCur'){ if (el.value) setCur(el.value); drawSheetKeep(); return; }
   if (form && el.id === 'fSettle'){ form.settleTL = el.checked; if (el.checked && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
   if (form && el.id === 'fPhoto' && el.files && el.files[0]){
-    try { form.photo = await shrinkPhoto(el.files[0]); form.photoHi = await shrinkPhoto(el.files[0], 2000, 0.85).catch(() => null); form.photoChanged = true; drawSheetKeep(); }
+    const f = form;
+    try { const {lo, hi} = await photoSizes(el.files[0]); if (form !== f) return; f.photo = lo; f.photoHi = hi; f.photoChanged = true; saveDraftPhoto(lo); drawSheetKeep(); }
     catch(_) { document.getElementById('fErr').textContent = 'Fotoğraf açılamadı. Başka bir fotoğraf dene.'; }
     return;
   }
