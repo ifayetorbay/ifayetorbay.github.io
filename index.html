@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027231222';</script>
-<script src="heybe-web.js?v=20261027231222"></script>
+<script>window.HEYBE_VER = '20261027231704';</script>
+<script src="heybe-web.js?v=20261027231704"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -747,8 +747,9 @@ function errLogHtml(){
   return `<p class="hint">🛠 Bu telefonda ${L.length} hata kaydı var (en sonuncusu ${new Date(L[L.length - 1].t).toLocaleString('tr-TR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}). · <button class="link" data-act="errcopy">kopyala</button> · <button class="link" data-act="errclear">temizle</button></p>`;
 }
 function setPhoto(id, data){ try { if (data) localStorage.setItem(photoKey(id), data); else localStorage.removeItem(photoKey(id)); return true; } catch(_) { return false; } }
-// Fiş fotoğrafı bir kez açılır, iki boyda çıkar: saklanan 1100 px (telefonda yer kaplamasın) ve fiş okumaya giden 2000 px
-// (yalnız okurken, saklanmaz). Tuvaller iş bitince sıfırlanır: iPhone Safari'nin tuval belleği sınırlıdır, Android de çok
+// Fiş fotoğrafı bir kez açılır, üç boyda çıkar: saklanan 1100 px (telefonda yer kaplamasın), fiş okumaya giden 2000 px ve
+// bilet/rezervasyon ekran görüntüleri için 1400 px (ekran görüntüsü zaten net; küçük boy okuma maliyetini düşürür). Okuma
+// kopyaları saklanmaz. Tuvaller iş bitince sıfırlanır: iPhone Safari'nin tuval belleği sınırlıdır, Android de çok
 // bellek kullanan sekmeyi kapatır. 12 MP kamera fotoğrafı tek açılışta ~48 MB tutar; iki kez açmak sayfayı düşürebiliyordu.
 async function photoSizes(file){
   const url = URL.createObjectURL(file), img = new Image();
@@ -762,8 +763,9 @@ async function photoSizes(file){
     };
     const [hc, hi] = draw(img, img.naturalWidth || img.width, img.naturalHeight || img.height, 2000, 0.85);
     const [lc, lo] = draw(hc, hc.width, hc.height, 1100, 0.62);
-    hc.width = hc.height = lc.width = lc.height = 0;
-    return {lo, hi};
+    const [mc, mid] = draw(hc, hc.width, hc.height, 1400, 0.8);
+    hc.width = hc.height = lc.width = lc.height = mc.width = mc.height = 0;
+    return {lo, mid, hi};
   } finally { URL.revokeObjectURL(url); img.src = ''; }
 }
 
@@ -1600,7 +1602,7 @@ function closeSheet(){
 const DRAFT = 'yol-hesabi-taslak', DRAFT_PHOTO = DRAFT + '-foto', DRAFT_MODES = ['expense', 'kasa', 'transfer', 'shop', 'solo'];
 function saveDraft(){
   if (!form || !DRAFT_MODES.includes(form.mode)) return;
-  try { const {photo, photoHi, ...rest} = form; localStorage.setItem(DRAFT, JSON.stringify({...rest, savedAt:Date.now()})); } catch(_) {}
+  try { const {photo, photoHi, photoMid, ...rest} = form; localStorage.setItem(DRAFT, JSON.stringify({...rest, savedAt:Date.now()})); } catch(_) {}
 }
 function saveDraftPhoto(d){ try { if (d) localStorage.setItem(DRAFT_PHOTO, d); else localStorage.removeItem(DRAFT_PHOTO); } catch(_) {} }
 function clearDraft(){ try { localStorage.removeItem(DRAFT); localStorage.removeItem(DRAFT_PHOTO); } catch(_) {} }
@@ -1614,7 +1616,7 @@ function restoreDraft(){
     if (d.id && !coll.some(x => x.id === d.id)) return clearDraft();
     let ph = null; try { ph = localStorage.getItem(DRAFT_PHOTO); } catch(_) {}
     d.photo = d.photoChanged ? ph : d.id ? (d.mode === 'shop' ? getShopPhoto(d.id) : d.mode === 'solo' ? null : photoSrc(S.entries.find(x => x.id === d.id))) : null;
-    d.scanning = false; d.photoHi = null;
+    d.scanning = false; d.photoHi = d.photoMid = null;
     openSheet(d); toast('Yarım kalan kayıt geri getirildi');
   } catch(_) { clearDraft(); }
 }
@@ -3302,7 +3304,8 @@ async function scanReceipt(){
   f.scanning = true; drawSheetKeep();
   if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast(cloudOcr && window.claude && window.claude.receipt ? 'Okunuyor…' : 'Fotoğraf telefonda okunuyor; ilk seferde biraz sürebilir…');
   try {
-    const r = await readReceipt(f.photoHi || f.photo);
+    // Bilet ve rezervasyonlar (ekran görüntüsü) 1400 px, fişler (kâğıt, silik olabilir) 2000 px okunur.
+    const r = await readReceipt((f.mode === 'expense' && bkKind(f) && f.photoMid) || f.photoHi || f.photo);
     if (form !== f) return;
     if (r && r.exchange) throw {code:'exchange'};
     const place = r && f.mode === 'expense' ? String(r.place || '').trim().slice(0, 150) : '';
@@ -4825,7 +4828,7 @@ document.addEventListener('click', ev => {
     case 'save': submit(); break;
     case 'rate': fetchRate(true); break;
     case 'viewphoto': showPhoto(form.photo); break;
-    case 'rmphoto': form.photo = form.photoHi = null; form.photoChanged = true; saveDraftPhoto(null); drawSheetKeep(); break;
+    case 'rmphoto': form.photo = form.photoHi = form.photoMid = null; form.photoChanged = true; saveDraftPhoto(null); drawSheetKeep(); break;
     case 'togglecat': form.showCat = !form.showCat; drawSheetKeep(); break;
     case 'togglepayer': form.showPayer = !form.showPayer; drawSheetKeep(); break;
     case 'toggleamong': form.showAmong = !form.showAmong; drawSheetKeep(); break;
@@ -4968,7 +4971,7 @@ document.addEventListener('change', async ev => {
   if (form && el.id === 'fSettle'){ form.settleTL = el.checked; if (el.checked && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
   if (form && el.id === 'fPhoto' && el.files && el.files[0]){
     const f = form;
-    try { const {lo, hi} = await photoSizes(el.files[0]); if (form !== f) return; f.photo = lo; f.photoHi = hi; f.photoChanged = true; saveDraftPhoto(lo); drawSheetKeep(); }
+    try { const {lo, mid, hi} = await photoSizes(el.files[0]); if (form !== f) return; f.photo = lo; f.photoHi = hi; f.photoMid = mid; f.photoChanged = true; saveDraftPhoto(lo); drawSheetKeep(); }
     catch(_) { document.getElementById('fErr').textContent = 'Fotoğraf açılamadı. Başka bir fotoğraf dene.'; }
     return;
   }
