@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027231704';</script>
-<script src="heybe-web.js?v=20261027231704"></script>
+<script>window.HEYBE_VER = '20261027231906';</script>
+<script src="heybe-web.js?v=20261027231906"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -748,7 +748,7 @@ function errLogHtml(){
 }
 function setPhoto(id, data){ try { if (data) localStorage.setItem(photoKey(id), data); else localStorage.removeItem(photoKey(id)); return true; } catch(_) { return false; } }
 // Fiş fotoğrafı bir kez açılır, üç boyda çıkar: saklanan 1100 px (telefonda yer kaplamasın), fiş okumaya giden 2000 px ve
-// bilet/rezervasyon ekran görüntüleri için 1400 px (ekran görüntüsü zaten net; küçük boy okuma maliyetini düşürür). Okuma
+// bilet/rezervasyon ekran görüntüleri için 1200 px (ekran görüntüsü zaten net; küçük boy okuma maliyetini düşürür). Okuma
 // kopyaları saklanmaz. Tuvaller iş bitince sıfırlanır: iPhone Safari'nin tuval belleği sınırlıdır, Android de çok
 // bellek kullanan sekmeyi kapatır. 12 MP kamera fotoğrafı tek açılışta ~48 MB tutar; iki kez açmak sayfayı düşürebiliyordu.
 async function photoSizes(file){
@@ -763,7 +763,7 @@ async function photoSizes(file){
     };
     const [hc, hi] = draw(img, img.naturalWidth || img.width, img.naturalHeight || img.height, 2000, 0.85);
     const [lc, lo] = draw(hc, hc.width, hc.height, 1100, 0.62);
-    const [mc, mid] = draw(hc, hc.width, hc.height, 1400, 0.8);
+    const [mc, mid] = draw(hc, hc.width, hc.height, 1200, 0.8);
     hc.width = hc.height = lc.width = lc.height = mc.width = mc.height = 0;
     return {lo, mid, hi};
   } finally { URL.revokeObjectURL(url); img.src = ''; }
@@ -3304,7 +3304,7 @@ async function scanReceipt(){
   f.scanning = true; drawSheetKeep();
   if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast(cloudOcr && window.claude && window.claude.receipt ? 'Okunuyor…' : 'Fotoğraf telefonda okunuyor; ilk seferde biraz sürebilir…');
   try {
-    // Bilet ve rezervasyonlar (ekran görüntüsü) 1400 px, fişler (kâğıt, silik olabilir) 2000 px okunur.
+    // Bilet ve rezervasyonlar (ekran görüntüsü) 1200 px, fişler (kâğıt, silik olabilir) 2000 px okunur.
     const r = await readReceipt((f.mode === 'expense' && bkKind(f) && f.photoMid) || f.photoHi || f.photo);
     if (form !== f) return;
     if (r && r.exchange) throw {code:'exchange'};
