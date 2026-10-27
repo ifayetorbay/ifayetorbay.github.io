@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027212434';</script>
-<script src="heybe-web.js?v=20261027212434"></script>
+<script>window.HEYBE_VER = '20261027231222';</script>
+<script src="heybe-web.js?v=20261027231222"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -313,6 +313,12 @@ nav.tabs svg{width:22px;height:22px}
 .rows #fEach{padding-top:8px}
 .place{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.92rem}
 .place{flex-direction:column;align-items:stretch}
+.bk{display:flex;flex-direction:column;gap:6px}
+.bk:empty{display:none}
+.bkh{display:flex;align-items:center;gap:6px}
+.bkft{display:flex;gap:8px}
+.bkft .inp{flex:1;min-width:0;padding:9px 12px}
+.prog .row .m b{color:var(--ink)}
 .destrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .dbtn{text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .destedit{display:flex;gap:8px}
@@ -1295,7 +1301,7 @@ function rowInner(e){
   const wk = id => e.weights && e.weights[id] > 1 ? ` ×${e.weights[id]}` : '';
   const among = e.among.length === S.people.length && !e.weights ? `${e.among.length} kişi` : e.among.map(id => nm(id) + wk(id)).join(', ');
   return `<button class="row${isBig(e) ? ' big' : ''}" data-edit="${e.id}"><span class="ic" title="${cat.name}">${iconOf(e)}</span>
-    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">${phaseOf(e, S) === 'pre' ? new Date(e.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' · ' : ''}${who} · ${among}${e.hasPhoto ? ' · 🧾 fiş' : ''}</span>${e.place ? `<span class="m">📍 ${esc(e.place)}</span>` : ''}</span>
+    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">${phaseOf(e, S) === 'pre' ? new Date(e.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' · ' : ''}${who} · ${among}${e.hasPhoto ? ' · 🧾 fiş' : ''}</span>${e.when ? `<span class="m">${esc(bkLine(e))}</span>` : ''}${e.place ? `<span class="m">📍 ${esc(e.place)}</span>` : ''}</span>
     <span class="amt num"><b>${money(e.amount, e.cur)}</b>${other}</span></button>`;
 }
 
@@ -1484,6 +1490,7 @@ function viewTrip(){
     ${isFamily() ? '' : `<div class="toggle" data-hhost><div><b>Ortak kasa</b>${help('kasa')}<div class="note">Herkes kasaya para koyar, harcamalar kasadan yapılır.</div></div><input type="checkbox" class="sw" id="tKasa" data-bind="kasaOn" ${S.trip.kasaOn?'checked':''} ${dis} aria-label="Ortak kasa"></div>`}
     ${S.trip.kasaOn && !isFamily() ? `<div class="f"><label for="tHolder">Kasayı kim tutuyor?</label><select class="inp" id="tHolder" data-bind="holder" ${dis}>${opt(S.trip.holder)}</select></div>` : ''}
   </div>
+  ${programHtml()}
   <h2>Katılımcılar</h2>
   <p class="hint">${mg ? `Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}${isTripAdmin() && myUid ? ' ☆ işaretine dokunarak birini yardımcı kurucu (⭐) yapabilirsin; ☆ kişi Heybe\'ye katılıp adını seçince çıkar.' : ''}` : 'Kendi emojine dokunarak değiştirebilirsin.'}</p>
   <div class="list">${S.people.map(p => `<div class="swr"><button class="swdel l" data-delp="${p.id}" tabindex="-1">Sil</button><button class="swdel r" data-delp="${p.id}" tabindex="-1">Sil</button><div class="row pcard prow">
@@ -1663,6 +1670,7 @@ function drawSheet(){
       ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
       ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Okunuyor…' : '✨ Fotoğraftan doldur'}</button>` : ''}
     </div>
+    <div class="bk" id="fBk">${bkHtml()}</div>
     <div class="place" id="fPlace">${placeHtml()}</div>
     ${f.id ? (() => { const o = S.entries.find(x => x.id === f.id); return o && o.by && S.people.some(p => p.id === o.by) ? `<p class="note">✍️ ${nmE(o.by)} girdi · ${hhmm(o.at)}</p>` : ''; })() : ''}`;
   } else if (f.mode === 'kasa'){
@@ -1847,7 +1855,7 @@ function startPay(from, to){
 }
 function startExpense(e){
   if (e) openSheet({mode:'expense', id:e.id, phase:phaseOf(e, S), amount:nf.format(e.amount), cur:e.cur, desc:e.desc, cat:e.cat, catManual:true, paidBy:e.paidBy, among:[...e.among], weights:e.weights ? {...e.weights} : null, rate:e.rate, settleTL:!!e.settleTL, date:isoDay(e.at), phaseManual:true,
-    photo:photoSrc(e), photoChanged:false, place:e.place || null, lat:e.lat, lon:e.lon, placeState:e.place ? 'ok' : 'off', dest:e.dest || null});
+    photo:photoSrc(e), photoChanged:false, when:e.when || '', until:e.until || '', from:e.from || '', to:e.to || '', place:e.place || null, lat:e.lat, lon:e.lon, placeState:e.place ? 'ok' : 'off', dest:e.dest || null});
   else {
     // Seyahat öncesinde varsayılan: TL ve "şimdi ödeşiyoruz"; seyahatte: son kullanılan para birimi, sonda hesap.
     const phase = defaultPhase(), pre = phase === 'pre';
@@ -1902,6 +1910,7 @@ function guessDest(desc, cat, e){
   const kind = DEST_KINDS.find(k => toks.some(t => k.w.some(w => destHit(low(t).replace(/'.*$/, ''), w))));
   const isKindTok = t => DEST_KINDS.some(k => k.w.some(w => destHit(low(t).replace(/'.*$/, ''), w)));
   const clean = t => t.split(/[^\p{L}'.]+/u).filter(x => x && !isKindTok(x) && !DEST_GENERIC.test(x.replace(/'.*$/, ''))).join(' ').replace(/'.*$/, '').trim();
+  if (kind && e && e.from){ const f0 = String(e.from).trim(); return {q:/station|estaci|gare|gar\b|airport|aeropuerto|aeroport|havaliman|terminal|otogar/i.test(f0) ? f0 : `${f0} ${kind.en}`, label:f0}; }
   if (kind && (cat === 'ulasim' || cat === 'ucak' || !cat)){
     // "Madrid'den Sevilla'ya" → Madrid; "Madrid–Sevilla", "Madrid - Sevilla", "Madrid → Sevilla" → Madrid; "Madrid Sevilla AVE" → Madrid.
     let origin = '', two = false;
@@ -1925,6 +1934,44 @@ function guessDest(desc, cat, e){
     return {q:city ? `${name}, ${city}` : name, label:name};
   }
   return null;
+}
+// 🗓️ Rezervasyon bilgisi: harcamanın tarihi satın alma günüdür; bilet ve rezervasyonun kendi zamanı ayrıca tutulur.
+// when: ulaşımda kalkış, konaklamada giriş, etkinlikte giriş ("YYYY-MM-DDTHH:MM" ya da "YYYY-MM-DD"); until: varış / çıkış;
+// from, to: ulaşımın kalkış ve varış yeri. Fotoğraftan okunur ya da elle yazılır. Rota planı bunlardan beslenecek.
+const BK_WHEN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;
+function bkKind(f){
+  if (f.cat === 'konaklama') return 'stay';
+  if (f.cat === 'aktivite') return 'event';
+  const toks = String(f.desc || '').toLocaleLowerCase('tr').split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  if (f.cat === 'ucak' || (f.cat === 'ulasim' && toks.some(t => DEST_KINDS.some(k => k.w.some(w => destHit(t, w))))) || f.from || f.to) return 'trip';
+  return f.when ? 'event' : null;
+}
+function bkHtml(){
+  const f = form, k = bkKind(f); if (!k) return '';
+  const v = x => esc(f[x] || ''), dt = (id, key, label, date) => `<label class="srow drow"><span>${label}</span><input type="${date ? 'date' : 'datetime-local'}" id="${id}" value="${date ? v(key).slice(0, 10) : v(key)}" aria-label="${label}"></label>`;
+  const head = `<span class="lab bkh">🗓️ ${k === 'stay' ? 'Konaklama' : k === 'trip' ? 'Yolculuk' : 'Ziyaret'} ${help('bk')}</span>`;
+  if (k === 'stay') return head + `<div class="rows">${dt('fWhen', 'when', 'Giriş', true)}${dt('fUntil', 'until', 'Çıkış', true)}</div>`;
+  if (k === 'event') return head + `<div class="rows">${dt('fWhen', 'when', 'Tarih ve saat')}</div>`;
+  return head + `<div class="rows">${dt('fWhen', 'when', 'Kalkış')}${dt('fUntil', 'until', 'Varış')}</div>
+    <div class="bkft"><input class="inp" id="fFrom" autocomplete="off" placeholder="Nereden (ör. Barcelona Sants)" value="${v('from')}" aria-label="Nereden"><input class="inp" id="fTo" autocomplete="off" placeholder="Nereye (ör. Madrid Atocha)" value="${v('to')}" aria-label="Nereye"></div>`;
+}
+function drawBk(){ const el = document.getElementById('fBk'); if (el) el.innerHTML = bkHtml(); }
+// Kısa gösterim: "30 Kas 14:45", "30 Kas – 3 Ara · 3 gece".
+function bkDay(w){ return new Date(String(w).slice(0, 10) + 'T12:00').toLocaleDateString('tr-TR', {day:'numeric', month:'short'}); }
+function bkTime(w){ return String(w).length > 10 ? String(w).slice(11, 16) : ''; }
+function bkLine(e){
+  if (!e.when) return '';
+  const k = bkKind(e), d = bkDay(e.when), t = bkTime(e.when);
+  if (k === 'stay'){ const n = e.until ? Math.round((new Date(e.until.slice(0, 10)) - new Date(e.when.slice(0, 10))) / 864e5) : 0; return `🏨 ${d}${e.until ? ' – ' + bkDay(e.until) : ''}${n > 0 ? ` · ${n} gece` : ''}`; }
+  if (k === 'trip') return `🗓️ ${d}${t ? ' ' + t : ''}${e.from ? ' ' + e.from : ''} → ${e.until && bkDay(e.until) !== d ? bkDay(e.until) + ' ' : ''}${bkTime(e.until || '')}${e.to ? ' ' + e.to : ''}`.replace(/ → $/, '');
+  return `🗓️ ${d}${t ? ' ' + t : ''}`;
+}
+// 📅 Program: tarihi girilmiş bilet ve rezervasyonlar zaman sırasıyla (Seyahat sekmesi); her birinde yol tarifi.
+function programHtml(){
+  const L = S.entries.filter(e => e.kind === 'expense' && e.when).sort((a, b) => String(a.when).localeCompare(String(b.when)));
+  if (!L.length) return S.entries.some(e => ['ucak', 'konaklama', 'aktivite'].includes(e.cat)) ? `<h2>📅 Program</h2><p class="hint">Uçak, tren, konaklama ve müze harcamalarına tarih ve saat ekle (ya da bilet/rezervasyon fotoğrafından okut); burada sırayla listelenir.</p>` : '';
+  return `<h2 data-hhost>📅 Program${help('bk')}</h2><div class="list prog">` + L.map(e => { const d = destOf(e);
+    return `<div class="row"><span class="ic">${iconOf(e)}</span><span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">${esc(bkLine(e))}</span></span>${d ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : ''}</div>`; }).join('') + `</div>`;
 }
 function destOf(e){
   if (e.dest) return {q:e.dest, label:e.dest, set:true};
@@ -2044,7 +2091,7 @@ function submit(){
     const wts = Object.fromEntries(f.among.filter(x => f.weights && f.weights[x] > 1).map(x => [x, f.weights[x]]));
     upsert({id, kind:'expense', desc:f.desc.trim(), cat:f.cat, amount:a, cur:f.cur, rate, paidBy:f.paidBy, among:f.among, weights:Object.keys(wts).length ? wts : null, at:atFromDay(f.date, old && old.at), by:old ? old.by || S.me : S.me, hasPhoto,
       photoId:f.photoChanged ? null : ((old && old.photoId) || null),
-      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, dest:f.dest || null, ...tlx});
+      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, dest:f.dest || null, ...(bkKind(f) ? {when:f.when || null, until:f.until || null, from:f.from || null, to:f.to || null} : {}), ...tlx});
     if (f.photoChanged && f.photo) uploadPhoto(id, f.photo);
     logEvent(`${old ? 'düzenledi' : 'ekledi'}: ${f.desc.trim()} · ${money(a, f.cur)}`);
     S.lastCur = f.cur; flashId = id; closeSheet(); render();
@@ -2410,7 +2457,7 @@ let sampleFn = null, sampleImg = false, cloudOcr = true;
 function rcCloudCheck(r){
   const items = (Array.isArray(r.items) ? r.items : []).map(x => ({name:String(x.name || '').slice(0, 70), price:Math.round(Number(x.price) * 100) / 100})).filter(x => x.name && x.price);
   const sum = Math.round(items.reduce((a, x) => a + x.price, 0) * 100) / 100, amount = Math.round(Number(r.amount) * 100) / 100;
-  return {amount, currency:r.currency, desc:r.desc, items, ret:!!r.ret, disc:0, place:typeof r.place === 'string' ? r.place.trim() : '', ...(items.length && sum > amount + .01 ? {mismatch:sum} : {})};
+  return {amount, currency:r.currency, desc:r.desc, items, ret:!!r.ret, disc:0, place:typeof r.place === 'string' ? r.place.trim() : '', when:r.when || '', until:r.until || '', from:r.from || '', to:r.to || '', ...(items.length && sum > amount + .01 ? {mismatch:sum} : {})};
 }
 async function startSample(){
   if (!window.claude || !window.claude.use) return;
@@ -3176,6 +3223,7 @@ async function readReceipt(dataUrl){
       + '"Unit Price/Precio Unitario" gibi satırlar ürün değil, üstündeki ürünün fiyatıdır; "1x" adettir. Ara toplam, KDV/IVA, ödeme, para üstü ve indirim satırları ürün değildir. '
       + 'Fişte indirim varsa (ör. outlet %20) ürün fiyatlarını indirimli yaz; ürünlerin toplamı ödenen toplama eşit olsun. '
       + 'İade fişiyse (devolución, refund, Rückgabe, reso, avoir, iade…) tutarları artı yaz ve "ret": true ekle. '
+      + 'Bilet ya da rezervasyonsa "when" (ulaşımda kalkış, konaklamada giriş, etkinlikte giriş; "YYYY-MM-DDTHH:MM", saat yoksa "YYYY-MM-DD"), "until" (varış ya da çıkış), "from" ve "to" (ulaşımda kalkış ve varış yeri) alanlarını da yaz; fişin satın alma tarihi bunlara yazılmaz, yoksa boş bırak. '
       + 'Fotoğrafta konaklama, bilet ya da mağaza adresi varsa (Airbnb/Booking/otel onayı, müze bileti, fiş başlığı) "place" alanına tam adresi yaz (adres yoksa yer adı ve şehir; hiçbiri yoksa boş bırak). '
       + 'Sadece şu biçimde JSON döndür: {"amount": 23.5, "currency": "EUR", "desc": "Restoranda akşam yemeği", "items": [{"name": "Tişört", "price": 19.99}]}. currency şunlardan biri olmalı: ' + CURS.map(c => c[0]).join(', ')
       + '. Toplam okunamıyorsa {"amount": null} döndür.', {images:[dataUrlToBlob(dataUrl)], modelTier:'quick'});
@@ -3193,7 +3241,7 @@ async function readReceipt(dataUrl){
       const c = themeCountry(), r = await window.claude.receipt(dataUrl, c && c[0]);
       // Tutar okunamasa da adres okunduysa (ör. Airbnb ilan ekranı: fiyat gece başı, toplam yok) sonuç kullanılır;
       // telefondaki okuma adres çıkaramaz.
-      if (r && (Number(r.amount) > 0 || String(r.place || '').trim())) return rcCloudCheck(r);
+      if (r && (Number(r.amount) > 0 || String(r.place || '').trim() || String(r.when || '').trim())) return rcCloudCheck(r);
     } catch(e){ if (e && e.code === 'quota') cloudOcr = false; }
   }
   const Tess = await loadTess(), img = await ocrImage(dataUrl);
@@ -3244,6 +3292,11 @@ function ocrImage(dataUrl){
     im.onerror = () => ok(dataUrl); im.src = dataUrl;
   });
 }
+// Okunan bilet/rezervasyon zamanı ve yeri yalnız boş alanlara yazılır.
+function bkFromRead(f, r){
+  for (const k of ['when', 'until']){ const v = String(r[k] || '').trim().slice(0, 16); if (!f[k] && BK_WHEN.test(v)) f[k] = v; }
+  for (const k of ['from', 'to']){ const v = String(r[k] || '').trim().slice(0, 80); if (!f[k] && v) f[k] = v; }
+}
 async function scanReceipt(){
   const f = form; if (!f || f.scanning) return;
   f.scanning = true; drawSheetKeep();
@@ -3253,12 +3306,15 @@ async function scanReceipt(){
     if (form !== f) return;
     if (r && r.exchange) throw {code:'exchange'};
     const place = r && f.mode === 'expense' ? String(r.place || '').trim().slice(0, 150) : '';
+    if (r && f.mode === 'expense' && !(Number(r.amount) > 0) && !place && String(r.when || '').trim()){
+      bkFromRead(f, r); toast('🗓️ Tarih ve saat okundu. Fotoğrafta tutar yok; tutarı elle yaz.'); f.scanning = false; if (form === f) drawSheetKeep(); return;
+    }
     // Okuma yalnız boş alanları doldurur: tutar önceden yazıldıysa (ör. fotoğraf sadece adres için eklendi) değişmez;
     // fotoğrafta tutar yoksa tutara hiç dokunulmaz (sıfır yazılmaz).
     const typed = parseAmt(f.amount) > 0;
     if (!r || !(Number(r.amount) > 0)){
       if (!place) throw {code:'unreadable'};
-      f.dest = place; f.destEdit = false;
+      f.dest = place; f.destEdit = false; bkFromRead(f, r);
       toast(typed ? '🧭 Adres okundu, gidilecek yer oldu.' : '🧭 Adres okundu, gidilecek yer oldu. Fotoğrafta tutar yok; tutarı elle yaz.');
       f.scanning = false; if (form === f) drawSheetKeep(); return;
     }
@@ -3273,6 +3329,7 @@ async function scanReceipt(){
     else if (r.desc && !f.desc.trim()){ f.desc = String(r.desc).slice(0, 60); if (!f.catManual) f.cat = guessCat(f.desc, S.learned); }
     // Rezervasyon ya da bilet fotoğrafındaki adres (Airbnb, otel, müze) gidilecek yer olur.
     if (place){ f.dest = place; f.destEdit = false; }
+    if (f.mode === 'expense') bkFromRead(f, r);
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.mismatch && f.mode === 'shop' ? `⚠️ Fişteki ürünlerin toplamı (${money(r.mismatch, f.cur)}) fişin toplamını (${money(Number(r.amount), f.cur)}) tutmuyor; ürünler fişte yazdığı gibi bırakıldı, kontrol et.`
       : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : typed ? `Yazdığın tutara dokunmadım (fotoğrafta ${money(Number(r.amount), r.currency || f.cur)}).${place ? ' 🧭 Adres gidilecek yer oldu.' : ''}`
@@ -4514,6 +4571,7 @@ function confetti(){
 // ---- yardım ----
 // Karışık gelebilecek yerlerin yanında "?" düğmesi; dokununca altında kısa bir açıklama açılır.
 const HELP = {
+  bk: 'Harcamanın tarihi satın aldığın gündür; biletin ya da rezervasyonun kendi zamanı burada durur: uçak ve trende kalkış–varış saatleri ve yerleri, evde giriş–çıkış tarihleri, müzede ziyaret günü ve saati. Bilet ya da rezervasyon fotoğrafını ekleyip ✨ Fotoğraftan doldur’a basarsan bunları okurum; elle de yazabilirsin. Seyahat sekmesindeki 📅 Program bu bilgilerden oluşur.',
   foto: 'Fişin, rezervasyon ekranının (Airbnb, otel) ya da biletin fotoğrafını çek veya ekran görüntüsünü seç. Sonra ✨ Fotoğraftan doldur’a bas: tutarı, para birimini, açıklamayı ve varsa adresi okurum. Yalnız boş alanları doldururum: tutarı önceden yazdıysan ona dokunmam, fotoğrafta tutar yoksa tutar boş kalır (sıfır yazılmaz). Fotoğrafı sadece adres için de ekleyebilirsin. Adres okunursa 🧭 yol tarifi o adrese hazır olur. Kaydetmeden önce kontrol et; yanlışı düzeltebilirsin. Fotoğraf harcamayla saklanır, seyahatteki herkes görebilir.',
   yol: '🧭 düğmesi Google Haritalar’da gidilecek yere yol tarifi açar; bulunduğun yerden başlar. Yeri açıklamadan tahmin ederim: trende ve otobüste kalkış garı (“Madrid–Sevilla treni” → Madrid tren garı), uçakta kalkış havalimanı, müzede müzenin kendisi. Rezervasyon ya da bilet fotoğrafından adres okunduysa o kullanılır. Yanlışsa “değiştir”e dokunup doğrusunu bir kez yaz; arkadaşların da aynı düğmeyi görür. 📍 Buradayım, harcamayı girdiğin yerin konumunu kaydeder.',
   fis: 'Fişin fotoğrafını çek ya da seç, sonra ✨ Fişten doldur’a bas: mağazayı, tutarı ve fişteki ürünleri tek tek okurum (indirimler dahil). Ürünlerin toplamı ödenen tutarı tutmazsa uyarırım. Kaydetmeden önce kontrol et; ürün adlarını ve fiyatları düzeltebilirsin.',
@@ -4852,6 +4910,7 @@ document.addEventListener('input', ev => {
   const el = ev.target;
   if (el.id === 'planInp' && planDraft){ planDraft.v = el.value; return; }
   if (el.id === 'fDest' && form){ form.destDraft = el.value; return; }
+  if (form && ['fWhen', 'fUntil', 'fFrom', 'fTo'].includes(el.id)){ form[{fWhen:'when', fUntil:'until', fFrom:'from', fTo:'to'}[el.id]] = el.value.trim(); if (el.id === 'fFrom' && !form.destEdit) drawPlace(); return; }
   if (el.id === 'shopQ'){ shopQ = el.value; const r = document.getElementById('shopRes'); if (r) r.innerHTML = shopRowsHtml(); return; }
   if (el.id === 'gWho' || el.id === 'gWhat' || el.id === 'gEst'){ giftDraft[{gWho:'who', gWhat:'what', gEst:'est'}[el.id]] = el.value; return; }
   if (form){
@@ -4867,6 +4926,7 @@ document.addEventListener('input', ev => {
       }
       // Gidilecek yer tahmini ve fotoğraf düğmesinin adı (Rezervasyon/Bilet/Fiş) yazdıkça güncellenir.
       if (!form.destEdit) drawPlace();
+      { const b = document.getElementById('fBk'); if (b && (b.dataset.k || '') !== (bkKind(form) || '')){ b.innerHTML = bkHtml(); b.dataset.k = bkKind(form) || ''; } }
       { const pl = document.getElementById('fPhotoLbl'); if (pl && !form.photo) pl.textContent = docLabel(form); }
       return;
     }
