@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027231906';</script>
-<script src="heybe-web.js?v=20261027231906"></script>
+<script>window.HEYBE_VER = '20261027232231';</script>
+<script src="heybe-web.js?v=20261027232231"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -318,7 +318,23 @@ nav.tabs svg{width:22px;height:22px}
 .bkh{display:flex;align-items:center;gap:6px}
 .bkft{display:flex;gap:8px}
 .bkft .inp{flex:1;min-width:0;padding:9px 12px}
-.prog .row .m b{color:var(--ink)}
+.plan{display:flex;flex-direction:column;gap:10px}
+.pday{background:var(--surface);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.pday.today{box-shadow:inset 3px 0 0 var(--accent)}
+.pdh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding-bottom:4px}
+.pdh b{font-weight:700;text-transform:capitalize}
+.pdh span{color:var(--muted);font-size:.88rem}
+.pdh em{font-style:normal;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
+.pli{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:6px;margin-top:4px}
+.plt{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:2px 0;color:inherit}
+.plt .pt{width:42px;flex:none;font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.plt .pic{flex:none}
+.plt .mid{flex:1;min-width:0;display:flex;flex-direction:column}
+.plt .d{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plt .m{font-size:.82rem;color:var(--muted);overflow-wrap:anywhere}
+.pfree{margin:0;font-size:.86rem;color:var(--muted)}
+.pmiss{display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:.88rem;margin:10px 0}
+.pmiss span,.pmiss .link{color:var(--warn);text-align:left}
 .destrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .dbtn{text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .destedit{display:flex;gap:8px}
@@ -1968,12 +1984,77 @@ function bkLine(e){
   if (k === 'trip') return `🗓️ ${d}${t ? ' ' + t : ''}${e.from ? ' ' + e.from : ''} → ${e.until && bkDay(e.until) !== d ? bkDay(e.until) + ' ' : ''}${bkTime(e.until || '')}${e.to ? ' ' + e.to : ''}`.replace(/ → $/, '');
   return `🗓️ ${d}${t ? ' ' + t : ''}`;
 }
-// 📅 Program: tarihi girilmiş bilet ve rezervasyonlar zaman sırasıyla (Seyahat sekmesi); her birinde yol tarifi.
+// 📅 Seyahat planı (Seyahat sekmesi): biletler ve rezervasyonlar gün gün. Her günün şehri o gece kalınan evden gelir
+// (konaklamanın giriş–çıkış tarihleri); ulaşım kalkış gününde, konaklama giriş ve çıkış gününde görünür. Eksik bilgi
+// (tarih, adres, konaklamasız gece) kısa bir listede. Yapay zekâ yok; her şey harcama kayıtlarındaki 🗓️ alanlardan.
+const isoAdd = (d, n) => { const t = new Date(d + 'T12:00'); t.setDate(t.getDate() + n); return isoDay(t.getTime()); };
+const planDay = d => new Date(d + 'T12:00').toLocaleDateString('tr-TR', {weekday:'short', day:'numeric', month:'short'});
+function stayCity(e){
+  const w = String(e.desc || '').trim().split(/\s+/)[0] || '';
+  if (/^\p{Lu}/u.test(w) && !/^(airbnb|booking|otel|hotel|ev|konaklama|hostel|apart)/i.test(w)) return w.replace(/[^\p{L}-]/gu, '');
+  return e.dest ? String(e.dest).split(',').pop().replace(/\d+/g, '').trim() : '';
+}
+function tripPlan(){
+  const B = S.entries.filter(e => e.kind === 'expense'), stays = B.filter(e => bkKind(e) === 'stay' && e.when && e.until);
+  const dated = B.filter(e => e.when);
+  if (!dated.length) return null;                     // hiç tarih girilmemişse plan yok (seyahatin günlerini boş göstermesin)
+  let a = S.trip.start || null, z = S.trip.end || null;
+  for (const e of dated){ const d0 = String(e.when).slice(0, 10), d1 = String(e.until || e.when).slice(0, 10); if (!a || d0 < a) a = d0; if (!z || d1 > z) z = d1; }
+  if (!a || !z || z < a) return null;
+  const night = d => stays.find(e => e.when.slice(0, 10) <= d && d < e.until.slice(0, 10));
+  const days = [];
+  for (let d = a, n = 0; d <= z && n < 60; d = isoAdd(d, 1), n++){
+    const st = night(d), prev = night(isoAdd(d, -1)), items = [];
+    for (const e of dated){
+      const k = bkKind(e), d0 = String(e.when).slice(0, 10);
+      if (k === 'stay'){
+        if (e.until && e.until.slice(0, 10) === d) items.push({e, t:'00:00', label:'Çıkış', kind:'out'});
+        if (d0 === d) items.push({e, t:'99:99', label:'Giriş', kind:'in'});
+      } else if (d0 === d) items.push({e, t:bkTime(e.when) || '98:00', kind:k});
+    }
+    items.sort((x, y) => x.t.localeCompare(y.t));
+    const c1 = st ? stayCity(st) : '', c0 = prev ? stayCity(prev) : '';
+    days.push({d, city:c0 && c1 && c0 !== c1 ? `${c0} → ${c1}` : c1 || (d === z ? c0 : ''), st, items});
+  }
+  // Eksikler: tarihsiz bilet/rezervasyon, adressiz ev, konaklaması olmayan gece (son gün hariç).
+  const miss = [];
+  for (const e of B){
+    const k = bkKind(e); if (!k || (k === 'event' && !e.when)) continue;
+    if (!e.when) miss.push({e, m:k === 'stay' ? 'giriş–çıkış tarihi yok' : 'kalkış tarihi ve saati yok'});
+    else if (k === 'stay' && !e.dest) miss.push({e, m:'adres yok'});
+  }
+  const empty = days.filter(x => x.d < z && !x.st).map(x => planDay(x.d));
+  return {days, miss, empty, a, z};
+}
+function planItem(x){
+  const e = x.e, d = destOf(e), k = x.kind;
+  const t = k === 'in' || k === 'out' ? '' : bkTime(e.when);
+  const sub = k === 'in' ? `Giriş${e.until ? ` · ${Math.round((new Date(e.until.slice(0, 10)) - new Date(e.when.slice(0, 10))) / 864e5)} gece` : ''}` : k === 'out' ? 'Çıkış' : k === 'trip' ? [e.from, e.to].filter(Boolean).join(' → ') + (e.until ? ` · varış ${bkTime(e.until)}` : '') : '';
+  return `<div class="pli"><button class="plt" data-edit="${e.id}"><span class="pt num">${t || ''}</span><span class="pic">${iconOf(e)}</span><span class="mid"><span class="d">${esc(e.desc)}</span>${sub ? `<span class="m">${esc(sub)}</span>` : ''}</span></button>`
+    + (d && k !== 'out' ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`;
+}
 function programHtml(){
-  const L = S.entries.filter(e => e.kind === 'expense' && e.when).sort((a, b) => String(a.when).localeCompare(String(b.when)));
-  if (!L.length) return S.entries.some(e => ['ucak', 'konaklama', 'aktivite'].includes(e.cat)) ? `<h2>📅 Program</h2><p class="hint">Uçak, tren, konaklama ve müze harcamalarına tarih ve saat ekle (ya da bilet/rezervasyon fotoğrafından okut); burada sırayla listelenir.</p>` : '';
-  return `<h2 data-hhost>📅 Program${help('bk')}</h2><div class="list prog">` + L.map(e => { const d = destOf(e);
-    return `<div class="row"><span class="ic">${iconOf(e)}</span><span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">${esc(bkLine(e))}</span></span>${d ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : ''}</div>`; }).join('') + `</div>`;
+  const P = tripPlan();
+  if (!P) return S.entries.some(e => ['ucak', 'konaklama', 'aktivite'].includes(e.cat)) ? `<h2 data-hhost>📅 Seyahat planı${help('bk')}</h2><p class="hint">Uçak, tren, konaklama ve müze harcamalarına tarih ekle (ya da bilet/rezervasyon fotoğrafından okut); plan burada gün gün oluşur.</p>` : '';
+  const today = isoDay(Date.now());
+  let h = `<h2 data-hhost>📅 Seyahat planı${help('bk')}</h2><div class="plan">`;
+  for (const x of P.days){
+    const home = x.st && destOf(x.st);
+    h += `<div class="pday${x.d === today ? ' today' : ''}"><div class="pdh"><b>${planDay(x.d)}</b>${x.city ? `<span>${esc(x.city)}</span>` : ''}${x.d === today ? '<em>bugün</em>' : ''}</div>`
+      + (x.items.length ? x.items.map(planItem).join('') : `<p class="pfree">Serbest gün${home ? ` · <a href="${mapsDir(home.q)}" target="_blank" rel="noopener">🧭 ev</a>` : ''}</p>`) + `</div>`;
+  }
+  h += `</div>`;
+  if (P.miss.length || P.empty.length) h += `<div class="pmiss"><b>Eksikler</b>${P.miss.map(m => `<button class="link" data-edit="${m.e.id}">⚠ ${esc(m.e.desc)}: ${m.m}</button>`).join('')}${P.empty.length ? `<span>⚠ Konaklama girilmemiş gece: ${esc(P.empty.join(', '))}</span>` : ''}</div>`;
+  h += `<button class="btn sm" data-act="plancopy">💬 Planı kopyala (WhatsApp'a yapıştır)</button>`;
+  return h;
+}
+// Planın yazılı hali: gruba yapıştırmak için.
+function planText(){
+  const P = tripPlan(); if (!P) return '';
+  return `📅 ${S.trip.name}\n` + P.days.map(x => `\n${planDay(x.d)}${x.city ? ' · ' + x.city : ''}\n` + (x.items.length ? x.items.map(i => {
+    const e = i.e, t = i.kind === 'in' || i.kind === 'out' ? '' : bkTime(e.when);
+    return `${t ? t + ' ' : ''}${iconOf(e)} ${e.desc}${i.kind === 'in' ? ' · giriş' : i.kind === 'out' ? ' · çıkış' : ''}${i.kind === 'trip' && (e.from || e.to) ? ` (${[e.from, e.to].filter(Boolean).join(' → ')}${e.until ? ', varış ' + bkTime(e.until) : ''})` : ''}${i.kind === 'in' && e.dest ? `\n   📍 ${e.dest}` : ''}`;
+  }).join('\n') : 'Serbest gün')).join('\n');
 }
 function destOf(e){
   if (e.dest) return {q:e.dest, label:e.dest, set:true};
@@ -4574,7 +4655,7 @@ function confetti(){
 // ---- yardım ----
 // Karışık gelebilecek yerlerin yanında "?" düğmesi; dokununca altında kısa bir açıklama açılır.
 const HELP = {
-  bk: 'Harcamanın tarihi satın aldığın gündür; biletin ya da rezervasyonun kendi zamanı burada durur: uçak ve trende kalkış–varış saatleri ve yerleri, evde giriş–çıkış tarihleri, müzede ziyaret günü ve saati. Bilet ya da rezervasyon fotoğrafını ekleyip ✨ Fotoğraftan doldur’a basarsan bunları okurum; elle de yazabilirsin. Seyahat sekmesindeki 📅 Program bu bilgilerden oluşur.',
+  bk: 'Harcamanın tarihi satın aldığın gündür; biletin ya da rezervasyonun kendi zamanı burada durur: uçak ve trende kalkış–varış saatleri ve yerleri, evde giriş–çıkış tarihleri, müzede ziyaret günü ve saati. Bilet ya da rezervasyon fotoğrafını ekleyip ✨ Fotoğraftan doldur’a basarsan bunları okurum; elle de yazabilirsin. Seyahat sekmesindeki 📅 Seyahat planı bu bilgilerden gün gün oluşur: her günün şehri, biletler, giriş–çıkışlar ve eksikler.',
   foto: 'Fişin, rezervasyon ekranının (Airbnb, otel) ya da biletin fotoğrafını çek veya ekran görüntüsünü seç. Sonra ✨ Fotoğraftan doldur’a bas: tutarı, para birimini, açıklamayı ve varsa adresi okurum. Yalnız boş alanları doldururum: tutarı önceden yazdıysan ona dokunmam, fotoğrafta tutar yoksa tutar boş kalır (sıfır yazılmaz). Fotoğrafı sadece adres için de ekleyebilirsin. Adres okunursa 🧭 yol tarifi o adrese hazır olur. Kaydetmeden önce kontrol et; yanlışı düzeltebilirsin. Fotoğraf harcamayla saklanır, seyahatteki herkes görebilir.',
   yol: '🧭 düğmesi Google Haritalar’da gidilecek yere yol tarifi açar; bulunduğun yerden başlar. Yeri açıklamadan tahmin ederim: trende ve otobüste kalkış garı (“Madrid–Sevilla treni” → Madrid tren garı), uçakta kalkış havalimanı, müzede müzenin kendisi. Rezervasyon ya da bilet fotoğrafından adres okunduysa o kullanılır. Yanlışsa “değiştir”e dokunup doğrusunu bir kez yaz; arkadaşların da aynı düğmeyi görür. 📍 Buradayım, harcamayı girdiğin yerin konumunu kaydeder.',
   fis: 'Fişin fotoğrafını çek ya da seç, sonra ✨ Fişten doldur’a bas: mağazayı, tutarı ve fişteki ürünleri tek tek okurum (indirimler dahil). Ürünlerin toplamı ödenen tutarı tutmazsa uyarırım. Kaydetmeden önce kontrol et; ürün adlarını ve fiyatları düzeltebilirsin.',
@@ -4822,6 +4903,7 @@ document.addEventListener('click', ev => {
     case 'errcopy':
       copyText(`Heybe hata kaydı · ${navigator.userAgent}\n` + errLog().map(e => `${new Date(e.t).toISOString()} [${e.tab}${e.f ? '/' + e.f : ''}] ${e.m} @ ${e.w}`).join('\n'), 'Hata kaydı kopyalandı; bana yapıştırıp gönderebilirsin.'); break;
     case 'errclear': try { localStorage.removeItem(ERR_KEY); } catch(_) {} render(); break;
+    case 'plancopy': copyText(planText(), 'Plan kopyalandı; WhatsApp grubuna yapıştırabilirsin.'); break;
     case 'gundo':
       if (gUndo && gUndo.tid === S.tid){ const r = gUndo.restore; clearTimeout(gUndo.timer); gUndo = null; r(); render(); toast('Geri alındı'); }
       break;
