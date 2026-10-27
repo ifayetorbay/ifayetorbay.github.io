@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261026235653';</script>
-<script src="heybe-web.js?v=20261026235653"></script>
+<script>window.HEYBE_VER = '20261027205413';</script>
+<script src="heybe-web.js?v=20261027205413"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -312,6 +312,16 @@ nav.tabs svg{width:22px;height:22px}
 .chips.pad{padding:10px 0;border-bottom:1px solid var(--line)}
 .rows #fEach{padding-top:8px}
 .place{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.92rem}
+.place .pl{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+.placts{display:flex;flex-wrap:wrap;gap:8px}
+.psearch{display:flex;flex-direction:column;gap:8px;width:100%}
+.psearch .prow{display:flex;gap:8px}
+.psearch .prow .inp{flex:1;min-width:0;padding:9px 12px}
+.pres{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pbtn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;background:var(--surface);padding:9px 12px;text-align:left;width:100%}
+.pbtn+.pbtn{border-top:1px solid var(--line)}
+.pbtn span{font-size:.8rem;color:var(--muted)}
+.psearch .link{align-self:flex-start}
 .photo img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:zoom-in}
 .photo input{position:absolute;width:1px;height:1px;opacity:0}
 .photo label.btn{display:inline-block}
@@ -1566,6 +1576,7 @@ function restoreDraft(){
     const d = JSON.parse(localStorage.getItem(DRAFT) || 'null');
     if (!d || Date.now() - d.savedAt > 864e5 || !S.people.length || isRO()) return clearDraft();
     if (d.placeState === 'loading') d.placeState = d.place ? 'ok' : 'off';
+    d.placeBusy = false; d.placeSearch = false; d.placeRes = null;
     if (d.id){ const e = S.entries.find(x => x.id === d.id); if (!e) return clearDraft(); d.photo = photoSrc(e); }
     openSheet(d); toast('Yarım kalan kayıt geri getirildi');
   } catch(_) { clearDraft(); }
@@ -1834,13 +1845,49 @@ function locate(f){
     }, err => done(err && err.code === 1 ? 'denied' : 'fail'), {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
   } catch(_) { done('fail'); }
 }
+// Yol tarifi: Google Haritalar'da yer işaretine (enlem, boylam) yol tarifi açılır; telefonda Haritalar uygulaması açılır.
+const mapsDir = (lat, lon, place) => 'https://www.google.com/maps/dir/?api=1&destination=' + (lat ? `${lat},${lon}` : encodeURIComponent(place || ''));
 function placeHtml(){
   const f = form;
-  if (f.placeState === 'loading') return `<span class="note">📍 Konum alınıyor…</span> <button type="button" class="btn sm" data-act="rmplace">Ekleme</button>`;
-  if (f.place) return `<span>📍 ${esc(f.place)}</span>${f.lat ? ` <a class="note" href="https://www.openstreetmap.org/?mlat=${f.lat}&mlon=${f.lon}#map=18/${f.lat}/${f.lon}" target="_blank" rel="noopener">Haritada aç</a>` : ''} <button type="button" class="btn sm" data-act="rmplace">Kaldır</button>`;
+  if (f.placeSearch) return placeSearchHtml();
+  if (f.placeState === 'loading') return `<span class="note">📍 Konum alınıyor…</span> <button type="button" class="btn sm" data-act="rmplace">Ekleme</button> <button type="button" class="btn sm" data-act="placesearch">🔎 Yer ara</button>`;
+  if (f.place) return `<span class="pl">📍 ${esc(f.place)}</span><span class="placts"><a class="btn sm pri" href="${mapsDir(f.lat, f.lon, f.place)}" target="_blank" rel="noopener">🧭 Yol tarifi</a><button type="button" class="btn sm" data-act="placesearch">Değiştir</button><button type="button" class="btn sm" data-act="rmplace">Kaldır</button></span>`;
   const msg = {denied:'Konum izni verilmedi.', fail:'Konum alınamadı.', off:'Konum eklenmedi.'}[f.placeState] || 'Konum eklenmedi.';
-  return `<span class="note">📍 ${msg}</span> <button type="button" class="btn sm" data-act="locate">Konumu ekle</button>`;
+  return `<span class="note">📍 ${msg}</span> <button type="button" class="btn sm" data-act="locate">Buradayım</button> <button type="button" class="btn sm" data-act="placesearch">🔎 Yer ara</button>`;
 }
+// 🔎 Yer ara: yazılan yer ya da adres ("Sagrada Família", "Madrid Atocha garı", Airbnb'deki sokak adresi) OpenStreetMap'te
+// aranır; önce seyahatin ülkesinde, bulunamazsa her yerde. Adlar yerel dilde gelir ("und": dil tercihi yok; yoksa
+// tarayıcının Türkçesiyle Sevilla "İşbîliye" olur). Seçilen sonuç
+// harcamanın yeri olur, herkes yol tarifi alabilir. Kapı numaralı adresi OpenStreetMap çoğu zaman sokağa yuvarlar; o yüzden
+// "yazdığın adresle kaydet" de sunulur: yer yazı olarak saklanır, yol tarifinde adresi Google Haritalar bulur.
+function placeSearchHtml(){
+  const f = form, R = f.placeRes;
+  return `<div class="psearch"><div class="prow"><input class="inp" id="fPlaceQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="Yer ya da adres (ör. Sagrada Família)" value="${esc(f.placeQ ?? '')}"><button type="button" class="btn sm pri" data-act="placego">Ara</button></div>`
+    + (f.placeBusy ? `<span class="note">Aranıyor…</span>` : R && !R.length ? `<span class="note">Haritada bulunamadı. Şehir adını da ekle (ör. “Atocha, Madrid”) ya da aşağıdan yazdığın adresle kaydet.</span>` : '')
+    + (R ? `<div class="pres">${R.map((r, i) => `<button type="button" class="pbtn" data-placepick="${i}"><b>${esc(r.name)}</b><span>${esc(r.addr)}</span></button>`).join('')}
+      <button type="button" class="pbtn" data-placetext="1"><b>✍️ “${esc(f.placeQ)}”</b><span>Yazdığın adresle kaydet; yol tarifinde adresi Google Haritalar bulur (ev adresi gibi kapı numaralı adreslerde en doğrusu)</span></button></div>` : '')
+    + `<button type="button" class="link" data-act="placecancel">Vazgeç</button></div>`;
+}
+async function placeSearch(){
+  const f = form, q = String(f.placeQ ?? '').trim(); if (!q) return;
+  f.placeBusy = true; f.placeRes = null; drawPlace();
+  const tc = themeCountry(), go = async cc => {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&accept-language=und&q=${encodeURIComponent(q)}${cc ? '&countrycodes=' + cc : ''}`);
+    return r.ok ? r.json() : [];
+  };
+  let L = [];
+  try { L = tc ? await go(tc[0].toLowerCase()) : []; if (!L.length) L = await go(''); } catch(_) { L = []; }
+  if (form !== f) return;
+  f.placeBusy = false;
+  f.placeRes = L.map(x => {
+    const a = x.address || {}, city = a.city || a.town || a.village || a.municipality || a.county || a.state || '';
+    const name = x.name || [a.road, a.house_number].filter(Boolean).join(' ') || String(x.display_name).split(',')[0];
+    const addr = String(x.display_name || '').split(',').map(t => t.trim()).filter(t => t && t !== name).slice(0, 4).join(', ');
+    return {name, city, addr, lat:+(+x.lat).toFixed(6), lon:+(+x.lon).toFixed(6)};
+  });
+  drawPlace();
+}
+function drawPlace(){ const el = document.getElementById('fPlace'); if (el) el.innerHTML = placeHtml(); }
 
 function copyText(text, okMsg){
   const fallback = () => openSheet({mode:'share', text});
@@ -4546,6 +4593,15 @@ document.addEventListener('click', ev => {
     else { const st = +d.tfst; grp.forEach(x => setStep(x, st)); if (st === 1) toast('Formu sakla; AB’den son çıkışta gümrükte onaylat.'); if (st === 3) toast('İade alındı 💶'); }
     saveShop(); drawSheetKeep(); render(); return;
   }
+  if (d.placetext && form){
+    const q = String(form.placeQ || '').trim(); if (!q) return;
+    Object.assign(form, {place:q.slice(0, 120), lat:null, lon:null, placeState:'ok', placeSearch:false, placeRes:null}); drawPlace(); return;
+  }
+  if (d.placepick !== undefined && form && form.placeRes){
+    const r = form.placeRes[+d.placepick]; if (!r) return;
+    Object.assign(form, {place:r.city && !r.name.includes(r.city) ? `${r.name}, ${r.city}` : r.name, lat:r.lat, lon:r.lon, placeState:'ok', placeSearch:false, placeRes:null});
+    drawPlace(); return;
+  }
   if (d.help){ toggleHelp(t); return; }
   if (d.plancur){ planDraft.cur = d.plancur; render(); const i = document.getElementById('planInp'); if (i) i.focus(); return; }
   if (d.edit && swOpen === t){ swClose(); return; }
@@ -4693,7 +4749,12 @@ document.addEventListener('click', ev => {
       logEvent(d.m === 'min' ? 'hesaplaşmayı “daha az ödeme”ye aldı' : 'hesaplaşmayı “doğrudan ödeme”ye aldı');
       toast(d.m === 'min' ? 'Daha az ödemeyle gösteriliyor; herkesin toplamı aynı.' : 'Doğrudan ödemeye dönüldü.'); break;
     case 'editrate': form.showRate = true; drawSheetKeep(); { const r = document.getElementById('fRate'); if (r){ r.focus(); r.select(); } } break;
-    case 'rmplace': Object.assign(form, {place:null, lat:null, lon:null, placeState:'off'}); document.getElementById('fPlace').innerHTML = placeHtml(); break;
+    case 'rmplace': Object.assign(form, {place:null, lat:null, lon:null, placeState:'off', placeSearch:false}); drawPlace(); break;
+    case 'placesearch':
+      form.placeSearch = true; form.placeRes = null; if (form.placeQ == null) form.placeQ = form.place && !form.lat ? form.place : (form.desc || '');
+      drawPlace(); { const i = document.getElementById('fPlaceQ'); if (i){ i.focus(); i.select(); } } break;
+    case 'placego': placeSearch(); break;
+    case 'placecancel': form.placeSearch = false; drawPlace(); break;
     case 'locate': locate(form); document.getElementById('fPlace').innerHTML = placeHtml(); break;
     case 'del':
       if (form.mode === 'solo'){
@@ -4751,6 +4812,7 @@ function drawSheetKeep(){
 document.addEventListener('input', ev => {
   const el = ev.target;
   if (el.id === 'planInp' && planDraft){ planDraft.v = el.value; return; }
+  if (el.id === 'fPlaceQ' && form){ form.placeQ = el.value; return; }
   if (el.id === 'shopQ'){ shopQ = el.value; const r = document.getElementById('shopRes'); if (r) r.innerHTML = shopRowsHtml(); return; }
   if (el.id === 'gWho' || el.id === 'gWhat' || el.id === 'gEst'){ giftDraft[{gWho:'who', gWhat:'what', gEst:'est'}[el.id]] = el.value; return; }
   if (form){
@@ -4844,6 +4906,7 @@ document.addEventListener('keydown', ev => {
   if (ev.target.id === 'planInp' && ev.key === 'Enter'){ ev.preventDefault(); savePlan(); return; }
   if (ev.target.id === 'planInp' && ev.key === 'Escape'){ editPlan = false; planDraft = null; render(); return; }
   if (!form) return;
+  if (ev.target.id === 'fPlaceQ' && ev.key === 'Enter'){ ev.preventDefault(); placeSearch(); return; }
   if (ev.key === 'Escape') closeSheet();
   if (ev.key === 'Enter' && ev.target.tagName === 'INPUT' && ev.target.type !== 'file') { ev.preventDefault(); submit(); }
 });
