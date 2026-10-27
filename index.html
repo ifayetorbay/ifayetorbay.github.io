@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027232231';</script>
-<script src="heybe-web.js?v=20261027232231"></script>
+<script>window.HEYBE_VER = '20261027232422';</script>
+<script src="heybe-web.js?v=20261027232422"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1296,7 +1296,7 @@ function viewList(C){
 // Her satır sağa ya da sola kaydırılınca arkasındaki "Sil" düğmesi görünür.
 function rowHtml(e){
   if (e.kind === 'solo') return `<button class="row solo" data-solo="${e.id}"><span class="ic">${iconOf(e)}</span>
-    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">🔒 Sadece sende · bölüşülmez</span></span>
+    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">🔒 Sadece sende · bölüşülmez</span>${e.when ? `<span class="m">${esc(bkLine(e))}</span>` : ''}</span>
     <span class="amt num"><b>${money(e.amount, e.cur)}</b>${e.cur === 'EUR' ? '' : `<small>${eu(Math.round(e.amount / e.rate * 100))}</small>`}</span></button>`;
   return `<div class="swr"><button class="swdel l" data-del="${e.id}" tabindex="-1">Sil</button><button class="swdel r" data-del="${e.id}" tabindex="-1">Sil</button>${rowInner(e)}</div>`;
 }
@@ -1728,6 +1728,12 @@ function drawSheet(){
     const c = catById(guessCat(f.desc, S.learned));
     body = `<div class="f"><label for="fSolo">Ne için?</label><input class="inp" id="fSolo" placeholder="ör. kendi kahvem, taksi" value="${esc(f.desc)}" autocomplete="off">
         <span class="note" id="fSoloCat">${c.icon} ${c.name}</span></div>` + amountBlock + rateBlock() + `<div class="rows">${dateBlock(f)}</div>
+      <div class="photo">${f.photo ? `<img src="${f.photo}" alt="Fotoğraf" data-act="viewphoto">` : ''}<input type="file" id="fPhoto" accept="image/*">
+        <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>${help('foto')}
+        ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
+        ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Okunuyor…' : '✨ Fotoğraftan doldur'}</button>` : ''}</div>
+      <div class="bk" id="fBk">${bkHtml()}</div>
+      <div class="place" id="fPlace">${placeHtml()}</div>
       <p class="note">🔒 Bunu kimse görmez, hesaplaşmaya ve ortak bütçeye girmez. Harcamalar listesinde yalnız sende 🔒 ile görünür; Kişisel → Özetim'e eklenir.</p>`;
   } else if (f.mode === 'newtrip'){
     const nk = f.kind || 'friends', fams = nk === 'families';
@@ -1995,8 +2001,10 @@ function stayCity(e){
   return e.dest ? String(e.dest).split(',').pop().replace(/\d+/g, '').trim() : '';
 }
 function tripPlan(){
-  const B = S.entries.filter(e => e.kind === 'expense'), stays = B.filter(e => bkKind(e) === 'stay' && e.when && e.until);
-  const dated = B.filter(e => e.when);
+  // "Sadece bana" biletleri (ör. yalnız sana ait bir aktarma uçuşu) yalnız bu telefonda, 🔒 ile plana girer.
+  const B = S.entries.filter(e => e.kind === 'expense'), mine = (SH.solo || []).filter(x => x.when).map(x => ({...x, priv:true}));
+  const stays = [...B, ...mine].filter(e => bkKind(e) === 'stay' && e.when && e.until);
+  const dated = [...B.filter(e => e.when), ...mine];
   if (!dated.length) return null;                     // hiç tarih girilmemişse plan yok (seyahatin günlerini boş göstermesin)
   let a = S.trip.start || null, z = S.trip.end || null;
   for (const e of dated){ const d0 = String(e.when).slice(0, 10), d1 = String(e.until || e.when).slice(0, 10); if (!a || d0 < a) a = d0; if (!z || d1 > z) z = d1; }
@@ -2030,7 +2038,7 @@ function planItem(x){
   const e = x.e, d = destOf(e), k = x.kind;
   const t = k === 'in' || k === 'out' ? '' : bkTime(e.when);
   const sub = k === 'in' ? `Giriş${e.until ? ` · ${Math.round((new Date(e.until.slice(0, 10)) - new Date(e.when.slice(0, 10))) / 864e5)} gece` : ''}` : k === 'out' ? 'Çıkış' : k === 'trip' ? [e.from, e.to].filter(Boolean).join(' → ') + (e.until ? ` · varış ${bkTime(e.until)}` : '') : '';
-  return `<div class="pli"><button class="plt" data-edit="${e.id}"><span class="pt num">${t || ''}</span><span class="pic">${iconOf(e)}</span><span class="mid"><span class="d">${esc(e.desc)}</span>${sub ? `<span class="m">${esc(sub)}</span>` : ''}</span></button>`
+  return `<div class="pli"><button class="plt" ${e.priv ? `data-solo="${e.id}"` : `data-edit="${e.id}"`}><span class="pt num">${t || ''}</span><span class="pic">${iconOf(e)}</span><span class="mid"><span class="d">${e.priv ? '🔒 ' : ''}${esc(e.desc)}</span>${sub ? `<span class="m">${esc(sub)}</span>` : ''}</span></button>`
     + (d && k !== 'out' ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`;
 }
 function programHtml(){
@@ -2051,10 +2059,11 @@ function programHtml(){
 // Planın yazılı hali: gruba yapıştırmak için.
 function planText(){
   const P = tripPlan(); if (!P) return '';
-  return `📅 ${S.trip.name}\n` + P.days.map(x => `\n${planDay(x.d)}${x.city ? ' · ' + x.city : ''}\n` + (x.items.length ? x.items.map(i => {
+  // Paylaşılan metne "sadece bana" biletleri girmez.
+  return `📅 ${S.trip.name}\n` + P.days.map(x => { const its = x.items.filter(i => !i.e.priv); return `\n${planDay(x.d)}${x.city ? ' · ' + x.city : ''}\n` + (its.length ? its.map(i => {
     const e = i.e, t = i.kind === 'in' || i.kind === 'out' ? '' : bkTime(e.when);
     return `${t ? t + ' ' : ''}${iconOf(e)} ${e.desc}${i.kind === 'in' ? ' · giriş' : i.kind === 'out' ? ' · çıkış' : ''}${i.kind === 'trip' && (e.from || e.to) ? ` (${[e.from, e.to].filter(Boolean).join(' → ')}${e.until ? ', varış ' + bkTime(e.until) : ''})` : ''}${i.kind === 'in' && e.dest ? `\n   📍 ${e.dest}` : ''}`;
-  }).join('\n') : 'Serbest gün')).join('\n');
+  }).join('\n') : 'Serbest gün'); }).join('\n');
 }
 function destOf(e){
   if (e.dest) return {q:e.dest, label:e.dest, set:true};
@@ -2121,7 +2130,9 @@ function submit(){
   if (f.mode === 'solo'){
     if (!f.desc.trim()) return fail('Ne için harcandığını kısaca yaz.');
     const id = f.id || uid(), old2 = SH.solo.find(x => x.id === id);
-    const x = {id, at:atFromDay(f.date, old2 && old2.at), desc:f.desc.trim(), cat:guessCat(f.desc, S.learned), amount:a, cur:f.cur, rate:f.cur === 'EUR' ? 1 : rate};
+    const x = {id, at:atFromDay(f.date, old2 && old2.at), desc:f.desc.trim(), cat:guessCat(f.desc, S.learned), amount:a, cur:f.cur, rate:f.cur === 'EUR' ? 1 : rate,
+      ...(f.dest ? {dest:f.dest} : {}), ...(f.place ? {place:f.place, lat:f.lat, lon:f.lon} : {}),
+      ...(bkKind(f) && f.when ? {when:f.when, until:f.until || null, from:f.from || null, to:f.to || null} : {})};
     if (old2) SH.solo[SH.solo.indexOf(old2)] = x; else SH.solo.push(x);
     saveShop(); closeSheet(); render(); return toast(`🔒 ${x.desc} ${money(a, f.cur)} · sadece sende`);
   }
@@ -3386,11 +3397,11 @@ async function scanReceipt(){
   if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast(cloudOcr && window.claude && window.claude.receipt ? 'Okunuyor…' : 'Fotoğraf telefonda okunuyor; ilk seferde biraz sürebilir…');
   try {
     // Bilet ve rezervasyonlar (ekran görüntüsü) 1200 px, fişler (kâğıt, silik olabilir) 2000 px okunur.
-    const r = await readReceipt((f.mode === 'expense' && bkKind(f) && f.photoMid) || f.photoHi || f.photo);
+    const r = await readReceipt(((f.mode === 'expense' || f.mode === 'solo') && bkKind(f) && f.photoMid) || f.photoHi || f.photo);
     if (form !== f) return;
     if (r && r.exchange) throw {code:'exchange'};
-    const place = r && f.mode === 'expense' ? String(r.place || '').trim().slice(0, 150) : '';
-    if (r && f.mode === 'expense' && !(Number(r.amount) > 0) && !place && String(r.when || '').trim()){
+    const pers = f.mode === 'expense' || f.mode === 'solo', place = r && pers ? String(r.place || '').trim().slice(0, 150) : '';
+    if (r && pers && !(Number(r.amount) > 0) && !place && String(r.when || '').trim()){
       bkFromRead(f, r); toast('🗓️ Tarih ve saat okundu. Fotoğrafta tutar yok; tutarı elle yaz.'); f.scanning = false; if (form === f) drawSheetKeep(); return;
     }
     // Okuma yalnız boş alanları doldurur: tutar önceden yazıldıysa (ör. fotoğraf sadece adres için eklendi) değişmez;
@@ -3413,7 +3424,7 @@ async function scanReceipt(){
     else if (r.desc && !f.desc.trim()){ f.desc = String(r.desc).slice(0, 60); if (!f.catManual) f.cat = guessCat(f.desc, S.learned); }
     // Rezervasyon ya da bilet fotoğrafındaki adres (Airbnb, otel, müze) gidilecek yer olur.
     if (place){ f.dest = place; f.destEdit = false; }
-    if (f.mode === 'expense') bkFromRead(f, r);
+    if (pers) bkFromRead(f, r);
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.mismatch && f.mode === 'shop' ? `⚠️ Fişteki ürünlerin toplamı (${money(r.mismatch, f.cur)}) fişin toplamını (${money(Number(r.amount), f.cur)}) tutmuyor; ürünler fişte yazdığı gibi bırakıldı, kontrol et.`
       : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : typed ? `Yazdığın tutara dokunmadım (fotoğrafta ${money(Number(r.amount), r.currency || f.cur)}).${place ? ' 🧭 Adres gidilecek yer oldu.' : ''}`
@@ -3680,8 +3691,9 @@ function airportHtml(){
 }
 // 🧍 Sadece bana harcamalar: bölüşülmeyen küçük kişisel harcamalar (kendi kahven, taksin).
 function startSolo(x){
-  if (x) openSheet({mode:'solo', id:x.id, desc:x.desc, amount:nf.format(x.amount), cur:x.cur, rate:x.cur === 'EUR' ? null : x.rate, date:isoDay(x.at)});
-  else openSheet({mode:'solo', desc:'', amount:'', cur:S.lastCur || 'EUR', date:isoDay(Date.now())});
+  if (x) openSheet({mode:'solo', id:x.id, desc:x.desc, cat:guessCat(x.desc, S.learned), amount:nf.format(x.amount), cur:x.cur, rate:x.cur === 'EUR' ? null : x.rate, date:isoDay(x.at),
+    when:x.when || '', until:x.until || '', from:x.from || '', to:x.to || '', dest:x.dest || null, place:x.place || null, lat:x.lat, lon:x.lon, placeState:x.place ? 'ok' : 'off'});
+  else openSheet({mode:'solo', desc:'', cat:'diger', amount:'', cur:S.lastCur || 'EUR', date:isoDay(Date.now()), placeState:'off'});
 }
 // 🇹🇷 Türkiye fiyatına göre kâr: Türkiye fiyatı − (ödenen − tahmini iade) × kur.
 function savingsHtml(){
@@ -5024,7 +5036,11 @@ document.addEventListener('input', ev => {
       return;
     }
     if (el.id === 'fTR'){ form.tr = el.value; return; }
-    if (el.id === 'fSolo'){ form.desc = el.value; const c = catById(guessCat(el.value, S.learned)), n = document.getElementById('fSoloCat'); if (n) n.textContent = `${c.icon} ${c.name}`; return; }
+    if (el.id === 'fSolo'){ form.desc = el.value; form.cat = guessCat(el.value, S.learned); const c = catById(form.cat), n = document.getElementById('fSoloCat'); if (n) n.textContent = `${c.icon} ${c.name}`;
+      if (!form.destEdit) drawPlace();
+      { const b = document.getElementById('fBk'); if (b && (b.dataset.k || '') !== (bkKind(form) || '')){ b.innerHTML = bkHtml(); b.dataset.k = bkKind(form) || ''; } }
+      { const pl = document.getElementById('fPhotoLbl'); if (pl && !form.photo) pl.textContent = docLabel(form); }
+      return; }
     if (el.dataset.li !== undefined){ form.lines[+el.dataset.li][el.dataset.lf] = el.value; return; }
     if (el.id === 'fDate'){
       form.date = el.value;
