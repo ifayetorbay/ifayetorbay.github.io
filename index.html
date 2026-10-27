@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027235656';</script>
-<script src="heybe-web.js?v=20261027235656"></script>
+<script>window.HEYBE_VER = '20261027235933';</script>
+<script src="heybe-web.js?v=20261027235933"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -327,6 +327,11 @@ nav.tabs svg{width:22px;height:22px}
 .pc-sub{font-size:.86rem;color:var(--muted)}
 .pc-next{font-size:.9rem;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pc-warn{font-size:.84rem;font-weight:600;color:var(--warn)}
+.tstrip{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:var(--r);padding:8px 8px 8px 14px;box-shadow:inset 3px 0 0 var(--accent)}
+.ts-main{flex:1;min-width:0;display:flex;flex-direction:column;border:0;background:none;padding:2px 0;text-align:left;color:inherit}
+.ts-l{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
+.ts-d{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ts-d small{color:var(--muted);font-weight:600}
 .pc-go{flex:none;font-weight:700;font-size:.9rem;color:var(--accent-text)}
 @media (prefers-reduced-motion:no-preference){.tplan{animation:pcIn .45s ease-out}@keyframes pcIn{from{opacity:0;transform:translateY(6px)}}}
 .ptools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -1276,7 +1281,7 @@ function webSampleNote(){
     <button class="btn sm" data-act="trips">🔗 Bağlantıyı yapıştır</button></div>`;
 }
 function viewList(C){
-  let h = webSampleNote() + `<section class="hero">
+  let h = webSampleNote() + todayStrip() + `<section class="hero">
     <div><div class="lbl">Toplam harcama</div>
     <div class="big num">${eu(C.total)}</div><div class="eur num">bugünkü kurla ${tl(C.total)}</div>
     ${C.preTotal ? `<div class="eur num">Seyahat öncesi ${eu(C.preTotal)} · Seyahatte ${eu(C.total - C.preTotal)}</div>` : ''}</div>
@@ -2077,6 +2082,20 @@ function planNext(P){
   for (const x of P.days) for (const it of x.items){ if (it.kind === 'out') continue; const w = String(it.kind === 'in' ? it.e.when : it.e.when);
     const at = w.length > 10 ? w : w + 'T23:59'; if (at >= now) return {x, it}; }
   return null;
+}
+// Harcamalar sekmesinin başında ince şerit: seyahat günlerinde (ve bir gün öncesinde) bugünün ya da yarının sıradaki bileti.
+function todayStrip(){
+  if (!S.trip.start || !S.trip.end) return '';
+  const td = isoDay(Date.now());
+  if (td < isoAdd(S.trip.start, -1) || td > S.trip.end) return '';
+  const P = tripPlan(); if (!P) return '';
+  const n = planNext(P); if (!n) return '';
+  const lbl = n.x.d === td ? 'Bugün' : n.x.d === isoAdd(td, 1) ? 'Yarın' : ''; if (!lbl) return '';
+  const e = n.it.e, t = n.it.kind === 'in' ? 'giriş' : bkTime(e.when), d = destOf(e);
+  const rest = n.x.items.filter(it => it.kind !== 'out').length - 1 - n.x.items.filter(it => it.kind !== 'out').indexOf(n.it);
+  const what = n.it.kind === 'trip' && e.from && e.to ? `${e.from} → ${e.to}` : e.desc;
+  return `<div class="tstrip"><button class="ts-main" data-act="plan"><span class="ts-l">${lbl}${t ? ' · ' + t : ''}</span><span class="ts-d">${iconOf(e)} ${e.priv ? '🔒 ' : ''}${esc(what)}${rest > 0 ? ` <small>+${rest} daha</small>` : ''}</span></button>`
+    + (d ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`;
 }
 function programHtml(){
   const P = tripPlan(), need = S.entries.filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
