@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027211326';</script>
-<script src="heybe-web.js?v=20261027211326"></script>
+<script>window.HEYBE_VER = '20261027211642';</script>
+<script src="heybe-web.js?v=20261027211642"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1659,7 +1659,7 @@ function drawSheet(){
     <div class="photo">
       ${f.photo ? `<img src="${f.photo}" alt="Fiş fotoğrafı" data-act="viewphoto">` : ''}
       <input type="file" id="fPhoto" accept="image/*">
-      <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>
+      <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>${help('foto')}
       ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
       ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Okunuyor…' : '✨ Fotoğraftan doldur'}</button>` : ''}
     </div>
@@ -1685,7 +1685,7 @@ function drawSheet(){
       + amountBlock + rateBlock()
       + `<div class="rows">${dateBlock(f)}</div>`
       + `<div class="photo">${f.photo ? `<img src="${f.photo}" alt="Fiş fotoğrafı" data-act="viewphoto">` : ''}<input type="file" id="fPhoto" accept="image/*">
-        <label class="btn sm" for="fPhoto">${f.photo ? 'Fişi değiştir' : '📷 Fiş ekle'}</label>
+        <label class="btn sm" for="fPhoto">${f.photo ? 'Fişi değiştir' : '📷 Fiş ekle'}</label>${help('fis')}
         ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
         ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Fiş okunuyor…' : '✨ Fişten doldur'}</button>` : ''}</div>
       <div class="f"><label for="fOutlet">📍 Nerede?</label><input class="inp" id="fOutlet" list="shOutlets2" placeholder="Outlet ya da AVM" value="${esc(f.outlet)}" autocomplete="off">
@@ -1936,9 +1936,9 @@ function placeHtml(){
   const f = form, d = destOf(f);
   const dest = f.destEdit ? `<div class="destedit"><input class="inp" id="fDest" autocomplete="off" enterkeyhint="done" placeholder="Gidilecek yer ya da adres (ör. Madrid Atocha)" value="${esc(f.destDraft ?? (d ? d.label : ''))}"><button type="button" class="btn sm pri" data-act="destok">Tamam</button></div>`
       + (f.dest ? `<button type="button" class="link" data-act="destclear">Tahmine dön</button>` : '')
-    : d ? `<div class="destrow"><a class="btn pri dbtn" href="${mapsDir(d.q)}" target="_blank" rel="noopener">🧭 ${esc(d.label)}</a><button type="button" class="link" data-act="destedit">değiştir</button></div>`
+    : d ? `<div class="destrow"><a class="btn pri dbtn" href="${mapsDir(d.q)}" target="_blank" rel="noopener">🧭 ${esc(d.label)}</a><button type="button" class="link" data-act="destedit">değiştir</button>${help('yol')}</div>`
     : f.cat === 'konaklama' ? `<span class="note">🏨 Rezervasyonun (Airbnb, otel) ekran görüntüsünü ekleyip <b>✨ Fotoğraftan doldur</b>’a basarsan adresi okurum; 🧭 yol tarifi hazır olur. Ya da <button type="button" class="link" data-act="destedit">adresi yaz</button>.</span>`
-    : `<button type="button" class="link" data-act="destedit">🧭 Gidilecek yeri ekle (yol tarifi için)</button>`;
+    : `<div class="destrow"><button type="button" class="link" data-act="destedit">🧭 Gidilecek yeri ekle (yol tarifi için)</button>${help('yol')}</div>`;
   let here;
   if (f.placeState === 'loading') here = `<span class="note">📍 Konum alınıyor…</span> <button type="button" class="link" data-act="rmplace">ekleme</button>`;
   else if (f.place) here = `<span class="note">📍 Kaydedildiği yer: ${esc(f.place)}</span> <button type="button" class="link" data-act="rmplace">kaldır</button>`;
@@ -4503,6 +4503,9 @@ function confetti(){
 // ---- yardım ----
 // Karışık gelebilecek yerlerin yanında "?" düğmesi; dokununca altında kısa bir açıklama açılır.
 const HELP = {
+  foto: 'Fişin, rezervasyon ekranının (Airbnb, otel) ya da biletin fotoğrafını çek veya ekran görüntüsünü seç. Sonra ✨ Fotoğraftan doldur’a bas: tutarı, para birimini, açıklamayı ve varsa adresi okurum. Adres okunursa 🧭 yol tarifi o adrese hazır olur. Kaydetmeden önce kontrol et; yanlışı düzeltebilirsin. Fotoğraf harcamayla saklanır, seyahatteki herkes görebilir.',
+  yol: '🧭 düğmesi Google Haritalar’da gidilecek yere yol tarifi açar; bulunduğun yerden başlar. Yeri açıklamadan tahmin ederim: trende ve otobüste kalkış garı (“Madrid–Sevilla treni” → Madrid tren garı), uçakta kalkış havalimanı, müzede müzenin kendisi. Rezervasyon ya da bilet fotoğrafından adres okunduysa o kullanılır. Yanlışsa “değiştir”e dokunup doğrusunu bir kez yaz; arkadaşların da aynı düğmeyi görür. 📍 Buradayım, harcamayı girdiğin yerin konumunu kaydeder.',
+  fis: 'Fişin fotoğrafını çek ya da seç, sonra ✨ Fişten doldur’a bas: mağazayı, tutarı ve fişteki ürünleri tek tek okurum (indirimler dahil). Ürünlerin toplamı ödenen tutarı tutmazsa uyarırım. Kaydetmeden önce kontrol et; ürün adlarını ve fiyatları düzeltebilirsin.',
   plan: 'Bu tatilin kişi başı toplam ne kadara mal olmasını istediğini yaz: uçak, otel ve seyahatteki tüm harcamalar dahil (ör. 60.000 ₺, 1.500 € ya da 1.600 $). Uygulama seyahat öncesi harcananları bundan düşer, kalanı seyahat günlerine böler ve her gün “bugün ne kadar harcayabilirsiniz” diye gösterir. Tutarı istediğin zaman “değiştir”den güncelleyebilirsin.',
   limit: 'Bugünkü sınır = kalan bütçe ÷ kalan gün sayısı (bugün dahil). Bugün az harcarsanız yarının sınırı artar, fazla harcarsanız azalır.',
   kasa: 'Ortak kasa, herkesin para koyduğu ortak cüzdandır; parayı bir kişi tutar. Kasadan ödenen harcamalar herkese eşit bölünür. Seyahat sonunda kasada para kalırsa “Kasayı boşalt” ile koyduğunuz oranda geri dağıtılır.',
