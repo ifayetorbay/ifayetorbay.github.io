@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027211642';</script>
-<script src="heybe-web.js?v=20261027211642"></script>
+<script>window.HEYBE_VER = '20261027211933';</script>
+<script src="heybe-web.js?v=20261027211933"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -3191,7 +3191,9 @@ async function readReceipt(dataUrl){
   if (cloudOcr && window.claude && window.claude.receipt){
     try {
       const c = themeCountry(), r = await window.claude.receipt(dataUrl, c && c[0]);
-      if (r && Number(r.amount) > 0) return rcCloudCheck(r);
+      // Tutar okunamasa da adres okunduysa (ör. Airbnb ilan ekranı: fiyat gece başı, toplam yok) sonuç kullanılır;
+      // telefondaki okuma adres çıkaramaz.
+      if (r && (Number(r.amount) > 0 || String(r.place || '').trim())) return rcCloudCheck(r);
     } catch(e){ if (e && e.code === 'quota') cloudOcr = false; }
   }
   const Tess = await loadTess(), img = await ocrImage(dataUrl);
@@ -3250,7 +3252,13 @@ async function scanReceipt(){
     const r = await readReceipt(f.photoHi || f.photo);
     if (form !== f) return;
     if (r && r.exchange) throw {code:'exchange'};
-    if (!r || !(Number(r.amount) > 0)) throw {code:'unreadable'};
+    const place = r && f.mode === 'expense' ? String(r.place || '').trim().slice(0, 150) : '';
+    if (!r || !(Number(r.amount) > 0)){
+      if (!place) throw {code:'unreadable'};
+      f.dest = place; f.destEdit = false;
+      toast('🧭 Adres okundu, gidilecek yer oldu. Tutar okunamadı; elle yaz.');
+      f.scanning = false; if (form === f) drawSheetKeep(); return;
+    }
     if (r.ret && f.mode !== 'shop'){ f.scanning = false; drawSheetKeep(); toast('Bu bir iade fişi. Alışveriş iadesi ise Kişisel → Alışveriş’ten “↩️ Ürün iadesi” olarak ekle; ortak harcama ise o harcamayı düzenle.'); return; }
     if (CURS.some(c => c[0] === r.currency) && r.currency !== f.cur) setCur(r.currency);
     f.amount = nf.format(Number(r.amount));
@@ -3262,7 +3270,7 @@ async function scanReceipt(){
     }
     else if (r.desc && !f.desc.trim()){ f.desc = String(r.desc).slice(0, 60); if (!f.catManual) f.cat = guessCat(f.desc, S.learned); }
     // Rezervasyon ya da bilet fotoğrafındaki adres (Airbnb, otel, müze) gidilecek yer olur.
-    if (f.mode === 'expense' && r.place && !f.dest) f.dest = String(r.place).slice(0, 150);
+    if (place){ f.dest = place; f.destEdit = false; }
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.mismatch && f.mode === 'shop' ? `⚠️ Fişteki ürünlerin toplamı (${money(r.mismatch, f.cur)}) fişin toplamını (${money(Number(r.amount), f.cur)}) tutmuyor; ürünler fişte yazdığı gibi bırakıldı, kontrol et.`
       : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : f.mode === 'expense' && f.dest ? '📷 Dolduruldu; tutarı kontrol et. 🧭 Adres gidilecek yer oldu.' : 'Dolduruldu; tutarı bir kontrol et.');
