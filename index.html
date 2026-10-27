@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027232617';</script>
-<script src="heybe-web.js?v=20261027232617"></script>
+<script>window.HEYBE_VER = '20261027234822';</script>
+<script src="heybe-web.js?v=20261027234822"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -318,6 +318,13 @@ nav.tabs svg{width:22px;height:22px}
 .bkh{display:flex;align-items:center;gap:6px}
 .bkft{display:flex;gap:8px}
 .bkft .inp{flex:1;min-width:0;padding:9px 12px}
+.plancard .go{color:var(--muted);font-size:1.3rem}
+.plancard .m b{font-weight:600}
+.ptools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.icsbox{display:flex;flex-direction:column;gap:8px;background:var(--surface);border-radius:14px;padding:12px;margin-bottom:12px}
+.icsrow{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:8px}
+.icsrow .m{font-size:.86rem;color:var(--muted);overflow-wrap:anywhere}
+.icsrow .m b{color:var(--ink)}
 .plan{display:flex;flex-direction:column;gap:10px}
 .pday{background:var(--surface);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
 .pday.today{box-shadow:inset 3px 0 0 var(--accent)}
@@ -1802,11 +1809,13 @@ function drawSheet(){
       <div class="f"><span class="lab">Şirket</span><div class="opchips">${[...tfOps(), ''].map(k => `<button type="button" class="chip opchip" data-tfop="${k}" aria-pressed="${(i.op || '') === k}">${opLogo(k)}${k ? TF_OPS[k] : 'Bilmiyorum'}</button>`).join('')}</div>
         <span class="note">Formun üstünde yazar.</span></div>
       <div class="f"><span class="lab">Durum</span><div class="steps">${TF_STEPS.map(([t, h], k) => `<button type="button" class="tstep${k < sp ? ' done' : ''}" data-tfst="${k}" aria-pressed="${k === sp}"><span class="dot">${k < sp ? '✓' : k + 1}</span><span class="mid"><b>${t}</b><span class="m">${h}</span></span></button>`).join('')}</div></div>`;
+  } else if (f.mode === 'plan'){
+    body = planBody();
   } else if (f.mode === 'share'){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
   const saveLbl = {expense:'Kaydet', delperson:'Aktar ve sil', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
@@ -1879,7 +1888,7 @@ function startPay(from, to){
 }
 function startExpense(e){
   if (e) openSheet({mode:'expense', id:e.id, phase:phaseOf(e, S), amount:nf.format(e.amount), cur:e.cur, desc:e.desc, cat:e.cat, catManual:true, paidBy:e.paidBy, among:[...e.among], weights:e.weights ? {...e.weights} : null, rate:e.rate, settleTL:!!e.settleTL, date:isoDay(e.at), phaseManual:true,
-    photo:photoSrc(e), photoChanged:false, when:e.when || '', until:e.until || '', from:e.from || '', to:e.to || '', place:e.place || null, lat:e.lat, lon:e.lon, placeState:e.place ? 'ok' : 'off', dest:e.dest || null});
+    photo:photoSrc(e), photoChanged:false, when:fixYear(e.when) || '', until:fixYear(e.until) || '', from:e.from || '', to:e.to || '', place:e.place || null, lat:e.lat, lon:e.lon, placeState:e.place ? 'ok' : 'off', dest:e.dest || null});
   else {
     // Seyahat öncesinde varsayılan: TL ve "şimdi ödeşiyoruz"; seyahatte: son kullanılan para birimi, sonda hesap.
     const phase = defaultPhase(), pre = phase === 'pre';
@@ -1963,6 +1972,15 @@ function guessDest(desc, cat, e){
 // when: ulaşımda kalkış, konaklamada giriş, etkinlikte giriş ("YYYY-MM-DDTHH:MM" ya da "YYYY-MM-DD"); until: varış / çıkış;
 // from, to: ulaşımın kalkış ve varış yeri. Fotoğraftan okunur ya da elle yazılır. Rota planı bunlardan beslenecek.
 const BK_WHEN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;
+// Ekran görüntüsünde yıl yazmayabiliyor ("30 Kas – 3 Ara"); okuma yanlış yılı seçerse ve tarih bir yıl kaydırılınca seyahatin
+// içine düşüyorsa doğrusu odur (2025-11-30 → 2026-11-30).
+function fixYear(w){
+  if (!w || !S.trip.start || !S.trip.end) return w;
+  const d = String(w).slice(0, 10), a = isoAdd(S.trip.start, -10), z = isoAdd(S.trip.end, 10);
+  if (d >= a && d <= z) return w;
+  for (const k of [1, -1]){ const y = String(+d.slice(0, 4) + k) + String(w).slice(4); if (y.slice(0, 10) >= a && y.slice(0, 10) <= z) return y; }
+  return w;
+}
 function bkKind(f){
   if (f.cat === 'konaklama') return 'stay';
   if (f.cat === 'aktivite') return 'event';
@@ -2002,12 +2020,14 @@ function stayCity(e){
 }
 function tripPlan(){
   // "Sadece bana" biletleri (ör. yalnız sana ait bir aktarma uçuşu) yalnız bu telefonda, 🔒 ile plana girer.
-  const B = S.entries.filter(e => e.kind === 'expense'), mine = (SH.solo || []).filter(x => x.when).map(x => ({...x, priv:true}));
+  const fx = e => e.when ? {...e, when:fixYear(e.when), until:e.until ? fixYear(e.until) : e.until} : e;
+  const B = S.entries.filter(e => e.kind === 'expense').map(fx), mine = (SH.solo || []).filter(x => x.when).map(x => ({...fx(x), priv:true}));
   const stays = [...B, ...mine].filter(e => bkKind(e) === 'stay' && e.when && e.until);
   const dated = [...B.filter(e => e.when), ...mine];
   if (!dated.length) return null;                     // hiç tarih girilmemişse plan yok (seyahatin günlerini boş göstermesin)
+  // Seyahatin tarihleri varsa plan onlarla sınırlı; yoksa bilet ve rezervasyonların tarihlerinden.
   let a = S.trip.start || null, z = S.trip.end || null;
-  for (const e of dated){ const d0 = String(e.when).slice(0, 10), d1 = String(e.until || e.when).slice(0, 10); if (!a || d0 < a) a = d0; if (!z || d1 > z) z = d1; }
+  if (!a || !z) for (const e of dated){ const d0 = String(e.when).slice(0, 10), d1 = String(e.until || e.when).slice(0, 10); if (!a || d0 < a) a = d0; if (!z || d1 > z) z = d1; }
   if (!a || !z || z < a) return null;
   const night = d => stays.find(e => e.when.slice(0, 10) <= d && d < e.until.slice(0, 10));
   const days = [];
@@ -2031,8 +2051,9 @@ function tripPlan(){
     if (!e.when) miss.push({e, m:k === 'stay' ? 'giriş–çıkış tarihi yok' : 'kalkış tarihi ve saati yok'});
     else if (k === 'stay' && !e.dest) miss.push({e, m:'adres yok'});
   }
+  for (const e of dated){ const d0 = String(e.when).slice(0, 10); if (d0 < a || d0 > z) miss.push({e, m:`tarihi seyahatin dışında (${planDay(d0)} ${d0.slice(0, 4)})`}); }
   const empty = days.filter(x => x.d < z && !x.st).map(x => planDay(x.d));
-  return {days, miss, empty, a, z};
+  return {days, miss, empty, a, z, n:dated.length};
 }
 function planItem(x){
   const e = x.e, d = destOf(e), k = x.kind;
@@ -2041,26 +2062,112 @@ function planItem(x){
   return `<div class="pli"><button class="plt" ${e.priv ? `data-solo="${e.id}"` : `data-edit="${e.id}"`}><span class="pt num">${t || ''}</span><span class="pic">${iconOf(e)}</span><span class="mid"><span class="d">${e.priv ? '🔒 ' : ''}${esc(e.desc)}</span>${sub ? `<span class="m">${esc(sub)}</span>` : ''}</span></button>`
     + (d && k !== 'out' ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`;
 }
+// Seyahat sekmesinde tek satır özet; dokununca plan ayrı pencerede açılır (sekme kısa kalsın).
 function programHtml(){
-  const P = tripPlan();
+  const P = tripPlan(), need = S.entries.filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
+  if (!P && !need.length) return '';
+  const sub = P ? `${planDay(P.a)} – ${planDay(P.z)} · ${P.days.length} gün · ${P.n} bilet ve rezervasyon${P.miss.length ? ` · <b class="neg">⚠ ${P.miss.length} eksik</b>` : ''}`
+    : `<b class="neg">${need.length} bilet ve rezervasyonun tarihi yok</b>; eklenince plan oluşur`;
+  return `<button class="row plancard" data-act="plan"><span class="ic">📅</span><span class="mid"><span class="d">Seyahat planı</span><span class="m">${sub}</span></span><span class="go">›</span></button>`;
+}
+function planBody(){
+  const P = tripPlan(), today = isoDay(Date.now());
+  const tools = `<div class="ptools"><button type="button" class="btn sm" data-act="icsout">📅 Takvime aktar</button><label class="btn sm" for="icsIn">📥 Takvim dosyasından ekle</label><input type="file" id="icsIn" accept=".ics,text/calendar" hidden>${P ? `<button type="button" class="btn sm" data-act="plancopy">💬 Kopyala</button>` : ''}</div>`;
+  const ics = form.ics ? icsPickHtml() : '';
   if (!P){
-    // Henüz tarih yok: plan yerine hangi bilet ve rezervasyonlara tarih gerektiği (dokununca harcama açılır).
-    const need = S.entries.filter(e => e.kind === 'expense' && bkKind(e) && !(bkKind(e) === 'event' && !['aktivite'].includes(e.cat)));
-    if (!need.length) return '';
-    return `<h2 data-hhost>📅 Seyahat planı${help('bk')}</h2><p class="hint">Plan, bilet ve rezervasyonlara tarih girilince gün gün oluşur. Her birine dokun, bilet ya da rezervasyon fotoğrafını ekleyip <b>✨ Fotoğraftan doldur</b>’a bas (ya da tarihi elle yaz):</p>`
-      + `<div class="pmiss">${need.map(e => `<button class="link" data-edit="${e.id}">${iconOf(e)} ${esc(e.desc)}: ${bkKind(e) === 'stay' ? 'giriş–çıkış tarihi' : bkKind(e) === 'trip' ? 'kalkış tarihi ve saati' : 'ziyaret günü ve saati'}</button>`).join('')}</div>`;
+    const need = S.entries.filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
+    return ics + `<p class="note">Plan, bilet ve rezervasyonlara tarih girilince gün gün oluşur. Her birine dokun, fotoğrafını ekleyip <b>✨ Fotoğraftan doldur</b>’a bas, tarihi elle yaz ya da takvim dosyasından ekle.</p>`
+      + `<div class="pmiss">${need.map(e => `<button class="link" data-edit="${e.id}">${iconOf(e)} ${esc(e.desc)}: ${bkKind(e) === 'stay' ? 'giriş–çıkış tarihi' : bkKind(e) === 'trip' ? 'kalkış tarihi ve saati' : 'ziyaret günü ve saati'}</button>`).join('')}</div>` + tools;
   }
-  const today = isoDay(Date.now());
-  let h = `<h2 data-hhost>📅 Seyahat planı${help('bk')}</h2><div class="plan">`;
+  let h = ics + `<div class="plan">`;
   for (const x of P.days){
     const home = x.st && destOf(x.st);
     h += `<div class="pday${x.d === today ? ' today' : ''}"><div class="pdh"><b>${planDay(x.d)}</b>${x.city ? `<span>${esc(x.city)}</span>` : ''}${x.d === today ? '<em>bugün</em>' : ''}</div>`
-      + (x.items.length ? x.items.map(planItem).join('') : `<p class="pfree">Serbest gün${home ? ` · <a href="${mapsDir(home.q)}" target="_blank" rel="noopener">🧭 ev</a>` : ''}</p>`) + `</div>`;
+      + (x.items.length ? x.items.map(planItem).join('') : `<p class="pfree">Bilet yok${home ? ` · <a href="${mapsDir(home.q)}" target="_blank" rel="noopener">🧭 ev</a>` : ''}</p>`) + `</div>`;
   }
   h += `</div>`;
-  if (P.miss.length || P.empty.length) h += `<div class="pmiss"><b>Eksikler</b>${P.miss.map(m => `<button class="link" data-edit="${m.e.id}">⚠ ${esc(m.e.desc)}: ${m.m}</button>`).join('')}${P.empty.length ? `<span>⚠ Konaklama girilmemiş gece: ${esc(P.empty.join(', '))}</span>` : ''}</div>`;
-  h += `<button class="btn sm" data-act="plancopy">💬 Planı kopyala (WhatsApp'a yapıştır)</button>`;
-  return h;
+  if (P.miss.length || P.empty.length) h += `<div class="pmiss"><b>Eksikler</b>${P.miss.map(m => `<button class="link" ${m.e.priv ? `data-solo="${m.e.id}"` : `data-edit="${m.e.id}"`}>⚠ ${esc(m.e.desc)}: ${m.m}</button>`).join('')}${P.empty.length ? `<span>⚠ Konaklama girilmemiş gece: ${esc(P.empty.join(', '))}</span>` : ''}</div>`;
+  return h + tools;
+}
+// 📅 Takvime aktar: biletler ve rezervasyonlar tek .ics dosyası (iPhone Takvim, Google Takvim açar). Saatler biletteki yerel
+// saattir (saat dilimi yazılmaz; telefon hangi ülkedeyse o saatte görünür). Ulaşımda 2 saat, ziyarette 1 saat önce hatırlatma.
+function icsOut(){
+  const P = tripPlan(); if (!P) return toast('Önce bilet ve rezervasyonlara tarih ekle.');
+  const T = v => String(v || '').replace(/\\/g, '\\\\').replace(/[;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+  const D = w => w.length > 10 ? w.replace(/[-:]/g, '').slice(0, 13) + '00' : w.replace(/-/g, '');
+  const plus = (w, min) => { const t = new Date(w + ':00'); t.setMinutes(t.getMinutes() + min); return isoDay(t.getTime()) + 'T' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); };
+  const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''), out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Heybe//TR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:' + T(S.trip.name)];
+  const ev = (uid, sum, a, b, loc, desc, alarm) => {
+    out.push('BEGIN:VEVENT', 'UID:' + uid + '@heybe', 'DTSTAMP:' + now, 'SUMMARY:' + T(sum));
+    if (a.length > 10){ out.push('DTSTART:' + D(a), 'DTEND:' + D(b && b.length > 10 && b > a ? b : plus(a, 60))); }
+    else out.push('DTSTART;VALUE=DATE:' + D(a), 'DTEND;VALUE=DATE:' + D(isoAdd(a, 1)));
+    if (loc) out.push('LOCATION:' + T(loc));
+    if (desc) out.push('DESCRIPTION:' + T(desc));
+    if (alarm && a.length > 10) out.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + T(sum), 'TRIGGER:-PT' + alarm + 'H', 'END:VALARM');
+    out.push('END:VEVENT');
+  };
+  const seen = new Set();
+  for (const x of P.days) for (const it of x.items){
+    const e = it.e, d = destOf(e), map = d ? '🧭 ' + mapsDir(d.q) : '', key = e.id + it.kind; if (seen.has(key)) continue; seen.add(key);
+    if (it.kind === 'in') ev(e.id + '-giris', `🏠 Giriş: ${e.desc}`, e.when, null, e.dest || '', map, 0);
+    else if (it.kind === 'out') ev(e.id + '-cikis', `🏠 Çıkış: ${e.desc}`, e.until, null, e.dest || '', '', 0);
+    else if (it.kind === 'trip') ev(e.id, `${iconOf(e)} ${e.desc}`, e.when, e.until, e.from || '', [e.from, e.to].filter(Boolean).join(' → ') + (map ? '\n' + map : ''), 2);
+    else ev(e.id, `${iconOf(e)} ${e.desc}`, e.when, e.until, e.dest || '', map, 1);
+  }
+  out.push('END:VCALENDAR');
+  const fold = l => { const r = []; for (let i = 0; i < l.length; i += 70) r.push((i ? ' ' : '') + l.slice(i, i + 70)); return r.join('\r\n'); };
+  saveFile(fileBase() + '-plan.ics', new Blob([out.map(fold).join('\r\n') + '\r\n'], {type:'text/calendar;charset=utf-8'})).then(ok => ok && toast('📅 Takvim dosyası hazır; açınca etkinlikler takvime eklenir.'));
+}
+// 📥 Takvim dosyasından ekle: .ics içindeki etkinlikler listelenir, her biri bir bilet/rezervasyon harcamasına eşlenir
+// (aynı gün ya da ortak kelime varsa önceden seçili). Dosya telefonda okunur, hiçbir yere gönderilmez.
+function icsParse(text){
+  const L = String(text).replace(/\r?\n[ \t]/g, '').split(/\r?\n/), evs = []; let cur = null;
+  const val = (l) => l.slice(l.indexOf(':') + 1).replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim();
+  const when = (l) => { const v = val(l), m = v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/); if (!m) return '';
+    if (m[4] && /Z$/.test(v)){ const t = new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5])); return isoDay(t.getTime()) + 'T' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); }
+    return `${m[1]}-${m[2]}-${m[3]}` + (m[4] ? `T${m[4]}:${m[5]}` : ''); };
+  for (const l of L){
+    if (/^BEGIN:VEVENT/.test(l)) cur = {sum:'', a:'', b:'', loc:''};
+    else if (/^END:VEVENT/.test(l)){ if (cur && cur.a) evs.push(cur); cur = null; }
+    else if (cur){ if (/^SUMMARY[:;]/.test(l)) cur.sum = val(l); else if (/^DTSTART[:;]/.test(l)) cur.a = when(l); else if (/^DTEND[:;]/.test(l)) cur.b = when(l); else if (/^LOCATION[:;]/.test(l)) cur.loc = val(l); }
+  }
+  // Tüm gün etkinliğinde DTEND ertesi gündür; konaklama çıkışı olarak o gün kullanılır.
+  return evs.slice(0, 60);
+}
+function icsCandidates(){ return S.entries.filter(e => e.kind === 'expense' && bkKind(e)); }
+function icsGuess(ev){
+  // Puan: aynı gün +2, aynı saat +3, tür uyumu +1 (saatli etkinlik → ulaşım/ziyaret, tüm gün → konaklama), ortak kelime başına +1.
+  const C = icsCandidates(), d = ev.a.slice(0, 10), timed = ev.a.length > 10, w = t => String(t || '').toLocaleLowerCase('tr').split(/[^\p{L}\p{N}]+/u).filter(x => x.length > 3);
+  // Seyahatin tarihleri dışındaki etkinlik (ör. dişçi randevusu) önerilmez.
+  if (S.trip.start && S.trip.end && (d < isoAdd(S.trip.start, -2) || d > isoAdd(S.trip.end, 2))) return '';
+  const sw = new Set(w(ev.sum + ' ' + ev.loc)); let best = '', bs = 0;
+  for (const e of C){
+    const k = bkKind(e), ew = e.when ? String(fixYear(e.when)) : '';
+    let sc = w(e.desc).filter(x => sw.has(x)).length + ((timed ? k !== 'stay' : k === 'stay') ? 1 : 0);
+    if (ew.slice(0, 10) === d){ sc += 2; if (timed && ew.length > 10 && ew.slice(11, 16) === ev.a.slice(11, 16)) sc += 3; }
+    if (sc > bs){ bs = sc; best = e.id; }
+  }
+  return bs >= 2 ? best : '';
+}
+function icsPickHtml(){
+  const C = icsCandidates(), E = form.ics;
+  if (!E.length) return `<p class="note">Bu dosyada etkinlik bulunamadı.</p>`;
+  return `<div class="icsbox"><b>📥 ${E.length} etkinlik bulundu</b><span class="note">Her birini hangi harcamaya ekleyeceğini seç; tarih, saat ve yer o harcamaya yazılır.</span>`
+    + E.map((ev, i) => `<div class="icsrow"><span class="m">${esc(planDay(ev.a.slice(0, 10)))}${ev.a.length > 10 ? ' ' + ev.a.slice(11) : ''} · <b>${esc(ev.sum || '(adsız)')}</b>${ev.loc ? ` · ${esc(ev.loc)}` : ''}</span>
+      <select class="inp" data-icsi="${i}"><option value="">Ekleme</option>${C.map(e => `<option value="${e.id}"${ev.pick === e.id ? ' selected' : ''}>${iconOf(e)} ${esc(e.desc)}</option>`).join('')}</select></div>`).join('')
+    + `<div class="two"><button type="button" class="btn sm pri" data-act="icsapply">Seçilenleri ekle</button><button type="button" class="btn sm" data-act="icscancel">Vazgeç</button></div></div>`;
+}
+function icsApply(){
+  let n = 0;
+  for (const ev of form.ics) if (ev.pick){
+    const e = S.entries.find(x => x.id === ev.pick); if (!e) continue;
+    const k = bkKind(e), end = k === 'stay' && ev.b && ev.b.length === 10 && ev.a.length === 10 ? ev.b : ev.b;
+    e.when = fixYear(ev.a); if (end && (k === 'trip' || k === 'stay')) e.until = fixYear(end);
+    if (ev.loc){ if (k === 'trip'){ if (!e.from) e.from = ev.loc.slice(0, 80); } else if (!e.dest) e.dest = ev.loc.slice(0, 150); }
+    n++;
+  }
+  form.ics = null; save(); render(); drawSheetKeep();
+  toast(n ? `📥 ${n} etkinlik harcamalara eklendi.` : 'Hiçbir etkinlik seçilmedi.');
 }
 // Planın yazılı hali: gruba yapıştırmak için.
 function planText(){
@@ -3338,7 +3445,7 @@ async function readReceipt(dataUrl){
   // (kota, bağlantı, kredi bitti) telefondaki okumaya geçilir.
   if (cloudOcr && window.claude && window.claude.receipt){
     try {
-      const c = themeCountry(), r = await window.claude.receipt(dataUrl, c && c[0]);
+      const c = themeCountry(), r = await window.claude.receipt(dataUrl, c && c[0], S.trip.start && S.trip.end ? `${S.trip.start}..${S.trip.end}` : '');
       // Tutar okunamasa da adres okunduysa (ör. Airbnb ilan ekranı: fiyat gece başı, toplam yok) sonuç kullanılır;
       // telefondaki okuma adres çıkaramaz.
       if (r && (Number(r.amount) > 0 || String(r.place || '').trim() || String(r.when || '').trim())) return rcCloudCheck(r);
@@ -3394,7 +3501,7 @@ function ocrImage(dataUrl){
 }
 // Okunan bilet/rezervasyon zamanı ve yeri yalnız boş alanlara yazılır.
 function bkFromRead(f, r){
-  for (const k of ['when', 'until']){ const v = String(r[k] || '').trim().slice(0, 16); if (!f[k] && BK_WHEN.test(v)) f[k] = v; }
+  for (const k of ['when', 'until']){ const v = String(r[k] || '').trim().slice(0, 16); if (!f[k] && BK_WHEN.test(v)) f[k] = fixYear(v); }
   for (const k of ['from', 'to']){ const v = String(r[k] || '').trim().slice(0, 80); if (!f[k] && v) f[k] = v; }
 }
 async function scanReceipt(){
@@ -3698,7 +3805,7 @@ function airportHtml(){
 // 🧍 Sadece bana harcamalar: bölüşülmeyen küçük kişisel harcamalar (kendi kahven, taksin).
 function startSolo(x){
   if (x) openSheet({mode:'solo', id:x.id, desc:x.desc, cat:guessCat(x.desc, S.learned), amount:nf.format(x.amount), cur:x.cur, rate:x.cur === 'EUR' ? null : x.rate, date:isoDay(x.at),
-    when:x.when || '', until:x.until || '', from:x.from || '', to:x.to || '', dest:x.dest || null, place:x.place || null, lat:x.lat, lon:x.lon, placeState:x.place ? 'ok' : 'off'});
+    when:fixYear(x.when) || '', until:fixYear(x.until) || '', from:x.from || '', to:x.to || '', dest:x.dest || null, place:x.place || null, lat:x.lat, lon:x.lon, placeState:x.place ? 'ok' : 'off'});
   else openSheet({mode:'solo', desc:'', cat:'diger', amount:'', cur:S.lastCur || 'EUR', date:isoDay(Date.now()), placeState:'off'});
 }
 // 🇹🇷 Türkiye fiyatına göre kâr: Türkiye fiyatı − (ödenen − tahmini iade) × kur.
@@ -4922,6 +5029,10 @@ document.addEventListener('click', ev => {
       copyText(`Heybe hata kaydı · ${navigator.userAgent}\n` + errLog().map(e => `${new Date(e.t).toISOString()} [${e.tab}${e.f ? '/' + e.f : ''}] ${e.m} @ ${e.w}`).join('\n'), 'Hata kaydı kopyalandı; bana yapıştırıp gönderebilirsin.'); break;
     case 'errclear': try { localStorage.removeItem(ERR_KEY); } catch(_) {} render(); break;
     case 'plancopy': copyText(planText(), 'Plan kopyalandı; WhatsApp grubuna yapıştırabilirsin.'); break;
+    case 'plan': openSheet({mode:'plan'}); break;
+    case 'icsout': icsOut(); break;
+    case 'icsapply': icsApply(); break;
+    case 'icscancel': form.ics = null; drawSheetKeep(); break;
     case 'gundo':
       if (gUndo && gUndo.tid === S.tid){ const r = gUndo.restore; clearTimeout(gUndo.timer); gUndo = null; r(); render(); toast('Geri alındı'); }
       break;
@@ -5073,6 +5184,12 @@ document.addEventListener('change', async ev => {
   if (!form && el.id === 'shOutlet'){ SH.outlet = el.value.trim(); saveShop(); render(); return; }
   if (form && el.id === 'fCur'){ if (el.value) setCur(el.value); drawSheetKeep(); return; }
   if (form && el.id === 'fSettle'){ form.settleTL = el.checked; if (el.checked && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
+  if (form && el.id === 'icsIn' && el.files && el.files[0]){
+    const f = form; try { const ev = icsParse(await el.files[0].text()); ev.forEach(x => { x.pick = icsGuess(x); }); if (form === f){ f.ics = ev; drawSheetKeep(); } }
+    catch(_) { toast('Takvim dosyası okunamadı.'); }
+    return;
+  }
+  if (form && el.dataset.icsi !== undefined && form.ics){ form.ics[+el.dataset.icsi].pick = el.value; return; }
   if (form && el.id === 'fPhoto' && el.files && el.files[0]){
     const f = form;
     try { const {lo, mid, hi} = await photoSizes(el.files[0]); if (form !== f) return; f.photo = lo; f.photoHi = hi; f.photoMid = mid; f.photoChanged = true; saveDraftPhoto(lo); drawSheetKeep(); }

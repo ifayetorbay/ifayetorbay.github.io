@@ -140,9 +140,9 @@
       async add(rows){ try { await ready; for (const r of rows) await sb.rpc('learn_word', {k:r.key, kd:r.kind, t:r.tr}); } catch(_) {} }
     },
     // Fiş okuma: fotoğraf "fis-oku" sunucu işleviyle Claude'a okutulur (web/functions/fis-oku). Kota dolduysa {code:'quota'}.
-    async receipt(image, country){
+    async receipt(image, country, trip){
       await ready;
-      const {data, error} = await sb.functions.invoke('fis-oku', {body:{image, country}});
+      const {data, error} = await sb.functions.invoke('fis-oku', {body:{image, country, trip}});
       if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : 'cloud'}; }
       if (!data || data.error) throw {code:'cloud'};
       return data;
