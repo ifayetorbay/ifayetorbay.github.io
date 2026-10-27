@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027211933';</script>
-<script src="heybe-web.js?v=20261027211933"></script>
+<script>window.HEYBE_VER = '20261027212434';</script>
+<script src="heybe-web.js?v=20261027212434"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -3253,15 +3253,17 @@ async function scanReceipt(){
     if (form !== f) return;
     if (r && r.exchange) throw {code:'exchange'};
     const place = r && f.mode === 'expense' ? String(r.place || '').trim().slice(0, 150) : '';
+    // Okuma yalnız boş alanları doldurur: tutar önceden yazıldıysa (ör. fotoğraf sadece adres için eklendi) değişmez;
+    // fotoğrafta tutar yoksa tutara hiç dokunulmaz (sıfır yazılmaz).
+    const typed = parseAmt(f.amount) > 0;
     if (!r || !(Number(r.amount) > 0)){
       if (!place) throw {code:'unreadable'};
       f.dest = place; f.destEdit = false;
-      toast('🧭 Adres okundu, gidilecek yer oldu. Tutar okunamadı; elle yaz.');
+      toast(typed ? '🧭 Adres okundu, gidilecek yer oldu.' : '🧭 Adres okundu, gidilecek yer oldu. Fotoğrafta tutar yok; tutarı elle yaz.');
       f.scanning = false; if (form === f) drawSheetKeep(); return;
     }
     if (r.ret && f.mode !== 'shop'){ f.scanning = false; drawSheetKeep(); toast('Bu bir iade fişi. Alışveriş iadesi ise Kişisel → Alışveriş’ten “↩️ Ürün iadesi” olarak ekle; ortak harcama ise o harcamayı düzenle.'); return; }
-    if (CURS.some(c => c[0] === r.currency) && r.currency !== f.cur) setCur(r.currency);
-    f.amount = nf.format(Number(r.amount));
+    if (!typed){ if (CURS.some(c => c[0] === r.currency) && r.currency !== f.cur) setCur(r.currency); f.amount = nf.format(Number(r.amount)); }
     if (f.mode === 'shop'){
       if (r.ret) f.ret = true;
       if (r.desc && !f.store.trim()) f.store = String(r.desc).slice(0, 40);
@@ -3273,7 +3275,8 @@ async function scanReceipt(){
     if (place){ f.dest = place; f.destEdit = false; }
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.mismatch && f.mode === 'shop' ? `⚠️ Fişteki ürünlerin toplamı (${money(r.mismatch, f.cur)}) fişin toplamını (${money(Number(r.amount), f.cur)}) tutmuyor; ürünler fişte yazdığı gibi bırakıldı, kontrol et.`
-      : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : f.mode === 'expense' && f.dest ? '📷 Dolduruldu; tutarı kontrol et. 🧭 Adres gidilecek yer oldu.' : 'Dolduruldu; tutarı bir kontrol et.');
+      : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : typed ? `Yazdığın tutara dokunmadım (fotoğrafta ${money(Number(r.amount), r.currency || f.cur)}).${place ? ' 🧭 Adres gidilecek yer oldu.' : ''}`
+      : place ? '📷 Dolduruldu; tutarı kontrol et. 🧭 Adres gidilecek yer oldu.' : 'Dolduruldu; tutarı bir kontrol et.');
   } catch(e){
     const c = e && e.code;
     if (c !== 'cancelled') toast(c === 'exchange' ? '🔁 Değişim fişi: ödenen ya da geri alınan fark yok, kayıt gerekmiyor.' : c === 'noocr' ? 'Fişi okumak için Claude izni gerekiyor; izin vermediysen tutarı elle yaz.' : c === 'timeout' ? 'Fiş okuyucu yanıt vermedi; tutarı elle yaz.' : c === 'unreadable' ? 'Fişteki toplam okunamadı; tutarı elle yaz.' : c === 'rate_limited' ? 'Şu an çok fazla istek var; biraz sonra dene.'
@@ -4511,7 +4514,7 @@ function confetti(){
 // ---- yardım ----
 // Karışık gelebilecek yerlerin yanında "?" düğmesi; dokununca altında kısa bir açıklama açılır.
 const HELP = {
-  foto: 'Fişin, rezervasyon ekranının (Airbnb, otel) ya da biletin fotoğrafını çek veya ekran görüntüsünü seç. Sonra ✨ Fotoğraftan doldur’a bas: tutarı, para birimini, açıklamayı ve varsa adresi okurum. Adres okunursa 🧭 yol tarifi o adrese hazır olur. Kaydetmeden önce kontrol et; yanlışı düzeltebilirsin. Fotoğraf harcamayla saklanır, seyahatteki herkes görebilir.',
+  foto: 'Fişin, rezervasyon ekranının (Airbnb, otel) ya da biletin fotoğrafını çek veya ekran görüntüsünü seç. Sonra ✨ Fotoğraftan doldur’a bas: tutarı, para birimini, açıklamayı ve varsa adresi okurum. Yalnız boş alanları doldururum: tutarı önceden yazdıysan ona dokunmam, fotoğrafta tutar yoksa tutar boş kalır (sıfır yazılmaz). Fotoğrafı sadece adres için de ekleyebilirsin. Adres okunursa 🧭 yol tarifi o adrese hazır olur. Kaydetmeden önce kontrol et; yanlışı düzeltebilirsin. Fotoğraf harcamayla saklanır, seyahatteki herkes görebilir.',
   yol: '🧭 düğmesi Google Haritalar’da gidilecek yere yol tarifi açar; bulunduğun yerden başlar. Yeri açıklamadan tahmin ederim: trende ve otobüste kalkış garı (“Madrid–Sevilla treni” → Madrid tren garı), uçakta kalkış havalimanı, müzede müzenin kendisi. Rezervasyon ya da bilet fotoğrafından adres okunduysa o kullanılır. Yanlışsa “değiştir”e dokunup doğrusunu bir kez yaz; arkadaşların da aynı düğmeyi görür. 📍 Buradayım, harcamayı girdiğin yerin konumunu kaydeder.',
   fis: 'Fişin fotoğrafını çek ya da seç, sonra ✨ Fişten doldur’a bas: mağazayı, tutarı ve fişteki ürünleri tek tek okurum (indirimler dahil). Ürünlerin toplamı ödenen tutarı tutmazsa uyarırım. Kaydetmeden önce kontrol et; ürün adlarını ve fiyatları düzeltebilirsin.',
   plan: 'Bu tatilin kişi başı toplam ne kadara mal olmasını istediğini yaz: uçak, otel ve seyahatteki tüm harcamalar dahil (ör. 60.000 ₺, 1.500 € ya da 1.600 $). Uygulama seyahat öncesi harcananları bundan düşer, kalanı seyahat günlerine böler ve her gün “bugün ne kadar harcayabilirsiniz” diye gösterir. Tutarı istediğin zaman “değiştir”den güncelleyebilirsin.',
