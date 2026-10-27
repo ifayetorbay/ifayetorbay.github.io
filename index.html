@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027232422';</script>
-<script src="heybe-web.js?v=20261027232422"></script>
+<script>window.HEYBE_VER = '20261027232617';</script>
+<script src="heybe-web.js?v=20261027232617"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2043,7 +2043,13 @@ function planItem(x){
 }
 function programHtml(){
   const P = tripPlan();
-  if (!P) return S.entries.some(e => ['ucak', 'konaklama', 'aktivite'].includes(e.cat)) ? `<h2 data-hhost>📅 Seyahat planı${help('bk')}</h2><p class="hint">Uçak, tren, konaklama ve müze harcamalarına tarih ekle (ya da bilet/rezervasyon fotoğrafından okut); plan burada gün gün oluşur.</p>` : '';
+  if (!P){
+    // Henüz tarih yok: plan yerine hangi bilet ve rezervasyonlara tarih gerektiği (dokununca harcama açılır).
+    const need = S.entries.filter(e => e.kind === 'expense' && bkKind(e) && !(bkKind(e) === 'event' && !['aktivite'].includes(e.cat)));
+    if (!need.length) return '';
+    return `<h2 data-hhost>📅 Seyahat planı${help('bk')}</h2><p class="hint">Plan, bilet ve rezervasyonlara tarih girilince gün gün oluşur. Her birine dokun, bilet ya da rezervasyon fotoğrafını ekleyip <b>✨ Fotoğraftan doldur</b>’a bas (ya da tarihi elle yaz):</p>`
+      + `<div class="pmiss">${need.map(e => `<button class="link" data-edit="${e.id}">${iconOf(e)} ${esc(e.desc)}: ${bkKind(e) === 'stay' ? 'giriş–çıkış tarihi' : bkKind(e) === 'trip' ? 'kalkış tarihi ve saati' : 'ziyaret günü ve saati'}</button>`).join('')}</div>`;
+  }
   const today = isoDay(Date.now());
   let h = `<h2 data-hhost>📅 Seyahat planı${help('bk')}</h2><div class="plan">`;
   for (const x of P.days){
