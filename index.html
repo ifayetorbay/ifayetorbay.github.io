@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027211134';</script>
-<script src="heybe-web.js?v=20261027211134"></script>
+<script>window.HEYBE_VER = '20261027211326';</script>
+<script src="heybe-web.js?v=20261027211326"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1611,6 +1611,13 @@ function restoreDraft(){
     openSheet(d); toast('Yarım kalan kayıt geri getirildi');
   } catch(_) { clearDraft(); }
 }
+// Harcamaya eklenen fotoğrafın adı türüne göre: konaklamada rezervasyon, bilet alınanlarda bilet, diğerlerinde fiş.
+// Hepsi aynı okunur (tutar, açıklama, varsa adres → 🧭 gidilecek yer).
+function docLabel(f){
+  const toks = String(f.desc || '').toLocaleLowerCase('tr').split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const ticket = f.cat === 'aktivite' || f.cat === 'ucak' || (f.cat === 'ulasim' && toks.some(t => DEST_KINDS.some(k => k.w.some(w => destHit(t, w)))));
+  return f.cat === 'konaklama' ? '📷 Rezervasyon ekle' : ticket ? '📷 Bilet ekle' : '📷 Fiş ekle';
+}
 function chip(label, on, attrs, extra=''){ return `<button type="button" class="chip ${extra}" aria-pressed="${on}" ${attrs}>${label}</button>`; }
 function catChips(){ return CATS.map(c => chip(`${c.icon} ${c.name}`, form.cat === c.id, `data-cat="${c.id}"`)).join(''); }
 
@@ -1652,9 +1659,9 @@ function drawSheet(){
     <div class="photo">
       ${f.photo ? `<img src="${f.photo}" alt="Fiş fotoğrafı" data-act="viewphoto">` : ''}
       <input type="file" id="fPhoto" accept="image/*">
-      <label class="btn sm" for="fPhoto">${f.photo ? 'Fişi değiştir' : '📷 Fiş ekle'}</label>
+      <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>
       ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
-      ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Fiş okunuyor…' : '✨ Fişten doldur'}</button>` : ''}
+      ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Okunuyor…' : '✨ Fotoğraftan doldur'}</button>` : ''}
     </div>
     <div class="place" id="fPlace">${placeHtml()}</div>
     ${f.id ? (() => { const o = S.entries.find(x => x.id === f.id); return o && o.by && S.people.some(p => p.id === o.by) ? `<p class="note">✍️ ${nmE(o.by)} girdi · ${hhmm(o.at)}</p>` : ''; })() : ''}`;
@@ -1930,6 +1937,7 @@ function placeHtml(){
   const dest = f.destEdit ? `<div class="destedit"><input class="inp" id="fDest" autocomplete="off" enterkeyhint="done" placeholder="Gidilecek yer ya da adres (ör. Madrid Atocha)" value="${esc(f.destDraft ?? (d ? d.label : ''))}"><button type="button" class="btn sm pri" data-act="destok">Tamam</button></div>`
       + (f.dest ? `<button type="button" class="link" data-act="destclear">Tahmine dön</button>` : '')
     : d ? `<div class="destrow"><a class="btn pri dbtn" href="${mapsDir(d.q)}" target="_blank" rel="noopener">🧭 ${esc(d.label)}</a><button type="button" class="link" data-act="destedit">değiştir</button></div>`
+    : f.cat === 'konaklama' ? `<span class="note">🏨 Rezervasyonun (Airbnb, otel) ekran görüntüsünü ekleyip <b>✨ Fotoğraftan doldur</b>’a basarsan adresi okurum; 🧭 yol tarifi hazır olur. Ya da <button type="button" class="link" data-act="destedit">adresi yaz</button>.</span>`
     : `<button type="button" class="link" data-act="destedit">🧭 Gidilecek yeri ekle (yol tarifi için)</button>`;
   let here;
   if (f.placeState === 'loading') here = `<span class="note">📍 Konum alınıyor…</span> <button type="button" class="link" data-act="rmplace">ekleme</button>`;
@@ -3237,7 +3245,7 @@ function ocrImage(dataUrl){
 async function scanReceipt(){
   const f = form; if (!f || f.scanning) return;
   f.scanning = true; drawSheetKeep();
-  if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast(cloudOcr && window.claude && window.claude.receipt ? 'Fiş okunuyor…' : 'Fiş telefonda okunuyor; ilk seferde biraz sürebilir…');
+  if (!(sampleFn && sampleImg) && !IN_CLAUDE) toast(cloudOcr && window.claude && window.claude.receipt ? 'Okunuyor…' : 'Fotoğraf telefonda okunuyor; ilk seferde biraz sürebilir…');
   try {
     const r = await readReceipt(f.photoHi || f.photo);
     if (form !== f) return;
@@ -3257,7 +3265,7 @@ async function scanReceipt(){
     if (f.mode === 'expense' && r.place && !f.dest) f.dest = String(r.place).slice(0, 150);
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.mismatch && f.mode === 'shop' ? `⚠️ Fişteki ürünlerin toplamı (${money(r.mismatch, f.cur)}) fişin toplamını (${money(Number(r.amount), f.cur)}) tutmuyor; ürünler fişte yazdığı gibi bırakıldı, kontrol et.`
-      : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : 'Fişten dolduruldu; tutarı bir kontrol et.');
+      : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : f.mode === 'expense' && f.dest ? '📷 Dolduruldu; tutarı kontrol et. 🧭 Adres gidilecek yer oldu.' : 'Dolduruldu; tutarı bir kontrol et.');
   } catch(e){
     const c = e && e.code;
     if (c !== 'cancelled') toast(c === 'exchange' ? '🔁 Değişim fişi: ödenen ya da geri alınan fark yok, kayıt gerekmiyor.' : c === 'noocr' ? 'Fişi okumak için Claude izni gerekiyor; izin vermediysen tutarı elle yaz.' : c === 'timeout' ? 'Fiş okuyucu yanıt vermedi; tutarı elle yaz.' : c === 'unreadable' ? 'Fişteki toplam okunamadı; tutarı elle yaz.' : c === 'rate_limited' ? 'Şu an çok fazla istek var; biraz sonra dene.'
@@ -4836,13 +4844,16 @@ document.addEventListener('input', ev => {
     if (el.id === 'fRate'){ const r = parseAmt(el.value); if (r > 0) form.rate = r; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); return; }
     if (el.id === 'fAmt'){ form.amount = el.value; form.autoAmt = false; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); const e = document.getElementById('fEach'); if (e) e.textContent = eachNote(); return; }
     if (el.id === 'fDesc'){
-      form.desc = el.value; if (!form.destEdit) drawPlace();
+      form.desc = el.value;
       if (!form.catManual){
         form.cat = guessCat(el.value, S.learned); const c = catById(form.cat);
         document.getElementById('fCatNow').textContent = `${c.icon} ${c.name}`;
         document.getElementById('fAuto').textContent = el.value.trim() ? 'otomatik' : '';
         const cs = document.getElementById('fCats'); if (cs) cs.innerHTML = catChips();
       }
+      // Gidilecek yer tahmini ve fotoğraf düğmesinin adı (Rezervasyon/Bilet/Fiş) yazdıkça güncellenir.
+      if (!form.destEdit) drawPlace();
+      { const pl = document.getElementById('fPhotoLbl'); if (pl && !form.photo) pl.textContent = docLabel(form); }
       return;
     }
     if (el.id === 'nName'){ form.name = el.value; return; }
