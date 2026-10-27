@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261027210059';</script>
-<script src="heybe-web.js?v=20261027210059"></script>
+<script>window.HEYBE_VER = '20261027211134';</script>
+<script src="heybe-web.js?v=20261027211134"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -312,16 +312,13 @@ nav.tabs svg{width:22px;height:22px}
 .chips.pad{padding:10px 0;border-bottom:1px solid var(--line)}
 .rows #fEach{padding-top:8px}
 .place{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.92rem}
-.place .pl{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
-.placts{display:flex;flex-wrap:wrap;gap:8px}
-.psearch{display:flex;flex-direction:column;gap:8px;width:100%}
-.psearch .prow{display:flex;gap:8px}
-.psearch .prow .inp{flex:1;min-width:0;padding:9px 12px}
-.pres{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.pbtn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;background:var(--surface);padding:9px 12px;text-align:left;width:100%}
-.pbtn+.pbtn{border-top:1px solid var(--line)}
-.pbtn span{font-size:.8rem;color:var(--muted)}
-.psearch .link{align-self:flex-start}
+.place{flex-direction:column;align-items:stretch}
+.destrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dbtn{text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.destedit{display:flex;gap:8px}
+.destedit .inp{flex:1;min-width:0;padding:9px 12px}
+.place .link{align-self:flex-start}
+.here{font-size:.85rem}
 .photo img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:zoom-in}
 .photo input{position:absolute;width:1px;height:1px;opacity:0}
 .photo label.btn{display:inline-block}
@@ -1596,7 +1593,7 @@ function closeSheet(){
 const DRAFT = 'yol-hesabi-taslak', DRAFT_PHOTO = DRAFT + '-foto', DRAFT_MODES = ['expense', 'kasa', 'transfer', 'shop', 'solo'];
 function saveDraft(){
   if (!form || !DRAFT_MODES.includes(form.mode)) return;
-  try { const {photo, photoHi, placeRes, ...rest} = form; localStorage.setItem(DRAFT, JSON.stringify({...rest, savedAt:Date.now()})); } catch(_) {}
+  try { const {photo, photoHi, ...rest} = form; localStorage.setItem(DRAFT, JSON.stringify({...rest, savedAt:Date.now()})); } catch(_) {}
 }
 function saveDraftPhoto(d){ try { if (d) localStorage.setItem(DRAFT_PHOTO, d); else localStorage.removeItem(DRAFT_PHOTO); } catch(_) {} }
 function clearDraft(){ try { localStorage.removeItem(DRAFT); localStorage.removeItem(DRAFT_PHOTO); } catch(_) {} }
@@ -1605,7 +1602,7 @@ function restoreDraft(){
     const d = JSON.parse(localStorage.getItem(DRAFT) || 'null');
     if (!d || Date.now() - d.savedAt > 864e5 || !S.people.length || isRO()) return clearDraft();
     if (d.placeState === 'loading') d.placeState = d.place ? 'ok' : 'off';
-    d.placeBusy = false; d.placeSearch = false; d.placeRes = null;
+    d.destEdit = false;
     const coll = d.mode === 'shop' ? SH.items : d.mode === 'solo' ? SH.solo : S.entries;
     if (d.id && !coll.some(x => x.id === d.id)) return clearDraft();
     let ph = null; try { ph = localStorage.getItem(DRAFT_PHOTO); } catch(_) {}
@@ -1843,7 +1840,7 @@ function startPay(from, to){
 }
 function startExpense(e){
   if (e) openSheet({mode:'expense', id:e.id, phase:phaseOf(e, S), amount:nf.format(e.amount), cur:e.cur, desc:e.desc, cat:e.cat, catManual:true, paidBy:e.paidBy, among:[...e.among], weights:e.weights ? {...e.weights} : null, rate:e.rate, settleTL:!!e.settleTL, date:isoDay(e.at), phaseManual:true,
-    photo:photoSrc(e), photoChanged:false, place:e.place || null, lat:e.lat, lon:e.lon, placeState:e.place ? 'ok' : 'off'});
+    photo:photoSrc(e), photoChanged:false, place:e.place || null, lat:e.lat, lon:e.lon, placeState:e.place ? 'ok' : 'off', dest:e.dest || null});
   else {
     // Seyahat öncesinde varsayılan: TL ve "şimdi ödeşiyoruz"; seyahatte: son kullanılan para birimi, sonda hesap.
     const phase = defaultPhase(), pre = phase === 'pre';
@@ -1878,47 +1875,67 @@ function locate(f){
     }, err => done(err && err.code === 1 ? 'denied' : 'fail'), {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
   } catch(_) { done('fail'); }
 }
-// Yol tarifi: Google Haritalar'da yer işaretine (enlem, boylam) yol tarifi açılır; telefonda Haritalar uygulaması açılır.
-const mapsDir = (lat, lon, place) => 'https://www.google.com/maps/dir/?api=1&destination=' + (lat ? `${lat},${lon}` : encodeURIComponent(place || ''));
+// 🧭 Gidilecek yer. Öncelik: elle yazılan ya da fiş/rezervasyon fotoğrafından okunan adres (dest) → açıklamadan tahmin
+// (ulaşımda kalkış yeri: "Madrid–Sevilla treni" → Madrid tren garı; aktivitede yerin adı) → "Buradayım" ile kaydedilen konum.
+// Yeri Google Haritalar bulur (adres bulmada en doğrusu); dir_action=navigate yol tarifini doğrudan başlatır, başlangıç
+// telefonun o anki konumudur.
+const mapsDir = q => 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(q) + '&dir_action=navigate';
+const DEST_KINDS = [
+  {w:['tren', 'train', 'ave', 'renfe', 'iryo', 'ouigo', 'trenitalia', 'italo', 'sncf', 'tgv', 'frecciarossa', 'eurostar', 'rail', 'demiryolu'], en:'train station', tr:'tren garı'},
+  {w:['uçak', 'uçağ', 'ucak', 'uçuş', 'ucus', 'flight', 'thy', 'pegasus', 'ajet', 'ryanair', 'wizz', 'easyjet', 'vueling', 'havayolu'], en:'airport', tr:'havalimanı', two:true},
+  {w:['otobüs', 'otobus', 'bus', 'flixbus', 'alsa', 'blablabus', 'otogar'], en:'bus station', tr:'otogarı'},
+  {w:['feribot', 'vapur', 'ferry'], en:'ferry terminal', tr:'feribot iskelesi'}];
+// Üç harfli kelimeler (ave, bus, thy) tam eşleşir; uzunlar ek alabilir (treni, otobüsü, uçağı).
+const destHit = (tok, w) => w.length <= 3 ? tok === w : tok.startsWith(w);
+const DEST_GENERIC = /^(bilet\p{L}*|ticket\p{L}*|tek|yön\p{L}*|gidiş\p{L}*|dönüş\p{L}*|rezervasyon\p{L}*|yolculu\p{L}*|sefer\p{L}*|giriş\p{L}*|ücret\p{L}*|kişi\p{L}*|saat|ve|ile|için|tl|eur|euro)$/iu;
+function guessDest(desc, cat, e){
+  const raw = String(desc || '').replace(/[’`]/g, "'").trim(); if (!raw) return null;
+  const low = t => t.toLocaleLowerCase('tr');
+  const toks = raw.split(/[^\p{L}\p{N}']+/u).filter(Boolean);
+  const kind = DEST_KINDS.find(k => toks.some(t => k.w.some(w => destHit(low(t).replace(/'.*$/, ''), w))));
+  const isKindTok = t => DEST_KINDS.some(k => k.w.some(w => destHit(low(t).replace(/'.*$/, ''), w)));
+  const clean = t => t.split(/[^\p{L}'.]+/u).filter(x => x && !isKindTok(x) && !DEST_GENERIC.test(x.replace(/'.*$/, ''))).join(' ').replace(/'.*$/, '').trim();
+  if (kind && (cat === 'ulasim' || cat === 'ucak' || !cat)){
+    // "Madrid'den Sevilla'ya" → Madrid; "Madrid–Sevilla", "Madrid - Sevilla", "Madrid → Sevilla" → Madrid; "Madrid Sevilla AVE" → Madrid.
+    let origin = '', two = false;
+    const abl = raw.match(/(\p{Lu}[\p{L}. ]*?)'?(?:dan|den|tan|ten)(?![\p{L}])/u);
+    const parts = raw.split(/\s*(?:–|—|→|->|>|\/|\s-\s)\s*|(?<=\p{L})-(?=\p{Lu})/u);
+    if (abl){ origin = abl[1].trim(); two = true; }
+    else if (parts.length > 1){ origin = clean(parts[0]); two = !!clean(parts.slice(1).join(' ')); }
+    else { const caps = clean(raw).split(' ').filter(x => /^\p{Lu}/u.test(x)); if (caps.length){ origin = caps[0]; two = caps.length > 1; } }
+    origin = origin.replace(/\s+/g, ' ').trim();
+    // Uçakta tek şehir çoğunlukla varış yeridir ("Roma uçak bileti"); kalkış bilinmediği için tahmin edilmez.
+    if (origin && (two || !kind.two)){
+      const saw = kind.en === 'airport' && /^(istanbul|i̇stanbul)$/i.test(low(origin)) && toks.some(t => /^(pegasus|ajet)/i.test(t));
+      return saw ? {q:'Sabiha Gökçen Airport', label:'Sabiha Gökçen Havalimanı'} : {q:`${origin} ${kind.en}`, label:`${origin} ${kind.tr}`};
+    }
+    return null;
+  }
+  if (cat === 'aktivite'){
+    const name = clean(raw); if (!name) return null;
+    // Şehir yalnız "Buradayım" ile kaydedilen yerden eklenir; seyahatin ülkesi eklenmez (yer başka ülkede olabilir).
+    const city = e && e.place ? String(e.place).split(',').pop().trim() : '';
+    return {q:city ? `${name}, ${city}` : name, label:name};
+  }
+  return null;
+}
+function destOf(e){
+  if (e.dest) return {q:e.dest, label:e.dest, set:true};
+  const g = guessDest(e.desc, e.cat, e); if (g) return g;
+  if (e.lat) return {q:`${e.lat},${e.lon}`, label:e.place || 'Kaydedildiği yer'};
+  return null;
+}
 function placeHtml(){
-  const f = form;
-  if (f.placeSearch) return placeSearchHtml();
-  if (f.placeState === 'loading') return `<span class="note">📍 Konum alınıyor…</span> <button type="button" class="btn sm" data-act="rmplace">Ekleme</button> <button type="button" class="btn sm" data-act="placesearch">🔎 Yer ara</button>`;
-  if (f.place) return `<span class="pl">📍 ${esc(f.place)}</span><span class="placts"><a class="btn sm pri" href="${mapsDir(f.lat, f.lon, f.place)}" target="_blank" rel="noopener">🧭 Yol tarifi</a><button type="button" class="btn sm" data-act="placesearch">Değiştir</button><button type="button" class="btn sm" data-act="rmplace">Kaldır</button></span>`;
-  const msg = {denied:'Konum izni verilmedi.', fail:'Konum alınamadı.', off:'Konum eklenmedi.'}[f.placeState] || 'Konum eklenmedi.';
-  return `<span class="note">📍 ${msg}</span> <button type="button" class="btn sm" data-act="locate">Buradayım</button> <button type="button" class="btn sm" data-act="placesearch">🔎 Yer ara</button>`;
-}
-// 🔎 Yer ara: yazılan yer ya da adres ("Sagrada Família", "Madrid Atocha garı", Airbnb'deki sokak adresi) OpenStreetMap'te
-// aranır; önce seyahatin ülkesinde, bulunamazsa her yerde. Adlar yerel dilde gelir ("und": dil tercihi yok; yoksa
-// tarayıcının Türkçesiyle Sevilla "İşbîliye" olur). Seçilen sonuç
-// harcamanın yeri olur, herkes yol tarifi alabilir. Kapı numaralı adresi OpenStreetMap çoğu zaman sokağa yuvarlar; o yüzden
-// "yazdığın adresle kaydet" de sunulur: yer yazı olarak saklanır, yol tarifinde adresi Google Haritalar bulur.
-function placeSearchHtml(){
-  const f = form, R = f.placeRes;
-  return `<div class="psearch"><div class="prow"><input class="inp" id="fPlaceQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="Yer ya da adres (ör. Sagrada Família)" value="${esc(f.placeQ ?? '')}"><button type="button" class="btn sm pri" data-act="placego">Ara</button></div>`
-    + (f.placeBusy ? `<span class="note">Aranıyor…</span>` : R && !R.length ? `<span class="note">Haritada bulunamadı. Şehir adını da ekle (ör. “Atocha, Madrid”) ya da aşağıdan yazdığın adresle kaydet.</span>` : '')
-    + (R ? `<div class="pres">${R.map((r, i) => `<button type="button" class="pbtn" data-placepick="${i}"><b>${esc(r.name)}</b><span>${esc(r.addr)}</span></button>`).join('')}
-      <button type="button" class="pbtn" data-placetext="1"><b>✍️ “${esc(f.placeQ)}”</b><span>Yazdığın adresle kaydet; yol tarifinde adresi Google Haritalar bulur (ev adresi gibi kapı numaralı adreslerde en doğrusu)</span></button></div>` : '')
-    + `<button type="button" class="link" data-act="placecancel">Vazgeç</button></div>`;
-}
-async function placeSearch(){
-  const f = form, q = String(f.placeQ ?? '').trim(); if (!q) return;
-  f.placeBusy = true; f.placeRes = null; drawPlace();
-  const tc = themeCountry(), go = async cc => {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&accept-language=und&q=${encodeURIComponent(q)}${cc ? '&countrycodes=' + cc : ''}`);
-    return r.ok ? r.json() : [];
-  };
-  let L = [];
-  try { L = tc ? await go(tc[0].toLowerCase()) : []; if (!L.length) L = await go(''); } catch(_) { L = []; }
-  if (form !== f) return;
-  f.placeBusy = false;
-  f.placeRes = L.map(x => {
-    const a = x.address || {}, city = a.city || a.town || a.village || a.municipality || a.county || a.state || '';
-    const name = x.name || [a.road, a.house_number].filter(Boolean).join(' ') || String(x.display_name).split(',')[0];
-    const addr = String(x.display_name || '').split(',').map(t => t.trim()).filter(t => t && t !== name).slice(0, 4).join(', ');
-    return {name, city, addr, lat:+(+x.lat).toFixed(6), lon:+(+x.lon).toFixed(6)};
-  });
-  drawPlace();
+  const f = form, d = destOf(f);
+  const dest = f.destEdit ? `<div class="destedit"><input class="inp" id="fDest" autocomplete="off" enterkeyhint="done" placeholder="Gidilecek yer ya da adres (ör. Madrid Atocha)" value="${esc(f.destDraft ?? (d ? d.label : ''))}"><button type="button" class="btn sm pri" data-act="destok">Tamam</button></div>`
+      + (f.dest ? `<button type="button" class="link" data-act="destclear">Tahmine dön</button>` : '')
+    : d ? `<div class="destrow"><a class="btn pri dbtn" href="${mapsDir(d.q)}" target="_blank" rel="noopener">🧭 ${esc(d.label)}</a><button type="button" class="link" data-act="destedit">değiştir</button></div>`
+    : `<button type="button" class="link" data-act="destedit">🧭 Gidilecek yeri ekle (yol tarifi için)</button>`;
+  let here;
+  if (f.placeState === 'loading') here = `<span class="note">📍 Konum alınıyor…</span> <button type="button" class="link" data-act="rmplace">ekleme</button>`;
+  else if (f.place) here = `<span class="note">📍 Kaydedildiği yer: ${esc(f.place)}</span> <button type="button" class="link" data-act="rmplace">kaldır</button>`;
+  else here = `<span class="note">📍 ${{denied:'Konum izni verilmedi.', fail:'Konum alınamadı.'}[f.placeState] || 'Kaydedildiği yer eklenmedi.'}</span> <button type="button" class="link" data-act="locate">Buradayım</button>`;
+  return dest + `<div class="here">${here}</div>`;
 }
 function drawPlace(){ const el = document.getElementById('fPlace'); if (el) el.innerHTML = placeHtml(); }
 
@@ -2019,7 +2036,7 @@ function submit(){
     const wts = Object.fromEntries(f.among.filter(x => f.weights && f.weights[x] > 1).map(x => [x, f.weights[x]]));
     upsert({id, kind:'expense', desc:f.desc.trim(), cat:f.cat, amount:a, cur:f.cur, rate, paidBy:f.paidBy, among:f.among, weights:Object.keys(wts).length ? wts : null, at:atFromDay(f.date, old && old.at), by:old ? old.by || S.me : S.me, hasPhoto,
       photoId:f.photoChanged ? null : ((old && old.photoId) || null),
-      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, ...tlx});
+      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, dest:f.dest || null, ...tlx});
     if (f.photoChanged && f.photo) uploadPhoto(id, f.photo);
     logEvent(`${old ? 'düzenledi' : 'ekledi'}: ${f.desc.trim()} · ${money(a, f.cur)}`);
     S.lastCur = f.cur; flashId = id; closeSheet(); render();
@@ -2385,7 +2402,7 @@ let sampleFn = null, sampleImg = false, cloudOcr = true;
 function rcCloudCheck(r){
   const items = (Array.isArray(r.items) ? r.items : []).map(x => ({name:String(x.name || '').slice(0, 70), price:Math.round(Number(x.price) * 100) / 100})).filter(x => x.name && x.price);
   const sum = Math.round(items.reduce((a, x) => a + x.price, 0) * 100) / 100, amount = Math.round(Number(r.amount) * 100) / 100;
-  return {amount, currency:r.currency, desc:r.desc, items, ret:!!r.ret, disc:0, ...(items.length && sum > amount + .01 ? {mismatch:sum} : {})};
+  return {amount, currency:r.currency, desc:r.desc, items, ret:!!r.ret, disc:0, place:typeof r.place === 'string' ? r.place.trim() : '', ...(items.length && sum > amount + .01 ? {mismatch:sum} : {})};
 }
 async function startSample(){
   if (!window.claude || !window.claude.use) return;
@@ -3151,6 +3168,7 @@ async function readReceipt(dataUrl){
       + '"Unit Price/Precio Unitario" gibi satırlar ürün değil, üstündeki ürünün fiyatıdır; "1x" adettir. Ara toplam, KDV/IVA, ödeme, para üstü ve indirim satırları ürün değildir. '
       + 'Fişte indirim varsa (ör. outlet %20) ürün fiyatlarını indirimli yaz; ürünlerin toplamı ödenen toplama eşit olsun. '
       + 'İade fişiyse (devolución, refund, Rückgabe, reso, avoir, iade…) tutarları artı yaz ve "ret": true ekle. '
+      + 'Fotoğrafta konaklama, bilet ya da mağaza adresi varsa (Airbnb/Booking/otel onayı, müze bileti, fiş başlığı) "place" alanına tam adresi yaz (adres yoksa yer adı ve şehir; hiçbiri yoksa boş bırak). '
       + 'Sadece şu biçimde JSON döndür: {"amount": 23.5, "currency": "EUR", "desc": "Restoranda akşam yemeği", "items": [{"name": "Tişört", "price": 19.99}]}. currency şunlardan biri olmalı: ' + CURS.map(c => c[0]).join(', ')
       + '. Toplam okunamıyorsa {"amount": null} döndür.', {images:[dataUrlToBlob(dataUrl)], modelTier:'quick'});
     } catch(e){
@@ -3235,6 +3253,8 @@ async function scanReceipt(){
         f.lines = r.items.filter(x => x && x.name && Number(x.price)).slice(0, 40).map(x => ({name:String(x.name).slice(0, 70), auto:String(x.name).slice(0, 70), orig:x.orig ? String(x.orig).slice(0, 80) : undefined, price:nf.format(Number(x.price))}));
     }
     else if (r.desc && !f.desc.trim()){ f.desc = String(r.desc).slice(0, 60); if (!f.catManual) f.cat = guessCat(f.desc, S.learned); }
+    // Rezervasyon ya da bilet fotoğrafındaki adres (Airbnb, otel, müze) gidilecek yer olur.
+    if (f.mode === 'expense' && r.place && !f.dest) f.dest = String(r.place).slice(0, 150);
     if (r.ret && f.mode === 'shop') toast('↩️ İade fişi okundu: ürün iadesi olarak kaydedilecek. Bir kontrol et.'); else
     toast(r.mismatch && f.mode === 'shop' ? `⚠️ Fişteki ürünlerin toplamı (${money(r.mismatch, f.cur)}) fişin toplamını (${money(Number(r.amount), f.cur)}) tutmuyor; ürünler fişte yazdığı gibi bırakıldı, kontrol et.`
       : r.disc > 0 && f.mode === 'shop' ? `Fişten dolduruldu; %${r.disc} indirim ürünlere dağıtıldı. Bir kontrol et.` : 'Fişten dolduruldu; tutarı bir kontrol et.');
@@ -4611,15 +4631,6 @@ document.addEventListener('click', ev => {
     else { const st = +d.tfst; grp.forEach(x => setStep(x, st)); if (st === 1) toast('Formu sakla; AB’den son çıkışta gümrükte onaylat.'); if (st === 3) toast('İade alındı 💶'); }
     saveShop(); drawSheetKeep(); render(); return;
   }
-  if (d.placetext && form){
-    const q = String(form.placeQ || '').trim(); if (!q) return;
-    Object.assign(form, {place:q.slice(0, 120), lat:null, lon:null, placeState:'ok', placeSearch:false, placeRes:null}); drawPlace(); return;
-  }
-  if (d.placepick !== undefined && form && form.placeRes){
-    const r = form.placeRes[+d.placepick]; if (!r) return;
-    Object.assign(form, {place:r.city && !r.name.includes(r.city) ? `${r.name}, ${r.city}` : r.name, lat:r.lat, lon:r.lon, placeState:'ok', placeSearch:false, placeRes:null});
-    drawPlace(); return;
-  }
   if (d.help){ toggleHelp(t); return; }
   if (d.plancur){ planDraft.cur = d.plancur; render(); const i = document.getElementById('planInp'); if (i) i.focus(); return; }
   if (d.edit && swOpen === t){ swClose(); return; }
@@ -4756,12 +4767,11 @@ document.addEventListener('click', ev => {
       logEvent(d.m === 'min' ? 'hesaplaşmayı “daha az ödeme”ye aldı' : 'hesaplaşmayı “doğrudan ödeme”ye aldı');
       toast(d.m === 'min' ? 'Daha az ödemeyle gösteriliyor; herkesin toplamı aynı.' : 'Doğrudan ödemeye dönüldü.'); break;
     case 'editrate': form.showRate = true; drawSheetKeep(); { const r = document.getElementById('fRate'); if (r){ r.focus(); r.select(); } } break;
-    case 'rmplace': Object.assign(form, {place:null, lat:null, lon:null, placeState:'off', placeSearch:false}); drawPlace(); break;
-    case 'placesearch':
-      form.placeSearch = true; form.placeRes = null; if (form.placeQ == null) form.placeQ = form.place && !form.lat ? form.place : (form.desc || '');
-      drawPlace(); { const i = document.getElementById('fPlaceQ'); if (i){ i.focus(); i.select(); } } break;
-    case 'placego': placeSearch(); break;
-    case 'placecancel': form.placeSearch = false; drawPlace(); break;
+    case 'rmplace': Object.assign(form, {place:null, lat:null, lon:null, placeState:'off'}); drawPlace(); break;
+    case 'destedit': form.destEdit = true; form.destDraft = null; drawPlace(); { const i = document.getElementById('fDest'); if (i){ i.focus(); i.select(); } } break;
+    case 'destok': { const v = String(form.destDraft ?? document.getElementById('fDest')?.value ?? '').trim(), g = guessDest(form.desc, form.cat, form);
+      form.dest = v && !(g && v === g.label) && !(form.lat && v === form.place) ? v.slice(0, 150) : null; form.destEdit = false; drawPlace(); break; }
+    case 'destclear': form.dest = null; form.destEdit = false; drawPlace(); break;
     case 'locate': locate(form); document.getElementById('fPlace').innerHTML = placeHtml(); break;
     case 'del':
       if (form.mode === 'solo'){
@@ -4819,14 +4829,14 @@ function drawSheetKeep(){
 document.addEventListener('input', ev => {
   const el = ev.target;
   if (el.id === 'planInp' && planDraft){ planDraft.v = el.value; return; }
-  if (el.id === 'fPlaceQ' && form){ form.placeQ = el.value; return; }
+  if (el.id === 'fDest' && form){ form.destDraft = el.value; return; }
   if (el.id === 'shopQ'){ shopQ = el.value; const r = document.getElementById('shopRes'); if (r) r.innerHTML = shopRowsHtml(); return; }
   if (el.id === 'gWho' || el.id === 'gWhat' || el.id === 'gEst'){ giftDraft[{gWho:'who', gWhat:'what', gEst:'est'}[el.id]] = el.value; return; }
   if (form){
     if (el.id === 'fRate'){ const r = parseAmt(el.value); if (r > 0) form.rate = r; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); return; }
     if (el.id === 'fAmt'){ form.amount = el.value; form.autoAmt = false; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); const e = document.getElementById('fEach'); if (e) e.textContent = eachNote(); return; }
     if (el.id === 'fDesc'){
-      form.desc = el.value;
+      form.desc = el.value; if (!form.destEdit) drawPlace();
       if (!form.catManual){
         form.cat = guessCat(el.value, S.learned); const c = catById(form.cat);
         document.getElementById('fCatNow').textContent = `${c.icon} ${c.name}`;
@@ -4914,7 +4924,7 @@ document.addEventListener('keydown', ev => {
   if (ev.target.id === 'planInp' && ev.key === 'Enter'){ ev.preventDefault(); savePlan(); return; }
   if (ev.target.id === 'planInp' && ev.key === 'Escape'){ editPlan = false; planDraft = null; render(); return; }
   if (!form) return;
-  if (ev.target.id === 'fPlaceQ' && ev.key === 'Enter'){ ev.preventDefault(); placeSearch(); return; }
+  if (ev.target.id === 'fDest' && ev.key === 'Enter'){ ev.preventDefault(); document.querySelector('[data-act=destok]').click(); return; }
   if (ev.key === 'Escape') closeSheet();
   if (ev.key === 'Enter' && ev.target.tagName === 'INPUT' && ev.target.type !== 'file') { ev.preventDefault(); submit(); }
 });
