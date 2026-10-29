@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029221327';</script>
-<script src="heybe-web.js?v=20261029221327"></script>
+<script>window.HEYBE_VER = '20261029222432';</script>
+<script src="heybe-web.js?v=20261029222432"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2250,7 +2250,8 @@ const GQ = [
 ];
 let gzUndo = null, gShareFile = null;
 const G_KIND = {gez:'🏛', yemek:'🍽', alis:'🛍', aksam:'🌙', gecis:'🚶', dukkan:'🏬'}, G_SRC = {liste:'⭐', oneri:'✨', bilet:'🎟'};
-const G_COLORS = ['1E88E5', '43A047', '8E24AA', 'E53935', '00897B', '6D4C41', '3949AB', 'C0CA33', 'D81B60', '5E35B1'], G_FOOD = 'F57C00';
+// Gün renkleri haritadan (parklar yeşil, su mavi açık) ayrışan koyu tonlar; yemek turuncu.
+const G_COLORS = ['D32F2F', '1565C0', '6A1B9A', '00838F', 'AD1457', '4E342E', '283593', '9E9D24', '2E7D32', '5D4037'], G_FOOD = 'F57C00';
 // Seyahatin şehirleri, plan sırasıyla (konaklamalardan): Barselona, Madrid, Sevilla.
 function guideCities(){
   const P = tripPlan(); if (!P) return [];
@@ -2292,6 +2293,7 @@ function gDayHtml(c, g, x, i, f, can){
     + (x.yol ? gTravelHtml(c, x.d) : '') + gLugHtml(gLuggage().filter(l => l.d === x.d && l.city === c))
     + x.items.map((it, k) => {
       const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = gStars(it);
+      if (gFar(g, it) && !it.warn) it.warn = 'konum şüpheli (başka şehirde görünüyor); haritaya konmadı';
       const mv = f.gmove && f.gmove.c === c && f.gmove.i === i && f.gmove.k === k;
       return `<div class="swr"><button class="swdel l gmv" data-g="gmv" data-c="${esc(c)}" data-i="${i}" data-k="${k}" tabindex="-1">📅 Taşı</button><button class="swdel r" data-g="gdrop" data-c="${esc(c)}" data-i="${i}" data-k="${k}" tabindex="-1">Çıkar</button>`
         + `<div class="pli${minor ? ' minor' : ''}"><button type="button" class="plt gitem" data-g="more"><span class="pt num">${esc(it.t || '')}</span><span class="pic">${G_KIND[it.kind] || '📍'}</span><span class="mid"><span class="d">${G_SRC[it.src] || ''} ${esc(it.name)}</span><span class="m gshort">${esc(gShort(it))}</span><span class="m glong">${esc(it.desc || '')}</span>${st || it.warn ? `<span class="gst">${st}${it.warn ? `${st ? ' · ' : ''}<b>⚠ ${esc(it.warn)}</b>` : ''}</span>` : ''}</span></button><a class="btn sm" href="${it.g && it.g.url ? it.g.url : mapsDir(it.lat ? `${it.lat},${it.lon}` : `${it.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(it.name)}">🧭</a></div></div>`
@@ -2574,6 +2576,15 @@ async function gWiki(it, c){
 // Google Haritalar puanı: duraklar için puan, yorum sayısı, fiyat, açık günler (aylık ücretsiz sınır içinde; dolarsa Claude
 // internette arar, "≈ · web"). Düşük puanlı ya da o gün kapalı ÖNERİLER (en çok 4) yerine yenisi istenir; istek listesindekiler
 // yalnız uyarı alır. Kaynak bilgisi rehbere yazılır.
+// Şehrin merkezi (ev, yoksa durakların ortancası) ve uzaklık: 80 km'den uzak nokta yanlış şehirde sayılır (haritaya konmaz).
+const gKm = (a, b) => Math.hypot((a.lat - b.lat) * 111, (a.lon - b.lon) * 111 * Math.cos(a.lat * Math.PI / 180));
+function gCenter(g){
+  if (g.home && g.home.lat) return {lat:+g.home.lat, lon:+g.home.lon};
+  const p = g.days.flatMap(x => x.items).filter(it => it.lat && it.lon); if (!p.length) return null;
+  const m = a => a.sort((x, y) => x - y)[a.length >> 1];
+  return {lat:m(p.map(i => +i.lat)), lon:m(p.map(i => +i.lon))};
+}
+const gFar = (g, it) => { const c = gCenter(g); return !!(c && it.lat && it.lon && gKm(c, {lat:+it.lat, lon:+it.lon}) > 80); };
 const G_MIN = {yemek:[4.5, 1000], gez:[4.5, 3000], aksam:[4.4, 500], alis:[4.4, 500]};
 const gBelow = it => { const m = G_MIN[it.kind]; return !!(m && it.g && it.g.r && (it.g.r < m[0] || it.g.n < m[1])); };
 async function guideRate(c){
@@ -2586,7 +2597,8 @@ async function guideRate(c){
   all.forEach((o, k) => {
     const v = (r.items || [])[k]; if (!v || !v.r) return;
     o.it.g = {r:v.r, n:v.n, p:v.p || '', url:v.url || '', web:v.web || '', tahmin:!!v.tahmin};
-    if (v.lat && v.lon){ o.it.lat = v.lat; o.it.lon = v.lon; o.it.ok = 1; }
+    const cc = gCenter(g);
+    if (v.lat && v.lon && (!cc || gKm(cc, {lat:v.lat, lon:v.lon}) < 25)){ o.it.lat = v.lat; o.it.lon = v.lon; o.it.ok = 1; }
     const wd = new Date(g.days[o.i].d + 'T12:00').getDay();
     o.it.warn = v.kapali ? 'kalıcı olarak kapanmış görünüyor' : Array.isArray(v.gun) && v.gun.length && !v.gun.includes(wd) ? 'o gün kapalı görünüyor' : '';
   });
@@ -2681,16 +2693,16 @@ function guideKml(c){
   const g = (S.trip.guide || {})[c]; if (!g) return;
   const X = s => String(s == null ? '' : s).replace(/[<>&'"]/g, m => ({'<':'&lt;', '>':'&gt;', '&':'&amp;', "'":'&apos;', '"':'&quot;'}[m]));
   const K = rgb => 'ff' + rgb.slice(4, 6) + rgb.slice(2, 4) + rgb.slice(0, 2), ICON = 'https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png';
-  const sty = (id, rgb) => `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>1</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${K(rgb)}</color><scale>1</scale></LabelStyle></Style>`;
+  const sty = (id, rgb) => `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>1.2</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${K(rgb)}</color><scale>1.1</scale></LabelStyle></Style>`;
   const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, sty('yemek', G_FOOD), sty('ev', '212121')];
   const H = g.home && g.home.lat && g.home.lon ? g.home : null;
   // Geçilen cadde ve yol üstü mağaza: aynı gün renginde, küçük ve soluk işaret (öne çıkmasın, ama görünsün).
   const styMin = (id, rgb) => `<Style id="${id}"><IconStyle><color>${'99' + K(rgb).slice(2)}</color><scale>0.65</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${'cc' + K(rgb).slice(2)}</color><scale>0.75</scale></LabelStyle></Style>`;
   // Gidiş sırası çizgisi ince ve yarı saydam (asıl yerler öne çıksın).
-  g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col), styMin('min' + i, col), `<Style id="cizgi${i}"><LineStyle><color>${'80' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
+  g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col), styMin('min' + i, col), `<Style id="cizgi${i}"><LineStyle><color>${'40' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
   g.days.forEach((x, i) => {
     // Haritada yalnız bu şehrin gezisi: tren/uçak, ev giriş-çıkışı (bilet) ve başka şehirden geliş-gidiş yok; yalnız yolculuk olan gün katman açmaz.
-    const pts = x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon);
+    const pts = x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon && !gFar(g, it));
     if (x.yol || !pts.length) return;
     out.push(`<Folder><name>${X(`${i + 1}. gün · ${planDay(x.d)}${x.theme ? ' · ' + x.theme : ''}`)}</name>${x.rain || x.intro ? `<description>${X([x.intro, x.rain ? '☔ Yağmur planı: ' + x.rain : ''].filter(Boolean).join('\n'))}</description>` : ''}`);
     // Her gün evden başlar (ve dönüş günü değilse evde biter): ev her katmanda, çizgi evden eve.
@@ -2798,7 +2810,7 @@ function gTodayHtml(){
 }
 // Haritanın küçük taslağı (My Maps'te nasıl görüneceği): günlerin çizgileri kendi renginde, yemek turuncu, 🏠 ev. Altlık harita yok.
 function gMiniMap(g, c){
-  const H = g.home && g.home.lat ? g.home : null, pts = g.days.flatMap(x => x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon));
+  const H = g.home && g.home.lat ? g.home : null, pts = g.days.flatMap(x => x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon && !gFar(g, it)));
   const all = [...pts, ...(H ? [H] : [])]; if (all.length < 2) return '';
   const lats = all.map(p => +p.lat).sort((a, b) => a - b), lons = all.map(p => +p.lon).sort((a, b) => a - b);
   // Uçtaki tek tük uzak noktalar (outlet gibi) haritayı küçültmesin: %5–%95 aralığı.
@@ -2809,7 +2821,7 @@ function gMiniMap(g, c){
   const cl = v => Math.max(4, Math.min(v, 1e4));
   let svg = '';
   g.days.forEach((x, i) => {
-    const col = '#' + G_COLORS[i % G_COLORS.length], ps = x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon), line = [...(H ? [H] : []), ...ps, ...(H && x.back !== false ? [H] : [])];
+    const col = '#' + G_COLORS[i % G_COLORS.length], ps = x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon && !gFar(g, it)), line = [...(H ? [H] : []), ...ps, ...(H && x.back !== false ? [H] : [])];
     if (line.length > 1) svg += `<polyline points="${line.map(p => `${cl(X(+p.lon)).toFixed(1)},${cl(Y(+p.lat)).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" stroke-opacity=".75" stroke-linejoin="round"/>`;
     svg += ps.map(p => `<circle cx="${cl(X(+p.lon)).toFixed(1)}" cy="${cl(Y(+p.lat)).toFixed(1)}" r="${p.kind === 'gecis' || p.kind === 'dukkan' ? 1.8 : 3}" fill="${p.kind === 'yemek' ? '#' + G_FOOD : col}"/>`).join('');
   });
