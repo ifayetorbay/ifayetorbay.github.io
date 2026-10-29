@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029224502';</script>
-<script src="heybe-web.js?v=20261029224502"></script>
+<script>window.HEYBE_VER = '20261029225912';</script>
+<script src="heybe-web.js?v=20261029225912"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2741,20 +2741,33 @@ async function guideVerify(c){
 }
 // 🗺 My Maps: şehir başına tek KML. Her gün ayrı klasör (My Maps'te ayrı, açılıp kapanan katman), gün rengi; yemek yerleri
 // turuncu; sıra numaralı adlar, etiketler açık; gidiş sırası çizgisi gün renginde. Yağmur planı katmanın açıklamasında.
+// Biletli ziyaret mi (stadyum turu, müze, gösteri)? Haritaya girer. Tren/uçak ve ev giriş-çıkışı girmez.
+// Önce o günün "biletli ziyaret" kayıtlarıyla ad eşleşmesine, yoksa yolculuk/konaklama sözcüklerine bakılır.
+const G_TRAVEL = /\b(tren|uçak|uçuş|ave|renfe|iryo|ouigo|vuelo|flight|havaliman|aeropuerto|airport|gar\b|estaci[oó]n|istasyon|terminal|varış|kalkış|ayrılış|transfer|check-?in|check-?out|giriş|çıkış|konaklama|otel|hotel|airbnb|ev\b|bavul)/i;
+function gVisit(c, d, it){
+  if (it.src !== 'bilet') return true;
+  const key = n => String(n || '').toLocaleLowerCase('tr').split(/[^\p{L}\d]+/u).filter(w => w.length > 3);
+  const day = cityDays(c).find(x => x.d === d), k = key(it.name);
+  const ev = day ? day.items.filter(x => x.kind === 'event' && !x.e.priv) : [];
+  if (ev.some(x => key(x.e.desc + ' ' + (x.e.dest || '')).some(w => k.includes(w)))) return true;
+  return !G_TRAVEL.test(it.name) && it.kind !== 'gecis';
+}
 function guideKml(c){
   const g = (S.trip.guide || {})[c]; if (!g) return;
   const X = s => String(s == null ? '' : s).replace(/[<>&'"]/g, m => ({'<':'&lt;', '>':'&gt;', '&':'&amp;', "'":'&apos;', '"':'&quot;'}[m]));
   const K = rgb => 'ff' + rgb.slice(4, 6) + rgb.slice(2, 4) + rgb.slice(0, 2), ICON = 'https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png';
   const sty = (id, rgb) => `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>1.2</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${K(rgb)}</color><scale>1.1</scale></LabelStyle></Style>`;
   const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, sty('yemek', G_FOOD), sty('ev', '212121')];
-  const H = g.home && g.home.lat && g.home.lon ? g.home : null;
+  const H = g.home && g.home.lat && g.home.lon ? g.home : null, miss = [];
   // Geçilen cadde ve yol üstü mağaza: aynı gün renginde, küçük ve soluk işaret (öne çıkmasın, ama görünsün).
   const styMin = (id, rgb) => `<Style id="${id}"><IconStyle><color>${'99' + K(rgb).slice(2)}</color><scale>0.65</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${'cc' + K(rgb).slice(2)}</color><scale>0.75</scale></LabelStyle></Style>`;
   // Gidiş sırası çizgisi ince ve yarı saydam (asıl yerler öne çıksın).
   g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col), styMin('min' + i, col), `<Style id="cizgi${i}"><LineStyle><color>${'40' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
   g.days.forEach((x, i) => {
     // Haritada yalnız bu şehrin gezisi: tren/uçak, ev giriş-çıkışı (bilet) ve başka şehirden geliş-gidiş yok; yalnız yolculuk olan gün katman açmaz.
-    const pts = x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon && !gFar(g, it));
+    const pts = x.items.filter(it => gVisit(c, x.d, it) && it.lat && it.lon && !gFar(g, it));
+    // Kontrol: plandaki gezi durağı haritaya giremiyorsa nedeni kullanıcıya söylenir.
+    x.items.forEach(it => { if (!x.yol && gVisit(c, x.d, it) && !pts.includes(it)) miss.push(`${it.name} (${!it.lat || !it.lon ? 'konum yok' : 'başka şehirde görünüyor'})`); });
     if (x.yol || !pts.length) return;
     out.push(`<Folder><name>${X(`${i + 1}. gün · ${planDay(x.d)}${x.theme ? ' · ' + x.theme : ''}`)}</name>${x.rain || x.intro ? `<description>${X([x.intro, x.rain ? '☔ Yağmur planı: ' + x.rain : ''].filter(Boolean).join('\n'))}</description>` : ''}`);
     // Her gün evden başlar (ve dönüş günü değilse evde biter): ev her katmanda, çizgi evden eve.
@@ -2762,7 +2775,7 @@ function guideKml(c){
     let n = 0;   // sıra numarası yalnız asıl duraklara (cadde ve mağaza numarasız)
     pts.forEach(it => {
       const minor = it.kind === 'gecis' || it.kind === 'dukkan', k = minor ? 0 : ++n;
-      const d = [`${k ? 'Sıra ' + k + ' · ' : ''}${it.t ? it.t + ' · ' : ''}${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}`.trim(), gStars(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.alt ? '🔁 Yedek: ' + it.alt : '', it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
+      const d = [`${k ? 'Sıra ' + k + ' · ' : ''}${it.t ? it.t + ' · ' : ''}${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}${it.src === 'bilet' ? ' biletli' : ''}`.trim(), gStars(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.alt ? '🔁 Yedek: ' + it.alt : '', it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
       out.push(`<Placemark><name>${X(minor ? it.name : `${k}. ${it.name}`)}</name><description>${X(d)}</description><styleUrl>#${it.kind === 'yemek' ? 'yemek' : minor ? 'min' + i : 'gun' + i}</styleUrl><Point><coordinates>${it.lon},${it.lat},0</coordinates></Point></Placemark>`);
     });
     const line = [...(H ? [H] : []), ...pts, ...(H && x.back !== false ? [H] : [])];
@@ -2770,7 +2783,7 @@ function guideKml(c){
     out.push('</Folder>');
   });
   out.push('</Document></kml>');
-  saveFile(`${c}-rehber.kml`, new Blob([out.join('\n')], {type:'application/vnd.google-earth.kml+xml'})).then(ok => { if (ok) toast(`🗺 ${c}-rehber.kml hazır. My Maps'te İçe aktar ile yükle.`); });
+  saveFile(`${c}-rehber.kml`, new Blob([out.join('\n')], {type:'application/vnd.google-earth.kml+xml'})).then(ok => { if (ok) toast(`🗺 ${c}-rehber.kml hazır. My Maps'te İçe aktar ile yükle.${miss.length ? ` ⚠ Haritaya konamayan: ${miss.join(', ')}` : ''}`); });
 }
 // O günün rehber durakları (şehir değiştirilen gün iki şehrin rehberinde de olabilir; aynı ad bir kez).
 function guideOf(d){
@@ -2862,7 +2875,7 @@ function gTodayHtml(){
 }
 // Haritanın küçük taslağı (My Maps'te nasıl görüneceği): günlerin çizgileri kendi renginde, yemek turuncu, 🏠 ev. Altlık harita yok.
 function gMiniMap(g, c){
-  const H = g.home && g.home.lat ? g.home : null, pts = g.days.flatMap(x => x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon && !gFar(g, it)));
+  const H = g.home && g.home.lat ? g.home : null, pts = g.days.flatMap(x => x.items.filter(it => gVisit(c, x.d, it) && it.lat && it.lon && !gFar(g, it)));
   const all = [...pts, ...(H ? [H] : [])]; if (all.length < 2) return '';
   const lats = all.map(p => +p.lat).sort((a, b) => a - b), lons = all.map(p => +p.lon).sort((a, b) => a - b);
   // Uçtaki tek tük uzak noktalar (outlet gibi) haritayı küçültmesin: %5–%95 aralığı.
