@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029214712';</script>
-<script src="heybe-web.js?v=20261029214712"></script>
+<script>window.HEYBE_VER = '20261029214958';</script>
+<script src="heybe-web.js?v=20261029214958"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -356,7 +356,7 @@ nav.tabs svg{width:22px;height:22px}
 .gun .gunrow .chip{flex:none;padding:5px 10px;font-size:.8rem}
 .gask{display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .gask .lab{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
-.gask .btn{align-self:flex-start}
+.gask>.btn{align-self:flex-start}
 .gsteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .gstep{border:0;border-radius:14px;background:var(--surface);padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;color:inherit}
 .gstep b{font-family:var(--display);font-weight:800;font-size:1.05rem}
@@ -2358,7 +2358,7 @@ function guideBody(){
           ${can ? `<div class="gask"><span class="lab">Yer ekle</span>
             <div class="gadd"><input class="inp gatext" data-gac="${esc(c)}" placeholder="Yer adı (ör. Templo de Debod)" value="${esc((f.gaT || {})[c] || '')}"><button type="button" class="btn sm" data-g="gaadd" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>➕</button><label class="btn sm">${f.gbusy === 'ekle' ? 'Okunuyor…' : '📷 Fotoğraftan'}<input type="file" class="gaphoto" data-gac="${esc(c)}" accept="image/*" hidden></label></div>
             ${must.size ? `<div class="gmust">${[...must].map(n => `<button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(n)}" aria-pressed="true">✓ ${esc(n)} ✕</button>`).join('')}</div>` : ''}
-            <label class="lab" for="gAsk_${esc(c)}">Değişiklik iste</label><textarea class="inp" id="gAsk_${esc(c)}" data-gask="${esc(c)}" rows="2" placeholder="Ör. La Roca outlet mutlaka olsun · 2. gün daha sakin · bir akşam flamenko">${esc(R.ask || '')}</textarea><button type="button" class="btn sm pri" data-g="make" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu isteklerle yeniden hazırla${must.size ? ` (+${must.size} yer)` : ''}</button></div>` : ''}
+            <label class="lab" for="gAsk_${esc(c)}">Değişiklik iste</label><textarea class="inp" id="gAsk_${esc(c)}" data-gask="${esc(c)}" rows="2" placeholder="Ör. La Roca outlet mutlaka olsun · 2. gün daha sakin · bir akşam flamenko">${esc(R.ask || '')}</textarea><div class="ptools" style="margin-top:0"><label class="btn sm">${f.gbusy === 'ekle' ? 'Okunuyor…' : '📷 Fotoğraftan yer ekle'}<input type="file" class="gaphoto" data-gac="${esc(c)}" accept="image/*" hidden></label><button type="button" class="btn sm pri" data-g="make" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu isteklerle yeniden hazırla${must.size ? ` (+${must.size} yer)` : ''}</button></div></div>` : ''}
           <details class="why gmore"${f.gdelc === c ? ' open' : ''}><summary>📚 Kaynaklar ve diğer</summary><div class="wl">${gSources(g).map(k => `<p class="gp">${k.url ? `<a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.t)}</a>` : esc(k.t)}</p>`).join('')}
             <button type="button" class="link gdel" data-g="gdel" data-c="${esc(c)}">${f.gdelc === c ? '⚠️ Emin misin? Dokun, rehber tamamen silinsin' : `🗑 ${esc(c)} rehberini sıfırla ve baştan başla`}</button></div></details>`;
       } else if (can && f.gbusy !== c){
