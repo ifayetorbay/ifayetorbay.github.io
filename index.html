@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029212449';</script>
-<script src="heybe-web.js?v=20261029212449"></script>
+<script>window.HEYBE_VER = '20261029212601';</script>
+<script src="heybe-web.js?v=20261029212601"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -394,6 +394,8 @@ nav.tabs svg{width:22px;height:22px}
 .gsrc a{color:var(--accent-text)}
 .gfocus{margin:0;font-size:.9rem;color:var(--muted)}
 .gfocus b{color:var(--ink)}
+.gdelb{color:var(--neg)}
+.gdelb.sure{background:var(--neg);color:#fff}
 .gcity{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
 .gcity:first-of-type{border-top:0}
 .gwrow{align-items:center}
@@ -2255,6 +2257,8 @@ function gSources(g){
     {t:'Konumlar: OpenStreetMap katkıcıları'}, {t:'Derleme ve açıklamalar: Claude (Anthropic)'}
   ].filter(Boolean);
 }
+// 🗑 Taslağı sil: iki dokunuş; silinince o şehrin akışı baştan açılır (istekler → tercihler → rehber).
+const gDelBtn = (c, f) => `<button type="button" class="btn sm gdelb${f.gdelc === c ? ' sure' : ''}" data-g="gdel" data-c="${esc(c)}">${f.gdelc === c ? '⚠️ Emin misin? Dokun, silinsin' : '🗑 Taslağı sil'}</button>`;
 function gDayHtml(c, g, x, i, f, can){
   const sw = f.gswap && f.gswap.c === c && f.gswap.i === i ? f.gswap : null;
   return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>${x.yol ? '🚆 Yolculuk günü · gezi yok' : `🏠 evden${x.back === false ? '' : ' eve'}`}</span>${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</div>`
@@ -2303,8 +2307,8 @@ function guideBody(){
       if (f.gbusy === c) h += `<p class="note">✨ Rehber hazırlanıyor… Bir dakika kadar sürebilir; pencereyi kapatma.</p>`;
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
-        h += g.ok ? `<p class="gok">✅ Onaylandı (${esc(nm(g.okBy || g.by))}). Plana, PDF'e ve Bugün şeridine girdi.</p>`
-          : `<div class="callout gdraft"><b>📝 Taslak: henüz onaylanmadı</b><span>Bak, gerekirse aşağıdan değiştirt. Beğenince onayla; onaylanınca plana, PDF'e ve Bugün şeridine girer.</span><button type="button" class="btn sm pri" data-g="approve" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✅ Onayla</button></div>`;
+        h += g.ok ? `<p class="gok">✅ Onaylandı (${esc(nm(g.okBy || g.by))}). Plana, PDF'e ve Bugün şeridine girdi.</p>${gDelBtn(c, f)}`
+          : `<div class="callout gdraft"><b>📝 Taslak: henüz onaylanmadı</b><span>Bak, gerekirse aşağıdan değiştirt. Beğenince onayla; onaylanınca plana, PDF'e ve Bugün şeridine girer.</span><div class="ptools" style="margin-top:2px"><button type="button" class="btn sm pri" data-g="approve" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✅ Onayla</button>${gDelBtn(c, f)}</div></div>`;
         h += g.days.map((x, i) => gDayHtml(c, g, x, i, f, can)).join('');
         const R = (S.trip.greq || {})[c] || {}, must = new Set(R.must || []);
         if (g.unplaced && g.unplaced.length) h += `<div class="pmiss gun"><b>Elenen istekler · neden?</b>${g.unplaced.map(u => `<div class="gunrow"><span>✖ <b>${esc(u.name)}</b>: ${esc(u.why)}</span><button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(u.name)}" aria-pressed="${must.has(u.name)}">${must.has(u.name) ? '✓ Eklenecek' : '➕ Mutlaka ekle'}</button></div>`).join('')}</div>`;
@@ -2719,7 +2723,7 @@ function viewGezi(){
       h += gMiniMap(g, c) + `<div class="gthemes">${g.days.map((x, i) => `<span><i style="background:#${G_COLORS[i % G_COLORS.length]}"></i>${i + 1}. gün${x.theme ? ' · ' + esc(x.theme) : ''}</span>`).join('')}</div>`;
       if (g.extra && (g.extra.uygun || []).length) h += `<p class="gnote">🍽 ${g.extra.uygun.slice(0, 4).map(u => esc(u.ad)).join(' · ')}</p>`;
       if (g.unplaced && g.unplaced.length) h += `<p class="gnote warn">✖ ${g.unplaced.length} istek sığmadı · nedenleri rehberde</p>`;
-      h += `<div class="ptools" style="margin-top:4px"><button class="btn sm" data-g="view" data-c="${esc(c)}">${g.ok ? 'Rehberi aç' : '📝 Bak ve onayla'}</button><button class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rapor</button><button class="btn sm pri" data-g="kml" data-c="${esc(c)}">🗺 Haritalar'a aktar</button></div>`;
+      h += `<div class="ptools" style="margin-top:4px"><button class="btn sm" data-g="view" data-c="${esc(c)}">${g.ok ? 'Rehberi aç' : '📝 Bak ve onayla'}</button><button class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rapor</button><button class="btn sm" data-g="delcard" data-c="${esc(c)}">🗑 Sil</button><button class="btn sm pri" data-g="kml" data-c="${esc(c)}">🗺 Haritalar'a aktar</button></div>`;
     } else h += `<p class="gnote">Henüz rehber yok. Önce istekler, sonra tercihler, en son rehber.</p><button class="btn sm pri" data-g="start" data-c="${esc(c)}">✨ ${esc(c)} rehberini hazırla</button>`;
     h += `</section>`;
   }
@@ -2739,6 +2743,7 @@ function guideAct(d){
     return;
   }
   if (d.g === 'view'){ openSheet({mode:'guide', gcity:d.c, gstep:2}); return; }
+  if (d.g === 'delcard'){ openSheet({mode:'guide', gcity:d.c, gstep:2, gdelc:d.c}); return; }
   if (!f || f.mode !== 'guide') return;
   if (d.g === 'step'){
     f.gstep = +d.v; drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
