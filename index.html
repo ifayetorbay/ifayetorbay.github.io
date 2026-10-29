@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029230034';</script>
-<script src="heybe-web.js?v=20261029230034"></script>
+<script>window.HEYBE_VER = '20261029231055';</script>
+<script src="heybe-web.js?v=20261029231055"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2283,6 +2283,7 @@ function gSources(g){
   const K = g.kaynak || {}, wiki = [...new Map(g.days.flatMap(x => x.items.filter(it => it.wiki && it.wiki.url).map(it => [it.wiki.url, it.wiki]))).values()];
   return [
     K.google ? {t:`Google Haritalar: puan ve yorum sayıları (${new Date(K.google).toLocaleDateString('tr-TR')})`} : null,
+    ...(K.rota || []).map(u => ({t:'Popüler rotalar (internet)', url:u})),
     ...(K.web || []).map(u => ({t:'İnternet araması', url:u})),
     ...wiki.map(w => ({t:`Wikipedia: ${w.t}`, url:w.url})),
     {t:'Konumlar: OpenStreetMap katkıcıları'}, {t:'Derleme ve açıklamalar: Claude (Anthropic)'}
@@ -2337,7 +2338,7 @@ function guideBody(){
     for (const c of (f.gcity && cities.includes(f.gcity) ? [f.gcity] : cities)){
       const days = cityDays(c), g = (S.trip.guide || {})[c], nw = gWish().filter(w => w.city === c).length;
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
-      if (f.gbusy === c) h += `<p class="note">✨ Rehber hazırlanıyor… Bir dakika kadar sürebilir; pencereyi kapatma.</p>`;
+      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 İnternette en beğenilen rotalar araştırılıyor…' : '✨ Rehber hazırlanıyor…'} Bir dakika kadar sürebilir; pencereyi kapatma.</p>`;
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
         h += g.ok ? `<p class="gok">✅ Onaylandı (${esc(nm(g.okBy || g.by))}). Plana, PDF'e ve Bugün şeridine girdi.</p>${gDelBtn(c, f)}`
@@ -2488,6 +2489,8 @@ function guidePayload(c){
       sabit:x.items.filter(mine).map(it => ({saat:it.kind === 'in' ? 'giriş' : it.kind === 'out' ? 'çıkış' : bkTime(it.e.when), ad:it.e.desc, tur:{in:'konaklama giriş', out:'konaklama çıkış', trip:'yolculuk', event:'biletli ziyaret'}[it.kind], ...(it.kind === 'trip' ? {nereden:it.e.from || '', nereye:it.e.to || '', varis:it.e.until ? bkTime(it.e.until) : ''} : {}), ...(it.kind === 'event' && it.e.dest ? {adres:it.e.dest} : {})}))
     })),
     istek_listesi:gWish().filter(w => w.city === c).map(w => w.name),
+    // İnternette en beğenilen rotaların özeti (şehir başına bir kez araştırılır; ilham, kural değil).
+    populer_rotalar:((S.trip.ilham || {})[c] || {}).rotalar || [],
     // Taslaktan sonra kullanıcının istekleri: mutlaka eklenecek yerler ve serbest değişiklik notu.
     zorunlu_yerler:((S.trip.greq || {})[c] || {}).must || [],
     kullanici_notu:(a => a ? `KESİN TALİMAT: "${a}". Gün ve saat verildiyse o güne koy; mümkün değilse en yakın uygun güne koy ve nedenini tips'in ilk maddesinde yaz.` : '')(((S.trip.greq || {})[c] || {}).ask || ''),
@@ -2508,6 +2511,13 @@ async function guideMake(c){
 }
 async function guideMake0(c, f, days, P, trip){
   f.gbusy = c; drawSheetKeep();
+  // Önce (şehir başına bir kez) internetteki popüler rotalar araştırılır; olmazsa rehber onsuz hazırlanır.
+  const IL = S.trip.ilham || (S.trip.ilham = {});
+  if (!IL[c]) try {
+    f.gilham = c; drawSheetKeep();
+    const r = await window.claude.guide({mode:'ilham', city:c, days:days.length});
+    if (r && Array.isArray(r.rotalar)){ IL[c] = {at:Date.now(), rotalar:r.rotalar, ipuclari:r.ipuclari || [], urls:r.urls || []}; save(); trip.populer_rotalar = r.rotalar; }
+  } catch(_) {} finally { f.gilham = null; drawSheetKeep(); }
   try {
     const model = f.gopus ? 'opus' : undefined;
     const r = await window.claude.guide({mode:'rehber', trip, cities:[c], model});
@@ -2515,7 +2525,7 @@ async function guideMake0(c, f, days, P, trip){
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
-      days:days.map((x, i) => { const w = gWindow(c, x, P); return {d:x.d, back:!out(x, i), yol:!w, items:gFit((byD.get(x.d) || {}).items || [], w), rain:w ? (byD.get(x.d) || {}).rain || '' : ''}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), model:model || ''};
+      days:days.map((x, i) => { const w = gWindow(c, x, P); return {d:x.d, back:!out(x, i), yol:!w, items:gFit((byD.get(x.d) || {}).items || [], w), rain:w ? (byD.get(x.d) || {}).rain || '' : ''}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
     save(); toast(`🧭 ${c} taslağı hazır. Ayrıntılı açıklamalar ve şehir notları onaylayınca yazılır.`);
     f.gbusy = null; if (form === f) drawSheetKeep();
     guideVerify(c);
