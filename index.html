@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029213928';</script>
-<script src="heybe-web.js?v=20261029213928"></script>
+<script>window.HEYBE_VER = '20261029214325';</script>
+<script src="heybe-web.js?v=20261029214325"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2354,7 +2354,11 @@ function guideBody(){
           ${can ? `<div class="gask"><label class="lab" for="gAsk_${esc(c)}">Değişiklik iste</label><textarea class="inp" id="gAsk_${esc(c)}" data-gask="${esc(c)}" rows="2" placeholder="Ör. La Roca outlet mutlaka olsun · 2. gün daha sakin · bir akşam flamenko">${esc(R.ask || '')}</textarea><button type="button" class="btn sm pri" data-g="make" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu isteklerle yeniden hazırla${must.size ? ` (+${must.size} yer)` : ''}</button></div>` : ''}
           <details class="why gmore"${f.gdelc === c ? ' open' : ''}><summary>📚 Kaynaklar ve diğer</summary><div class="wl">${gSources(g).map(k => `<p class="gp">${k.url ? `<a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.t)}</a>` : esc(k.t)}</p>`).join('')}
             <button type="button" class="link gdel" data-g="gdel" data-c="${esc(c)}">${f.gdelc === c ? '⚠️ Emin misin? Dokun, rehber tamamen silinsin' : `🗑 ${esc(c)} rehberini sıfırla ve baştan başla`}</button></div></details>`;
-      } else if (can && f.gbusy !== c) h += `<button type="button" class="btn block pri" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ ${esc(c)} rehberini hazırla</button>`;
+      } else if (can && f.gbusy !== c){
+        const nW = gWish().filter(w => w.city === c).length, mine = Object.keys(((S.trip.prefs || {})[S.me]) || {}).length;
+        h += `<p class="note">Hazır olunca bas: <b>⭐ ${nW} istek</b> · tercihlerin ${mine ? '<b>dolu</b>' : '<b>boş</b> (istersen 2. adımda doldur)'}. Rehber yalnız bu düğmeyle hazırlanır.</p>
+          <button type="button" class="btn block pri" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ ${esc(c)} rehberini hazırla</button>`;
+      }
       h += `</div>`;
     }
   }
@@ -2473,8 +2477,14 @@ function guidePayload(c){
 }
 // Aralık dışında kalan durakları ayıklar (30 dk pay): bilet/yolculuk her zaman kalır; gezi yoksa yalnız onlar.
 const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src === 'bilet') return true; if (!w) return false; const t = hm(it.t); return t == null || (t >= w.a - 30 && t <= w.z + 30); });
+const gRunning = new Set();   // hazırlanan şehirler: aynı şehir için ikinci istek yok sayılır
 async function guideMake(c){
+  if (gRunning.has(c)) return;
   const f = form, {days, P, trip} = guidePayload(c); if (!days.length) return;
+  gRunning.add(c);
+  try { return await guideMake0(c, f, days, P, trip); } finally { gRunning.delete(c); }
+}
+async function guideMake0(c, f, days, P, trip){
   f.gbusy = c; drawSheetKeep();
   try {
     const r = await window.claude.guide({mode:'rehber', trip, cities:[c]});
@@ -2495,6 +2505,11 @@ async function guideMake(c){
 }
 // Tek günü yeniden hazırla: diğer günler aynen kalır; o günün yerleri başka günlerde tekrarlanmaz. Açıklama ve başlık yeniden yazılır.
 async function guideRedoDay(c, i){
+  if (gRunning.has(c)) return;
+  gRunning.add(c);
+  try { return await guideRedoDay0(c, i); } finally { gRunning.delete(c); }
+}
+async function guideRedoDay0(c, i){
   const g = (S.trip.guide || {})[c], f = form; if (!g || !g.days[i]) return;
   const {trip} = guidePayload(c), d = g.days[i].d;
   trip.gunler = trip.gunler.filter(x => x.d === d);
@@ -2808,19 +2823,13 @@ function guideAct(d){
   if (d.g === 'pdf'){ guidePdf(d.c); return; }
   if (d.g === 'kml'){ guideKml(d.c); return; }
   // Şehir kartından: yalnız o şehrin akışı (İstekler → Tercihler → Rehber); üçüncü adıma gelince rehber kendiliğinden hazırlanır.
-  if (d.g === 'start'){
-    // İstekler ve tercihler bütün şehirler için ortak: bir kez doldurulduysa doğrudan rehbere geçilir (adımlar üstte, düzenlenebilir).
-    const filled = Object.keys(((S.trip.prefs || {})[S.me]) || {}).length > 0;
-    openSheet({mode:'guide', gcity:d.c, gstep:filled ? 2 : 0, auto:!filled});
-    if (filled && window.claude && window.claude.guide) guideMake(d.c);
-    return;
-  }
+  // Şehir kartından: o şehrin akışı İstekler → Tercihler → Rehber; rehber yalnız son adımdaki düğmeyle hazırlanır (kendiliğinden başlamaz).
+  if (d.g === 'start'){ openSheet({mode:'guide', gcity:d.c, gstep:0}); return; }
   if (d.g === 'view'){ openSheet({mode:'guide', gcity:d.c, gstep:2}); return; }
   if (d.g === 'delcard'){ openSheet({mode:'guide', gcity:d.c, gstep:2, gdelc:d.c}); return; }
   if (!f || f.mode !== 'guide') return;
   if (d.g === 'step'){
     f.gstep = +d.v; drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
-    if (f.gstep === 2 && f.auto && f.gcity && !(S.trip.guide || {})[f.gcity] && window.claude && window.claude.guide && !f.gbusy){ f.auto = false; guideMake(f.gcity); }
     return;
   }
   if (d.g === 'wadd'){ const t = (f.gwText || '').trim(); if (!t) return toast('Önce yer adlarını yaz ya da yapıştır.'); guideAddWish(t); return; }
@@ -2849,7 +2858,7 @@ function guideAct(d){
   if (d.g === 'gdel'){
     if (f.gdelc !== d.c){ f.gdelc = d.c; drawSheetKeep(); return; }
     delete S.trip.guide[d.c]; if (S.trip.greq) delete S.trip.greq[d.c];
-    Object.assign(f, {gdelc:null, gswap:null, gcity:d.c, gstep:0, auto:true}); save(); drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
+    Object.assign(f, {gdelc:null, gswap:null, gcity:d.c, gstep:0}); save(); drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
     toast(`🗑 ${d.c} rehberi silindi. Baştan: istekler → tercihler → rehber.`); return;
   }
   if (d.g === 'must'){ const G = S.trip.greq || (S.trip.greq = {}), R = G[d.c] || (G[d.c] = {}), m = new Set(R.must || []); if (m.has(d.n)) m.delete(d.n); else m.add(d.n); R.must = [...m]; save(); drawSheetKeep(); return; }
