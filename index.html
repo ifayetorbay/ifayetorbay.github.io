@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029211740';</script>
-<script src="heybe-web.js?v=20261029211740"></script>
+<script>window.HEYBE_VER = '20261029212449';</script>
+<script src="heybe-web.js?v=20261029212449"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2257,7 +2257,7 @@ function gSources(g){
 }
 function gDayHtml(c, g, x, i, f, can){
   const sw = f.gswap && f.gswap.c === c && f.gswap.i === i ? f.gswap : null;
-  return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>🏠 evden${x.back === false ? '' : ' eve'}</span>${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</div>`
+  return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>${x.yol ? '🚆 Yolculuk günü · gezi yok' : `🏠 evden${x.back === false ? '' : ' eve'}`}</span>${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</div>`
     + (x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : '')
     + x.items.map((it, k) => {
       const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = gStars(it);
@@ -2356,6 +2356,28 @@ async function guideAddWish(text, image){
 }
 // Şehir için rehber isteği: günler (şehir, ev adresi, sabit saatler), istekler ve grubun tercihleri.
 // Sunucuya gidecek şehir bilgisi: günler (şehir, ev, sabit saatler), istekler, kullanıcının taslak sonrası istekleri, tercihler.
+// Gezi aralığı: o gün bu şehirde gezmeye ayrılabilecek saatler. Varış günü tren/uçak varışı + 45 dk (eve yerleşme),
+// ayrılış günü kalkış − 90 dk (gara/havalimanına geçiş); diğer günler tercihteki güne başlama saatinden 23:00'e.
+// 90 dakikadan kısaysa gezi yok ("🚆 Yolculuk günü"): rehber o güne yalnız biletleri koyar.
+const hm = t => { const m = String(t || '').match(/(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; };
+const mh = v => `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
+function gWindow(c, x, P){
+  const bas = ((guidePrefs().bas || '').match(/(\d{2}):00/) || [])[1];
+  let a = bas ? +bas * 60 : 9 * 60, z = 23 * 60;
+  const parts = String(x.city || '').split(' → '), from = parts[0], to = parts[parts.length - 1];
+  for (const it of x.items){
+    if (it.kind !== 'trip' || it.e.priv) continue;
+    const dep = hm(it.e.when), arr = hm(it.e.until);
+    // Seyahatin ilk günü (uçak) ya da şehre geçiş günü (A → B, bu şehir B): varıştan sonra başlar.
+    const arriving = (x.d === P.a && parts.length === 1) || (parts.length > 1 && c === to && c !== from);
+    // Seyahatin son günü ya da şehirden ayrılış (A → B, bu şehir A): kalkıştan önce biter.
+    const leaving = (x.d === P.z && parts.length === 1) || (parts.length > 1 && c === from && c !== to);
+    if (arriving && arr != null) a = Math.max(a, arr + 45);
+    else if (arriving && dep != null) a = Math.max(a, dep + 180);
+    if (leaving && dep != null) z = Math.min(z, dep - 90);
+  }
+  return z - a >= 90 ? {a, z} : null;
+}
 function guidePayload(c){
   const days = cityDays(c), tc = themeCountry(), P = tripPlan(), home = (days.find(x => x.st && stayCity(x.st) === c) || {}).st;
   // Şehir değiştirilen günde öbür şehrin ev giriş/çıkışı bu şehrin rehberine girmez.
@@ -2364,6 +2386,7 @@ function guidePayload(c){
     sehir:c, ulke:tc ? tc[1] : '', kisi:S.people.length,
     gunler:days.map((x, i) => ({
       d:x.d, gun:planDay(x.d), not:[x.d === P.a ? 'seyahatin ilk günü, varış' : i === 0 && x.city.includes('→') ? 'bu şehre varış günü' : '', x.d === P.z ? 'seyahatin son günü, dönüş' : i === days.length - 1 && x.city.includes('→') ? 'bu şehirden ayrılış günü' : ''].filter(Boolean).join(', '),
+      gezi_penceresi:(w => w ? `${mh(w.a)}–${mh(w.z)} (durakları yalnız bu saatler arasına koy)` : 'YOK: bu gün bu şehirde gezi ya da yemek durağı koyma; yalnız bilet/yolculuk/ev giriş-çıkışı (src=bilet)')(gWindow(c, x, P)),
       konaklama:home && !home.priv ? (home.dest || home.desc) : '',
       sabit:x.items.filter(mine).map(it => ({saat:it.kind === 'in' ? 'giriş' : it.kind === 'out' ? 'çıkış' : bkTime(it.e.when), ad:it.e.desc, tur:{in:'konaklama giriş', out:'konaklama çıkış', trip:'yolculuk', event:'biletli ziyaret'}[it.kind], ...(it.kind === 'trip' ? {nereden:it.e.from || '', nereye:it.e.to || '', varis:it.e.until ? bkTime(it.e.until) : ''} : {}), ...(it.kind === 'event' && it.e.dest ? {adres:it.e.dest} : {})}))
     })),
@@ -2375,6 +2398,8 @@ function guidePayload(c){
   };
   return {days, P, trip};
 }
+// Aralık dışında kalan durakları ayıklar (30 dk pay): bilet/yolculuk her zaman kalır; gezi yoksa yalnız onlar.
+const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src === 'bilet') return true; if (!w) return false; const t = hm(it.t); return t == null || (t >= w.a - 30 && t <= w.z + 30); });
 async function guideMake(c){
   const f = form, {days, P, trip} = guidePayload(c); if (!days.length) return;
   f.gbusy = c; drawSheetKeep();
@@ -2384,7 +2409,7 @@ async function guideMake(c){
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
-      days:days.map((x, i) => ({d:x.d, back:!out(x, i), items:((byD.get(x.d) || {}).items || []).map(it => ({...it})), rain:(byD.get(x.d) || {}).rain || ''})), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5)};
+      days:days.map((x, i) => { const w = gWindow(c, x, P); return {d:x.d, back:!out(x, i), yol:!w, items:gFit((byD.get(x.d) || {}).items || [], w), rain:w ? (byD.get(x.d) || {}).rain || '' : ''}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5)};
     save(); toast(`🧭 ${c} rotası hazır; puanlar ve açıklamalar geliyor…`);
     f.gbusy = null; if (form === f) drawSheetKeep();
     guideVerify(c);
@@ -2404,7 +2429,8 @@ async function guideRedoDay(c, i){
     const r = await window.claude.guide({mode:'rehber', trip, cities:[c]});
     const x = (r.days || []).find(y => y.d === d) || (r.days || [])[0];
     if (!x) throw 0;
-    const day = g.days[i]; day.items = (x.items || []).map(it => ({...it})); day.rain = x.rain || day.rain; day.theme = ''; day.intro = '';
+    const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
+    day.items = gFit(x.items || [], w); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.theme = ''; day.intro = '';
     save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; açıklamalar yazılıyor…`);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
     guideVerify(c); await Promise.all([guideRate(c), guideDetail(c)]); return;
@@ -2497,7 +2523,7 @@ async function guideSwap(){
 // ve günün başlığı ayrı ayrı yazdırılır (günler aynı anda; tek uzun istek sunucunun süre sınırını aşardı).
 async function guideDetail(c){
   const g = (S.trip.guide || {})[c]; if (!g || !window.claude || !window.claude.guide) return;
-  const prefs = guidePrefs(), todo = g.days.filter(x => x.items.length && !x.theme);
+  const prefs = guidePrefs(), todo = g.days.filter(x => x.items.length && !x.theme && !x.yol);
   // Şehir notları (uygun yemekler, pratik bilgiler, ifadeler, hediyelik) günlerle aynı anda yazılır.
   const extra = g.extra ? null : window.claude.guide({mode:'ekler', city:c, prefs, dates:`${planDay(g.days[0].d)} – ${planDay(g.days[g.days.length - 1].d)} ${g.days[0].d.slice(0, 4)}`})
     .then(r => { const {usage, ...rest} = r; g.extra = rest; save(); if (form && form.mode === 'guide') drawSheetKeep(); }).catch(() => {});
