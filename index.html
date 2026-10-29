@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029160805';</script>
-<script src="heybe-web.js?v=20261029160805"></script>
+<script>window.HEYBE_VER = '20261029161126';</script>
+<script src="heybe-web.js?v=20261029161126"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -339,6 +339,9 @@ nav.tabs svg{width:22px;height:22px}
 .gtheme b{color:var(--accent-text)}
 .gitem .gdesc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .gitem.open .gdesc{display:block;-webkit-line-clamp:unset}
+.gnotes summary::after{content:" ›"}
+.gnotes .wl{gap:6px;color:var(--ink)}
+.gp{margin:0;font-size:.86rem;line-height:1.45}
 .gcity{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
 .gcity:first-of-type{border-top:0}
 .gwrow{align-items:center}
@@ -2217,9 +2220,18 @@ function guideBody(){
         h += g.days.map((x, i) => `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>🏠 evden${x.back === false ? '' : ' eve'}</span></div>${x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : ''}${x.items.map(it => `<div class="pli"><button type="button" class="plt gitem" data-g="more"><span class="pt num">${esc(it.t || '')}</span><span class="pic">${G_KIND[it.kind] || '📍'}</span><span class="mid"><span class="d">${G_SRC[it.src] || ''} ${esc(it.name)}</span><span class="m gdesc">${esc(it.desc)}</span></span></button><a class="btn sm" href="${mapsDir(it.lat ? `${it.lat},${it.lon}` : `${it.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(it.name)}">🧭</a></div>`).join('')}${x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : ''}</div>`).join('');
         if (g.unplaced && g.unplaced.length) h += `<div class="pmiss"><b>Elenen istekler · neden?</b>${g.unplaced.map(u => `<span>✖ <b>${esc(u.name)}</b>: ${esc(u.why)}</span>`).join('')}</div>`;
         if (g.tips && g.tips.length) h += `<div class="pmiss"><b>İpuçları</b>${g.tips.map(t => `<span class="gtip">• ${esc(t)}</span>`).join('')}</div>`;
+        if (g.extra){ const E = g.extra;
+          h += `<details class="why gnotes"><summary>📒 Şehir notları: sana uygun yemekler, bilmeniz gerekenler, ifadeler</summary><div class="wl">`
+            + (E.yemek_giris ? `<p class="gp">${esc(E.yemek_giris)}</p>` : '')
+            + ((E.uygun || []).length ? `<b>🍽 Gönül rahatlığıyla</b>${E.uygun.map(u => `<p class="gp"><b>${esc(u.ad)}</b>: ${esc(u.ne)}</p>`).join('')}` : '')
+            + ((E.kacin || []).length ? `<b>⚠️ Dikkat</b>${E.kacin.map(u => `<p class="gp"><b>${esc(u.ad)}</b>: ${esc(u.neden)}</p>`).join('')}` : '')
+            + ((E.bilgiler || []).length ? `<b>📌 Bilmeniz gerekenler</b>${E.bilgiler.map(u => `<p class="gp"><b>${esc(u.baslik)}</b>: ${esc(u.metin)}</p>`).join('')}` : '')
+            + ((E.ifadeler || []).length ? `<b>💬 İşe yarar ifadeler</b>${E.ifadeler.map(u => `<p class="gp">${esc(u.tr)} → <b>${esc(u.yerel)}</b> <i>(${esc(u.okunus)})</i></p>`).join('')}` : '')
+            + ((E.hediyelik || []).length ? `<b>🎁 Ne alınır</b>${E.hediyelik.map(u => `<p class="gp"><b>${esc(u.ad)}</b>: ${esc(u.nerede)}</p>`).join('')}` : '')
+            + `</div></details>`; }
         if (f.gverify === c) h += `<p class="note">📍 Konumlar haritada doğrulanıyor…</p>`;
         h += `<p class="note">⭐ sizin listeniz · ✨ öneri · 🎟 biletiniz. ${esc(nm(g.by))} hazırladı, ${dayLabel(g.at)}.</p>
-          <div class="ptools" style="margin-top:0"><button type="button" class="btn sm pri" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 My Maps dosyası</button>${can && g.days.some(x => x.items.length && !x.theme) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}${can ? `<button type="button" class="btn sm" data-g="make" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Yeniden hazırla</button>` : ''}</div>
+          <div class="ptools" style="margin-top:0"><button type="button" class="btn sm pri" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 My Maps dosyası</button>${can && (g.days.some(x => x.items.length && !x.theme) || !g.extra) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}${can ? `<button type="button" class="btn sm" data-g="make" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Yeniden hazırla</button>` : ''}</div>
           <details class="why"><summary>My Maps'e nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Her gün ayrı katman olarak gelir.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>Yer adları haritada görünmüyorsa: her gün katmanında <b>Bağımsız stiller → Etiketi ayarla → Ad</b>.</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details>`;
       } else if (can && f.gbusy !== c) h += `<button type="button" class="btn block pri" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ ${esc(c)} rehberini hazırla</button>`;
       h += `</div>`;
@@ -2285,7 +2297,10 @@ async function guideMake(c){
 async function guideDetail(c){
   const g = (S.trip.guide || {})[c]; if (!g || !window.claude || !window.claude.guide) return;
   const prefs = guidePrefs(), todo = g.days.filter(x => x.items.length && !x.theme);
-  if (!todo.length) return;
+  // Şehir notları (uygun yemekler, pratik bilgiler, ifadeler, hediyelik) günlerle aynı anda yazılır.
+  const extra = g.extra ? null : window.claude.guide({mode:'ekler', city:c, prefs, dates:`${planDay(g.days[0].d)} – ${planDay(g.days[g.days.length - 1].d)} ${g.days[0].d.slice(0, 4)}`})
+    .then(r => { const {usage, ...rest} = r; g.extra = rest; save(); if (form && form.mode === 'guide') drawSheetKeep(); }).catch(() => {});
+  if (!todo.length){ await extra; return; }
   const st = {c, done:0, n:todo.length}; if (form) { form.gdetail = st; drawSheetKeep(); }
   let fail = 0;
   await Promise.all(todo.map(async x => {
@@ -2297,6 +2312,7 @@ async function guideDetail(c){
     } catch(_) { fail++; }
     st.done++; if (form && form.gdetail === st) drawSheetKeep();
   }));
+  await extra;
   if (form && form.gdetail === st){ form.gdetail = null; drawSheetKeep(); }
   toast(fail ? `${c}: ${fail} günün açıklaması yazılamadı; ✨ Açıklamaları tamamla ile tekrar dene.` : `🧭 ${c} rehberi hazır.`);
 }
@@ -2401,6 +2417,17 @@ async function guidePdf(c){
   };
   sec('Elenen istekler · neden?', (g.unplaced || []).map(u => `✖ ${u.name}: ${u.why}`), '#9A5A08');
   sec('İpuçları', (g.tips || []).map(t => '• ' + t), RPT.ink);
+  const E = g.extra;
+  if (E){
+    page();
+    x.fillStyle = accent; x.fillRect(0, 0, W, 120); x.fillStyle = '#fff'; x.font = FONT(800, 44); x.fillText(`📒 ${c} şehir notları`, M, 80); y = 160;
+    if (E.yemek_giris) sec('🍽 Sana uygun yemekler', [E.yemek_giris], RPT.ink);
+    sec(E.yemek_giris ? 'Gönül rahatlığıyla sipariş edebileceklerin' : '🍽 Sana uygun yemekler', (E.uygun || []).map(u => `• ${u.ad}: ${u.ne}`), RPT.ink);
+    sec('⚠️ Dikkat edilecekler', (E.kacin || []).map(u => `• ${u.ad}: ${u.neden}`), '#9A5A08');
+    sec('📌 Bilmeniz gerekenler', (E.bilgiler || []).map(u => `• ${u.baslik}: ${u.metin}`), RPT.ink);
+    sec('💬 İşe yarar ifadeler', (E.ifadeler || []).map(u => `• ${u.tr} → ${u.yerel} (${u.okunus})`), RPT.ink);
+    sec('🎁 Ne alınır', (E.hediyelik || []).map(u => `• ${u.ad}: ${u.nerede}`), RPT.ink);
+  }
   const doc = new jsPDF({unit:'pt', format:'a4'});
   pages.forEach((p, i) => { if (i) doc.addPage(); doc.addImage(p.toDataURL('image/jpeg', .9), 'JPEG', 0, 0, 595.28, 841.89); p.width = p.height = 0; });
   const ok = await saveFile(`${c}-gezi-rehberi.pdf`, doc.output('blob'));
