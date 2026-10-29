@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029200309';</script>
-<script src="heybe-web.js?v=20261029200309"></script>
+<script>window.HEYBE_VER = '20261029200835';</script>
+<script src="heybe-web.js?v=20261029200835"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -386,6 +386,8 @@ nav.tabs svg{width:22px;height:22px}
 .gmap svg{width:100%;height:auto;display:block}
 .gmap span{font-size:.8rem;font-weight:700;color:var(--accent-text);text-align:center}
 .gsrc a{color:var(--accent-text)}
+.gfocus{margin:0;font-size:.9rem;color:var(--muted)}
+.gfocus b{color:var(--ink)}
 .gcity{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
 .gcity:first-of-type{border-top:0}
 .gwrow{align-items:center}
@@ -2264,9 +2266,9 @@ function guideBody(){
   const f = form, st = f.gstep || 0, cities = guideCities();
   const seg = `<div class="seg wide" role="group" aria-label="Rehber adımları">${['1 · İstekler', '2 · Tercihler', '3 · Rehber'].map((l, i) => `<button type="button" data-g="step" data-v="${i}" aria-pressed="${st === i}">${l}</button>`).join('')}</div>`;
   if (!cities.length) return `<p class="note">Rehber şehir şehir hazırlanır. Önce konaklamaları (ev, otel) giriş–çıkış tarihleriyle ekle; 📅 Seyahat planı şehirleri bunlardan çıkarır.</p>`;
-  let h = seg;
+  let h = (f.gcity ? `<p class="gfocus">🧭 <b>${esc(f.gcity)}</b> rehberi · ${['önce gitmek istediğiniz yerler', 'sonra tercihler', 'en son rehber'][st]}</p>` : '') + seg;
   if (st === 0){
-    const W = gWish(), groups = [...cities, ''].map(c => [c, W.filter(w => (cities.includes(w.city) ? w.city : '') === c)]).filter(([, l]) => l.length);
+    const W = gWish(), groups = [...(f.gcity && cities.includes(f.gcity) ? [f.gcity] : cities), ''].map(c => [c, W.filter(w => (cities.includes(w.city) ? w.city : '') === c)]).filter(([, l]) => l.length);
     h += `<p class="note">Gitmek istediğiniz yerleri ekleyin; herkes ekleyebilir. Rehber önce bunları yerleştirir. Her satıra bir yer yazabilir, bir mesajı ya da notu olduğu gibi yapıştırabilir, kâğıttaki listenin fotoğrafını verebilirsin.</p>
       <textarea class="inp" id="gwText" rows="3" placeholder="Ör. Sagrada Família, Park Güell, Boqueria pazarı…">${esc(f.gwText || '')}</textarea>
       <div class="ptools" style="margin-top:0"><button type="button" class="btn sm pri" data-g="wadd" ${f.gbusy ? 'disabled' : ''}>${f.gbusy === 'liste' ? 'Okunuyor…' : 'Ekle'}</button><label class="btn sm" for="gwPhoto">📷 Fotoğraftan</label><input type="file" id="gwPhoto" accept="image/*" hidden></div>`;
@@ -2288,7 +2290,7 @@ function guideBody(){
   } else {
     const can = !!(window.claude && window.claude.guide);
     if (!can) h += `<p class="note">Rehber web sürümünde (ifayetorbay.github.io) hazırlanır; burada hazırlananları görebilirsin.</p>`;
-    for (const c of cities){
+    for (const c of (f.gcity && cities.includes(f.gcity) ? [f.gcity] : cities)){
       const days = cityDays(c), g = (S.trip.guide || {})[c], nw = gWish().filter(w => w.city === c).length;
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
       if (f.gbusy === c) h += `<p class="note">✨ Rehber hazırlanıyor… Bir dakika kadar sürebilir; pencereyi kapatma.</p>`;
@@ -2376,9 +2378,8 @@ async function guideMake(c){
       days:days.map((x, i) => ({d:x.d, back:!out(x, i), items:((byD.get(x.d) || {}).items || []).map(it => ({...it})), rain:(byD.get(x.d) || {}).rain || ''})), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5)};
     save(); toast(`🧭 ${c} rotası hazır; puanlar ve açıklamalar geliyor…`);
     f.gbusy = null; if (form === f) drawSheetKeep();
-    await guideRate(c);
     guideVerify(c);
-    await guideDetail(c);
+    await Promise.all([guideRate(c), guideDetail(c)]);
     return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Rehber hazırlanamadı; biraz sonra tekrar dene.'); }
   f.gbusy = null; if (form === f) drawSheetKeep();
@@ -2397,7 +2398,7 @@ async function guideRedoDay(c, i){
     const day = g.days[i]; day.items = (x.items || []).map(it => ({...it})); day.rain = x.rain || day.rain; day.theme = ''; day.intro = '';
     save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; açıklamalar yazılıyor…`);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
-    await guideRate(c); guideVerify(c); await guideDetail(c); return;
+    guideVerify(c); await Promise.all([guideRate(c), guideDetail(c)]); return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Gün yeniden hazırlanamadı; biraz sonra tekrar dene.'); }
   if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
 }
@@ -2679,8 +2680,8 @@ function viewGezi(){
       h += gMiniMap(g, c) + `<div class="gthemes">${g.days.map((x, i) => `<span><i style="background:#${G_COLORS[i % G_COLORS.length]}"></i>${i + 1}. gün${x.theme ? ' · ' + esc(x.theme) : ''}</span>`).join('')}</div>`;
       if (g.extra && (g.extra.uygun || []).length) h += `<p class="gnote">🍽 ${g.extra.uygun.slice(0, 4).map(u => esc(u.ad)).join(' · ')}</p>`;
       if (g.unplaced && g.unplaced.length) h += `<p class="gnote warn">✖ ${g.unplaced.length} istek sığmadı · nedenleri rehberde</p>`;
-      h += `<div class="ptools" style="margin-top:4px"><button class="btn sm" data-g="open" data-v="2">${g.ok ? 'Rehberi aç' : '📝 Bak ve onayla'}</button><button class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rapor</button><button class="btn sm pri" data-g="kml" data-c="${esc(c)}">🗺 Haritalar'a aktar</button></div>`;
-    } else h += `<p class="gnote">Henüz rehber yok.</p><button class="btn sm pri" data-g="open" data-v="${W.length ? 2 : 0}">✨ ${esc(c)} rehberini hazırla</button>`;
+      h += `<div class="ptools" style="margin-top:4px"><button class="btn sm" data-g="view" data-c="${esc(c)}">${g.ok ? 'Rehberi aç' : '📝 Bak ve onayla'}</button><button class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rapor</button><button class="btn sm pri" data-g="kml" data-c="${esc(c)}">🗺 Haritalar'a aktar</button></div>`;
+    } else h += `<p class="gnote">Henüz rehber yok. Önce istekler, sonra tercihler, en son rehber.</p><button class="btn sm pri" data-g="start" data-c="${esc(c)}">✨ ${esc(c)} rehberini hazırla</button>`;
     h += `</section>`;
   }
   return h;
@@ -2690,8 +2691,15 @@ function guideAct(d){
   if (d.g === 'open'){ openSheet({mode:'guide', gstep:d.v !== undefined ? +d.v : (S.trip.guide && Object.keys(S.trip.guide).length) ? 2 : 0}); return; }
   if (d.g === 'pdf'){ guidePdf(d.c); return; }
   if (d.g === 'kml'){ guideKml(d.c); return; }
+  // Şehir kartından: yalnız o şehrin akışı (İstekler → Tercihler → Rehber); üçüncü adıma gelince rehber kendiliğinden hazırlanır.
+  if (d.g === 'start'){ openSheet({mode:'guide', gcity:d.c, gstep:0, auto:true}); return; }
+  if (d.g === 'view'){ openSheet({mode:'guide', gcity:d.c, gstep:2}); return; }
   if (!f || f.mode !== 'guide') return;
-  if (d.g === 'step'){ f.gstep = +d.v; drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0); return; }
+  if (d.g === 'step'){
+    f.gstep = +d.v; drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
+    if (f.gstep === 2 && f.auto && f.gcity && !(S.trip.guide || {})[f.gcity] && window.claude && window.claude.guide && !f.gbusy){ f.auto = false; guideMake(f.gcity); }
+    return;
+  }
   if (d.g === 'wadd'){ const t = (f.gwText || '').trim(); if (!t) return toast('Önce yer adlarını yaz ya da yapıştır.'); guideAddWish(t); return; }
   if (d.g === 'wdel'){ S.trip.wish = gWish().filter(w => w.id !== d.id); save(); drawSheetKeep(); return; }
   if (d.g === 'pref'){
@@ -2710,7 +2718,13 @@ function guideAct(d){
   if (d.g === 'gdrop'){ const g = S.trip.guide[d.c], it = g.days[+d.i].items.splice(+d.k, 1)[0]; swOpen = null; f.gswap = {c:d.c, i:+d.i, k:+d.k, it}; save(); drawSheetKeep(); return; }
   if (d.g === 'unswap'){ const w = f.gswap; if (w){ S.trip.guide[w.c].days[w.i].items.splice(w.k, 0, w.it); f.gswap = null; save(); drawSheetKeep(); } return; }
   if (d.g === 'swap'){ guideSwap(); return; }
-  if (d.g === 'gdel'){ if (f.gdelc !== d.c){ f.gdelc = d.c; drawSheetKeep(); return; } delete S.trip.guide[d.c]; f.gdelc = null; save(); drawSheetKeep(); toast(`🗑 ${d.c} rehberi sıfırlandı; istekler ve tercihler duruyor.`); return; }
+  // Sıfırla: şehrin rehberi ve taslak sonrası istekleri (mutlaka ekle, değişiklik notu) silinir; akış baştan açılır.
+  if (d.g === 'gdel'){
+    if (f.gdelc !== d.c){ f.gdelc = d.c; drawSheetKeep(); return; }
+    delete S.trip.guide[d.c]; if (S.trip.greq) delete S.trip.greq[d.c];
+    Object.assign(f, {gdelc:null, gswap:null, gcity:d.c, gstep:0, auto:true}); save(); drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
+    toast(`🗑 ${d.c} rehberi silindi. Baştan: istekler → tercihler → rehber.`); return;
+  }
   if (d.g === 'must'){ const G = S.trip.greq || (S.trip.greq = {}), R = G[d.c] || (G[d.c] = {}), m = new Set(R.must || []); if (m.has(d.n)) m.delete(d.n); else m.add(d.n); R.must = [...m]; save(); drawSheetKeep(); return; }
   if (d.g === 'approve'){ const g = (S.trip.guide || {})[d.c]; if (!g) return; g.ok = true; g.okBy = S.me; g.okAt = Date.now(); save(); drawSheetKeep(); toast(`✅ ${d.c} rehberi onaylandı; plana girdi.`); return; }
 }
