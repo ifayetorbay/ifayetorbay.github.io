@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029203245';</script>
-<script src="heybe-web.js?v=20261029203245"></script>
+<script>window.HEYBE_VER = '20261029211740';</script>
+<script src="heybe-web.js?v=20261029211740"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2442,6 +2442,8 @@ async function gWiki(it, c){
 // Google Haritalar puanı: duraklar için puan, yorum sayısı, fiyat, açık günler (aylık ücretsiz sınır içinde; dolarsa Claude
 // internette arar, "≈ · web"). Düşük puanlı ya da o gün kapalı ÖNERİLER (en çok 4) yerine yenisi istenir; istek listesindekiler
 // yalnız uyarı alır. Kaynak bilgisi rehbere yazılır.
+const G_MIN = {yemek:[4.5, 1000], gez:[4.5, 3000], aksam:[4.4, 500], alis:[4.4, 500]};
+const gBelow = it => { const m = G_MIN[it.kind]; return !!(m && it.g && it.g.r && (it.g.r < m[0] || it.g.n < m[1])); };
 async function guideRate(c){
   const g = (S.trip.guide || {})[c]; if (!g || !window.claude || !window.claude.guide) return;
   const all = g.days.flatMap((x, i) => x.items.map(it => ({it, i}))).filter(o => o.it.src !== 'bilet' && o.it.kind !== 'gecis' && !o.it.g);
@@ -2458,7 +2460,9 @@ async function guideRate(c){
   });
   save(); if (form && form.mode === 'guide') drawSheetKeep();
   // Zayıf öneriler: düşük puan / az yorum / kapalı → yerine yenisi (en çok 4).
-  const weak = all.filter(o => o.it.src === 'oneri' && o.it.g && (o.it.warn || (o.it.kind !== 'dukkan' && (o.it.g.r < 4.2 || o.it.g.n < 150)))).slice(0, 4);
+  // Eşikler (Google puanı · yorum sayısı): yemek 4,5 · 1.000; gezilecek 4,5 · 3.000; akşam ve alışveriş 4,4 · 500. Altındaki ÖNERİLER
+  // (en çok 6) yerine yenisi istenir; yenisi de eşiğin altında kalırsa olduğu gibi bırakılır (sonsuz döngü yok).
+  const weak = all.filter(o => o.it.src === 'oneri' && o.it.g && (o.it.warn || gBelow(o.it))).slice(0, 6);
   for (const o of weak){
     const x = g.days[o.i], k = x.items.indexOf(o.it); if (k < 0) continue;
     await guideSwapAt(c, o.i, k, `${o.it.warn || `Google puanı düşük (${o.it.g.r}, ${o.it.g.n} yorum)`}`);
