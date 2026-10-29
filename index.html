@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029213052';</script>
-<script src="heybe-web.js?v=20261029213052"></script>
+<script>window.HEYBE_VER = '20261029213301';</script>
+<script src="heybe-web.js?v=20261029213301"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -318,12 +318,12 @@ nav.tabs svg{width:22px;height:22px}
 .bkh{display:flex;align-items:center;gap:6px}
 .bkft{display:flex;gap:8px}
 .bkft .inp{flex:1;min-width:0;padding:9px 12px}
-.tplan{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:2px solid var(--accent);border-radius:var(--r);padding:14px 16px;color:var(--ink);
-  background:color-mix(in srgb,var(--accent) 11%,var(--surface));box-shadow:0 6px 18px -10px var(--accent);cursor:pointer}
+.tplan{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:var(--r);padding:12px 14px;color:var(--ink);
+  background:var(--surface);cursor:pointer}
 .tplan:active{transform:scale(.99)}
-.pc-ic{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;background:var(--accent)}
+.pc-ic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:1.2rem;background:var(--accent-soft)}
 .pc-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.pc-mid b{font-family:var(--display);font-weight:800;font-size:1.15rem}
+.pc-mid b{font-family:var(--display);font-weight:800;font-size:1.05rem}
 .pc-sub{font-size:.86rem;color:var(--muted)}
 .pc-next{font-size:.9rem;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pc-warn{font-size:.84rem;font-weight:600;color:var(--warn)}
@@ -396,9 +396,16 @@ nav.tabs svg{width:22px;height:22px}
 .gfocus b{color:var(--ink)}
 .gdelb{color:var(--neg)}
 .gdelb.sure{background:var(--neg);color:#fff}
-.glugs{display:flex;flex-direction:column;gap:8px}
-.glug{display:flex;flex-direction:column;gap:3px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:2px solid var(--warn);border-radius:14px;padding:12px 14px;font-size:.9rem}
-.glh{font-family:var(--display);font-weight:800;font-size:1rem;color:var(--warn)}
+.glugs{display:flex;flex-direction:column;gap:6px}
+.glug{background:var(--surface);border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:14px;padding:9px 12px;font-size:.88rem}
+.glug>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px}
+.glug>summary::-webkit-details-marker{display:none}
+.glug>summary::after{content:"›";margin-left:auto;color:var(--muted);font-size:1.1rem;transition:transform .15s}
+.glug[open]>summary::after{transform:rotate(90deg)}
+.glug[open]{display:flex;flex-direction:column;gap:4px}
+.glug[open]>summary{margin-bottom:2px}
+.glh{font-weight:800;font-size:.86rem;color:var(--accent-text);white-space:nowrap}
+.gls{color:var(--ink);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .glt b{color:var(--ink)}
 .glt.m{font-size:.8rem;color:var(--muted)}
 .glq{font-weight:700;font-size:.86rem;margin-top:4px}
@@ -2404,12 +2411,12 @@ function gLugFirst(l){
   return '';
 }
 const gLugHtml = L => L.map(l => { const first = gLugFirst(l), stName = l.st ? l.st.split(/[,(]/)[0].trim() : '';
-  return `<div class="glug" role="alert"><div class="glh">⚠️ Bavul için yer bulmanız gerekiyor</div>
-  <div class="glt"><b>${esc(l.city)}</b> · ${planDay(l.d)}</div>
+  return `<details class="glug"><summary><span class="glh">⚠️ Bavul</span><span class="gls">${esc(l.city)}, ${planDay(l.d)} · ~${String(Math.round(l.h / 30) / 2).replace('.', ',')} saat</span></summary>
+  <div class="glt">Bavul için yer bulmanız gerekiyor.</div>
   <div class="glt"><b>${esc(l.a)}</b> → <b>${esc(l.b)}</b> · yaklaşık <b>${String(Math.round(l.h / 30) / 2).replace('.', ',')} saat</b> bavullarla</div>
   <div class="glq">Bavulu nereye bırakalım?</div>
   <div class="glopts"><a class="chip" href="${luggageUrl(l.home)}" target="_blank" rel="noopener">🏠 Evin yakınında</a>${stName ? `<a class="chip" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('consigna equipaje ' + stName)}" target="_blank" rel="noopener">🚉 ${esc(stName)} emanet dolabı</a>` : ''}${first ? `<a class="chip" href="${luggageUrl(first)}" target="_blank" rel="noopener">🏛 İlk durağın yakınında</a>` : ''}<a class="chip" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('luggage storage')}" target="_blank" rel="noopener">📍 Bulunduğum yerin yakınında</a></div>
-  <div class="glt m">İpucu: ev sahibine erken bavul bırakma ya da geç çıkış imkânını sorun; çoğu zaman ücretsizdir.</div></div>`; }).join('');
+  <div class="glt m">İpucu: ev sahibine erken bavul bırakma ya da geç çıkış imkânını sorun; çoğu zaman ücretsizdir.</div></details>`; }).join('');
 // 🚆 Yolculuk günü kartı: gezi olmayan günde kalkış/varış, istasyon, en geç evden çıkış ve 🧭.
 function gTravelHtml(c, d){
   const P = tripPlan(), x = P && P.days.find(y => y.d === d); if (!x) return '';
