@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029212951';</script>
-<script src="heybe-web.js?v=20261029212951"></script>
+<script>window.HEYBE_VER = '20261029213052';</script>
+<script src="heybe-web.js?v=20261029213052"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -400,6 +400,10 @@ nav.tabs svg{width:22px;height:22px}
 .glug{display:flex;flex-direction:column;gap:3px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:2px solid var(--warn);border-radius:14px;padding:12px 14px;font-size:.9rem}
 .glh{font-family:var(--display);font-weight:800;font-size:1rem;color:var(--warn)}
 .glt b{color:var(--ink)}
+.glt.m{font-size:.8rem;color:var(--muted)}
+.glq{font-weight:700;font-size:.86rem;margin-top:4px}
+.glopts{display:flex;flex-wrap:wrap;gap:6px}
+.glopts .chip{text-decoration:none;color:var(--ink);background:var(--surface);font-size:.84rem;padding:7px 11px}
 .glug a.btn,.gtrav a.btn{text-decoration:none}
 .gtrav{display:flex;flex-direction:column;gap:4px;align-items:flex-start;background:var(--bg);border-radius:12px;padding:8px 10px;margin:4px 0;font-size:.88rem}
 .gtrav .m{font-size:.8rem;color:var(--muted)}
@@ -2394,10 +2398,18 @@ function gLuggage(){
   }
   return out;
 }
-const gLugHtml = L => L.map(l => `<div class="glug" role="alert"><div class="glh">⚠️ Bavul için yer bulmanız gerekiyor</div>
+// Bavul yeri seçenekleri: evin yakını, garın emanet dolabı (consigna), günün ilk gezi durağının yakını (rehber varsa), bulunduğun yer.
+function gLugFirst(l){
+  for (const g of Object.values(S.trip.guide || {})) for (const x of g.days || []) if (x.d === l.d){ const it = x.items.find(i => i.src !== 'bilet' && i.kind !== 'gecis'); if (it) return it.name + ', ' + l.city; }
+  return '';
+}
+const gLugHtml = L => L.map(l => { const first = gLugFirst(l), stName = l.st ? l.st.split(/[,(]/)[0].trim() : '';
+  return `<div class="glug" role="alert"><div class="glh">⚠️ Bavul için yer bulmanız gerekiyor</div>
   <div class="glt"><b>${esc(l.city)}</b> · ${planDay(l.d)}</div>
   <div class="glt"><b>${esc(l.a)}</b> → <b>${esc(l.b)}</b> · yaklaşık <b>${String(Math.round(l.h / 30) / 2).replace('.', ',')} saat</b> bavullarla</div>
-  <div class="ptools" style="margin-top:4px"><a class="btn sm pri" href="${luggageUrl(l.home)}" target="_blank" rel="noopener">🧳 Bavul yeri bul</a>${l.st ? `<a class="btn sm" href="${luggageUrl(l.st)}" target="_blank" rel="noopener">Gar/havalimanı yakınında</a>` : ''}</div></div>`).join('');
+  <div class="glq">Bavulu nereye bırakalım?</div>
+  <div class="glopts"><a class="chip" href="${luggageUrl(l.home)}" target="_blank" rel="noopener">🏠 Evin yakınında</a>${stName ? `<a class="chip" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('consigna equipaje ' + stName)}" target="_blank" rel="noopener">🚉 ${esc(stName)} emanet dolabı</a>` : ''}${first ? `<a class="chip" href="${luggageUrl(first)}" target="_blank" rel="noopener">🏛 İlk durağın yakınında</a>` : ''}<a class="chip" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('luggage storage')}" target="_blank" rel="noopener">📍 Bulunduğum yerin yakınında</a></div>
+  <div class="glt m">İpucu: ev sahibine erken bavul bırakma ya da geç çıkış imkânını sorun; çoğu zaman ücretsizdir.</div></div>`; }).join('');
 // 🚆 Yolculuk günü kartı: gezi olmayan günde kalkış/varış, istasyon, en geç evden çıkış ve 🧭.
 function gTravelHtml(c, d){
   const P = tripPlan(), x = P && P.days.find(y => y.d === d); if (!x) return '';
