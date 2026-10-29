@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029212601';</script>
-<script src="heybe-web.js?v=20261029212601"></script>
+<script>window.HEYBE_VER = '20261029212951';</script>
+<script src="heybe-web.js?v=20261029212951"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -396,6 +396,13 @@ nav.tabs svg{width:22px;height:22px}
 .gfocus b{color:var(--ink)}
 .gdelb{color:var(--neg)}
 .gdelb.sure{background:var(--neg);color:#fff}
+.glugs{display:flex;flex-direction:column;gap:8px}
+.glug{display:flex;flex-direction:column;gap:3px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:2px solid var(--warn);border-radius:14px;padding:12px 14px;font-size:.9rem}
+.glh{font-family:var(--display);font-weight:800;font-size:1rem;color:var(--warn)}
+.glt b{color:var(--ink)}
+.glug a.btn,.gtrav a.btn{text-decoration:none}
+.gtrav{display:flex;flex-direction:column;gap:4px;align-items:flex-start;background:var(--bg);border-radius:12px;padding:8px 10px;margin:4px 0;font-size:.88rem}
+.gtrav .m{font-size:.8rem;color:var(--muted)}
 .gcity{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
 .gcity:first-of-type{border-top:0}
 .gwrow{align-items:center}
@@ -2263,6 +2270,7 @@ function gDayHtml(c, g, x, i, f, can){
   const sw = f.gswap && f.gswap.c === c && f.gswap.i === i ? f.gswap : null;
   return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>${x.yol ? '🚆 Yolculuk günü · gezi yok' : `🏠 evden${x.back === false ? '' : ' eve'}`}</span>${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</div>`
     + (x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : '')
+    + (x.yol ? gTravelHtml(c, x.d) : '') + gLugHtml(gLuggage().filter(l => l.d === x.d && l.city === c))
     + x.items.map((it, k) => {
       const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = gStars(it);
       const mv = f.gmove && f.gmove.c === c && f.gmove.i === i && f.gmove.k === k;
@@ -2360,6 +2368,42 @@ async function guideAddWish(text, image){
 }
 // Şehir için rehber isteği: günler (şehir, ev adresi, sabit saatler), istekler ve grubun tercihleri.
 // Sunucuya gidecek şehir bilgisi: günler (şehir, ev, sabit saatler), istekler, kullanıcının taslak sonrası istekleri, tercihler.
+// 🧳 Bavul uyarıları: tren/uçak saati ile ev giriş-çıkış saati arasında uzun boşluk varsa (varışta ≥ 90 dk, ayrılışta ≥ 2 saat)
+// uyarı kartı; "Bavul yeri bul" Google Haritalar'da evin (ya da garın) yakınındaki bavul emanet yerlerini arar. Plana girmez, ücretsiz.
+const luggageUrl = q => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('luggage storage near ' + q)}`;
+function gLuggage(){
+  const P = tripPlan(); if (!P) return [];
+  const out = [];
+  for (const x of P.days){
+    const trips = x.items.filter(it => it.kind === 'trip' && !it.e.priv);
+    for (const it of x.items){
+      if ((it.kind !== 'in' && it.kind !== 'out') || it.e.priv) continue;
+      const st = it.e, city = stayCity(st), home = st.dest || st.desc;
+      if (it.kind === 'in'){
+        const tin = hm(bkTime(st.when)) ?? 15 * 60, tr = trips.find(t => hm(bkTime(t.e.until)) != null && hm(bkTime(t.e.until)) < tin);
+        if (!tr) continue;
+        const arr = hm(bkTime(tr.e.until)), gap = tin - (arr + 45);
+        if (gap >= 90) out.push({d:x.d, city, home, st:tr.e.to || '', a:`${mh(arr)} varış`, b:`ev girişi ${mh(tin)}`, h:gap, text:`${city}: ${mh(arr)} varış, ev girişi ${mh(tin)}. Yaklaşık ${String(Math.round(gap / 30) / 2).replace('.', ',')} saat bavullarla kalırsınız.`});
+      } else {
+        const tout = hm(bkTime(st.until)) ?? 11 * 60, tr = trips.find(t => hm(bkTime(t.e.when)) != null && hm(bkTime(t.e.when)) > tout);
+        if (!tr) continue;
+        const dep = hm(bkTime(tr.e.when)), gap = (dep - 90) - tout;
+        if (gap >= 120) out.push({d:x.d, city, home, st:tr.e.from || '', a:`ev çıkışı ${mh(tout)}`, b:`${tr.e.to ? tr.e.to.split(/[\s,(]/)[0] + ' ' : ''}${/uçak|flight/i.test(tr.e.desc) ? 'uçağı' : 'treni'} ${mh(dep)}`, h:gap, text:`${city}: ev çıkışı ${mh(tout)}, ${tr.e.to ? tr.e.to.split(/[\s,(]/)[0] + ' ' : ''}${tr.kind === 'trip' && /uçak|flight/i.test(tr.e.desc) ? 'uçuşu' : 'treni'} ${mh(dep)}. Yaklaşık ${String(Math.round(gap / 30) / 2).replace('.', ',')} saat bavullarla kalırsınız.`});
+      }
+    }
+  }
+  return out;
+}
+const gLugHtml = L => L.map(l => `<div class="glug" role="alert"><div class="glh">⚠️ Bavul için yer bulmanız gerekiyor</div>
+  <div class="glt"><b>${esc(l.city)}</b> · ${planDay(l.d)}</div>
+  <div class="glt"><b>${esc(l.a)}</b> → <b>${esc(l.b)}</b> · yaklaşık <b>${String(Math.round(l.h / 30) / 2).replace('.', ',')} saat</b> bavullarla</div>
+  <div class="ptools" style="margin-top:4px"><a class="btn sm pri" href="${luggageUrl(l.home)}" target="_blank" rel="noopener">🧳 Bavul yeri bul</a>${l.st ? `<a class="btn sm" href="${luggageUrl(l.st)}" target="_blank" rel="noopener">Gar/havalimanı yakınında</a>` : ''}</div></div>`).join('');
+// 🚆 Yolculuk günü kartı: gezi olmayan günde kalkış/varış, istasyon, en geç evden çıkış ve 🧭.
+function gTravelHtml(c, d){
+  const P = tripPlan(), x = P && P.days.find(y => y.d === d); if (!x) return '';
+  return x.items.filter(it => it.kind === 'trip' && !it.e.priv).map(it => { const e = it.e, dep = hm(bkTime(e.when));
+    return `<div class="gtrav"><span>${iconOf(e)} <b>${bkTime(e.when)}</b> ${esc(e.from || '')} → ${esc(e.to || '')}${e.until ? ` · varış ${bkTime(e.until)}` : ''}</span>${dep != null ? `<span class="m">En geç ${mh(Math.max(0, dep - 75))}'te evden çıkın.</span>` : ''}${e.from ? `<a class="btn sm" href="${mapsDir(e.from)}" target="_blank" rel="noopener">🧭 ${esc(e.from.split(/[,(]/)[0].trim())}</a>` : ''}</div>`; }).join('');
+}
 // Gezi aralığı: o gün bu şehirde gezmeye ayrılabilecek saatler. Varış günü tren/uçak varışı + 45 dk (eve yerleşme),
 // ayrılış günü kalkış − 90 dk (gara/havalimanına geçiş); diğer günler tercihteki güne başlama saatinden 23:00'e.
 // 90 dakikadan kısaysa gezi yok ("🚆 Yolculuk günü"): rehber o güne yalnız biletleri koyar.
@@ -2714,6 +2758,8 @@ function viewGezi(){
   const cities = guideCities(), W = gWish(), P0 = S.trip.prefs || {}, ans = Object.keys(P0).filter(id => person(id)).length;
   let h = gTodayHtml() + (programHtml() || `<div class="card"><p class="tip">📅 Plan, bilet ve rezervasyonlara tarih girilince gün gün oluşur. Önce konaklamaları (ev, otel) giriş–çıkış tarihleriyle ekle.</p></div>`);
   if (!cities.length) return h;
+  const L = gLuggage().filter(l => l.d >= isoDay(Date.now()));
+  if (L.length) h += `<section class="glugs">${gLugHtml(L)}</section>`;
   h += `<h2>🧭 Gezi rehberi</h2>
     <div class="gsteps"><button class="gstep" data-g="open" data-v="0"><b>⭐ ${W.length}</b><span>istek</span></button><button class="gstep" data-g="open" data-v="1"><b>🙋 ${ans}/${S.people.length}</b><span>tercih</span></button><button class="gstep" data-g="open" data-v="2"><b>🗺 ${cities.filter(c => (S.trip.guide || {})[c] && S.trip.guide[c].ok).length}/${cities.length}</b><span>onaylı şehir</span></button></div>`;
   for (const c of cities){
