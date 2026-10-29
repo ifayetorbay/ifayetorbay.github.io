@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029225912';</script>
-<script src="heybe-web.js?v=20261029225912"></script>
+<script>window.HEYBE_VER = '20261029230034';</script>
+<script src="heybe-web.js?v=20261029230034"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2597,7 +2597,10 @@ function gCenter(g){
 const gFar = (g, it) => { const c = gCenter(g); return !!(c && it.lat && it.lon && gKm(c, {lat:+it.lat, lon:+it.lon}) > 80); };
 // Google'ın açık günleri: kalıcı kapanmış ya da o haftanın gününde kapalıysa uyarı (açık olduğu günlerle).
 const G_WD = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-const gClosed = (v, d) => { const wd = new Date(d + 'T12:00').getDay();
+// Google 7/24 açık yeri tek bir "Pazar 00:00, kapanışsız" aralığıyla verir: o zaman her gün açıktır.
+const g247 = v => Array.isArray(v.gun) && v.gun.length === 1 && v.saat && (v.saat[v.gun[0]] || [])[0] === 0 && (v.saat[v.gun[0]] || [])[1] === 1440;
+const gOpenOn = (v, d) => !v.kapali && (!Array.isArray(v.gun) || !v.gun.length || g247(v) || v.gun.includes(new Date(d + 'T12:00').getDay()));
+const gClosed = (v, d) => { const wd = new Date(d + 'T12:00').getDay(); if (g247(v)) v = {...v, gun:null};
   return v.kapali ? 'kalıcı olarak kapanmış görünüyor' : Array.isArray(v.gun) && v.gun.length && !v.gun.includes(wd) ? `o gün kapalı görünüyor (açık: ${[1, 2, 3, 4, 5, 6, 0].filter(n => v.gun.includes(n)).map(n => G_WD[n]).join(', ')}; 📅 Taşı ile açık güne al)` : ''; };
 const G_MIN = {yemek:[4.5, 1000], gez:[4.5, 3000], aksam:[4.4, 500], alis:[4.4, 500]};
 const gBelow = it => { const m = G_MIN[it.kind]; return !!(m && it.g && it.g.r && (it.g.r < m[0] || it.g.n < m[1])); };
@@ -2616,18 +2619,32 @@ async function guideRate(c){
     const cc = gCenter(g);
     if (v.lat && v.lon && (!cc || gKm(cc, {lat:v.lat, lon:v.lon}) < 25)){ o.it.lat = v.lat; o.it.lon = v.lon; o.it.ok = 1; }
     o.it.warn = gClosed(v, g.days[o.i].d);
-    o.it.hrs = (v.saat || {})[new Date(g.days[o.i].d + 'T12:00').getDay()] || null;
+    o.it.hrs = g247(v) ? null : (v.saat || {})[new Date(g.days[o.i].d + 'T12:00').getDay()] || null;
+    o.it.open = {kapali:!!v.kapali, gun:v.gun || null, saat:v.saat || null};
   });
   save(); if (form && form.mode === 'guide') drawSheetKeep();
   // Zayıf öneriler: düşük puan / az yorum / kapalı → yerine yenisi (en çok 4).
   // Eşikler (Google puanı · yorum sayısı): yemek 4,5 · 1.000; gezilecek 4,5 · 3.000; akşam ve alışveriş 4,4 · 500. Altındaki ÖNERİLER
   // (en çok 6) yerine yenisi istenir; yenisi de eşiğin altında kalırsa olduğu gibi bırakılır (sonsuz döngü yok).
   // Başka şehirde görünen öneriler (aynı adlı başka şube) de değiştirilir.
-  const weak = all.filter(o => o.it.src === 'oneri' && (gFar(g, o.it) || o.it.g && (o.it.warn || gBelow(o.it)))).slice(0, 6);
+  // O gün kapalı öneriler hiç gösterilmez: hepsi değiştirilir, yenisi bulunamazsa plandan çıkar.
+  const shut = o => !!(o.it.open && !gOpenOn(o.it.open, g.days[o.i].d));
+  const weak = [...all.filter(o => o.it.src === 'oneri' && shut(o)), ...all.filter(o => o.it.src === 'oneri' && !shut(o) && (gFar(g, o.it) || o.it.g && (o.it.warn || gBelow(o.it)))).slice(0, 6)];
   for (const o of weak){
     const x = g.days[o.i], k = x.items.indexOf(o.it); if (k < 0) continue;
-    await guideSwapAt(c, o.i, k, gFar(g, o.it) ? `başka şehirde görünüyor; ${c} içinde olmalı` : `${o.it.warn || `Google puanı düşük (${o.it.g.r}, ${o.it.g.n} yorum)`}`);
+    const ok = await guideSwapAt(c, o.i, k, gFar(g, o.it) ? `başka şehirde görünüyor; ${c} içinde olmalı` : `${o.it.warn || `Google puanı düşük (${o.it.g.r}, ${o.it.g.n} yorum)`}`);
+    if (!ok && shut(o)){ const j = x.items.indexOf(o.it); if (j >= 0) x.items.splice(j, 1); }
   }
+  // İstek listesindeki yer o gün kapalıysa açık olduğu başka bir güne taşınır (saatleri sonra düzeltilir);
+  // kalıcı kapanmışsa ya da kalınan günlerin hiçbirinde açık değilse "Elenen istekler"e nedeniyle yazılır.
+  for (const o of all.filter(o => o.it.src === 'liste' && shut(o))){
+    const x = g.days[o.i], j = x.items.indexOf(o.it); if (j < 0) continue;
+    x.items.splice(j, 1);
+    const to = g.days.find((y, n) => n !== o.i && !y.yol && gOpenOn(o.it.open, y.d));
+    if (to && !o.it.open.kapali){ o.it.warn = ''; o.it.moved = 1; to.items.push(o.it); to.items.sort((a, b) => (hm(a.t) ?? 0) - (hm(b.t) ?? 0)); to.fixed = 0; }
+    else (g.unplaced || (g.unplaced = [])).push({name:o.it.name, why:o.it.open.kapali ? 'Kalıcı olarak kapanmış görünüyor (Google).' : 'Kaldığınız günlerin hiçbirinde açık değil (Google).', lat:o.it.lat, lon:o.it.lon});
+  }
+  save(); if (form && form.mode === 'guide') drawSheetKeep();
 }
 // Saat denetimi (bir günün planı): açılıştan önce ya da kapanıştan sonra konan yerler (Google saatleri kesin, yoksa modelin
 // yazdığı "acik"), biletli yerin ayrıca gezi durağı olarak tekrarı ve uzun boşluklar. Bulunanlar günü düzeltmek için modele gider.
@@ -2674,11 +2691,13 @@ async function guideSwapAt(c, i, k, why, removed, again){
     if (removed) x.items.splice(k, 0, it); else x.items.splice(k, 1, it);
     save();
     // Tek yer için puan yalnız Google açıkken sorulur (internet araması tek yer için pahalı kalır).
-    if ((g.kaynak || {}).google) try { const p = await window.claude.guide({mode:'puan', city:c, items:[{name:it.name, lat:it.lat, lon:it.lon}]}); const v = (p.items || [])[0]; if (v && v.r){ it.g = {r:v.r, n:v.n, p:v.p || '', url:v.url || '', web:v.web || '', tahmin:!!v.tahmin}; const cc = gCenter(g); if (v.lat && (!cc || gKm(cc, {lat:v.lat, lon:v.lon}) < 25)){ it.lat = v.lat; it.lon = v.lon; } it.warn = gClosed(v, x.d); it.hrs = (v.saat || {})[new Date(x.d + 'T12:00').getDay()] || null; } } catch(_) {}
+    if ((g.kaynak || {}).google) try { const p = await window.claude.guide({mode:'puan', city:c, items:[{name:it.name, lat:it.lat, lon:it.lon}]}); const v = (p.items || [])[0]; if (v && v.r){ it.g = {r:v.r, n:v.n, p:v.p || '', url:v.url || '', web:v.web || '', tahmin:!!v.tahmin}; const cc = gCenter(g); if (v.lat && (!cc || gKm(cc, {lat:v.lat, lon:v.lon}) < 25)){ it.lat = v.lat; it.lon = v.lon; } it.warn = gClosed(v, x.d); it.hrs = g247(v) ? null : (v.saat || {})[new Date(x.d + 'T12:00').getDay()] || null; it.open = {kapali:!!v.kapali, gun:v.gun || null, saat:v.saat || null}; } } catch(_) {}
     save(); if (form && form.mode === 'guide') drawSheetKeep();
     // Yenisi de o gün kapalı ya da başka şehirdeyse bir kez daha denenir.
     const bad = it.warn ? it.warn.split(' (')[0] : gFar(g, it) ? `başka şehirde görünüyor; ${c} içinde olmalı` : '';
     if (bad && !again){ const k2 = x.items.indexOf(it); if (k2 >= 0) return guideSwapAt(c, i, k2, bad, null, true); }
+    // İkinci öneri de o gün kapalıysa gösterilmez.
+    if (again && it.open && !gOpenOn(it.open, x.d)){ const k3 = x.items.indexOf(it); if (k3 >= 0) x.items.splice(k3, 1); save(); }
     return true;
   } catch(_) { return false; }
 }
