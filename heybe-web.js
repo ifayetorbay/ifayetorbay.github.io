@@ -4,6 +4,7 @@
 //  - user:    hesapsız (anonim) Supabase girişi; kimlik bu tarayıcıda saklanır
 //  - assets:  fiş fotoğrafları → "photos" kovası (tahmin edilemez dosya adı)
 //  - receipt: fiş fotoğrafı → "fis-oku" Edge Function → Claude (yalnız üyeler, günlük kota; web/sql/fis-okuma.sql)
+//  - guide:   gezi rehberi → "rehber" Edge Function (istek listesi okuma: Haiku; şehir rehberi: Sonnet; kota ortak)
 //  - words:   ortak sözlük → public.learned_words (yalnız learn_word / heybe_words işlevleriyle; web/sql/ortak-sozluk.sql)
 // Seyahate davetle katılınır: ?katil=<tid>.<anahtar>. Güvenlik sunucudaki satır kurallarındadır (üye olmayan okuyamaz).
 (function(){
@@ -143,6 +144,14 @@
     async receipt(image, country, trip){
       await ready;
       const {data, error} = await sb.functions.invoke('fis-oku', {body:{image, country, trip}});
+      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : 'cloud'}; }
+      if (!data || data.error) throw {code:'cloud'};
+      return data;
+    },
+    // Gezi rehberi: "liste" (metin/fotoğraftan yer adları) ya da "rehber" (şehir için gün gün plan); web/functions/rehber.
+    async guide(payload){
+      await ready;
+      const {data, error} = await sb.functions.invoke('rehber', {body:payload});
       if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : 'cloud'}; }
       if (!data || data.error) throw {code:'cloud'};
       return data;
