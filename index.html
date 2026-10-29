@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029222838';</script>
-<script src="heybe-web.js?v=20261029222838"></script>
+<script>window.HEYBE_VER = '20261029224105';</script>
+<script src="heybe-web.js?v=20261029224105"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -387,6 +387,7 @@ nav.tabs svg{width:22px;height:22px}
 .pli.minor .pic{opacity:.7}
 .gst{font-size:.76rem;color:var(--muted)}
 .galt{font-size:.78rem;color:#B85C00}
+.gopus{display:flex;gap:8px;align-items:flex-start;font-size:.82rem;color:var(--muted);margin:6px 0 10px}
 .gst b{color:var(--warn);font-weight:600}
 .gswap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px dashed var(--line);font-size:.86rem;color:var(--muted)}
 .gmap{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:6px 6px 8px;color:var(--ink);overflow:hidden}
@@ -2273,6 +2274,7 @@ function guidePrefs(){
 }
 // Rehber penceresinde bir gün: başlık ve kısa giriş, duraklar (tek cümlelik özet, Google puanı, 🧭), sola kaydırınca "Çıkar",
 // dokununca "Başka güne taşı"; çıkarılan durak için "✨ Yerine öner" ve "Geri al".
+const gHrs = it => it.hrs ? `🕘 ${mh(it.hrs[0])}–${it.hrs[1] >= 1440 ? '24:00' : mh(it.hrs[1])}` : it.acik && /\d/.test(it.acik) ? `🕘 ${it.acik}` : '';
 const gStars = it => it.g && it.g.r ? `${it.g.tahmin ? '≈' : ''}⭐ ${String(it.g.r).replace('.', ',')}${it.g.n ? ' · ' + it.g.n.toLocaleString('tr-TR') : ''}${it.g.tahmin ? ' · web' : ' · Google'}` : '';
 const gShort = it => it.kisa || String(it.desc || '').split(/(?<=[.!?])\s/)[0];
 // Kaynaklar: Google Haritalar (puan/yorum, çekilme tarihi) ya da internet araması, Wikipedia maddeleri, OpenStreetMap, Claude.
@@ -2293,7 +2295,7 @@ function gDayHtml(c, g, x, i, f, can){
     + (x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : '')
     + (x.yol ? gTravelHtml(c, x.d) : '') + gLugHtml(gLuggage().filter(l => l.d === x.d && l.city === c))
     + x.items.map((it, k) => {
-      const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = gStars(it);
+      const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = [gStars(it), it.src !== 'bilet' && !minor ? gHrs(it) : ''].filter(Boolean).join(' · ');
       if (gFar(g, it) && !it.warn) it.warn = 'konum şüpheli (başka şehirde görünüyor); haritaya konmadı';
       const mv = f.gmove && f.gmove.c === c && f.gmove.i === i && f.gmove.k === k;
       return `<div class="swr"><button class="swdel l gmv" data-g="gmv" data-c="${esc(c)}" data-i="${i}" data-k="${k}" tabindex="-1">📅 Taşı</button><button class="swdel r" data-g="gdrop" data-c="${esc(c)}" data-i="${i}" data-k="${k}" tabindex="-1">Çıkar</button>`
@@ -2367,6 +2369,7 @@ function guideBody(){
       } else if (can && f.gbusy !== c){
         const nW = gWish().filter(w => w.city === c).length, mine = Object.keys(((S.trip.prefs || {})[S.me]) || {}).length;
         h += `<p class="note">Hazır olunca bas: <b>⭐ ${nW} istek</b> · tercihlerin ${mine ? '<b>dolu</b>' : '<b>boş</b> (istersen 2. adımda doldur)'}. Rehber yalnız bu düğmeyle hazırlanır.</p>
+          <label class="gopus"><input type="checkbox" data-g="gopus" ${f.gopus ? 'checked' : ''}> 🧠 Daha dikkatli model (Opus) · maliyet yaklaşık 2 kat (şehir başına ~10–20 sent)</label>
           <button type="button" class="btn block pri" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ ${esc(c)} rehberini hazırla</button>`;
       }
       h += `</div>`;
@@ -2505,18 +2508,20 @@ async function guideMake(c){
 async function guideMake0(c, f, days, P, trip){
   f.gbusy = c; drawSheetKeep();
   try {
-    const r = await window.claude.guide({mode:'rehber', trip, cities:[c]});
+    const model = f.gopus ? 'opus' : undefined;
+    const r = await window.claude.guide({mode:'rehber', trip, cities:[c], model});
     const byD = new Map((r.days || []).map(x => [x.d, x]));
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
-      days:days.map((x, i) => { const w = gWindow(c, x, P); return {d:x.d, back:!out(x, i), yol:!w, items:gFit((byD.get(x.d) || {}).items || [], w), rain:w ? (byD.get(x.d) || {}).rain || '' : ''}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5)};
+      days:days.map((x, i) => { const w = gWindow(c, x, P); return {d:x.d, back:!out(x, i), yol:!w, items:gFit((byD.get(x.d) || {}).items || [], w), rain:w ? (byD.get(x.d) || {}).rain || '' : ''}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), model:model || ''};
     save(); toast(`🧭 ${c} taslağı hazır. Ayrıntılı açıklamalar ve şehir notları onaylayınca yazılır.`);
     f.gbusy = null; if (form === f) drawSheetKeep();
     guideVerify(c);
     if (tab === 'gezi') render();
     // Maliyet: uzun açıklamalar ve şehir notları (rehberin en pahalı kısmı) taslakta yazılmaz; ✅ Onayla'dan sonra yazılır.
     await guideRate(c);
+    await guideFixTimes(c);
     if (tab === 'gezi') render();
     return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Rehber hazırlanamadı; biraz sonra tekrar dene.'); }
@@ -2528,19 +2533,22 @@ async function guideRedoDay(c, i){
   gRunning.add(c);
   try { return await guideRedoDay0(c, i); } finally { gRunning.delete(c); }
 }
-async function guideRedoDay0(c, i){
+async function guideRedoDay0(c, i, fix, auto){
   const g = (S.trip.guide || {})[c], f = form; if (!g || !g.days[i]) return;
   const {trip} = guidePayload(c), d = g.days[i].d;
+  // Elle "Bu günü yeniden" de o günün saat hatalarını modele söyler.
+  const dz = fix || gIssues(g.days[i]).map(e => e.m); if (dz.length) trip.duzeltilecekler = dz;
   trip.gunler = trip.gunler.filter(x => x.d === d);
   trip.diger_gunlerde = g.days.filter((x, j) => j !== i).flatMap(x => x.items.filter(it => it.src !== 'bilet').map(it => it.name));
   if (f) { f.gbusy = c; drawSheetKeep(); }
   try {
-    const r = await window.claude.guide({mode:'rehber', trip, cities:[c]});
+    const r = await window.claude.guide({mode:'rehber', trip, cities:[c], model:g.model || undefined});
     const x = (r.days || []).find(y => y.d === d) || (r.days || [])[0];
     if (!x) throw 0;
     const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
     day.items = gFit(x.items || [], w); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.theme = ''; day.intro = '';
-    save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; açıklamalar yazılıyor…`);
+    if (auto) day.fixed = 1;
+    save(); toast(auto ? `🛠 ${i + 1}. günün saatleri düzeltildi.` : `🧭 ${i + 1}. gün yeniden hazırlandı${g.ok ? '; açıklamalar yazılıyor…' : '.'}`);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
     guideVerify(c); await guideRate(c); if (g.ok) await guideDetail(c); if (tab === 'gezi') render(); return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Gün yeniden hazırlanamadı; biraz sonra tekrar dene.'); }
@@ -2607,6 +2615,7 @@ async function guideRate(c){
     const cc = gCenter(g);
     if (v.lat && v.lon && (!cc || gKm(cc, {lat:v.lat, lon:v.lon}) < 25)){ o.it.lat = v.lat; o.it.lon = v.lon; o.it.ok = 1; }
     o.it.warn = gClosed(v, g.days[o.i].d);
+    o.it.hrs = (v.saat || {})[new Date(g.days[o.i].d + 'T12:00').getDay()] || null;
   });
   save(); if (form && form.mode === 'guide') drawSheetKeep();
   // Zayıf öneriler: düşük puan / az yorum / kapalı → yerine yenisi (en çok 4).
@@ -2619,20 +2628,52 @@ async function guideRate(c){
     await guideSwapAt(c, o.i, k, gFar(g, o.it) ? `başka şehirde görünüyor; ${c} içinde olmalı` : `${o.it.warn || `Google puanı düşük (${o.it.g.r}, ${o.it.g.n} yorum)`}`);
   }
 }
+// Saat denetimi (bir günün planı): açılıştan önce ya da kapanıştan sonra konan yerler (Google saatleri kesin, yoksa modelin
+// yazdığı "acik"), biletli yerin ayrıca gezi durağı olarak tekrarı ve uzun boşluklar. Bulunanlar günü düzeltmek için modele gider.
+function gIssues(x){
+  const out = [], key = n => String(n || '').toLocaleLowerCase('tr').split(/[^\p{L}\d]+/u).filter(w => w.length > 3);
+  const bilet = x.items.filter(it => it.src === 'bilet').map(it => key(it.name));
+  const its = x.items.filter(it => hm(it.t) != null).slice().sort((a, b) => hm(a.t) - hm(b.t));
+  for (const it of its){
+    if (it.src === 'bilet' || it.kind === 'gecis' || it.kind === 'dukkan') continue;
+    const t = hm(it.t), d = +it.sure || 60;
+    const h = it.hrs || (m => m ? [hm(m[1]), hm(m[2])] : null)(String(it.acik || '').match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/));
+    if (h && h[1] > h[0]){
+      if (t < h[0] - 10) out.push({it, m:`${it.name} ${it.t}'de konmuş ama ${mh(h[0])}'da açılıyor${it.hrs ? ' (Google)' : ''}`});
+      else if (t + Math.min(d, 120) > h[1] + 10) out.push({it, m:`${it.name} ${it.t}'de konmuş ama ${mh(h[1])}'da kapanıyor${it.hrs ? ' (Google)' : ''}; gezmek ~${d} dk sürer`});
+    }
+    const k = key(it.name);
+    if (bilet.some(b => b.some(w => k.includes(w)))) out.push({it, m:`${it.name} zaten biletli saatte var; ayrıca gezi durağı olarak ${it.t}'e konmuş (bilet saatinden en çok 30 dk önce gidilir)`});
+  }
+  for (let k = 1; k < its.length; k++){
+    const a = its[k - 1], b = its[k], end = hm(a.t) + (a.kind === 'gecis' || a.kind === 'dukkan' ? 15 : +a.sure || 60);
+    if (hm(b.t) - end > 75) out.push({it:null, m:`${mh(end)}–${b.t} arası boş kalmış (${a.name} → ${b.name})`});
+  }
+  return out;
+}
+// Taslaktan sonra saat hatası olan günler (en çok 3) bir kez kendiliğinden yeniden hazırlanır; hatalar modele tek tek söylenir.
+async function guideFixTimes(c){
+  const g = (S.trip.guide || {})[c]; if (!g) return;
+  const bad = g.days.map((x, i) => ({i, x, n:x.yol ? [] : gIssues(x)})).filter(o => o.n.length && !o.x.fixed).slice(0, 3);
+  for (const o of bad){ o.x.fixed = 1; toast(`🛠 ${o.i + 1}. günün saatleri düzeltiliyor…`); await guideRedoDay0(c, o.i, o.n.map(e => e.m), true); }
+  // Hâlâ uymayan durakta uyarı kalır.
+  for (const x of g.days) for (const e of x.yol ? [] : gIssues(x)) if (e.it && !e.it.warn) e.it.warn = 'saat uymuyor: ' + e.m.replace(e.it.name + ' ', '');
+  save(); if (form && form.mode === 'guide') drawSheetKeep();
+}
 // Çıkarılan ya da zayıf durağın yerine tek yeni öneri (aynı saat, aynı bölge, aynı tür); yenisinin puanı da sorulur.
 async function guideSwapAt(c, i, k, why, removed, again){
   const g = (S.trip.guide || {})[c]; if (!g) return false;
   const x = g.days[i], old = removed || x.items[k]; if (!old) return false;
   const no = [...new Set([...(g.no || []), old.name])]; g.no = no;
   try {
-    const r = await window.claude.guide({mode:'yerine', city:c, prefs:guidePrefs(), removed:{name:old.name, kind:old.kind, t:old.t, neden:why || 'kullanıcı çıkardı'}, no,
+    const r = await window.claude.guide({mode:'yerine', model:g.model || undefined, city:c, prefs:guidePrefs(), removed:{name:old.name, kind:old.kind, t:old.t, neden:why || 'kullanıcı çıkardı'}, no,
       day:{d:x.d, gun:planDay(x.d), items:x.items.filter(it => it !== old).map(it => ({t:it.t, name:it.name, kind:it.kind, lat:it.lat, lon:it.lon}))}});
     if (!r || !r.name) return false;
     const {usage, ...it} = r; it.src = 'oneri';
     if (removed) x.items.splice(k, 0, it); else x.items.splice(k, 1, it);
     save();
     // Tek yer için puan yalnız Google açıkken sorulur (internet araması tek yer için pahalı kalır).
-    if ((g.kaynak || {}).google) try { const p = await window.claude.guide({mode:'puan', city:c, items:[{name:it.name, lat:it.lat, lon:it.lon}]}); const v = (p.items || [])[0]; if (v && v.r){ it.g = {r:v.r, n:v.n, p:v.p || '', url:v.url || '', web:v.web || '', tahmin:!!v.tahmin}; const cc = gCenter(g); if (v.lat && (!cc || gKm(cc, {lat:v.lat, lon:v.lon}) < 25)){ it.lat = v.lat; it.lon = v.lon; } it.warn = gClosed(v, x.d); } } catch(_) {}
+    if ((g.kaynak || {}).google) try { const p = await window.claude.guide({mode:'puan', city:c, items:[{name:it.name, lat:it.lat, lon:it.lon}]}); const v = (p.items || [])[0]; if (v && v.r){ it.g = {r:v.r, n:v.n, p:v.p || '', url:v.url || '', web:v.web || '', tahmin:!!v.tahmin}; const cc = gCenter(g); if (v.lat && (!cc || gKm(cc, {lat:v.lat, lon:v.lon}) < 25)){ it.lat = v.lat; it.lon = v.lon; } it.warn = gClosed(v, x.d); it.hrs = (v.saat || {})[new Date(x.d + 'T12:00').getDay()] || null; } } catch(_) {}
     save(); if (form && form.mode === 'guide') drawSheetKeep();
     // Yenisi de o gün kapalı ya da başka şehirdeyse bir kez daha denenir.
     const bad = it.warn ? it.warn.split(' (')[0] : gFar(g, it) ? `başka şehirde görünüyor; ${c} içinde olmalı` : '';
@@ -6068,6 +6109,7 @@ document.addEventListener('input', ev => {
 });
 document.addEventListener('change', async ev => {
   const el = ev.target, b = el.dataset.bind;
+  if (form && el.dataset.g === 'gopus'){ form.gopus = el.checked; return; }
   if (form && el.id === 'nKasa'){ form.kasaOn = el.checked; return; }
   if (form && el.id === 'fTF'){ form.noTF = !el.checked; return; }
   if (form && el.id === 'fOp'){ form.op = el.value; form.opSet = true; return; }
