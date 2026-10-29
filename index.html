@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029213413';</script>
-<script src="heybe-web.js?v=20261029213413"></script>
+<script>window.HEYBE_VER = '20261029213521';</script>
+<script src="heybe-web.js?v=20261029213521"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -107,7 +107,7 @@ body.ro .wbtn.tbtn{pointer-events:auto}
 .tip{font-size:.85rem;color:var(--muted);margin:0}
 .hq{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;background:none;color:var(--muted);font-size:.72rem;font-weight:800;padding:0;margin-left:6px;vertical-align:1px;line-height:1;letter-spacing:0;text-transform:none;opacity:.8}
 .kasa .hq{color:var(--sun-text)}
-.hbox{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:12px 14px;font-size:.88rem;line-height:1.45;font-weight:400;letter-spacing:0;text-transform:none;display:flex;flex-direction:column;gap:8px}
+.hbox{white-space:pre-line;background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:12px 14px;font-size:.88rem;line-height:1.45;font-weight:400;letter-spacing:0;text-transform:none;display:flex;flex-direction:column;gap:8px}
 .hok{align-self:flex-end;border:0;background:none;color:var(--accent-text);font-weight:700;padding:2px 0}
 .planedit .seg button{padding:0 11px}
 .budget .ln{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.92rem}
@@ -2313,7 +2313,7 @@ function guideBody(){
       h += `<div class="f"><span class="lab">${l}</span><div class="chips">${list.map(v => `<button type="button" class="chip" data-g="pref" data-k="${k}" data-v="${esc(v)}" aria-pressed="${n === 1 ? cur === v : (cur || []).includes(v)}">${esc(v)}</button>`).join('')}</div></div>`;
     }
     const mic = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    h += `<div class="f"><label class="lab" for="gNote">Serbest isteklerin</label><span class="note">Aklındakini kendi cümlelerinle yaz${mic ? ' ya da 🎙 ile konuşarak söyle' : ' (klavyedeki 🎙 ile de söyleyebilirsin)'}: nereye mutlaka gitmek istediğini, hangi gün ve saatte olsun istediğini, nereye gitmek istemediğini, alerjini. Rehber bunları kesin talimat olarak uygular; şehri ve günü söylersen tam yerine koyar.</span>
+    h += `<div class="f"><span class="lab">Serbest isteklerin${help('serbest')}</span><span class="note">Aklındakini kendi cümlelerinle yaz${mic ? ' ya da 🎙 ile söyle' : ''}; şehri ve günü belirt. Ayrıntı için <b>?</b></span>
       <textarea class="inp" id="gNote" rows="3" maxlength="1000" placeholder="Ör. Barselona'da La Roca outlet'i mutlaka 2 Aralık öğleden sonraya koy. Sevilla'da bir akşam flamenko olsun. Madrid'de Bernabéu'ya 4 Aralık sabahı gidelim. Fıstık alerjim var.">${esc(me.not || '')}</textarea>
       ${mic ? `<button type="button" class="btn sm${f.gmic ? ' pri' : ''}" data-g="mic">${f.gmic ? '⏺ Dinliyorum… bitirmek için dokun' : '🎙 Konuşarak yaz'}</button>` : ''}</div>
       <button type="button" class="btn block pri" data-g="step" data-v="2">Sonraki: Rehber ›</button>`;
@@ -5590,6 +5590,21 @@ function confetti(){
 // ---- yardım ----
 // Karışık gelebilecek yerlerin yanında "?" düğmesi; dokununca altında kısa bir açıklama açılır.
 const HELP = {
+  serbest: `Buraya kendi cümlelerinle, yazarak ya da 🎙 ile konuşarak ne istediğini söyle. Rehber bunları kesin talimat olarak uygular.
+
+✅ Neler yapabilirsin
+• Bir yeri mutlaka eklet: "Barselona'da La Roca outlet olsun."
+• Gün ve saat ver: "Madrid'de Bernabéu'ya 4 Aralık sabahı gidelim."
+• İstemediğini söyle: "Kalabalık müzeleri sevmem."
+• Tempo ve tarz: "2. gün daha sakin olsun", "bir akşam flamenko izleyelim."
+• Yemek ve sağlık: "Fıstık alerjim var."
+
+⚠️ Neler yapamaz
+• Yolculuk saatlerini aşamaz: o gün trende ya da uçaktaysanız isteği en yakın uygun güne koyar ve nedenini yazar.
+• Bilet, rezervasyon ya da masa ayırtamaz; yalnız önerir.
+• Kapalı ya da kapanmış yerleri koymaz, uyarır.
+
+İpucu: Şehri ve günü açıkça yaz. Arkadaşlarının istekleriyle birleşir; yemek kısıtları her zaman önce gelir. Yazdıkların rehber hazırlanırken (ya da yeniden hazırlanınca) uygulanır.`,
   bk: 'Harcamanın tarihi satın aldığın gündür; biletin ya da rezervasyonun kendi zamanı burada durur: uçak ve trende kalkış–varış saatleri ve yerleri, evde giriş–çıkış tarihleri, müzede ziyaret günü ve saati. Bilet ya da rezervasyon fotoğrafını ekleyip ✨ Fotoğraftan doldur’a basarsan bunları okurum; elle de yazabilirsin. Gezi sekmesindeki 📅 Seyahat planı bu bilgilerden gün gün oluşur: her günün şehri, biletler, giriş–çıkışlar ve eksikler.',
   foto: 'Fişin, rezervasyon ekranının (Airbnb, otel) ya da biletin fotoğrafını çek veya ekran görüntüsünü seç. Sonra ✨ Fotoğraftan doldur’a bas: tutarı, para birimini, açıklamayı ve varsa adresi okurum. Yalnız boş alanları doldururum: tutarı önceden yazdıysan ona dokunmam, fotoğrafta tutar yoksa tutar boş kalır (sıfır yazılmaz). Fotoğrafı sadece adres için de ekleyebilirsin. Adres okunursa 🧭 yol tarifi o adrese hazır olur. Kaydetmeden önce kontrol et; yanlışı düzeltebilirsin. Fotoğraf harcamayla saklanır, seyahatteki herkes görebilir.',
   yol: '🧭 düğmesi Google Haritalar’da gidilecek yere yol tarifi açar; bulunduğun yerden başlar. Yeri açıklamadan tahmin ederim: trende ve otobüste kalkış garı (“Madrid–Sevilla treni” → Madrid tren garı), uçakta kalkış havalimanı, müzede müzenin kendisi. Rezervasyon ya da bilet fotoğrafından adres okunduysa o kullanılır. Yanlışsa “değiştir”e dokunup doğrusunu bir kez yaz; arkadaşların da aynı düğmeyi görür. 📍 Buradayım, harcamayı girdiğin yerin konumunu kaydeder.',
