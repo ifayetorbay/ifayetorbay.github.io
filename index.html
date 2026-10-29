@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029154718';</script>
-<script src="heybe-web.js?v=20261029154718"></script>
+<script>window.HEYBE_VER = '20261029160030';</script>
+<script src="heybe-web.js?v=20261029160030"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2210,7 +2210,7 @@ function guideBody(){
       if (f.gbusy === c) h += `<p class="note">✨ Rehber hazırlanıyor… Bir dakika kadar sürebilir; pencereyi kapatma.</p>`;
       if (g){
         h += g.days.map((x, i) => `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b></div>${x.items.map(it => `<div class="pli"><div class="plt"><span class="pt num">${esc(it.t || '')}</span><span class="pic">${G_KIND[it.kind] || '📍'}</span><span class="mid"><span class="d">${G_SRC[it.src] || ''} ${esc(it.name)}</span><span class="m">${esc(it.desc)}</span></span></div><a class="btn sm" href="${mapsDir(it.lat ? `${it.lat},${it.lon}` : `${it.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(it.name)}">🧭</a></div>`).join('')}${x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : ''}</div>`).join('');
-        if (g.unplaced && g.unplaced.length) h += `<div class="pmiss"><b>Sığmadı</b>${g.unplaced.map(u => `<span>⭐ ${esc(u.name)}: ${esc(u.why)}</span>`).join('')}</div>`;
+        if (g.unplaced && g.unplaced.length) h += `<div class="pmiss"><b>Elenen istekler · neden?</b>${g.unplaced.map(u => `<span>✖ <b>${esc(u.name)}</b>: ${esc(u.why)}</span>`).join('')}</div>`;
         if (g.tips && g.tips.length) h += `<div class="pmiss"><b>İpuçları</b>${g.tips.map(t => `<span class="gtip">• ${esc(t)}</span>`).join('')}</div>`;
         if (f.gverify === c) h += `<p class="note">📍 Konumlar haritada doğrulanıyor…</p>`;
         h += `<p class="note">⭐ sizin listeniz · ✨ öneri · 🎟 biletiniz. ${esc(nm(g.by))} hazırladı, ${dayLabel(g.at)}.</p>
@@ -2305,6 +2305,13 @@ function guideKml(c){
     if (pts.length > 1) out.push(`<Placemark><name>${X(`${i + 1}. gün · gidiş sırası`)}</name><styleUrl>#cizgi${i}</styleUrl><LineString><tessellate>1</tessellate><coordinates>${pts.map(it => `${it.lon},${it.lat},0`).join(' ')}</coordinates></LineString></Placemark>`);
     out.push('</Folder>');
   });
+  // Elenen istekler ayrı gri katman: haritada neden dışarıda kaldıkları (uzaklık) görülür.
+  const un = (g.unplaced || []).filter(u => u.lat && u.lon);
+  if (un.length){
+    out.push(sty('elenen', '9E9E9E'), `<Folder><name>✖ Elenen istekler</name>`);
+    un.forEach(u => out.push(`<Placemark><name>${X('✖ ' + u.name)}</name><description>${X('Neden elendi: ' + u.why)}</description><styleUrl>#elenen</styleUrl><Point><coordinates>${u.lon},${u.lat},0</coordinates></Point></Placemark>`));
+    out.push('</Folder>');
+  }
   out.push('</Document></kml>');
   saveFile(`${c}-rehber.kml`, new Blob([out.join('\n')], {type:'application/vnd.google-earth.kml+xml'})).then(ok => { if (ok) toast(`🗺 ${c}-rehber.kml hazır. My Maps'te İçe aktar ile yükle.`); });
 }
