@@ -1,6 +1,6 @@
 // Heybe service worker: uygulama kabuğu önbellekte; sayfa önce ağdan gelir (güncelleme hemen görünür),
 // internet yoksa önbellekteki sürüm açılır. Supabase istekleri önbelleğe alınmaz.
-const CACHE = 'heybe-20261029214325';
+const CACHE = 'heybe-20261029214712';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
