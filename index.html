@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029215528';</script>
-<script src="heybe-web.js?v=20261029215528"></script>
+<script>window.HEYBE_VER = '20261029221327';</script>
+<script src="heybe-web.js?v=20261029221327"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2354,7 +2354,7 @@ function guideBody(){
           ${can && g.ok && (g.days.some(x => x.items.length && !x.theme && !x.yol) || !g.extra) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}
           <button type="button" class="btn block pri" data-g="sharemenu" data-c="${esc(c)}" aria-expanded="${f.gshare === c}">📤 Paylaş ve indir</button>
           ${f.gshare === c ? `<div class="gshare"><button type="button" class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu (PDF)</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 Google Haritalar'a aktar</button>${navigator.share ? `<button type="button" class="btn sm" data-g="share" data-c="${esc(c)}">💬 Gruba gönder</button>` : ''}
-            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Her gün ayrı katman olarak gelir.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>Yer adları haritada görünmüyorsa: her gün katmanında <b>Bağımsız stiller → Etiketi ayarla → Ad</b>.</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details></div>` : ''}
+            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Her gün ayrı katman olarak gelir.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>Sıra numaraları ve yer adları haritada görünmüyorsa: her gün katmanında <b>Bağımsız stiller → Etiketi ayarla → Ad</b> (Ad'da "1. Parque del Retiro" gibi sıra var).</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details></div>` : ''}
           ${can ? `<div class="gask"><span class="lab">Yer ekle</span>
             <div class="gadd"><input class="inp gatext" data-gac="${esc(c)}" placeholder="Yer adı (ör. Templo de Debod)" value="${esc((f.gaT || {})[c] || '')}"><button type="button" class="btn sm" data-g="gaadd" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>➕</button><label class="btn sm">${f.gbusy === 'ekle' ? 'Okunuyor…' : '📷 Fotoğraftan'}<input type="file" class="gaphoto" data-gac="${esc(c)}" accept="image/*" hidden></label></div>
             ${must.size ? `<div class="gmust">${[...must].map(n => `<button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(n)}" aria-pressed="true">✓ ${esc(n)} ✕</button>`).join('')}</div>` : ''}
@@ -2686,16 +2686,20 @@ function guideKml(c){
   const H = g.home && g.home.lat && g.home.lon ? g.home : null;
   // Geçilen cadde ve yol üstü mağaza: aynı gün renginde, küçük ve soluk işaret (öne çıkmasın, ama görünsün).
   const styMin = (id, rgb) => `<Style id="${id}"><IconStyle><color>${'99' + K(rgb).slice(2)}</color><scale>0.65</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${'cc' + K(rgb).slice(2)}</color><scale>0.75</scale></LabelStyle></Style>`;
-  g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col), styMin('min' + i, col), `<Style id="cizgi${i}"><LineStyle><color>${K(col)}</color><width>3</width></LineStyle></Style>`); });
+  // Gidiş sırası çizgisi ince ve yarı saydam (asıl yerler öne çıksın).
+  g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col), styMin('min' + i, col), `<Style id="cizgi${i}"><LineStyle><color>${'80' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
   g.days.forEach((x, i) => {
-    const pts = x.items.filter(it => it.lat && it.lon);
+    // Haritada yalnız bu şehrin gezisi: tren/uçak, ev giriş-çıkışı (bilet) ve başka şehirden geliş-gidiş yok; yalnız yolculuk olan gün katman açmaz.
+    const pts = x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon);
+    if (x.yol || !pts.length) return;
     out.push(`<Folder><name>${X(`${i + 1}. gün · ${planDay(x.d)}${x.theme ? ' · ' + x.theme : ''}`)}</name>${x.rain || x.intro ? `<description>${X([x.intro, x.rain ? '☔ Yağmur planı: ' + x.rain : ''].filter(Boolean).join('\n'))}</description>` : ''}`);
     // Her gün evden başlar (ve dönüş günü değilse evde biter): ev her katmanda, çizgi evden eve.
     if (H) out.push(`<Placemark><name>${X(x.back === false ? '🏠 Ev (başlangıç)' : '🏠 Ev (başlangıç ve bitiş)')}</name><description>${X(H.addr || '')}</description><styleUrl>#ev</styleUrl><Point><coordinates>${H.lon},${H.lat},0</coordinates></Point></Placemark>`);
-    pts.forEach((it, k) => {
-      const minor = it.kind === 'gecis' || it.kind === 'dukkan';
-      const d = [`${it.t ? it.t + ' · ' : ''}${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}`.trim(), gStars(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
-      out.push(`<Placemark><name>${X(minor ? it.name : `${k + 1}. ${it.name}`)}</name><description>${X(d)}</description><styleUrl>#${it.kind === 'yemek' ? 'yemek' : minor ? 'min' + i : 'gun' + i}</styleUrl><Point><coordinates>${it.lon},${it.lat},0</coordinates></Point></Placemark>`);
+    let n = 0;   // sıra numarası yalnız asıl duraklara (cadde ve mağaza numarasız)
+    pts.forEach(it => {
+      const minor = it.kind === 'gecis' || it.kind === 'dukkan', k = minor ? 0 : ++n;
+      const d = [`${k ? 'Sıra ' + k + ' · ' : ''}${it.t ? it.t + ' · ' : ''}${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}`.trim(), gStars(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
+      out.push(`<Placemark><name>${X(minor ? it.name : `${k}. ${it.name}`)}</name><description>${X(d)}</description><styleUrl>#${it.kind === 'yemek' ? 'yemek' : minor ? 'min' + i : 'gun' + i}</styleUrl><Point><coordinates>${it.lon},${it.lat},0</coordinates></Point></Placemark>`);
     });
     const line = [...(H ? [H] : []), ...pts, ...(H && x.back !== false ? [H] : [])];
     if (line.length > 1) out.push(`<Placemark><name>${X(`${i + 1}. gün · gidiş sırası`)}</name><styleUrl>#cizgi${i}</styleUrl><LineString><tessellate>1</tessellate><coordinates>${line.map(it => `${it.lon},${it.lat},0`).join(' ')}</coordinates></LineString></Placemark>`);
@@ -2794,7 +2798,7 @@ function gTodayHtml(){
 }
 // Haritanın küçük taslağı (My Maps'te nasıl görüneceği): günlerin çizgileri kendi renginde, yemek turuncu, 🏠 ev. Altlık harita yok.
 function gMiniMap(g, c){
-  const H = g.home && g.home.lat ? g.home : null, pts = g.days.flatMap(x => x.items.filter(it => it.lat && it.lon));
+  const H = g.home && g.home.lat ? g.home : null, pts = g.days.flatMap(x => x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon));
   const all = [...pts, ...(H ? [H] : [])]; if (all.length < 2) return '';
   const lats = all.map(p => +p.lat).sort((a, b) => a - b), lons = all.map(p => +p.lon).sort((a, b) => a - b);
   // Uçtaki tek tük uzak noktalar (outlet gibi) haritayı küçültmesin: %5–%95 aralığı.
@@ -2805,7 +2809,7 @@ function gMiniMap(g, c){
   const cl = v => Math.max(4, Math.min(v, 1e4));
   let svg = '';
   g.days.forEach((x, i) => {
-    const col = '#' + G_COLORS[i % G_COLORS.length], ps = x.items.filter(it => it.lat && it.lon), line = [...(H ? [H] : []), ...ps, ...(H && x.back !== false ? [H] : [])];
+    const col = '#' + G_COLORS[i % G_COLORS.length], ps = x.items.filter(it => it.src !== 'bilet' && it.lat && it.lon), line = [...(H ? [H] : []), ...ps, ...(H && x.back !== false ? [H] : [])];
     if (line.length > 1) svg += `<polyline points="${line.map(p => `${cl(X(+p.lon)).toFixed(1)},${cl(Y(+p.lat)).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" stroke-opacity=".75" stroke-linejoin="round"/>`;
     svg += ps.map(p => `<circle cx="${cl(X(+p.lon)).toFixed(1)}" cy="${cl(Y(+p.lat)).toFixed(1)}" r="${p.kind === 'gecis' || p.kind === 'dukkan' ? 1.8 : 3}" fill="${p.kind === 'yemek' ? '#' + G_FOOD : col}"/>`).join('');
   });
