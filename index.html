@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029214958';</script>
-<script src="heybe-web.js?v=20261029214958"></script>
+<script>window.HEYBE_VER = '20261029215528';</script>
+<script src="heybe-web.js?v=20261029215528"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2335,7 +2335,7 @@ function guideBody(){
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
         h += g.ok ? `<p class="gok">✅ Onaylandı (${esc(nm(g.okBy || g.by))}). Plana, PDF'e ve Bugün şeridine girdi.</p>${gDelBtn(c, f)}`
-          : `<div class="callout gdraft"><b>📝 Taslak: henüz onaylanmadı</b><span>Bak, gerekirse aşağıdan değiştirt. Beğenince onayla; onaylanınca plana, PDF'e ve Bugün şeridine girer.</span><div class="ptools" style="margin-top:2px"><button type="button" class="btn sm pri" data-g="approve" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✅ Onayla</button>${gDelBtn(c, f)}</div></div>`;
+          : `<div class="callout gdraft"><b>📝 Taslak: henüz onaylanmadı</b><span>Bak, gerekirse aşağıdan değiştirt. Beğenince onayla: ayrıntılı açıklamalar ve şehir notları o zaman yazılır, rehber plana, PDF'e ve Bugün şeridine girer.</span><div class="ptools" style="margin-top:2px"><button type="button" class="btn sm pri" data-g="approve" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✅ Onayla</button>${gDelBtn(c, f)}</div></div>`;
         h += g.days.map((x, i) => gDayHtml(c, g, x, i, f, can)).join('');
         const R = (S.trip.greq || {})[c] || {}, must = new Set(R.must || []);
         if (g.unplaced && g.unplaced.length) h += `<div class="pmiss gun"><b>Elenen istekler · neden?</b>${g.unplaced.map(u => `<div class="gunrow"><span>✖ <b>${esc(u.name)}</b>: ${esc(u.why)}</span><button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(u.name)}" aria-pressed="${must.has(u.name)}">${must.has(u.name) ? '✓ Eklenecek' : '➕ Mutlaka ekle'}</button></div>`).join('')}</div>`;
@@ -2351,7 +2351,7 @@ function guideBody(){
             + `</div></details>`; }
         if (f.gverify === c) h += `<p class="note">📍 Konumlar haritada doğrulanıyor…</p>`;
         h += `<p class="note">⭐ sizin listeniz · ✨ öneri · 🎟 biletiniz · 🚶 geçilen cadde · 🏬 uğranacak mağaza. ${esc(nm(g.by))} hazırladı, ${dayLabel(g.at)}.</p>
-          ${can && (g.days.some(x => x.items.length && !x.theme) || !g.extra) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}
+          ${can && g.ok && (g.days.some(x => x.items.length && !x.theme && !x.yol) || !g.extra) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}
           <button type="button" class="btn block pri" data-g="sharemenu" data-c="${esc(c)}" aria-expanded="${f.gshare === c}">📤 Paylaş ve indir</button>
           ${f.gshare === c ? `<div class="gshare"><button type="button" class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu (PDF)</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 Google Haritalar'a aktar</button>${navigator.share ? `<button type="button" class="btn sm" data-g="share" data-c="${esc(c)}">💬 Gruba gönder</button>` : ''}
             <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Her gün ayrı katman olarak gelir.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>Yer adları haritada görünmüyorsa: her gün katmanında <b>Bağımsız stiller → Etiketi ayarla → Ad</b>.</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details></div>` : ''}
@@ -2508,11 +2508,12 @@ async function guideMake0(c, f, days, P, trip){
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
       days:days.map((x, i) => { const w = gWindow(c, x, P); return {d:x.d, back:!out(x, i), yol:!w, items:gFit((byD.get(x.d) || {}).items || [], w), rain:w ? (byD.get(x.d) || {}).rain || '' : ''}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5)};
-    save(); toast(`🧭 ${c} rotası hazır; puanlar ve açıklamalar geliyor…`);
+    save(); toast(`🧭 ${c} taslağı hazır. Ayrıntılı açıklamalar ve şehir notları onaylayınca yazılır.`);
     f.gbusy = null; if (form === f) drawSheetKeep();
     guideVerify(c);
     if (tab === 'gezi') render();
-    await Promise.all([guideRate(c), guideDetail(c)]);
+    // Maliyet: uzun açıklamalar ve şehir notları (rehberin en pahalı kısmı) taslakta yazılmaz; ✅ Onayla'dan sonra yazılır.
+    await guideRate(c);
     if (tab === 'gezi') render();
     return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Rehber hazırlanamadı; biraz sonra tekrar dene.'); }
@@ -2538,7 +2539,7 @@ async function guideRedoDay0(c, i){
     day.items = gFit(x.items || [], w); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.theme = ''; day.intro = '';
     save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; açıklamalar yazılıyor…`);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
-    guideVerify(c); await Promise.all([guideRate(c), guideDetail(c)]); if (tab === 'gezi') render(); return;
+    guideVerify(c); await guideRate(c); if (g.ok) await guideDetail(c); if (tab === 'gezi') render(); return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Gün yeniden hazırlanamadı; biraz sonra tekrar dene.'); }
   if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
 }
@@ -2878,7 +2879,7 @@ function guideAct(d){
     toast(`🗑 ${d.c} rehberi silindi. Baştan: istekler → tercihler → rehber.`); return;
   }
   if (d.g === 'must'){ const G = S.trip.greq || (S.trip.greq = {}), R = G[d.c] || (G[d.c] = {}), m = new Set(R.must || []); if (m.has(d.n)) m.delete(d.n); else m.add(d.n); R.must = [...m]; save(); drawSheetKeep(); return; }
-  if (d.g === 'approve'){ const g = (S.trip.guide || {})[d.c]; if (!g) return; g.ok = true; g.okBy = S.me; g.okAt = Date.now(); save(); drawSheetKeep(); toast(`✅ ${d.c} rehberi onaylandı; plana girdi.`); return; }
+  if (d.g === 'approve'){ const g = (S.trip.guide || {})[d.c]; if (!g) return; g.ok = true; g.okBy = S.me; g.okAt = Date.now(); save(); drawSheetKeep(); toast(`✅ ${d.c} rehberi onaylandı; ayrıntılı açıklamalar ve şehir notları yazılıyor…`); guideDetail(d.c); return; }
 }
 // 📅 Takvime aktar: biletler ve rezervasyonlar tek .ics dosyası (iPhone Takvim, Google Takvim açar). Saatler biletteki yerel
 // saattir (saat dilimi yazılmaz; telefon hangi ülkedeyse o saatte görünür). Ulaşımda 2 saat, ziyarette 1 saat önce hatırlatma.
