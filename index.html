@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029160344';</script>
-<script src="heybe-web.js?v=20261029160344"></script>
+<script>window.HEYBE_VER = '20261029160805';</script>
+<script src="heybe-web.js?v=20261029160805"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -335,6 +335,10 @@ nav.tabs svg{width:22px;height:22px}
 .pc-go{flex:none;font-weight:700;font-size:.9rem;color:var(--accent-text)}
 @media (prefers-reduced-motion:no-preference){.tplan{animation:pcIn .45s ease-out}@keyframes pcIn{from{opacity:0;transform:translateY(6px)}}}
 .gline{margin-top:6px;font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.gtheme{margin:0 0 2px;font-size:.86rem;color:var(--muted)}
+.gtheme b{color:var(--accent-text)}
+.gitem .gdesc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.gitem.open .gdesc{display:block;-webkit-line-clamp:unset}
 .gcity{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
 .gcity:first-of-type{border-top:0}
 .gwrow{align-items:center}
@@ -2209,12 +2213,13 @@ function guideBody(){
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
       if (f.gbusy === c) h += `<p class="note">✨ Rehber hazırlanıyor… Bir dakika kadar sürebilir; pencereyi kapatma.</p>`;
       if (g){
-        h += g.days.map((x, i) => `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>🏠 evden${x.back === false ? '' : ' eve'}</span></div>${x.items.map(it => `<div class="pli"><div class="plt"><span class="pt num">${esc(it.t || '')}</span><span class="pic">${G_KIND[it.kind] || '📍'}</span><span class="mid"><span class="d">${G_SRC[it.src] || ''} ${esc(it.name)}</span><span class="m">${esc(it.desc)}</span></span></div><a class="btn sm" href="${mapsDir(it.lat ? `${it.lat},${it.lon}` : `${it.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(it.name)}">🧭</a></div>`).join('')}${x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : ''}</div>`).join('');
+        if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
+        h += g.days.map((x, i) => `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>🏠 evden${x.back === false ? '' : ' eve'}</span></div>${x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : ''}${x.items.map(it => `<div class="pli"><button type="button" class="plt gitem" data-g="more"><span class="pt num">${esc(it.t || '')}</span><span class="pic">${G_KIND[it.kind] || '📍'}</span><span class="mid"><span class="d">${G_SRC[it.src] || ''} ${esc(it.name)}</span><span class="m gdesc">${esc(it.desc)}</span></span></button><a class="btn sm" href="${mapsDir(it.lat ? `${it.lat},${it.lon}` : `${it.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(it.name)}">🧭</a></div>`).join('')}${x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : ''}</div>`).join('');
         if (g.unplaced && g.unplaced.length) h += `<div class="pmiss"><b>Elenen istekler · neden?</b>${g.unplaced.map(u => `<span>✖ <b>${esc(u.name)}</b>: ${esc(u.why)}</span>`).join('')}</div>`;
         if (g.tips && g.tips.length) h += `<div class="pmiss"><b>İpuçları</b>${g.tips.map(t => `<span class="gtip">• ${esc(t)}</span>`).join('')}</div>`;
         if (f.gverify === c) h += `<p class="note">📍 Konumlar haritada doğrulanıyor…</p>`;
         h += `<p class="note">⭐ sizin listeniz · ✨ öneri · 🎟 biletiniz. ${esc(nm(g.by))} hazırladı, ${dayLabel(g.at)}.</p>
-          <div class="ptools" style="margin-top:0"><button type="button" class="btn sm pri" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 My Maps dosyası</button>${can ? `<button type="button" class="btn sm" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ Yeniden hazırla</button>` : ''}</div>
+          <div class="ptools" style="margin-top:0"><button type="button" class="btn sm pri" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 My Maps dosyası</button>${can && g.days.some(x => x.items.length && !x.theme) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}${can ? `<button type="button" class="btn sm" data-g="make" data-c="${esc(c)}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Yeniden hazırla</button>` : ''}</div>
           <details class="why"><summary>My Maps'e nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Her gün ayrı katman olarak gelir.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>Yer adları haritada görünmüyorsa: her gün katmanında <b>Bağımsız stiller → Etiketi ayarla → Ad</b>.</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details>`;
       } else if (can && f.gbusy !== c) h += `<button type="button" class="btn block pri" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ ${esc(c)} rehberini hazırla</button>`;
       h += `</div>`;
@@ -2267,10 +2272,33 @@ async function guideMake(c){
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
       days:days.map((x, i) => ({d:x.d, back:!out(x, i), items:((byD.get(x.d) || {}).items || []).map(it => ({...it})), rain:(byD.get(x.d) || {}).rain || ''})), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5)};
-    save(); toast(`🧭 ${c} rehberi hazır.`);
+    save(); toast(`🧭 ${c} rotası hazır; açıklamalar yazılıyor…`);
+    f.gbusy = null; if (form === f) drawSheetKeep();
     guideVerify(c);
+    await guideDetail(c);
+    return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Rehber hazırlanamadı; biraz sonra tekrar dene.'); }
   f.gbusy = null; if (form === f) drawSheetKeep();
+}
+// Açıklamalar: rota hazır olunca her günün durakları için uzun, bilgili metinler (tarihçe, hikâye, ne sipariş edilmeli)
+// ve günün başlığı ayrı ayrı yazdırılır (günler aynı anda; tek uzun istek sunucunun süre sınırını aşardı).
+async function guideDetail(c){
+  const g = (S.trip.guide || {})[c]; if (!g || !window.claude || !window.claude.guide) return;
+  const prefs = guidePrefs(), todo = g.days.filter(x => x.items.length && !x.theme);
+  if (!todo.length) return;
+  const st = {c, done:0, n:todo.length}; if (form) { form.gdetail = st; drawSheetKeep(); }
+  let fail = 0;
+  await Promise.all(todo.map(async x => {
+    try {
+      const r = await window.claude.guide({mode:'detay', city:c, prefs, day:{d:x.d, gun:planDay(x.d), items:x.items.map(it => ({name:it.name, kind:it.kind, src:it.src, t:it.t, kisa:it.desc}))}});
+      x.theme = r.theme || ''; x.intro = r.intro || '';
+      (r.items || []).forEach((y, k) => { const it = x.items.find(i => i.name === y.name) || x.items[k]; if (it && y.desc) it.desc = y.desc; });
+      save();
+    } catch(_) { fail++; }
+    st.done++; if (form && form.gdetail === st) drawSheetKeep();
+  }));
+  if (form && form.gdetail === st){ form.gdetail = null; drawSheetKeep(); }
+  toast(fail ? `${c}: ${fail} günün açıklaması yazılamadı; ✨ Açıklamaları tamamla ile tekrar dene.` : `🧭 ${c} rehberi hazır.`);
 }
 // Konum doğrulama: her yer OpenStreetMap'te adıyla aranır (saniyede bir); bulunan nokta şehrin içindeyse onunki kullanılır.
 async function guideVerify(c){
@@ -2309,7 +2337,7 @@ function guideKml(c){
   g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col), `<Style id="cizgi${i}"><LineStyle><color>${K(col)}</color><width>3</width></LineStyle></Style>`); });
   g.days.forEach((x, i) => {
     const pts = x.items.filter(it => it.lat && it.lon);
-    out.push(`<Folder><name>${X(`${i + 1}. gün · ${planDay(x.d)}`)}</name>${x.rain ? `<description>${X('☔ Yağmur planı: ' + x.rain)}</description>` : ''}`);
+    out.push(`<Folder><name>${X(`${i + 1}. gün · ${planDay(x.d)}${x.theme ? ' · ' + x.theme : ''}`)}</name>${x.rain || x.intro ? `<description>${X([x.intro, x.rain ? '☔ Yağmur planı: ' + x.rain : ''].filter(Boolean).join('\n'))}</description>` : ''}`);
     // Her gün evden başlar (ve dönüş günü değilse evde biter): ev her katmanda, çizgi evden eve.
     if (H) out.push(`<Placemark><name>${X(x.back === false ? '🏠 Ev (başlangıç)' : '🏠 Ev (başlangıç ve bitiş)')}</name><description>${X(H.addr || '')}</description><styleUrl>#ev</styleUrl><Point><coordinates>${H.lon},${H.lat},0</coordinates></Point></Placemark>`);
     pts.forEach((it, k) => {
@@ -2353,8 +2381,9 @@ async function guidePdf(c){
     x.fillStyle = RPT.ink; x.font = FONT(800, 28); x.fillText(`${i + 1}. gün · ${planDay(d.d)}`, M + 26, y + 37);
     x.fillStyle = RPT.muted; x.font = FONT(600, 22); x.fillText(d.back === false ? '🏠 evden başlar' : '🏠 evden başlar, evde biter', W - M - 330, y + 36);
     y += 72;
+    if (d.theme){ const L = wrap(`${d.theme}${d.intro ? ' — ' + d.intro : ''}`, W - 2 * M - 40, FONT(600, 23), 3); need(L.length * 32 + 10); x.fillStyle = accent; x.font = FONT(600, 23); L.forEach((l, k) => x.fillText(l, M + 20, y + 24 + k * 32)); y += L.length * 32 + 14; }
     for (const it of d.items){
-      const L = wrap(it.desc || '', W - 2 * M - 150, FONT(500, 21), 3);
+      const L = wrap(it.desc || '', W - 2 * M - 150, FONT(500, 21), 12);
       need(44 + L.length * 28);
       x.fillStyle = RPT.muted; x.font = FONT(700, 24); x.fillText(it.t || '', M + 20, y + 26);
       x.fillStyle = it.kind === 'yemek' ? '#B85C00' : RPT.ink; x.font = FONT(700, 26); x.fillText(`${G_KIND[it.kind] || '📍'} ${G_SRC[it.src] || ''} ${it.name}`.slice(0, 70), M + 130, y + 26);
@@ -2393,6 +2422,7 @@ function guideAct(d){
   if (d.g === 'make'){ guideMake(d.c); return; }
   if (d.g === 'kml'){ guideKml(d.c); return; }
   if (d.g === 'pdf'){ guidePdf(d.c); return; }
+  if (d.g === 'detail'){ guideDetail(d.c); return; }
 }
 // 📅 Takvime aktar: biletler ve rezervasyonlar tek .ics dosyası (iPhone Takvim, Google Takvim açar). Saatler biletteki yerel
 // saattir (saat dilimi yazılmaz; telefon hangi ülkedeyse o saatte görünür). Ulaşımda 2 saat, ziyarette 1 saat önce hatırlatma.
@@ -5235,6 +5265,7 @@ document.addEventListener('click', ev => {
     toast('🗄️ Bu seyahat arşivde, sadece görüntülenebilir. Değiştirmek için Seyahat sekmesinden arşivden çıkar.'); return;
   }
   if (!isManager() && (d.delp || d.fam || d.admin || MGR_ACTS.has(d.act))){ mgrOnly(); return; }
+  if (d.g === 'more'){ t.classList.toggle('open'); return; }
   if (d.g){ guideAct(d); return; }
   if (d.emo && !isManager() && d.emo !== S.me){ toast('Sadece kendi emojini değiştirebilirsin.'); return; }
   if (d.admin){
