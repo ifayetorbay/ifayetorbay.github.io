@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029213301';</script>
-<script src="heybe-web.js?v=20261029213301"></script>
+<script>window.HEYBE_VER = '20261029213413';</script>
+<script src="heybe-web.js?v=20261029213413"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2313,8 +2313,8 @@ function guideBody(){
       h += `<div class="f"><span class="lab">${l}</span><div class="chips">${list.map(v => `<button type="button" class="chip" data-g="pref" data-k="${k}" data-v="${esc(v)}" aria-pressed="${n === 1 ? cur === v : (cur || []).includes(v)}">${esc(v)}</button>`).join('')}</div></div>`;
     }
     const mic = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    h += `<div class="f"><label class="lab" for="gNote">Serbest isteklerin</label><span class="note">Aklındakini kendi cümlelerinle yaz${mic ? ' ya da 🎙 ile konuşarak söyle' : ' (klavyedeki 🎙 ile de söyleyebilirsin)'}: nereye mutlaka gitmek istediğini, nereye gitmek istemediğini, alerjini, özel bir isteğini. Rehber bunları dikkate alır.</span>
-      <textarea class="inp" id="gNote" rows="3" maxlength="1000" placeholder="Ör. Camp Nou'ya mutlaka gidelim, kalabalık müzeleri sevmem, bir akşam flamenko izlemek istiyorum, fıstık alerjim var.">${esc(me.not || '')}</textarea>
+    h += `<div class="f"><label class="lab" for="gNote">Serbest isteklerin</label><span class="note">Aklındakini kendi cümlelerinle yaz${mic ? ' ya da 🎙 ile konuşarak söyle' : ' (klavyedeki 🎙 ile de söyleyebilirsin)'}: nereye mutlaka gitmek istediğini, hangi gün ve saatte olsun istediğini, nereye gitmek istemediğini, alerjini. Rehber bunları kesin talimat olarak uygular; şehri ve günü söylersen tam yerine koyar.</span>
+      <textarea class="inp" id="gNote" rows="3" maxlength="1000" placeholder="Ör. Barselona'da La Roca outlet'i mutlaka 2 Aralık öğleden sonraya koy. Sevilla'da bir akşam flamenko olsun. Madrid'de Bernabéu'ya 4 Aralık sabahı gidelim. Fıstık alerjim var.">${esc(me.not || '')}</textarea>
       ${mic ? `<button type="button" class="btn sm${f.gmic ? ' pri' : ''}" data-g="mic">${f.gmic ? '⏺ Dinliyorum… bitirmek için dokun' : '🎙 Konuşarak yaz'}</button>` : ''}</div>
       <button type="button" class="btn block pri" data-g="step" data-v="2">Sonraki: Rehber ›</button>`;
   } else {
@@ -2460,8 +2460,10 @@ function guidePayload(c){
     istek_listesi:gWish().filter(w => w.city === c).map(w => w.name),
     // Taslaktan sonra kullanıcının istekleri: mutlaka eklenecek yerler ve serbest değişiklik notu.
     zorunlu_yerler:((S.trip.greq || {})[c] || {}).must || [],
-    kullanici_notu:((S.trip.greq || {})[c] || {}).ask || '',
-    tercihler:{...guidePrefs(), outlet:(guidePrefs().outlet || []).includes(c) ? 'bu şehirde outlet/AVM isteniyor' : 'bu şehirde outlet yok'}
+    kullanici_notu:(a => a ? `KESİN TALİMAT: "${a}". Gün ve saat verildiyse o güne koy; mümkün değilse en yakın uygun güne koy ve nedenini tips'in ilk maddesinde yaz.` : '')(((S.trip.greq || {})[c] || {}).ask || ''),
+    tercihler:(({not, ...p}) => ({...p, outlet:(p.outlet || []).includes(c) ? 'bu şehirde outlet/AVM isteniyor' : 'bu şehirde outlet yok'}))(guidePrefs()),
+    // Serbest istekler (yazılı ya da 🎙 ile): kesin talimat; yalnız bu şehirle ilgili olanlar, tarih/saat verildiyse o güne.
+    serbest_istekler:(n => n ? `KESİN TALİMAT (kişilerin kendi sözleri): "${n}". Yalnız ${c} ile ilgili olanlara uy, başka şehirlerle ilgili olanları bu rehbere koyma. Bir yer, etkinlik ya da gün/saat belirtilmişse onu o güne ve saate koy (outlet gibi yarım gün isteyenler dahil). O gün gezi aralığı yetmiyorsa ya da yolculuk günüyse en yakın uygun güne koy ve nedenini tips'in ilk maddesinde yaz.` : '')(guidePrefs().not || '')
   };
   return {days, P, trip};
 }
