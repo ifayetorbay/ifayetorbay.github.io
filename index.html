@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261029213521';</script>
-<script src="heybe-web.js?v=20261029213521"></script>
+<script>window.HEYBE_VER = '20261029213928';</script>
+<script src="heybe-web.js?v=20261029213928"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -1714,7 +1714,9 @@ function maybeAskWho(){
   openSheet({mode:'who'});
 }
 function closeSheet(){
+  const wasGuide = form && form.mode === 'guide';
   form = null; clearDraft();
+  if (wasGuide) render();
   const host = document.getElementById('sheetHost'), sc = host.querySelector('.scrim');
   if (!sc || calm()){ host.innerHTML = ''; return; }
   // Kapanırken aşağı iner; bu arada yeni bir form açıldıysa ona dokunulmaz.
@@ -1759,6 +1761,8 @@ function chip(label, on, attrs, extra=''){ return `<button type="button" class="
 function catChips(){ return CATS.map(c => chip(`${c.icon} ${c.name}`, form.cat === c.id, `data-cat="${c.id}"`)).join(''); }
 
 function drawSheet(){
+  // Rehber penceresindeki değişiklik (sil, onayla, hazırla…) arkadaki Gezi sekmesine de hemen yansısın.
+  if (form && form.mode === 'guide' && tab === 'gezi') queueMicrotask(render);
   const f = form, host = document.getElementById('sheetHost');
   let body = '';
   const amountBlock = `<div class="f"><label for="fAmt">${f.mode === 'shop' ? 'Ödediğin tutar' : 'Tutar'}</label><div class="amtrow">
@@ -2482,7 +2486,9 @@ async function guideMake(c){
     save(); toast(`🧭 ${c} rotası hazır; puanlar ve açıklamalar geliyor…`);
     f.gbusy = null; if (form === f) drawSheetKeep();
     guideVerify(c);
+    if (tab === 'gezi') render();
     await Promise.all([guideRate(c), guideDetail(c)]);
+    if (tab === 'gezi') render();
     return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Rehber hazırlanamadı; biraz sonra tekrar dene.'); }
   f.gbusy = null; if (form === f) drawSheetKeep();
@@ -2502,7 +2508,7 @@ async function guideRedoDay(c, i){
     day.items = gFit(x.items || [], w); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.theme = ''; day.intro = '';
     save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; açıklamalar yazılıyor…`);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
-    guideVerify(c); await Promise.all([guideRate(c), guideDetail(c)]); return;
+    guideVerify(c); await Promise.all([guideRate(c), guideDetail(c)]); if (tab === 'gezi') render(); return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Gün yeniden hazırlanamadı; biraz sonra tekrar dene.'); }
   if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
 }
