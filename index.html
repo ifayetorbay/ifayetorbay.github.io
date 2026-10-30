@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261030131902';</script>
-<script src="heybe-web.js?v=20261030131902"></script>
+<script>window.HEYBE_VER = '20261030132703';</script>
+<script src="heybe-web.js?v=20261030132703"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2268,7 +2268,7 @@ const G_KIND = {gez:'🏛', yemek:'🍽', alis:'🛍', aksam:'🌙', gecis:'🚶
 // Gün renkleri: numaralı rota tek bütün; günler aynı aileden koyu tonlarla sakin bir geçişle ayrılır (lacivert → petrol → mor …).
 const G_COLORS = ['1A237E', '00695C', '6A1B9A', '4E342E', '37474F', 'AD1457', '2E7D32', '0277BD'], G_FOOD = 'E65100';
 // Yemek seçenekleri (saatsiz havuz): tür → simge, harita rengi, ad.
-const G_FT = {kahvalti:['☕', '6D4C41', 'Kahvaltı'], firin:['🥐', '8D6E63', 'Fırın'], restoran:['🍽', 'E65100', 'Restoran'], tatli:['🍨', 'AD1457', 'Tatlı · dondurma'], kafe:['☕', '6D4C41', 'Kafe']};
+const G_FT = {kahvalti:['☕', '6D4C41', 'Kahvaltı'], firin:['🥐', '8D6E63', 'Fırın'], restoran:['🍽', 'E65100', 'Restoran'], pazar:['🧺', 'BF360C', 'Yemek pazarı'], tatli:['🍨', 'AD1457', 'Tatlı · dondurma'], kafe:['☕', '6D4C41', 'Kafe']};
 // Seyahatin şehirleri, plan sırasıyla (konaklamalardan): Barselona, Madrid, Sevilla.
 function guideCities(){
   const P = tripPlan(); if (!P) return [];
@@ -2893,6 +2893,25 @@ async function guideVerify(c){
     } catch(_) { break; }
     await new Promise(r => setTimeout(r, 1100));
   }
+  // Alışveriş caddelerinin gerçek şekli: OpenStreetMap adres araması (Nominatim, ücretsiz, saniyede bir) caddeyi parça parça
+  // çizgi olarak verir; ad varyantları denenir ("Calle de Preciados" → "Calle Preciados"), caddenin ortasına 1,2 km içindeki
+  // parçalar alınır. Bulunamazsa haritada modelin verdiği baş–son çizilir.
+  const vars = n => [...new Set([n, n.replace(/\s+(de la|de los|de las|del|de|d')\s+/i, ' '), n.replace(/^(calle|carrer|avenida|avinguda|paseo|passeig|plaza|rúa|rua|via|vía)\s+((de la|de los|de las|del|de|d')\s+)?/i, '')])].filter(Boolean);
+  for (const it of g.days.flatMap(x => x.items).filter(it => it.kind === 'gecis' && it.lat && !it.geomTried)){
+    it.geomTried = 1;
+    const la = +it.lat, lo = +it.lon, vb = [lo - 0.02, la + 0.015, lo + 0.02, la - 0.015].join(',');
+    for (const v of vars(String(it.name).replace(/\s*\(.*?\)\s*/g, ' ').trim())){
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=40&dedupe=0&polygon_geojson=1&polygon_threshold=0.00002&street=${encodeURIComponent(v)}&viewbox=${vb}&bounded=1`).then(r => r.json());
+        const ways = (r || []).filter(h => h.class === 'highway' && h.geojson && /LineString/.test(h.geojson.type))
+          .flatMap(h => h.geojson.type === 'LineString' ? [h.geojson.coordinates] : h.geojson.coordinates)
+          .map(w => w.map(p => [+(+p[1]).toFixed(5), +(+p[0]).toFixed(5)]))
+          .filter(w => w.some(p => gKm({lat:p[0], lon:p[1]}, {lat:la, lon:lo}) < 1.2));
+        await new Promise(r => setTimeout(r, 1100));
+        if (ways.length){ it.geom = ways.slice(0, 40).map(w => w.slice(0, 80)); break; }
+      } catch(_) { break; }
+    }
+  }
   gRouteAll(c); save(); if (form && form.gverify === c){ form.gverify = null; drawSheetKeep(); }
 }
 // 🗺 My Maps: şehir başına tek KML. Her gün ayrı klasör (My Maps'te ayrı, açılıp kapanan katman), gün rengi; yemek yerleri
@@ -2917,7 +2936,7 @@ function guideKml(c){
   const K = rgb => 'ff' + rgb.slice(4, 6) + rgb.slice(2, 4) + rgb.slice(0, 2), ICON = 'https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png';
   const sty = (id, rgb, sc, lab) => `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>${sc}</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${K(rgb)}</color><scale>${lab}</scale></LabelStyle></Style>`;
   const pm = (name, desc, style, it) => `<Placemark><name>${X(name)}</name><description>${X(desc)}</description><styleUrl>#${style}</styleUrl><Point><coordinates>${it.lon},${it.lat},0</coordinates></Point></Placemark>`;
-  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, sty('ev', '212121', 1.2, 1), sty('cadde', '2E7D32', 0.75, 0.8), `<Style id="cadde-hat"><LineStyle><color>${'88' + K('2E7D32').slice(2)}</color><width>4</width></LineStyle></Style>`, sty('pratik', '616161', 0.8, 0.75)];
+  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, sty('ev', '212121', 1.2, 1), sty('cadde', '2E7D32', 0.75, 0.8), `<Style id="cadde-hat"><LineStyle><color>${'b3' + K('212121').slice(2)}</color><width>3</width></LineStyle></Style>`, sty('pratik', '616161', 0.8, 0.75)];
   Object.entries(G_FT).forEach(([t, v]) => out.push(sty('f-' + t, v[1], 0.9, 0.8)));
   g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col, 1.2, 1.1), `<Style id="cizgi${i}"><LineStyle><color>${'40' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
   const H = g.home && g.home.lat && g.home.lon ? g.home : null, miss = [], N = gNums(c, g), dayName = (x, i) => `${i + 1}. gün · ${planDay(x.d)}`;
@@ -2943,11 +2962,13 @@ function guideKml(c){
     const rows = g.days.flatMap((x, i) => (x.food || []).filter(fd => pred(fd) && ok(x, fd)).map(fd => pm(`${(G_FT[fd.tur] || G_FT.restoran)[0]} ${fd.name}`, [`${dayName(x, i)}${fd.yakin ? ' · ' + fd.yakin + ' yakını' : ''}`, fd.not, gStars(fd), fd.addr, fd.g && fd.g.url ? fd.g.url : ''].filter(Boolean).join('\n'), 'f-' + (G_FT[fd.tur] ? fd.tur : 'restoran'), fd)));
     if (rows.length) out.push(`<Folder><name>${X(title)}</name>${rows.join('')}</Folder>`);
   };
-  food(fd => !fd.tur || fd.tur === 'restoran', '🍽 Restoranlar');
-  food(fd => fd.tur && fd.tur !== 'restoran', '🍨 Tatlı · fırın · kahvaltı');
+  food(fd => !fd.tur || fd.tur === 'restoran' || fd.tur === 'pazar', '🍽 Restoranlar ve yemek pazarları');
+  food(fd => fd.tur && fd.tur !== 'restoran' && fd.tur !== 'pazar', '🍨 Tatlı · fırın · kahvaltı');
   // 3) Caddeler ve mağazalar (numarasız, küçük yeşil).
-  // Alışveriş caddeleri: belirgin olmayan ince yeşil hat (yürünen bölümün başı–sonu); ünlü mağazalar küçük işaret.
-  const hat = it => { const m = String(it.hat || '').match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*;\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/); if (!m) return ''; const a = {lat:+m[1], lon:+m[2]}, b = {lat:+m[3], lon:+m[4]}; return gKm(a, {lat:+it.lat, lon:+it.lon}) < 3 && gKm(a, b) < 3 ? `<Placemark><name>${X(it.name)}</name><styleUrl>#cadde-hat</styleUrl><LineString><tessellate>1</tessellate><coordinates>${a.lon},${a.lat},0 ${b.lon},${b.lat},0</coordinates></LineString></Placemark>` : ''; };
+  // Alışveriş caddeleri: kullanıcının Roma haritasındaki gibi siyah, ince ama görünür hat (OpenStreetMap'ten caddenin gerçek şekli;
+  // yoksa modelin verdiği baş–son) (yürünen bölümün başı–sonu); ünlü mağazalar küçük işaret.
+  const hat = it => { if (it.geom && it.geom.length) return `<Placemark><name>${X(it.name)}</name><styleUrl>#cadde-hat</styleUrl><MultiGeometry>${it.geom.map(w => `<LineString><tessellate>1</tessellate><coordinates>${w.map(p => `${p[1]},${p[0]},0`).join(' ')}</coordinates></LineString>`).join('')}</MultiGeometry></Placemark>`;
+    const m = String(it.hat || '').match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*;\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/); if (!m) return ''; const a = {lat:+m[1], lon:+m[2]}, b = {lat:+m[3], lon:+m[4]}; return gKm(a, {lat:+it.lat, lon:+it.lon}) < 3 && gKm(a, b) < 3 ? `<Placemark><name>${X(it.name)}</name><styleUrl>#cadde-hat</styleUrl><LineString><tessellate>1</tessellate><coordinates>${a.lon},${a.lat},0 ${b.lon},${b.lat},0</coordinates></LineString></Placemark>` : ''; };
   const shop = g.days.flatMap((x, i) => x.items.filter(it => (it.kind === 'gecis' || it.kind === 'dukkan') && ok(x, it)).map(it => (it.kind === 'gecis' ? hat(it) : '') + pm(`${it.kind === 'gecis' ? '🚶' : '🏬'} ${it.name}`, [dayName(x, i), it.desc, gStars(it), it.addr].filter(Boolean).join('\n'), 'cadde', it)));
   if (shop.length) out.push(`<Folder><name>🛍 Caddeler ve mağazalar</name>${shop.join('')}</Folder>`);
   // 4) Pratik noktalar: WC, bavul emanetçisi, ulaşım, eczane.
@@ -3072,6 +3093,7 @@ function gMiniMap(g, c){
   g.days.forEach((x, i) => {
     const col = '#' + G_COLORS[i % G_COLORS.length], ps = x.items.filter(it => gVisit(c, x.d, it) && it.lat && it.lon && !gFar(g, it)), line = [...(H ? [H] : []), ...ps, ...(H && x.back !== false ? [H] : [])];
     if (line.length > 1) svg += `<polyline points="${line.map(p => `${cl(X(+p.lon)).toFixed(1)},${cl(Y(+p.lat)).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" stroke-opacity=".75" stroke-linejoin="round"/>`;
+    svg += x.items.filter(it => it.geom).flatMap(it => it.geom).map(w => `<polyline points="${w.map(p => `${cl(X(p[1])).toFixed(1)},${cl(Y(p[0])).toFixed(1)}`).join(' ')}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-opacity=".55"/>`).join('');
     svg += (x.food || []).filter(p => p.lat && !gFar(g, p)).map(p => `<circle cx="${cl(X(+p.lon)).toFixed(1)}" cy="${cl(Y(+p.lat)).toFixed(1)}" r="1.6" fill="#${G_FOOD}" fill-opacity=".8"/>`).join('');
     svg += ps.map(p => `<circle cx="${cl(X(+p.lon)).toFixed(1)}" cy="${cl(Y(+p.lat)).toFixed(1)}" r="${p.kind === 'gecis' || p.kind === 'dukkan' ? 1.8 : 3}" fill="${col}"/>`).join('');
   });
