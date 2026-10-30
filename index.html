@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261030132703';</script>
-<script src="heybe-web.js?v=20261030132703"></script>
+<script>window.HEYBE_VER = '20261030133220';</script>
+<script src="heybe-web.js?v=20261030133220"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2561,7 +2561,7 @@ async function guideMake0(c, f, days, P, trip){
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
-      days:days.map((x, i) => { const w = gWindow(c, x, P); return {d:x.d, back:!out(x, i), yol:!w, items:gFit((byD.get(x.d) || {}).items || [], w), rain:w ? (byD.get(x.d) || {}).rain || '' : ''}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
+      days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gFit(y.items || [], w), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
     gRouteAll(c);
     save(); toast(`🧭 ${c} rotası hazır; yemek seçenekleri seçiliyor…`);
     f.gfood = c; if (form === f) drawSheetKeep();
@@ -2593,7 +2593,7 @@ async function guideRedoDay0(c, i){
     const x = (r.days || []).find(y => y.d === d) || (r.days || [])[0];
     if (!x) throw 0;
     const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
-    day.items = gFit(x.items || [], w); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.theme = ''; day.intro = ''; day.food = [];
+    day.items = gFit(x.items || [], w); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.turler = x.turler || day.turler || []; day.theme = ''; day.intro = ''; day.food = [];
     gRoute(c, g, i); save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; yemek seçenekleri seçiliyor…`);
     await guideFood(c, [day]);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
@@ -2756,7 +2756,9 @@ async function guideFood(c, days, model){
   await Promise.all(todo.map(async x => {
     try {
       const no = g.days.filter(y => y !== x).flatMap(y => (y.food || []).map(fd => fd.name));
-      const r = await window.claude.guide({mode:'yemek', city:c, model, prefs, ilham:il, no, turler:T.gun(g.days.indexOf(x)), secili:T.secili,
+      // Günün türleri: rota modelinin (Opus) şehre ve semte göre seçtiği; seçim yapılmışsa yalnız seçilenler; yoksa sıra sıra dağıtım.
+      const mt = (x.turler || []).filter(t => !T.secili.length || T.secili.some(s => s.toLocaleLowerCase('tr').startsWith(String(t).toLocaleLowerCase('tr').slice(0, 4))));
+      const r = await window.claude.guide({mode:'yemek', city:c, model, prefs, ilham:il, no, turler:mt.length >= 2 ? mt : T.gun(g.days.indexOf(x)), secili:T.secili,
         day:{d:x.d, gun:planDay(x.d), ev:(g.home || {}).addr || '', rota:x.items.filter(it => it.lat).map(it => ({no:N.get(it) || '', name:it.name, kind:it.kind, lat:it.lat, lon:it.lon}))}});
       x.food = (r.food || []).filter(fd => fd && fd.name);
     } catch(_) {}
@@ -2871,6 +2873,27 @@ async function guideDetail(c){
   toast(fail ? `${c}: ${fail} günün açıklaması yazılamadı; ✨ Açıklamaları tamamla ile tekrar dene.` : `🧭 ${c} rehberi hazır.`);
 }
 // Konum doğrulama: her yer OpenStreetMap'te adıyla aranır (saniyede bir); bulunan nokta şehrin içindeyse onunki kullanılır.
+// Caddenin gerçek şekli: OpenStreetMap adres araması (Nominatim, ücretsiz, saniyede bir) caddeyi parça parça çizgi olarak verir.
+// Ad varyantları denenir ("Calle de Preciados" → "Calle Preciados" → "Preciados"; Carrer/Via/Rua/Rue/Street… önekleri),
+// arama caddenin ortası çevresindeki kutuyla sınırlıdır; ortaya 1,2 km içindeki parçalar alınır. Bulunamazsa null.
+const G_ST_PRE = /^(calle|carrer|carrera|avenida|avinguda|av\.|paseo|passeig|plaza|pla[çc]a|r[uú]a|rue|via|v[ií]a|viale|corso|strada|street|st\.|avenue|boulevard|bd|stra[ßs]e)\s+((de la|de los|de las|del|des|de|di|della|dei|degli|de'|d'|du)\s*)?/i;
+async function gStreetGeom(name, la, lo){
+  const n = String(name || '').replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+(caddesi|cadde|sokağı|sokak|bulvarı)$/i, '').trim();
+  const vars = [...new Set([n, n.replace(/\s+(de la|de los|de las|del|des|de|di|della|dei|degli|de'|d'|du)\s+/i, ' '), n.replace(G_ST_PRE, '')])].filter(v => v && v.length > 2);
+  const vb = [lo - 0.02, la + 0.015, lo + 0.02, la - 0.015].join(',');
+  for (const v of vars){
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=40&dedupe=0&polygon_geojson=1&polygon_threshold=0.00002&street=${encodeURIComponent(v)}&viewbox=${vb}&bounded=1`).then(r => r.json());
+      await new Promise(r => setTimeout(r, 1100));
+      const ways = (r || []).filter(h => h.class === 'highway' && h.geojson && /LineString/.test(h.geojson.type))
+        .flatMap(h => h.geojson.type === 'LineString' ? [h.geojson.coordinates] : h.geojson.coordinates)
+        .map(w => w.map(p => [+(+p[1]).toFixed(5), +(+p[0]).toFixed(5)]))
+        .filter(w => w.some(p => gKm({lat:p[0], lon:p[1]}, {lat:la, lon:lo}) < 1.2));
+      if (ways.length) return ways.slice(0, 40).map(w => w.slice(0, 80));
+    } catch(_) { return null; }
+  }
+  return null;
+}
 async function guideVerify(c){
   const g = (S.trip.guide || {})[c]; if (!g) return;
   const items = g.days.flatMap(x => x.items), pts = items.filter(it => it.lat), mid = pts.length ? [pts.map(p => p.lat).sort((a, b) => a - b)[pts.length >> 1], pts.map(p => p.lon).sort((a, b) => a - b)[pts.length >> 1]] : null;
@@ -2893,24 +2916,9 @@ async function guideVerify(c){
     } catch(_) { break; }
     await new Promise(r => setTimeout(r, 1100));
   }
-  // Alışveriş caddelerinin gerçek şekli: OpenStreetMap adres araması (Nominatim, ücretsiz, saniyede bir) caddeyi parça parça
-  // çizgi olarak verir; ad varyantları denenir ("Calle de Preciados" → "Calle Preciados"), caddenin ortasına 1,2 km içindeki
-  // parçalar alınır. Bulunamazsa haritada modelin verdiği baş–son çizilir.
-  const vars = n => [...new Set([n, n.replace(/\s+(de la|de los|de las|del|de|d')\s+/i, ' '), n.replace(/^(calle|carrer|avenida|avinguda|paseo|passeig|plaza|rúa|rua|via|vía)\s+((de la|de los|de las|del|de|d')\s+)?/i, '')])].filter(Boolean);
+  // Alışveriş caddelerinin gerçek şekli (gStreetGeom), saniyede bir istek.
   for (const it of g.days.flatMap(x => x.items).filter(it => it.kind === 'gecis' && it.lat && !it.geomTried)){
-    it.geomTried = 1;
-    const la = +it.lat, lo = +it.lon, vb = [lo - 0.02, la + 0.015, lo + 0.02, la - 0.015].join(',');
-    for (const v of vars(String(it.name).replace(/\s*\(.*?\)\s*/g, ' ').trim())){
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=40&dedupe=0&polygon_geojson=1&polygon_threshold=0.00002&street=${encodeURIComponent(v)}&viewbox=${vb}&bounded=1`).then(r => r.json());
-        const ways = (r || []).filter(h => h.class === 'highway' && h.geojson && /LineString/.test(h.geojson.type))
-          .flatMap(h => h.geojson.type === 'LineString' ? [h.geojson.coordinates] : h.geojson.coordinates)
-          .map(w => w.map(p => [+(+p[1]).toFixed(5), +(+p[0]).toFixed(5)]))
-          .filter(w => w.some(p => gKm({lat:p[0], lon:p[1]}, {lat:la, lon:lo}) < 1.2));
-        await new Promise(r => setTimeout(r, 1100));
-        if (ways.length){ it.geom = ways.slice(0, 40).map(w => w.slice(0, 80)); break; }
-      } catch(_) { break; }
-    }
+    it.geomTried = 1; const w = await gStreetGeom(it.name, +it.lat, +it.lon); if (w) it.geom = w;
   }
   gRouteAll(c); save(); if (form && form.gverify === c){ form.gverify = null; drawSheetKeep(); }
 }
