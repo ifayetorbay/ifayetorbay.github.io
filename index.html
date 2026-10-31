@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031175417';</script>
-<script src="heybe-web.js?v=20261031175417"></script>
+<script>window.HEYBE_VER = '20261031175854';</script>
+<script src="heybe-web.js?v=20261031175854"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2305,7 +2305,7 @@ function guidePrefs(){
 // Fiyat seviyesi 1-3: tercih metninden ("€€ ~15–30 €") ya da Google'ın fiyat seviyesinden (PRICE_LEVEL_MODERATE gibi).
 const gLevel = v => { if (!v) return 0; const s = String(v); if (/PRICE_LEVEL_/.test(s)) return {INEXPENSIVE:1, MODERATE:2, EXPENSIVE:3, VERY_EXPENSIVE:3}[s.replace('PRICE_LEVEL_', '')] || 0; const m = s.match(/^€+/); return m ? Math.min(m[0].length, 3) : 0; };
 // 💶 Yemek bütçesi denetimi (yalnız restoranlar; fırın, tatlı, kahvaltı, pazar zaten ucuz): seviye Google'dan, yoksa modelin
-// yazdığı. Ana seviyenin üstü çıkar; bir üst seviyeye izin varsa günde EN ÇOK 1 "değer" istisnası kalır (Google 4,6+ ve
+// yazdığı. Ana seviyenin üstü çıkar; bir üst seviyeye izin varsa günde EN ÇOK 2 "değer" istisnası kalır (Google 4,6+ ve
 // 2.000+ yorum; Google yoksa modelin "değer" işareti). İki seviye yukarısı hiç gelmez.
 function gBudget(g){
   const P = guidePrefs(), base = gLevel(P.butce); if (!base) return;
@@ -2313,8 +2313,8 @@ function gBudget(g){
     const lvl = fd => gLevel(fd.g && fd.g.p) || +fd.fiyat || 0;
     const great = fd => fd.g && fd.g.r && !fd.g.tahmin ? fd.g.r >= 4.6 && fd.g.n >= 2000 : !!fd.deger;
     const up = (x.food || []).filter(fd => (!fd.tur || fd.tur === 'restoran') && lvl(fd) === base + 1 && P.butce_ust && great(fd))
-      .sort((a, b) => ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0))[0];
-    x.food = (x.food || []).filter(fd => { if (fd.tur && fd.tur !== 'restoran') return true; const l = lvl(fd); fd.deger = fd === up; return !l || l <= base || fd === up; });
+      .sort((a, b) => ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0)).slice(0, 2);
+    x.food = (x.food || []).filter(fd => { if (fd.tur && fd.tur !== 'restoran') return true; const l = lvl(fd); fd.deger = up.includes(fd); return !l || l <= base || fd.deger; });
   }
 }
 const gPrice = fd => { const l = gLevel(fd.g && fd.g.p) || +fd.fiyat || 0; return l ? (fd.deger ? `⭐ Değer · ${'€'.repeat(l)}` : '€'.repeat(l)) : ''; };
