@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031182453';</script>
-<script src="heybe-web.js?v=20261031182453"></script>
+<script>window.HEYBE_VER = '20261031193441';</script>
+<script src="heybe-web.js?v=20261031193441"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2626,6 +2626,9 @@ function guidePayload(c){
 }
 // Aralık dışında kalan durakları ayıklar (30 dk pay): bilet/yolculuk her zaman kalır; gezi yoksa yalnız onlar.
 const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src === 'bilet') return true; if (!w) return false; const t = hm(it.t); return t == null || (t >= w.a - 30 && t <= w.z + 30); });
+// Rehber hatalarında neden açıkça söylenir: Claude API kredisi bittiyse (sunucu 402) "hazırlanamadı" yerine bu yazılır.
+const G_KREDI = '💳 Claude API kredisi bitti: console.anthropic.com → Billing\'den kredi yükle, sonra tekrar dene.';
+const gErrMsg = (e, def) => e && e.code === 'kredi' ? G_KREDI : e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : def;
 const gRunning = new Set();   // hazırlanan şehirler: aynı şehir için ikinci istek yok sayılır
 const gTok = {};             // şehir başına iş numarası: "Vazgeç" numarayı artırır, eski işin gelen sonucu yazılmaz
 async function guideMake(c){
@@ -2652,16 +2655,19 @@ async function gBuild(c, trip, model, f, tok){
       istek_listesi:trip.istek_listesi.filter(w => mine.has(w)), zorunlu_yerler:(trip.zorunlu_yerler || []).filter(w => mine.has(w))};
     return window.claude.guide({mode:'rehber', trip:t, cities:[c], model});
   };
+  let err = null;
   const res = await Promise.all(todo.map(async gd => {
     let r = null;
-    for (let k = 0; k < 2 && !r && gTok[c] === tok; k++) try { r = await one(gd); } catch(_) {}
+    for (let k = 0; k < 2 && !r && gTok[c] === tok; k++) try { r = await one(gd); } catch(e){ err = e; if (e && e.code === 'kredi') break; }
+    // Tek günlük istekte model tarihi farklı yazsa da gün kaybolmasın: dönen gün o günün tarihine bağlanır.
+    if (r && r.days && r.days[0]) r.days[0].d = gd.d;
     stage(`gun ${++done}/${n}`); return r;
   }));
   if (gTok[c] !== tok) return null;
   const ok = res.filter(Boolean), uniq = (a, key) => [...new Map(a.map(v => [key(v), v])).values()];
-  if (!ok.length) throw new Error('gunler');
+  if (!ok.length) throw err || new Error('gunler');
   const miss = todo.filter((_, i) => !res[i]).map(gd => gd.gun);
-  if (miss.length) toast(`⚠ ${miss.join(', ')} hazırlanamadı; o günde "✨ Bu günü yeniden" ile tekrar dene.`);
+  if (miss.length) toast(err && err.code === 'kredi' ? `${G_KREDI} (${miss.join(', ')} boş kaldı)` : `⚠ ${miss.join(', ')} hazırlanamadı; o günde "✨ Bu günü yeniden" ile tekrar dene.`, {ms:10000});
   stage('');
   return {home:sk.home || (ok[0] || {}).home, days:ok.flatMap(r => r.days || []), unplaced:sk.unplaced || [],
     tips:uniq([...(sk.tips || []), ...ok.flatMap(r => r.tips || [])], t => t), pratik:uniq(ok.flatMap(r => r.pratik || []), p => String(p.name).toLocaleLowerCase('tr'))};
@@ -2697,7 +2703,7 @@ async function guideMake0(c, f, days, P, trip){
     await guideRate(c); gNearDone.delete(c); await gNearby(c);
     if (tab === 'gezi') render();
     return;
-  } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Rehber hazırlanamadı; biraz sonra tekrar dene.'); }
+  } catch(e){ toast(gErrMsg(e, 'Rehber hazırlanamadı; biraz sonra tekrar dene.'), {ms:9000}); }
   f.gbusy = null; f.gstage = ''; if (form === f) drawSheetKeep();
 }
 // Tek günü yeniden hazırla: diğer günler aynen kalır; o günün yerleri başka günlerde tekrarlanmaz. Açıklama ve başlık yeniden yazılır.
@@ -2723,7 +2729,7 @@ async function guideRedoDay0(c, i){
     await guideFood(c, [day]);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
     guideVerify(c); await guideRate(c); if (g.ok) await guideDetail(c); if (tab === 'gezi') render(); return;
-  } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Gün yeniden hazırlanamadı; biraz sonra tekrar dene.'); }
+  } catch(e){ toast(gErrMsg(e, 'Gün yeniden hazırlanamadı; biraz sonra tekrar dene.'), {ms:9000}); }
   if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
 }
 // 🎙 Konuşarak yaz: tarayıcının ses tanıması (Türkçe); söylenenler "Serbest isteklerin" kutusunun sonuna eklenir.
@@ -2813,9 +2819,9 @@ function gRoute(c, g, i){
   // Sıra her zaman gerçek mesafeye göre en kısa seçilir (metroyla gidilen ara da mesafesi kadar sayılır; uzağa sıçrama ucuz değil).
   const leg = km => km > 2.5 ? [0, 25, 1] : [km, km / 4.5 * 60, 0];
   const cost = ord => {
-    let t = t0, walk = 0, metro = 0, dist = 0, pen = 0, lunch = false, prev = h; const at = [], bad = [];
+    let t = t0, walk = 0, metro = 0, dist = 0, all = 0, pen = 0, lunch = false, prev = h; const at = [], bad = [];
     for (const k of ord){
-      if (prev >= 0){ const L = leg(D[prev][k]); walk += L[0]; t += L[1]; metro += L[2]; dist += D[prev][k]; }
+      if (prev >= 0){ const L = leg(D[prev][k]); walk += L[0]; t += L[1]; metro += L[2]; dist += D[prev][k]; all += D[prev][k] > 6 ? 0 : D[prev][k]; }
       if (!lunch && t >= 810){ t += 75; lunch = true; }
       if (fix[k] != null){ if (t > fix[k] + 10){ pen += 30 + (t - fix[k]) / 6; bad.push(k); } else { pen += (fix[k] - t) / 60 * 0.8; t = fix[k]; } }
       else if (hrs[k] && hrs[k][1] > hrs[k][0]){
@@ -2824,9 +2830,9 @@ function gRoute(c, g, i){
       }
       at.push(t); t += dur[k]; prev = k;
     }
-    if (back && h >= 0 && prev >= 0){ const L = leg(D[prev][h]); walk += L[0]; metro += L[2]; dist += D[prev][h]; }
+    if (back && h >= 0 && prev >= 0){ const L = leg(D[prev][h]); walk += L[0]; metro += L[2]; dist += D[prev][h]; all += D[prev][h] > 6 ? 0 : D[prev][h]; }
     if (w && t > w.z + 30) pen += (t - w.z) / 60;
-    return {c:dist + pen, dist, walk, metro, at, bad};
+    return {c:dist + pen, dist, all, walk, metro, at, bad};
   };
   let best = [...Array(n).keys()], bc = cost(best);
   const take = o => { const r = cost(o); if (r.c < bc.c - 1e-9){ best = o.slice(); bc = r; return true; } return false; };
@@ -2855,8 +2861,9 @@ function gRoute(c, g, i){
   const out = ord.slice();
   for (const it of pin){ const t = hm(it.t); let j = t == null ? 0 : bc.at.findIndex(a => a > t); if (j < 0) j = out.length; out.splice(j, 0, it); }
   x.items = [...out, ...rest];
-  // km = metroyla gidilirse kalan yürüme; all = metroya hiç binilmezse toplam yürüme.
-  x.walk = {km:Math.round(bc.walk * 10) / 10, metro:bc.metro, all:Math.round(bc.dist * 10) / 10};
+  // km = metroyla gidilirse kalan yürüme; all = metroya hiç binilmezse toplam yürüme (6 km'den uzun aralar, ör. outlet ya da
+  // havalimanı, zaten yürünmez: toplamına girmez).
+  x.walk = {km:Math.round(bc.walk * 10) / 10, metro:bc.metro, all:Math.round(bc.all * 10) / 10};
 }
 const gRouteAll = c => { const g = (S.trip.guide || {})[c]; if (g) g.days.forEach((_, i) => gRoute(c, g, i)); };
 // Yemek seçenekleri: her günün rotası için saatsiz havuz (restoran, tatlı, fırın, kahvaltı); günler aynı anda istenir,
@@ -4909,9 +4916,9 @@ function animateEnter(v){
 function toast(m, btn){
   document.querySelectorAll('.toast').forEach(x => x.remove());
   const d = document.createElement('div'); d.className = 'toast'; d.textContent = m;
-  if (btn){ const b = document.createElement('button'); b.dataset.act = btn.act; b.textContent = btn.label; d.appendChild(b); }
+  if (btn && btn.act){ const b = document.createElement('button'); b.dataset.act = btn.act; b.textContent = btn.label; d.appendChild(b); }
   document.body.appendChild(d);
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => d.remove(), btn ? btn.ms : 3200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => d.remove(), btn && btn.ms ? btn.ms : 3200);
 }
 
 // ---- işlem geçmişi ----

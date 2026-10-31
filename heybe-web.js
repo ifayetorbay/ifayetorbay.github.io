@@ -144,7 +144,7 @@
     async receipt(image, country, trip){
       await ready;
       const {data, error} = await sb.functions.invoke('fis-oku', {body:{image, country, trip}});
-      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : 'cloud'}; }
+      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : st === 402 ? 'kredi' : 'cloud'}; }
       if (!data || data.error) throw {code:'cloud'};
       return data;
     },
@@ -152,7 +152,7 @@
     async guide(payload){
       await ready;
       const {data, error} = await sb.functions.invoke('rehber', {body:payload});
-      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : 'cloud'}; }
+      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : st === 402 ? 'kredi' : 'cloud'}; }
       if (!data || data.error) throw {code:'cloud'};
       return data;
     },
