@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031175854';</script>
-<script src="heybe-web.js?v=20261031175854"></script>
+<script>window.HEYBE_VER = '20261031180043';</script>
+<script src="heybe-web.js?v=20261031180043"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -266,6 +266,8 @@ html.sheetopen,html.sheetopen body{overflow:hidden}
 .sheet{background:var(--surface);width:100%;max-width:480px;max-height:92vh;max-height:92dvh;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:22px 22px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
 .sheet h3{font-family:var(--display);font-weight:800;font-size:1.3rem;margin:0}
 .shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+/* Tutamak: pencerenin aşağı çekilerek kapandığını gösteren kısa çizgi */
+.sheet::before{content:"";flex:none;align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-8px 0 -8px}
 .x{border:0;background:var(--sunk);border-radius:99px;width:34px;height:34px;font-size:1.1rem;flex:none}
 .f{display:flex;flex-direction:column;gap:7px}
 .f>label,.f>.lab{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
@@ -1732,13 +1734,13 @@ function maybeAskWho(){
   try { if (localStorage.getItem(meKey(S.tid))) return; } catch(_) { return; }
   openSheet({mode:'who'});
 }
-function closeSheet(){
+function closeSheet(now){
   const wasGuide = form && form.mode === 'guide';
   form = null; clearDraft(); document.documentElement.classList.remove('sheetopen');
   if (gRec){ try { gRec.abort(); } catch(_) {} gRec = null; }
   if (wasGuide) render();
   const host = document.getElementById('sheetHost'), sc = host.querySelector('.scrim');
-  if (!sc || calm()){ host.innerHTML = ''; return; }
+  if (!sc || calm() || now === true){ host.innerHTML = ''; return; }
   // Kapanırken aşağı iner; bu arada yeni bir form açıldıysa ona dokunulmaz.
   sc.classList.add('closing'); sc.style.pointerEvents = 'none';
   setTimeout(() => { if (!form && host.contains(sc)) host.innerHTML = ''; }, 200);
@@ -6127,6 +6129,36 @@ function swEnd(ev){
 }
 document.addEventListener('pointerup', swEnd);
 document.addEventListener('pointercancel', swEnd);
+
+// ---- aşağı çekerek kapatma ----
+// Pencere en üstteyken aşağı çekilince parmağı izler; 110 px'ten fazla ya da hızlı bir fiskeyle çekilirse kapanır (× ile
+// aynı), yoksa yerine döner. Yana kaydırma (satır silme) ve yazı/seçim kutuları etkilenmez; içerik kaydırması bozulmaz.
+let pull = null;
+document.addEventListener('touchstart', ev => {
+  const sh = ev.target.closest && ev.target.closest('.scrim:not(.closing) .sheet');
+  pull = null;
+  if (!sh || ev.touches.length > 1 || sh.scrollTop > 0 || ev.target.closest('textarea, select, input[type=range]')) return;
+  const t = ev.touches[0]; pull = {sh, y0:t.clientY, x0:t.clientX, t0:Date.now(), dy:0, on:false};
+}, {passive:true});
+document.addEventListener('touchmove', ev => {
+  if (!pull) return;
+  const t = ev.touches[0], dy = t.clientY - pull.y0, dx = t.clientX - pull.x0;
+  if (!pull.on){
+    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) || dy < -4 || pull.sh.scrollTop > 0){ pull = null; return; }
+    if (dy < 8) return;
+    pull.on = true; pull.sh.style.transition = 'none';
+  }
+  pull.dy = Math.max(0, dy - 8); pull.sh.style.transform = `translateY(${pull.dy}px)`; ev.preventDefault();
+}, {passive:false});
+function pullEnd(){
+  const p = pull; pull = null; if (!p || !p.on) return;
+  const fast = p.dy > 40 && p.dy / Math.max(1, Date.now() - p.t0) > 0.6;
+  p.sh.style.transition = 'transform .2s ease';
+  if (p.dy > 110 || fast){ p.sh.style.transform = 'translateY(100%)'; setTimeout(() => { if (p.sh.isConnected) closeSheet(true); }, 190); }
+  else { p.sh.style.transform = ''; setTimeout(() => { p.sh.style.transition = ''; }, 220); }
+}
+document.addEventListener('touchend', pullEnd);
+document.addEventListener('touchcancel', pullEnd);
 
 // Kaydırarak silinen harcama, kasa kaydı ya da ödeme 6 saniye "Geri al" ile geri gelir; süre dolunca fiş fotoğrafı da silinir.
 function swipeDelete(id){
