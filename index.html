@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031201715';</script>
-<script src="heybe-web.js?v=20261031201715"></script>
+<script>window.HEYBE_VER = '20261031211823';</script>
+<script src="heybe-web.js?v=20261031211823"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2427,6 +2427,8 @@ function guideBody(){
     for (const c of (f.gcity && cities.includes(f.gcity) ? [f.gcity] : cities)){
       const days = cityDays(c), g = (S.trip.guide || {})[c], nw = gWish().filter(w => w.city === c).length;
       if (g && can && !g.yakinAt && !gRunning.has(c)) setTimeout(() => gNearby(c), 0);
+      // Eski rehberlerde iki kez geçen yerler bir kez temizlenir (sıra yeniden hesaplanır).
+      if (g && !g.dd && !gRunning.has(c)){ g.dd = 1; if (gDedupe(g)){ gRouteAll(c); save(); } }
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
       if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Vloglar, bloglar ve paylaşılan haritalarda en beğenilen rotalar araştırılıyor…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : f.gstage === 'iskelet' ? '🧱 Günlerin iskeleti çıkarılıyor (semtler, duraklar)…' : /^gun /.test(f.gstage || '') ? `🗓 Günler aynı anda ayrıntılandırılıyor… ${f.gstage.slice(4)}` : '✨ Rota hazırlanıyor…'} Bir iki dakika sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
       if (g){
@@ -2636,6 +2638,21 @@ function gShopCap(items){
   const keep = new Set(shops.map((it, i) => [it, i]).sort((a, b) => pri(a[0]) - pri(b[0]) || a[1] - b[1]).slice(0, max).map(x => x[0]));
   return items.filter(it => it.kind !== 'dukkan' || keep.has(it));
 }
+// Aynı yer iki kez olmasın: günler aynı anda yazıldığı için model başka günün yerini (ya da aynı günde iki kez) ekleyebiliyor;
+// kullanıcı birini çıkarınca öbürü haritada kalıyordu. Yer, iskeletin koyduğu günde, iskelette yoksa ilk geçtiği günde bir kez
+// kalır. Cadde (gecis) iki günde yürünebilir, dokunulmaz; bilet/yolculuk hiç elenmez. Çıkarılan sayısını döndürür.
+const gKey = n => String(n || '').toLocaleLowerCase('tr').replace(/\(.*?\)/g, ' ').replace(/[^\p{L}\d]+/gu, ' ').trim();
+function gDedupe(g, sk){
+  const own = new Map(), at = new Map();
+  ((sk && sk.days) || []).forEach(x => (x.duraklar || []).forEach(y => own.set(gKey(y.name), x.d)));
+  g.days.forEach(x => x.items.forEach(it => { const k = gKey(it.name); if (it.src !== 'bilet' && it.kind !== 'gecis' && !at.has(k)) at.set(k, x.d); }));
+  for (const [k, d] of own) if (g.days.some(x => x.d === d && x.items.some(it => gKey(it.name) === k))) at.set(k, d);
+  let n = 0;
+  g.days.forEach(x => { const kept = new Set();
+    x.items = x.items.filter(it => { if (it.src === 'bilet' || it.kind === 'gecis') return true; const k = gKey(it.name);
+      if (at.get(k) !== x.d || kept.has(k)){ n++; return false; } kept.add(k); return true; }); });
+  return n;
+}
 // Aralık dışında kalan durakları ayıklar (30 dk pay): bilet/yolculuk her zaman kalır; gezi yoksa yalnız onlar.
 const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src === 'bilet') return true; if (!w) return false; const t = hm(it.t); return t == null || (t >= w.a - 30 && t <= w.z + 30); });
 // Rehber hatalarında neden açıkça söylenir: Claude API kredisi bittiyse (sunucu 402) "hazırlanamadı" yerine bu yazılır.
@@ -2681,7 +2698,7 @@ async function gBuild(c, trip, model, f, tok){
   const miss = todo.filter((_, i) => !res[i]).map(gd => gd.gun);
   if (miss.length) toast(err && err.code === 'kredi' ? `${G_KREDI} (${miss.join(', ')} boş kaldı)` : `⚠ ${miss.join(', ')} hazırlanamadı; o günde "✨ Bu günü yeniden" ile tekrar dene.`, {ms:10000});
   stage('');
-  return {home:sk.home || (ok[0] || {}).home, days:ok.flatMap(r => r.days || []), unplaced:sk.unplaced || [],
+  return {sk, home:sk.home || (ok[0] || {}).home, days:ok.flatMap(r => r.days || []), unplaced:sk.unplaced || [],
     tips:uniq([...(sk.tips || []), ...ok.flatMap(r => r.tips || [])], t => t), pratik:uniq(ok.flatMap(r => r.pratik || []), p => String(p.name).toLocaleLowerCase('tr'))};
 }
 async function guideMake0(c, f, days, P, trip){
@@ -2704,6 +2721,7 @@ async function guideMake0(c, f, days, P, trip){
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
       days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
+    gDedupe(S.trip.guide[c], r.sk); S.trip.guide[c].dd = 1;
     gRouteAll(c);
     save(); toast(`🧭 ${c} rotası hazır; yemek seçenekleri seçiliyor…`);
     f.gfood = c; if (form === f) drawSheetKeep();
@@ -2736,7 +2754,7 @@ async function guideRedoDay0(c, i){
     const x = (r.days || []).find(y => y.d === d) || (r.days || [])[0];
     if (!x) throw 0;
     const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
-    day.items = gShopCap(gFit(x.items || [], w)); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.turler = x.turler || day.turler || []; day.theme = ''; day.intro = ''; day.food = [];
+    day.items = gShopCap(gFit(x.items || [], w)); gDedupe(g); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.turler = x.turler || day.turler || []; day.theme = ''; day.intro = ''; day.food = [];
     gRoute(c, g, i); save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; yemek seçenekleri seçiliyor…`);
     await guideFood(c, [day]);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
@@ -3104,6 +3122,7 @@ function gVisit(c, d, it){
 }
 function guideKml(c){
   const g = gNorm((S.trip.guide || {})[c]); if (!g) return;
+  if (gDedupe(g)){ gRouteAll(c); save(); }
   // Kullanıcının kendi My Maps düzeni (Floransa, Roma): katmanlar güne göre değil TÜRE göre. Gezi rotası tek katman, bütün
   // günlerde kesintisiz numaralı; günler aynı aileden renklerle ve açıklamadaki "1. gün" ile ayrılır. Yemek, tatlı-fırın,
   // cadde-mağaza ve pratik noktalar ayrı katmanlar (açılıp kapanır).
