@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031172641';</script>
-<script src="heybe-web.js?v=20261031172641"></script>
+<script>window.HEYBE_VER = '20261031172825';</script>
+<script src="heybe-web.js?v=20261031172825"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -388,9 +388,8 @@ nav.tabs svg{width:22px;height:22px}
 .gst{font-size:.76rem;color:var(--muted)}
 .galt{font-size:.78rem;color:#B85C00}
 .gno{flex:none;min-width:24px;height:24px;padding:0 5px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;color:#fff;margin-right:6px}
-.gleg{font-size:.78rem;color:var(--muted);padding:4px 0 4px 32px}
+.gleg{font-size:.75rem;color:var(--muted);padding:2px 0 2px 34px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .gleg a{font-weight:650}
-.gleg.s{font-size:.72rem;padding:1px 0 1px 32px;opacity:.85}
 .gno.minor{background:none;color:var(--muted);font-weight:600}
 .gfood{margin:6px 0 4px;border-top:1px dashed var(--line);padding-top:6px}
 .gfood summary{font-size:.86rem;font-weight:700;cursor:pointer;padding:4px 0}
@@ -2315,7 +2314,7 @@ const gTransit = (a, b) => `https://www.google.com/maps/dir/?api=1&origin=${a.la
 // Mesafe yazısı: 1 km'nin altı metre (50 m'ye yuvarlı), üstü km. Günün mesafesi: metroya hiç binilmezse toplam yürüme;
 // metrolu ara varsa metroyla gidilince kalan yürüme ayrıca.
 const gKmTxt = km => km < 0.95 ? `${Math.max(50, Math.round(km * 20) * 50)} m` : `${km.toLocaleString('tr-TR', {maximumFractionDigits:1})} km`;
-const gWalkTxt = (w, kisa) => !w || !(w.all || w.km) ? '' : w.metro && w.all ? (kisa ? `🚶 ${gKmTxt(w.all)} · 🚇 ${w.metro} metroyla ${gKmTxt(w.km)}` : `🚶 hepsi yürüyerek ${gKmTxt(w.all)} · 🚇 ${w.metro} kez metroyla ${gKmTxt(w.km)} yürüme`) : `🚶 ${gKmTxt(w.all || w.km)}`;
+const gWalkTxt = (w, kisa) => !w || !(w.all || w.km) ? '' : w.metro && w.all ? (kisa ? `🚶 ${gKmTxt(w.all)} · 🚇 metroyla ${gKmTxt(w.km)}` : `🚶 hepsi yürüyerek ${gKmTxt(w.all)} · 🚇 ${w.metro} kez metroyla ${gKmTxt(w.km)} yürüme`) : `🚶 ${gKmTxt(w.all || w.km)}`;
 // Ara mesafeler: numaralı iki durak arası (aradaki cadde ve mağazalardan geçerek; kuş uçuşu × 1,25). Map: durak → {km, from};
 // 'ev' anahtarı eve dönüş.
 function gLegs(c, g, x){
@@ -2330,11 +2329,12 @@ function gLegs(c, g, x){
   if (H && prev && prev !== H && x.back !== false && from) m.set('ev', {km:acc + gKm({lat:+prev.lat, lon:+prev.lon}, {lat:+H.lat, lon:+H.lon}) * 1.25, from});
   return m;
 }
-const gLegTxt = (L, to) => `${L.from} → ${to} · ${gKmTxt(L.km)}${L.km > 2.5 ? ' · 🚇 metro/otobüs önerilir' : ` · yürüyerek ~${Math.max(1, Math.round(L.km / 4.5 * 60))} dk`}`;
+// Haritada "3 → 4 · 800 m · ~11 dk"; listede ve PDF'te iki numaranın arasında durduğu için kısa: "800 m · ~11 dk".
+const gLegTxt = (L, to, kisa) => `${kisa ? '' : `${L.from} → ${to} · `}${gKmTxt(L.km)}${L.km > 2.5 ? ' · 🚇 metro/otobüs önerilir' : ` · ~${Math.max(1, Math.round(L.km / 4.5 * 60))} dk`}`;
 function gLegHtml(a, b){
   if (!a || !b || !a.lat || !b.lat) return '';
   const km = gKm({lat:+a.lat, lon:+a.lon}, {lat:+b.lat, lon:+b.lon}) * 1.25; if (km <= 2.5) return '';
-  return `<div class="gleg">${km > 4 ? '🚇' : '🚶'} ${km.toLocaleString('tr-TR', {maximumFractionDigits:1})} km · ${km > 4 ? 'yürümek yerine' : `yürüyerek ~${Math.round(km / 4.5 * 60)} dk ya da`} <a href="${gTransit(a, b)}transit" target="_blank" rel="noopener">🚇 Metro / otobüs</a> · <a href="${gTransit(a, b)}driving" target="_blank" rel="noopener">🚕 Taksi</a></div>`;
+  return `<div class="gleg">${km > 4 ? '🚇' : '🚶'} ${gKmTxt(km)} · ${km > 4 ? '' : `~${Math.round(km / 4.5 * 60)} dk ya da `}<a href="${gTransit(a, b)}transit" target="_blank" rel="noopener">🚇 Metro / otobüs</a> · <a href="${gTransit(a, b)}driving" target="_blank" rel="noopener">🚕 Taksi</a></div>`;
 }
 // Yemek seçeneği satırı (saatsiz): simge, ad, en yakın durak, kısa not, puan, yol tarifi.
 const gFoodRow = (c, fd) => `<div class="gfd"><span class="pic">${(G_FT[fd.tur] || G_FT.restoran)[0]}</span><span class="mid"><span class="d">${esc(fd.name)}${fd.yakin ? `<span class="m"> · ${esc(fd.yakin)} yakını</span>` : ''}</span>${fd.not ? `<span class="m">${esc(fd.not)}</span>` : ''}${gStars(fd) ? `<span class="gst">${gStars(fd)}</span>` : ''}</span><a class="btn sm" href="${fd.g && fd.g.url ? fd.g.url : mapsDir(fd.lat ? `${fd.lat},${fd.lon}` : `${fd.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(fd.name)}">🧭</a></div>`;
@@ -2342,14 +2342,14 @@ const gOpusBox = (f, c) => `<label class="gopus"><input type="checkbox" data-g="
 function gDayHtml(c, g, x, i, f, can){
   gNormDay(x);
   const sw = f.gswap && f.gswap.c === c && f.gswap.i === i ? f.gswap : null, N = gNums(c, g), col = '#' + G_COLORS[i % G_COLORS.length];
-  const walk = gWalkTxt(x.walk) ? ' · ' + gWalkTxt(x.walk) : '', Lg = gLegs(c, g, x);
+  const walk = gWalkTxt(x.walk, 1) ? ' · ' + gWalkTxt(x.walk, 1) : '', Lg = gLegs(c, g, x);
   const food = (x.food || []).slice().sort((a, b) => Object.keys(G_FT).indexOf(a.tur) - Object.keys(G_FT).indexOf(b.tur));
   return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>${x.yol ? '🚆 Yolculuk günü · gezi yok' : `🏠 evden${x.back === false ? '' : ' eve'}${walk}`}</span>${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</div>`
     + (x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : '')
     + (x.yol ? gTravelHtml(c, x.d) : '') + gLugHtml(gLuggage().filter(l => l.d === x.d && l.city === c))
     + x.items.map((it, k) => {
       const prevP = k ? x.items.slice(0, k).reverse().find(p => p.lat && !gFar(g, p)) : (g.home && g.home.lat ? g.home : null);
-      const lg = Lg.get(it), leg = it.lat && !gFar(g, it) ? gLegHtml(prevP, it).replace('class="gleg">', `class="gleg">${lg ? `${lg.from} → ${N.get(it)} · ` : ''}`) || (lg ? `<div class="gleg s">🚶 ${gLegTxt(lg, N.get(it))}</div>` : '') : '';
+      const lg = Lg.get(it), leg = it.lat && !gFar(g, it) ? gLegHtml(prevP, it) || (lg ? `<div class="gleg">🚶 ${gLegTxt(lg, 0, 1)}</div>` : '') : '';
       const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = [gStars(it), it.src !== 'bilet' && !minor ? gHrs(it) : ''].filter(Boolean).join(' · '), no = N.get(it);
       if (it.hw && !it.warn) it.warn = it.hw;
       if (gFar(g, it) && !it.warn) it.warn = 'konum şüpheli (başka şehirde görünüyor); haritaya konmadı';
@@ -2358,7 +2358,7 @@ function gDayHtml(c, g, x, i, f, can){
         + `<div class="pli${minor ? ' minor' : ''}"><button type="button" class="plt gitem" data-g="more"><span class="gno${no ? '' : ' minor'}"${no ? ` style="background:${col}"` : ''}>${no || (it.src === 'bilet' ? '🎟' : '·')}</span>${it.src === 'bilet' && it.t ? `<span class="pt num">${esc(it.t)}</span>` : ''}<span class="pic">${gIc(it)}</span><span class="mid"><span class="d">${G_SRC[it.src] || ''} ${esc(it.name)}</span><span class="m gshort">${esc(gShort(it))}</span><span class="m glong">${esc(it.desc || '')}</span>${it.alt ? `<span class="m galt">🔁 Yedek: ${esc(it.alt)}</span>` : ''}${st || it.warn ? `<span class="gst">${st}${it.warn ? `${st ? ' · ' : ''}<b>⚠ ${esc(it.warn)}</b>` : ''}</span>` : ''}</span></button><a class="btn sm" href="${it.g && it.g.url ? it.g.url : mapsDir(it.lat ? `${it.lat},${it.lon}` : `${it.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(it.name)}">🧭</a></div></div>`
         + (mv ? `<div class="gmvrow"><span>📅 Hangi güne?</span>${g.days.map((y, j) => j === i ? '' : `<button type="button" class="chip" data-g="gmvto" data-j="${j}">${j + 1}. gün · ${planDay(y.d)}</button>`).join('')}<button type="button" class="link" data-g="gmvx">Vazgeç</button></div>` : '');
     }).join('')
-    + (x.back !== false && g.home && g.home.lat ? (last => last ? gLegHtml(last, g.home).replace('class="gleg">', 'class="gleg">🏠 Eve dönüş · ') || (Lg.get('ev') ? `<div class="gleg s">🏠 Eve dönüş · ${gLegTxt(Lg.get('ev'), '🏠')}</div>` : '') : '')([...x.items].reverse().find(p => p.lat && !gFar(g, p))) : '')
+    + (x.back !== false && g.home && g.home.lat ? (last => last ? gLegHtml(last, g.home).replace('class="gleg">', 'class="gleg">🏠 Eve dönüş · ') || (Lg.get('ev') ? `<div class="gleg">🏠 Eve dönüş · ${gLegTxt(Lg.get('ev'), 0, 1)}</div>` : '') : '')([...x.items].reverse().find(p => p.lat && !gFar(g, p))) : '')
     + (food.length ? `<details class="gfood" open><summary>🍽 Bu rotada yemek · tatlı · fırın <span class="m">(${food.length}; saatsiz, acıkınca en yakını)</span></summary>${food.map(fd => gFoodRow(c, fd)).join('')}</details>` : '')
     + (sw ? `<div class="gswap"><span>✖ ${esc(sw.it.name)} çıkarıldı</span>${can ? `<button type="button" class="btn sm pri" data-g="swap" ${f.gbusy ? 'disabled' : ''}>${f.gbusy === 'swap' ? 'Aranıyor…' : '✨ Yerine öner'}</button>` : ''}<button type="button" class="link" data-g="unswap">Geri al</button></div>` : '')
     + (x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : '') + `</div>`;
@@ -2420,7 +2420,7 @@ function guideBody(){
           ${can && g.ok && (g.days.some(x => x.items.length && !x.theme && !x.yol) || !g.extra) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}
           <button type="button" class="btn block pri" data-g="sharemenu" data-c="${esc(c)}" aria-expanded="${f.gshare === c}">📤 Paylaş ve indir</button>
           ${f.gshare === c ? `<div class="gshare"><button type="button" class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu (PDF)</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 Google Haritalar'a aktar</button>${navigator.share ? `<button type="button" class="btn sm" data-g="share" data-c="${esc(c)}">💬 Gruba gönder</button>` : ''}
-            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Her gün ayrı katman olarak gelir.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>Sıra numaraları ve yer adları haritada görünmüyorsa: her gün katmanında <b>Bağımsız stiller → Etiketi ayarla → Ad</b> (Ad'da "1. Parque del Retiro" gibi sıra var).</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details></div>` : ''}
+            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Katmanlar türe göre gelir (Gezi rotası, Restoranlar, Mağazalar, Hediyelik, Pratik).</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>4. Adlar haritada görünsün: Google içe aktarırken etiket ayarını almıyor; yalnız <b>🗺 Gezi rotası</b> katmanında bir kez <b>Bağımsız stiller → Etiketi ayarla → Ad</b> yeter (adlar "1. Plaza Mayor" gibi sıralı).</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details></div>` : ''}
           ${can ? `<div class="gask"><span class="lab">Yer ekle</span>
             <div class="gadd"><input class="inp gatext" data-gac="${esc(c)}" placeholder="Yer adı (ör. Templo de Debod)" value="${esc((f.gaT || {})[c] || '')}"><button type="button" class="btn sm" data-g="gaadd" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>➕</button><label class="btn sm">${f.gbusy === 'ekle' ? 'Okunuyor…' : '📷 Fotoğraftan'}<input type="file" class="gaphoto" data-gac="${esc(c)}" accept="image/*" hidden></label></div>
             ${must.size ? `<div class="gmust">${[...must].map(n => `<button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(n)}" aria-pressed="true">✓ ${esc(n)} ✕</button>`).join('')}</div>` : ''}
@@ -3090,7 +3090,7 @@ async function guidePdf(c, share){
     for (const it of d.items){
       const L = wrap(it.desc || '', W - 2 * M - 150, FONT(500, 21), 12), lg = Lg.get(it);
       need(44 + L.length * 28 + (lg ? 26 : 0));
-      if (lg){ x.fillStyle = RPT.muted; x.font = FONT(500, 18); x.fillText(`🚶 ${gLegTxt(lg, N.get(it))}`, M + 130, y + 14); y += 26; }
+      if (lg){ x.fillStyle = RPT.muted; x.font = FONT(500, 18); x.fillText(`🚶 ${gLegTxt(lg, 0, 1)}`, M + 130, y + 14); y += 26; }
       const no = N.get(it);
       if (no){ x.fillStyle = '#' + G_COLORS[i % G_COLORS.length]; x.beginPath(); x.arc(M + 44, y + 17, 19, 0, 7); x.fill(); x.fillStyle = '#fff'; x.font = FONT(800, 20); const tw = x.measureText(String(no)).width; x.fillText(String(no), M + 44 - tw / 2, y + 24); }
       else { x.fillStyle = RPT.muted; x.font = FONT(700, 22); x.fillText(it.src === 'bilet' ? `🎟 ${it.t || ''}` : '·', M + 20, y + 26); }
