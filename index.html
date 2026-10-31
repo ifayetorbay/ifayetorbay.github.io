@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031180043';</script>
-<script src="heybe-web.js?v=20261031180043"></script>
+<script>window.HEYBE_VER = '20261031180331';</script>
+<script src="heybe-web.js?v=20261031180331"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -6131,24 +6131,30 @@ document.addEventListener('pointerup', swEnd);
 document.addEventListener('pointercancel', swEnd);
 
 // ---- aşağı çekerek kapatma ----
-// Pencere en üstteyken aşağı çekilince parmağı izler; 110 px'ten fazla ya da hızlı bir fiskeyle çekilirse kapanır (× ile
-// aynı), yoksa yerine döner. Yana kaydırma (satır silme) ve yazı/seçim kutuları etkilenmez; içerik kaydırması bozulmaz.
+// Pencere en üstteyken (ya da her zaman başlığından) aşağı çekilince parmağı izler; 110 px'ten fazla ya da hızlı bir fiskeyle
+// çekilirse kapanır (× ile aynı), yoksa yerine döner. iPhone'da Safari aşağı çekişi kendi esneme kaydırmasına çok erken
+// alıyor: bu yüzden aşağı yöndeki ilk harekette sahiplenilir (en üstte aşağı kaydırmanın zaten işi yok). Yukarı kaydırma,
+// yana kaydırma (satır silme) ve yazı/seçim kutuları etkilenmez.
 let pull = null;
 document.addEventListener('touchstart', ev => {
   const sh = ev.target.closest && ev.target.closest('.scrim:not(.closing) .sheet');
   pull = null;
-  if (!sh || ev.touches.length > 1 || sh.scrollTop > 0 || ev.target.closest('textarea, select, input[type=range]')) return;
-  const t = ev.touches[0]; pull = {sh, y0:t.clientY, x0:t.clientX, t0:Date.now(), dy:0, on:false};
+  if (!sh || ev.touches.length > 1 || ev.target.closest('textarea, select, input[type=range]')) return;
+  const head = !!ev.target.closest('.shead');
+  if (!head && sh.scrollTop > 1) return;
+  const t = ev.touches[0]; pull = {sh, head, y0:t.clientY, x0:t.clientX, t0:Date.now(), dy:0, on:false};
 }, {passive:true});
 document.addEventListener('touchmove', ev => {
   if (!pull) return;
   const t = ev.touches[0], dy = t.clientY - pull.y0, dx = t.clientX - pull.x0;
   if (!pull.on){
-    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) || dy < -4 || pull.sh.scrollTop > 0){ pull = null; return; }
-    if (dy < 8) return;
+    if (dy < 0 || Math.abs(dx) > Math.abs(dy) + 2 || (!pull.head && pull.sh.scrollTop > 1)){ if (dy < -2 || Math.abs(dx) > 6) pull = null; return; }
+    if (dy < 3) return;                               // küçük titreme: kaydırmayı engelleme
+    if (ev.cancelable) ev.preventDefault();          // Safari esneme kaydırmasını başlatmasın
+    if (dy < 6) return;
     pull.on = true; pull.sh.style.transition = 'none';
   }
-  pull.dy = Math.max(0, dy - 8); pull.sh.style.transform = `translateY(${pull.dy}px)`; ev.preventDefault();
+  pull.dy = Math.max(0, dy - 6); pull.sh.style.transform = `translateY(${pull.dy}px)`; if (ev.cancelable) ev.preventDefault();
 }, {passive:false});
 function pullEnd(){
   const p = pull; pull = null; if (!p || !p.on) return;
