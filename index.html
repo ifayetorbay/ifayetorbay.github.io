@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031221335';</script>
-<script src="heybe-web.js?v=20261031221335"></script>
+<script>window.HEYBE_VER = '20261031222925';</script>
+<script src="heybe-web.js?v=20261031222925"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -3131,16 +3131,20 @@ function guideKml(c){
   // gezi günü 6'dan fazlaysa rota tek katmanda kalır.
   const X = s => String(s == null ? '' : s).replace(/[<>&'"]/g, m => ({'<':'&lt;', '>':'&gt;', '&':'&amp;', "'":'&apos;', '"':'&quot;'}[m]));
   const K = rgb => 'ff' + rgb.slice(4, 6) + rgb.slice(2, 4) + rgb.slice(0, 2), ICON = 'https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png';
-  const sty = (id, rgb, sc, lab) => `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>${sc}</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><color>${K(rgb)}</color><scale>${lab}</scale></LabelStyle></Style>`;
   const pm = (name, desc, style, it) => `<Placemark><name>${X(name)}</name><description>${X(desc)}</description><styleUrl>#${style}</styleUrl><Point><coordinates>${it.lon},${it.lat},0</coordinates></Point></Placemark>`;
-  const FC = {restoran:'E65100', pazar:'BF360C', tatli:'EC407A', firin:'8D6E63', kahvalti:'8D6E63', kafe:'8D6E63'};
-  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, sty('ev', '212121', 1.2, 1),
-    sty('magaza', '2E7D32', 0.7, 0.7), sty('hediye', 'F9A825', 0.75, 0.7), sty('pratik', '757575', 0.7, 0.7), `<Style id="cadde-hat"><LineStyle><color>${'b3' + K('212121').slice(2)}</color><width>3</width></LineStyle></Style>`];
-  Object.entries(FC).forEach(([t, v]) => out.push(sty('f-' + t, v, 0.75, 0.7)));
-  g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(sty('gun' + i, col, 1.2, 1.1), `<Style id="cizgi${i}"><LineStyle><color>${'59' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
+  // My Maps'in kendi simgeleri: stil adı "icon-<kod>-<RENK>" (kullanıcının kendi Roma haritasının dışa aktarımından): 1577
+  // çatal-bıçak, 1651 pizza, 1762 pasta, 1607 dondurma, 1810 fırın, 1534 kahve, 1684 alışveriş, 1733 WC, 1626 metro-tren,
+  // 1885 bavul, 1603 ev, 503 düz iğne. "-labelson" eki o noktanın etiketini açar (gün katmanları). Böylece haritada düz renkli
+  // iğne yerine türün simgesi görünür.
+  const FC = {restoran:'E65100', pazar:'BF360C', tatli:'EC407A', firin:'8D6E63', kahvalti:'8D6E63', kafe:'6D4C41'};
+  const styles = new Map(), ico = (code, rgb, lab) => { const id = `icon-${code}-${rgb}${lab ? '-labelson' : ''}`;
+    if (!styles.has(id)) styles.set(id, `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>1</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><scale>${lab ? 1 : 0}</scale></LabelStyle></Style>`); return id; };
+  const fCode = fd => fd.tur === 'tatli' ? (/dondurma|gelat|helad|ice ?cream/i.test(fd.name + ' ' + (fd.not || '')) ? 1607 : 1762) : fd.tur === 'kafe' ? 1534 : fd.tur === 'firin' || fd.tur === 'kahvalti' ? 1810 : /pizz/i.test(fd.name + ' ' + (fd.not || '').slice(0, 20)) ? 1651 : 1577;
+  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, '', `<Style id="cadde-hat"><LineStyle><color>${'b3' + K('212121').slice(2)}</color><width>3</width></LineStyle></Style>`];
+  g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(`<Style id="cizgi${i}"><LineStyle><color>${'59' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
   const H = g.home && g.home.lat && g.home.lon ? g.home : null, miss = [], N = gNums(c, g), dayName = (x, i) => `${i + 1}. gün · ${planDay(x.d)}`;
   const ok = (x, it) => it.lat && it.lon && !gFar(g, it);
-  if (H) out.push(`<Folder><name>🏠 Ev</name>${pm('🏠 Ev', H.addr || '', 'ev', H)}</Folder>`);
+  if (H) out.push(`<Folder><name>🏠 Ev</name>${pm('Ev', H.addr || '', ico(1603, '212121', true), H)}</Folder>`);
   // 1) Rota: gün başına katman (ya da çok günde tek katman); numaralı duraklar ve günün tek yürüyüş çizgisi.
   const gezi = g.days.map((x, i) => [x, i]).filter(([x]) => !x.yol && x.items.some(it => gVisit(c, x.d, it) && ok(x, it)));
   const tek = gezi.length > 6;
@@ -3152,7 +3156,7 @@ function guideKml(c){
     nums.forEach(it => {
       const lg = Lg.get(it);
       const d = [`${dayName(x, i)}${x.theme ? ' · ' + x.theme : ''}`, lg ? `Önceki duraktan: ${gLegTxt(lg, N.get(it))}${lg.km > 2.5 ? ' (en son seçenek taksi)' : ''}` : '', `${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}${it.src === 'bilet' ? ` biletli${it.t ? ' · ' + it.t : ''}` : ''}`.trim(), gStars(it), gHrs(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
-      out.push(pm(`${N.get(it)}. ${it.name}`, d, 'gun' + i, it));
+      out.push(pm(`${N.get(it)}. ${it.name}`, d, ico(503, G_COLORS[i % G_COLORS.length], true), it));
     });
     // Günde tek ince çizgi (gidiş yönü); ara mesafeler ve günün toplamı açıklamada.
     const line = [...(H ? [H] : []), ...pts, ...(H && x.back !== false ? [H] : [])], tot = x.walk ? `${gKmTxt(x.walk.all || x.walk.km)} yürüyüş${x.walk.metro ? `, metroyla ${gKmTxt(x.walk.km)}` : ''}` : '';
@@ -3163,24 +3167,25 @@ function guideKml(c){
   if (tek) out.push('</Folder>');
   // 2) 🍽 Yemek: hepsi (azaltılmaz); türü renginden ve adın başındaki simgeden anlaşılır.
   const food = g.days.flatMap((x, i) => (x.food || []).filter(fd => ok(x, fd)).map(fd => { const t = FC[fd.tur] ? fd.tur : 'restoran';
-    return pm(`${(G_FT[t] || G_FT.restoran)[0]} ${fd.name}`, [`${(G_FT[t] || G_FT.restoran)[2]} · ${dayName(x, i)}${fd.yakin ? ' · ' + fd.yakin + ' yakını' : ''}${gPrice(fd) ? ' · ' + gPrice(fd) : ''}`, fd.not, gStars(fd), fd.addr, fd.g && fd.g.url ? fd.g.url : ''].filter(Boolean).join('\n'), 'f-' + t, fd); }));
+    return pm(fd.name, [`${(G_FT[t] || G_FT.restoran)[0]} ${(G_FT[t] || G_FT.restoran)[2]} · ${dayName(x, i)}${fd.yakin ? ' · ' + fd.yakin + ' yakını' : ''}${gPrice(fd) ? ' · ' + gPrice(fd) : ''}`, fd.not, gStars(fd), fd.addr, fd.g && fd.g.url ? fd.g.url : ''].filter(Boolean).join('\n'), ico(fCode(fd), FC[t]), fd); }));
   if (food.length) out.push(`<Folder><name>🍽 Yemek (🍽 restoran · 🧺 pazar · 🍨 tatlı · 🥐 fırın)</name>${food.join('')}</Folder>`);
   // 3) 🛍 Alışveriş: caddelerin gerçek çizgisi (açıklamasında mağazalar); ayrı nokta yalnız Primark, yerel marka, hediyelik.
   const hat = it => { const desc = `<description>${X([it.desc, it.addr].filter(Boolean).join('\n'))}</description>`;
     if (it.geom && it.geom.length) return `<Placemark><name>${X('🛍 ' + it.name)}</name>${desc}<styleUrl>#cadde-hat</styleUrl><MultiGeometry>${it.geom.map(w => `<LineString><tessellate>1</tessellate><coordinates>${w.map(p => `${p[1]},${p[0]},0`).join(' ')}</coordinates></LineString>`).join('')}</MultiGeometry></Placemark>`;
     const m = String(it.hat || '').match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*;\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
     if (m){ const a = {lat:+m[1], lon:+m[2]}, b = {lat:+m[3], lon:+m[4]}; if (gKm(a, {lat:+it.lat, lon:+it.lon}) < 3 && gKm(a, b) < 3) return `<Placemark><name>${X('🛍 ' + it.name)}</name>${desc}<styleUrl>#cadde-hat</styleUrl><LineString><tessellate>1</tessellate><coordinates>${a.lon},${a.lat},0 ${b.lon},${b.lat},0</coordinates></LineString></Placemark>`; }
-    return pm('🛍 ' + it.name, [it.desc, it.addr].filter(Boolean).join('\n'), 'magaza', it); };
+    return pm(it.name, [it.desc, it.addr].filter(Boolean).join('\n'), ico(1684, '2E7D32'), it); };
   const seenSt = new Set(), keep = it => /primark/i.test(it.name + ' ' + (it.desc || '')) || /^(Yerel marka|Hediyelik)/i.test(it.desc || '');
   const shop = g.days.flatMap((x, i) => x.items.filter(it => ok(x, it) && (it.kind === 'gecis' ? !seenSt.has(gKey(it.name)) && seenSt.add(gKey(it.name)) : it.kind === 'dukkan' && keep(it)))
-    .map(it => it.kind === 'gecis' ? hat(it) : pm(`${gIc(it)} ${it.name}`, [dayName(x, i), it.desc, gStars(it), gHrs(it), it.addr, it.g && it.g.url ? it.g.url : ''].filter(Boolean).join('\n'), /^Hediyelik/i.test(it.desc || '') ? 'hediye' : 'magaza', it)));
+    .map(it => it.kind === 'gecis' ? hat(it) : pm(it.name, [dayName(x, i), it.desc, gStars(it), gHrs(it), it.addr, it.g && it.g.url ? it.g.url : ''].filter(Boolean).join('\n'), ico(1684, /^Hediyelik/i.test(it.desc || '') ? 'F9A825' : '2E7D32'), it)));
   if (shop.length) out.push(`<Folder><name>🛍 Alışveriş (caddeler · Primark · yerel marka · 🎁 hediyelik)</name>${shop.join('')}</Folder>`);
   // 4) ℹ️ Pratik: en çok 6; önce bavul emanetçisi (ev ve gar), sonra WC, ulaşım, eczane.
   const PR = {wc:'🚻', emanet:'🧳', ulasim:'🚇', eczane:'💊', diger:'ℹ️'}, ord = ['wc', 'ulasim', 'eczane', 'diger', 'emanet'];
-  const prat = [...(g.bavul || []).filter(b => b.lat).map(b => pm(`🧳 ${b.name}`, gBavulTxt(b) + (b.addr ? '\n' + b.addr : '') + (b.g && b.g.url ? '\n' + b.g.url : ''), 'pratik', b)),
-    ...(g.pratik || []).filter(p => ok(null, p) && !(p.tur === 'emanet' && (g.bavul || []).length)).sort((a, b) => ord.indexOf(a.tur) - ord.indexOf(b.tur)).map(p => pm(`${PR[p.tur] || 'ℹ️'} ${p.name}`, p.not || '', 'pratik', p))].slice(0, 6);
+  const PC = {wc:[1733, '0288D1'], ulasim:[1626, '616161'], emanet:[1885, '424242'], eczane:[503, '2E7D32'], diger:[503, '757575']};
+  const prat = [...(g.bavul || []).filter(b => b.lat).map(b => pm(b.name, `🧳 ${gBavulTxt(b)}` + (b.addr ? '\n' + b.addr : '') + (b.g && b.g.url ? '\n' + b.g.url : ''), ico(1885, '424242'), b)),
+    ...(g.pratik || []).filter(p => ok(null, p) && !(p.tur === 'emanet' && (g.bavul || []).length)).sort((a, b) => ord.indexOf(a.tur) - ord.indexOf(b.tur)).map(p => pm(p.name, `${PR[p.tur] || 'ℹ️'} ${p.not || ''}`, ico(...(PC[p.tur] || PC.diger)), p))].slice(0, 6);
   if (prat.length) out.push(`<Folder><name>ℹ️ Pratik</name>${prat.join('')}</Folder>`);
-  out.push('</Document></kml>');
+  out.push('</Document></kml>'); out[3] = [...styles.values()].join('\n');
   // Dosya adında tarih-saat: Drive'da aynı adlı eski dosyalar birikince My Maps'te yanlışlıkla eskisi seçiliyordu.
   const ts = (d => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`)(new Date()), fn = `${c}-rehber-${ts}.kml`;
   saveFile(fn, new Blob([out.join('\n')], {type:'application/vnd.google-earth.kml+xml'})).then(ok => { if (ok) toast(`🗺 ${fn} hazır. My Maps'te İçe aktar ile bu (en yeni saatli) dosyayı yükle.${miss.length ? ` ⚠ Haritaya konamayan: ${miss.join(', ')}` : ''}`); });
