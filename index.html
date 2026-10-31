@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031172825';</script>
-<script src="heybe-web.js?v=20261031172825"></script>
+<script>window.HEYBE_VER = '20261031173331';</script>
+<script src="heybe-web.js?v=20261031173331"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -389,7 +389,7 @@ nav.tabs svg{width:22px;height:22px}
 .galt{font-size:.78rem;color:#B85C00}
 .gno{flex:none;min-width:24px;height:24px;padding:0 5px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;color:#fff;margin-right:6px}
 .gleg{font-size:.75rem;color:var(--muted);padding:2px 0 2px 34px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
-.gleg a{font-weight:650}
+.gleg a{font-weight:500}
 .gno.minor{background:none;color:var(--muted);font-weight:600}
 .gfood{margin:6px 0 4px;border-top:1px dashed var(--line);padding-top:6px}
 .gfood summary{font-size:.86rem;font-weight:700;cursor:pointer;padding:4px 0}
@@ -2329,8 +2329,10 @@ function gLegs(c, g, x){
   if (H && prev && prev !== H && x.back !== false && from) m.set('ev', {km:acc + gKm({lat:+prev.lat, lon:+prev.lon}, {lat:+H.lat, lon:+H.lon}) * 1.25, from});
   return m;
 }
-// Haritada "3 → 4 · 800 m · ~11 dk"; listede ve PDF'te iki numaranın arasında durduğu için kısa: "800 m · ~11 dk".
-const gLegTxt = (L, to, kisa) => `${kisa ? '' : `${L.from} → ${to} · `}${gKmTxt(L.km)}${L.km > 2.5 ? ' · 🚇 metro/otobüs önerilir' : ` · ~${Math.max(1, Math.round(L.km / 4.5 * 60))} dk`}`;
+// Haritada sade: "3–4 · 800 m · 11 dk" (metrolu ara "3–4 · 3,7 km · metro"); listede ve PDF'te iki numaranın arasında durduğu
+// için yalnız "800 m · ~11 dk".
+const gLegTxt = (L, to, kisa) => kisa ? `${gKmTxt(L.km)}${L.km > 2.5 ? ' · 🚇 metro/otobüs önerilir' : ` · ~${Math.max(1, Math.round(L.km / 4.5 * 60))} dk`}`
+  : `${L.from === '🏠' ? 'Ev' : L.from}–${to === '🏠' ? 'Ev' : to} · ${gKmTxt(L.km)} · ${L.km > 2.5 ? 'metro' : Math.max(1, Math.round(L.km / 4.5 * 60)) + ' dk'}`;
 function gLegHtml(a, b){
   if (!a || !b || !a.lat || !b.lat) return '';
   const km = gKm({lat:+a.lat, lon:+a.lon}, {lat:+b.lat, lon:+b.lon}) * 1.25; if (km <= 2.5) return '';
@@ -2350,7 +2352,7 @@ function gDayHtml(c, g, x, i, f, can){
     + x.items.map((it, k) => {
       const prevP = k ? x.items.slice(0, k).reverse().find(p => p.lat && !gFar(g, p)) : (g.home && g.home.lat ? g.home : null);
       const lg = Lg.get(it), leg = it.lat && !gFar(g, it) ? gLegHtml(prevP, it) || (lg ? `<div class="gleg">🚶 ${gLegTxt(lg, 0, 1)}</div>` : '') : '';
-      const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = [gStars(it), it.src !== 'bilet' && !minor ? gHrs(it) : ''].filter(Boolean).join(' · '), no = N.get(it);
+      const minor = it.kind === 'gecis' || it.kind === 'dukkan', st = [gStars(it), it.src !== 'bilet' && (!minor || it.kind === 'dukkan') ? gHrs(it) : ''].filter(Boolean).join(' · '), no = N.get(it);
       if (it.hw && !it.warn) it.warn = it.hw;
       if (gFar(g, it) && !it.warn) it.warn = 'konum şüpheli (başka şehirde görünüyor); haritaya konmadı';
       const mv = f.gmove && f.gmove.c === c && f.gmove.i === i && f.gmove.k === k;
@@ -2854,7 +2856,16 @@ async function guideRate(c){
   // Başka şehirde görünen öneriler (aynı adlı başka şube) de değiştirilir.
   // O gün kapalı öneriler hiç gösterilmez: hepsi değiştirilir, yenisi bulunamazsa plandan çıkar.
   const shut = o => !!(o.it.open && !gOpenOn(o.it.open, g.days[o.i].d));
-  const weak = [...all.filter(o => !o.food && o.it.src === 'oneri' && shut(o)), ...all.filter(o => o.it.src === 'oneri' && !shut(o) && (gFar(g, o.it) || o.it.g && (o.it.warn || gBelow(o.it)))).slice(0, 6)];
+  const shop = o => o.it.kind === 'dukkan';
+  const weak = [...all.filter(o => !o.food && !shop(o) && o.it.src === 'oneri' && shut(o)), ...all.filter(o => !shop(o) && o.it.src === 'oneri' && !shut(o) && (gFar(g, o.it) || o.it.g && (o.it.warn || gBelow(o.it)))).slice(0, 6)];
+  // 🕘 Mağaza saatleri (Google): o gün kapalı ya da kalıcı kapanmış mağaza o günden çıkar (yerine yenisi istenmez). Pazar gibi
+  // mağazaların çoğunun kapalı olduğu günde alışveriş caddesine kısa uyarı: "bugün mağazaların çoğu kapalı".
+  g.days.forEach((x, i) => {
+    const sh = all.filter(o => o.i === i && shop(o) && o.it.open), off = sh.filter(shut);
+    if (!off.length) return;
+    x.items = x.items.filter(it => !off.some(o => o.it === it));
+    if (off.length * 2 >= sh.length) x.items.filter(it => it.kind === 'gecis').forEach(it => { it.warn = 'bugün mağazaların çoğu kapalı'; });
+  });
   for (const o of weak){
     const x = g.days[o.i], k = x.items.indexOf(o.it); if (k < 0) continue;
     const ok = await guideSwapAt(c, o.i, k, gFar(g, o.it) ? `başka şehirde görünüyor; ${c} içinde olmalı` : `${o.it.warn || `Google puanı düşük (${o.it.g.r}, ${o.it.g.n} yorum)`}`);
@@ -3015,16 +3026,16 @@ function guideKml(c){
     x.items.forEach(it => { if (gVisit(c, x.d, it) && !pts.includes(it)) miss.push(`${it.name} (${!it.lat || !it.lon ? 'konum yok' : 'başka şehirde görünüyor'})`); });
     pts.filter(it => N.get(it)).forEach(it => {
       const lg = Lg.get(it);
-      const d = [`${dayName(x, i)}${x.theme ? ' · ' + x.theme : ''}`, lg ? `🚶 ${gLegTxt(lg, N.get(it))}${lg.km > 2.5 ? ' (en son seçenek taksi)' : ''}` : '', `${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}${it.src === 'bilet' ? ` biletli${it.t ? ' · ' + it.t : ''}` : ''}`.trim(), gStars(it), gHrs(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
+      const d = [`${dayName(x, i)}${x.theme ? ' · ' + x.theme : ''}`, lg ? `Önceki duraktan: ${gLegTxt(lg, N.get(it))}${lg.km > 2.5 ? ' (en son seçenek taksi)' : ''}` : '', `${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}${it.src === 'bilet' ? ` biletli${it.t ? ' · ' + it.t : ''}` : ''}`.trim(), gStars(it), gHrs(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
       out.push(pm(`${N.get(it)}. ${it.name}`, d, 'gun' + i, it));
     });
     // Yürüyüş çizgisi numaralı duraklar arasında parça parça: çizgiye dokununca "3 → 4 · 450 m · yürüyerek ~6 dk" görünür;
     // açıklamada günün toplamı (metroyla ve metrosuz).
-    const line = [...(H ? [H] : []), ...pts, ...(H && x.back !== false ? [H] : [])], tot = gWalkTxt(x.walk);
+    const line = [...(H ? [H] : []), ...pts, ...(H && x.back !== false ? [H] : [])];
     let seg = line.slice(0, 1);
     line.slice(1).forEach((p, k) => {
       seg.push(p); const L = k === line.length - 2 && p === H ? Lg.get('ev') : Lg.get(p); if (!L && k < line.length - 2) return;
-      if (seg.length > 1) out.push(`<Placemark><name>${X(L ? gLegTxt(L, p === H ? '🏠' : N.get(p)) : dayName(x, i) + ' · yürüyüş')}</name><description>${X([dayName(x, i), tot ? 'Günün toplamı: ' + tot : ''].filter(Boolean).join('\n'))}</description><styleUrl>#cizgi${i}</styleUrl><LineString><tessellate>1</tessellate><coordinates>${seg.map(it => `${it.lon},${it.lat},0`).join(' ')}</coordinates></LineString></Placemark>`);
+      if (seg.length > 1) out.push(`<Placemark><name>${X(L ? gLegTxt(L, p === H ? '🏠' : N.get(p)) : dayName(x, i) + ' · yürüyüş')}</name><description>${X([dayName(x, i), x.walk ? `Günün toplamı: ${gKmTxt(x.walk.all || x.walk.km)} yürüyüş${x.walk.metro ? `, metroyla ${gKmTxt(x.walk.km)}` : ''}` : ''].filter(Boolean).join('\n'))}</description><styleUrl>#cizgi${i}</styleUrl><LineString><tessellate>1</tessellate><coordinates>${seg.map(it => `${it.lon},${it.lat},0`).join(' ')}</coordinates></LineString></Placemark>`);
       seg = [p];
     });
   });
@@ -3042,7 +3053,7 @@ function guideKml(c){
   const hat = it => { if (it.geom && it.geom.length) return `<Placemark><name>${X(it.name)}</name><styleUrl>#cadde-hat</styleUrl><MultiGeometry>${it.geom.map(w => `<LineString><tessellate>1</tessellate><coordinates>${w.map(p => `${p[1]},${p[0]},0`).join(' ')}</coordinates></LineString>`).join('')}</MultiGeometry></Placemark>`;
     const m = String(it.hat || '').match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*;\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/); if (!m) return ''; const a = {lat:+m[1], lon:+m[2]}, b = {lat:+m[3], lon:+m[4]}; return gKm(a, {lat:+it.lat, lon:+it.lon}) < 3 && gKm(a, b) < 3 ? `<Placemark><name>${X(it.name)}</name><styleUrl>#cadde-hat</styleUrl><LineString><tessellate>1</tessellate><coordinates>${a.lon},${a.lat},0 ${b.lon},${b.lat},0</coordinates></LineString></Placemark>` : ''; };
   const gift = it => it.kind === 'dukkan' && /^Hediyelik/i.test(it.desc || '');
-  const shops = pred => g.days.flatMap((x, i) => x.items.filter(it => (it.kind === 'gecis' || it.kind === 'dukkan') && pred(it) && ok(x, it)).map(it => (it.kind === 'gecis' ? hat(it) : '') + pm(`${it.kind === 'gecis' ? '🚶' : gIc(it)} ${it.name}`, [dayName(x, i), it.desc, gStars(it), it.addr, it.g && it.g.url ? it.g.url : ''].filter(Boolean).join('\n'), gift(it) ? 'hediye' : 'cadde', it)));
+  const shops = pred => g.days.flatMap((x, i) => x.items.filter(it => (it.kind === 'gecis' || it.kind === 'dukkan') && pred(it) && ok(x, it)).map(it => (it.kind === 'gecis' ? hat(it) : '') + pm(`${it.kind === 'gecis' ? '🚶' : gIc(it)} ${it.name}`, [dayName(x, i), it.desc, gStars(it), gHrs(it), it.addr, it.g && it.g.url ? it.g.url : ''].filter(Boolean).join('\n'), gift(it) ? 'hediye' : 'cadde', it)));
   const shop = shops(it => !gift(it)), gifts = shops(gift);
   if (shop.length) out.push(`<Folder><name>🛍 Caddeler ve mağazalar</name>${shop.join('')}</Folder>`);
   // Hediyelik dükkânları ayrı katman (rotanın üstünde, yerel olarak çok iyi yorumlu), belirgin pembe.
