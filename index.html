@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031211823';</script>
-<script src="heybe-web.js?v=20261031211823"></script>
+<script>window.HEYBE_VER = '20261031212905';</script>
+<script src="heybe-web.js?v=20261031212905"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2455,7 +2455,7 @@ function guideBody(){
           ${can && g.ok && (g.days.some(x => x.items.length && !x.theme && !x.yol) || !g.extra) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}
           <button type="button" class="btn block pri" data-g="sharemenu" data-c="${esc(c)}" aria-expanded="${f.gshare === c}">📤 Paylaş ve indir</button>
           ${f.gshare === c ? `<div class="gshare"><button type="button" class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu (PDF)</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 Google Haritalar'a aktar</button>${navigator.share ? `<button type="button" class="btn sm" data-g="share" data-c="${esc(c)}">💬 Gruba gönder</button>` : ''}
-            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber.kml</b> dosyasını seç. Katmanlar türe göre gelir (Gezi rotası, Restoranlar, Mağazalar, Hediyelik, Pratik).</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>4. Adlar haritada görünsün: Google içe aktarırken etiket ayarını almıyor; yalnız <b>🗺 Gezi rotası</b> katmanında bir kez <b>Bağımsız stiller → Etiketi ayarla → Ad</b> yeter (adlar "1. Plaza Mayor" gibi sıralı).</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details></div>` : ''}
+            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber-<i>gün-ay-saat</i>.kml</b> dosyasını seç; birden çok varsa <b>en yeni saatliyi</b> seç (eskiler silinebilir). Katmanlar türe göre gelir (Gezi rotası, Restoranlar, Mağazalar, Hediyelik, Pratik).</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>4. Adlar haritada görünsün: Google içe aktarırken etiket ayarını almıyor; yalnız <b>🗺 Gezi rotası</b> katmanında bir kez <b>Bağımsız stiller → Etiketi ayarla → Ad</b> yeter (adlar "1. Plaza Mayor" gibi sıralı).</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır.</span></div></div></details></div>` : ''}
           ${can ? `<div class="gask"><span class="lab">Yer ekle</span>
             <div class="gadd"><input class="inp gatext" data-gac="${esc(c)}" placeholder="Yer adı (ör. Templo de Debod)" value="${esc((f.gaT || {})[c] || '')}"><button type="button" class="btn sm" data-g="gaadd" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>➕</button><label class="btn sm">${f.gbusy === 'ekle' ? 'Okunuyor…' : '📷 Fotoğraftan'}<input type="file" class="gaphoto" data-gac="${esc(c)}" accept="image/*" hidden></label></div>
             ${must.size ? `<div class="gmust">${[...must].map(n => `<button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(n)}" aria-pressed="true">✓ ${esc(n)} ✕</button>`).join('')}</div>` : ''}
@@ -3182,7 +3182,9 @@ function guideKml(c){
     ...(g.pratik || []).filter(p => ok(null, p) && !(p.tur === 'emanet' && (g.bavul || []).length)).map(p => pm(`${PR[p.tur] || 'ℹ️'} ${p.name}`, p.not || '', 'pratik', p))];
   if (prat.length) out.push(`<Folder><name>ℹ️ Pratik</name>${prat.join('')}</Folder>`);
   out.push('</Document></kml>');
-  saveFile(`${c}-rehber.kml`, new Blob([out.join('\n')], {type:'application/vnd.google-earth.kml+xml'})).then(ok => { if (ok) toast(`🗺 ${c}-rehber.kml hazır. My Maps'te İçe aktar ile yükle.${miss.length ? ` ⚠ Haritaya konamayan: ${miss.join(', ')}` : ''}`); });
+  // Dosya adında tarih-saat: Drive'da aynı adlı eski dosyalar birikince My Maps'te yanlışlıkla eskisi seçiliyordu.
+  const ts = (d => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`)(new Date()), fn = `${c}-rehber-${ts}.kml`;
+  saveFile(fn, new Blob([out.join('\n')], {type:'application/vnd.google-earth.kml+xml'})).then(ok => { if (ok) toast(`🗺 ${fn} hazır. My Maps'te İçe aktar ile bu (en yeni saatli) dosyayı yükle.${miss.length ? ` ⚠ Haritaya konamayan: ${miss.join(', ')}` : ''}`); });
 }
 // O günün rehber durakları (şehir değiştirilen gün iki şehrin rehberinde de olabilir; aynı ad bir kez).
 function guideOf(d){
