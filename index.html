@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031222925';</script>
-<script src="heybe-web.js?v=20261031222925"></script>
+<script>window.HEYBE_VER = '20261031224142';</script>
+<script src="heybe-web.js?v=20261031224142"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2455,7 +2455,7 @@ function guideBody(){
           ${can && g.ok && (g.days.some(x => x.items.length && !x.theme && !x.yol) || !g.extra) && !f.gdetail ? `<button type="button" class="btn sm" data-g="detail" data-c="${esc(c)}">✍️ Açıklamaları tamamla</button>` : ''}
           <button type="button" class="btn block pri" data-g="sharemenu" data-c="${esc(c)}" aria-expanded="${f.gshare === c}">📤 Paylaş ve indir</button>
           ${f.gshare === c ? `<div class="gshare"><button type="button" class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rehber raporu (PDF)</button><button type="button" class="btn sm" data-g="kml" data-c="${esc(c)}">🗺 Google Haritalar'a aktar</button>${navigator.share ? `<button type="button" class="btn sm" data-g="share" data-c="${esc(c)}">💬 Gruba gönder</button>` : ''}
-            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber-<i>gün-ay-saat</i>.kml</b> dosyasını seç; birden çok varsa <b>en yeni saatliyi</b> seç (eskiler silinebilir). Katmanlar: 🏠 Ev, her gün ayrı (<b>1. gün · 1–12</b> gibi), 🍽 Yemek, 🛍 Alışveriş, ℹ️ Pratik.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>4. <b>Etiketler</b> (Google içe aktarırken almıyor): yalnız <b>gün katmanlarında</b>, her birinin altındaki <b>Bağımsız stiller → Etiketi ayarla → Ad</b>. Yemek, Alışveriş ve Pratik'te etiket açma; noktaya dokununca adı görünür. <b>Tek stil</b>e çevirme: renkler kaybolur.</span></div><div><span>5. <b>En sade görünüm</b>: yalnız o günün katmanının kutusu işaretli kalsın, öteki günleri kaldır; 🍽 Yemek'i acıkınca, ℹ️ Pratik'i gerekince aç. Sol menüde <b>Temel harita → Basit atlas</b> (ya da Açık politik) zemini sadeleştirir. Yemekte renk: turuncu restoran, kiremit yemek pazarı, pembe tatlı, kahverengi fırın-kahvaltı.</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır. Katmanları tek tek açıp kapatmak için telefonda tarayıcıdan My Maps'i aç (Google Haritalar uygulaması katmanları hep birlikte gösterebilir).</span></div></div></details></div>` : ''}
+            <details class="why"><summary>Google Haritalar'a (My Maps) nasıl yüklenir?</summary><div class="wl"><div><span>1. Bilgisayarda <a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">My Maps</a>'i aç, <b>Yeni harita oluştur</b>.</span></div><div><span>2. İlk katmanda <b>İçe aktar</b> → indirdiğin <b>${esc(c)}-rehber-<i>gün-ay-saat</i>.kml</b> dosyasını seç; birden çok varsa <b>en yeni saatliyi</b> seç (eskiler silinebilir). Katmanlar: 🏠 Ev, her gün ayrı (<b>1. gün · 1–12</b> gibi), 🍽 Yemek, 🛍 Alışveriş, ℹ️ Pratik.</span></div><div><span>3. Harita adını <b>${esc(c)}</b> yap.</span></div><div><span>4. Gün durakları şehir boyunca kesintisiz numaralı yuvarlak simgeyle ve adlarıyla gelir; yemek, alışveriş ve pratik noktaları kendi simgeleriyle (çatal-bıçak, pasta, kahve, çanta, WC…). Katman stilini değiştirme: <b>Sayı sırası</b> her günü 1'den başlatır, <b>Tek stil</b> simgeleri siler. Bir gün katmanında ad yazmazsa: <b>Bağımsız stiller → Etiketi ayarla → Ad</b>. Yürüme mesafeleri haritada çizgi değil: durağa dokununca "önceki duraktan" mesafesi, günün ilk durağında günün toplamı yazar.</span></div><div><span>5. <b>En sade görünüm</b>: yalnız o günün katmanının kutusu işaretli kalsın, öteki günleri kaldır; 🍽 Yemek'i acıkınca, ℹ️ Pratik'i gerekince aç. Sol menüde <b>Temel harita → Basit atlas</b> (ya da Açık politik) zemini sadeleştirir. Yemekte renk: turuncu restoran, kiremit yemek pazarı, pembe tatlı, kahverengi fırın-kahvaltı.</span></div><div><span>Harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır. Katmanları tek tek açıp kapatmak için telefonda tarayıcıdan My Maps'i aç (Google Haritalar uygulaması katmanları hep birlikte gösterebilir).</span></div></div></details></div>` : ''}
           ${can ? `<div class="gask"><span class="lab">Yer ekle</span>
             <div class="gadd"><input class="inp gatext" data-gac="${esc(c)}" placeholder="Yer adı (ör. Templo de Debod)" value="${esc((f.gaT || {})[c] || '')}"><button type="button" class="btn sm" data-g="gaadd" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>➕</button><label class="btn sm">${f.gbusy === 'ekle' ? 'Okunuyor…' : '📷 Fotoğraftan'}<input type="file" class="gaphoto" data-gac="${esc(c)}" accept="image/*" hidden></label></div>
             ${must.size ? `<div class="gmust">${[...must].map(n => `<button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(n)}" aria-pressed="true">✓ ${esc(n)} ✕</button>`).join('')}</div>` : ''}
@@ -3141,11 +3141,15 @@ function guideKml(c){
     if (!styles.has(id)) styles.set(id, `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>1</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><scale>${lab ? 1 : 0}</scale></LabelStyle></Style>`); return id; };
   const fCode = fd => fd.tur === 'tatli' ? (/dondurma|gelat|helad|ice ?cream/i.test(fd.name + ' ' + (fd.not || '')) ? 1607 : 1762) : fd.tur === 'kafe' ? 1534 : fd.tur === 'firin' || fd.tur === 'kahvalti' ? 1810 : /pizz/i.test(fd.name + ' ' + (fd.not || '').slice(0, 20)) ? 1651 : 1577;
   const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, '', `<Style id="cadde-hat"><LineStyle><color>${'b3' + K('212121').slice(2)}</color><width>3</width></LineStyle></Style>`];
-  g.days.forEach((x, i) => { const col = G_COLORS[i % G_COLORS.length]; out.push(`<Style id="cizgi${i}"><LineStyle><color>${'59' + K(col).slice(2)}</color><width>2</width></LineStyle></Style>`); });
+  // Gün durakları: şehir boyunca kesintisiz numaralı yuvarlak simge (sitemizdeki resimler, web/numara-simgeleri.py; 1–80).
+  // My Maps'in "Sayı sırası" her katmanı 1'den başlattığı için numarayı simgenin kendisi taşır.
+  const NUMS = 'https://ifayetorbay.github.io/icons/n/', num = (col, n) => { if (n > 80) return ico(503, col, true); const id = `heybe-${col}-${n}-labelson`;
+    if (!styles.has(id)) styles.set(id, `<Style id="${id}"><IconStyle><scale>1</scale><Icon><href>${NUMS}${col}/${n}.png</href></Icon></IconStyle><LabelStyle><scale>1</scale></LabelStyle></Style>`); return id; };
   const H = g.home && g.home.lat && g.home.lon ? g.home : null, miss = [], N = gNums(c, g), dayName = (x, i) => `${i + 1}. gün · ${planDay(x.d)}`;
   const ok = (x, it) => it.lat && it.lon && !gFar(g, it);
   if (H) out.push(`<Folder><name>🏠 Ev</name>${pm('Ev', H.addr || '', ico(1603, '212121', true), H)}</Folder>`);
-  // 1) Rota: gün başına katman (ya da çok günde tek katman); numaralı duraklar ve günün tek yürüyüş çizgisi.
+  // 1) Rota: gün başına katman (ya da çok günde tek katman); numaralı duraklar. Yürüyüş çizgisi yok (kullanıcı: gözü yoruyor);
+  // ara mesafe her durağın, günün toplamı günün ilk durağının açıklamasında.
   const gezi = g.days.map((x, i) => [x, i]).filter(([x]) => !x.yol && x.items.some(it => gVisit(c, x.d, it) && ok(x, it)));
   const tek = gezi.length > 6;
   if (tek) out.push('<Folder><name>🗺 Gezi rotası (numaralı)</name>');
@@ -3153,15 +3157,12 @@ function guideKml(c){
     const pts = x.items.filter(it => gVisit(c, x.d, it) && ok(x, it)), Lg = gLegs(c, g, x), nums = pts.filter(it => N.get(it));
     x.items.forEach(it => { if (gVisit(c, x.d, it) && !pts.includes(it)) miss.push(`${it.name} (${!it.lat || !it.lon ? 'konum yok' : 'başka şehirde görünüyor'})`); });
     if (!tek) out.push(`<Folder><name>${X(`${dayName(x, i)}${nums.length ? ` · ${N.get(nums[0])}–${N.get(nums[nums.length - 1])}` : ''}${x.theme ? ' · ' + x.theme : ''}`)}</name>`);
-    nums.forEach(it => {
+    const tot = x.walk ? `${gKmTxt(x.walk.all || x.walk.km)} yürüyüş${x.walk.metro ? `, metroyla ${gKmTxt(x.walk.km)}` : ''}` : '';
+    nums.forEach((it, k) => {
       const lg = Lg.get(it);
-      const d = [`${dayName(x, i)}${x.theme ? ' · ' + x.theme : ''}`, lg ? `Önceki duraktan: ${gLegTxt(lg, N.get(it))}${lg.km > 2.5 ? ' (en son seçenek taksi)' : ''}` : '', `${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}${it.src === 'bilet' ? ` biletli${it.t ? ' · ' + it.t : ''}` : ''}`.trim(), gStars(it), gHrs(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
-      out.push(pm(`${N.get(it)}. ${it.name}`, d, ico(503, G_COLORS[i % G_COLORS.length], true), it));
+      const d = [`${dayName(x, i)}${x.theme ? ' · ' + x.theme : ''}`, !k && tot ? `🚶 Günün yürüyüşü: ${tot}${Lg.get('ev') ? ` (eve dönüş ${gLegTxt(Lg.get('ev'), '🏠')})` : ''}` : '', lg ? `Önceki duraktan: ${gLegTxt(lg, N.get(it))}${lg.km > 2.5 ? ' (en son seçenek taksi)' : ''}` : '', `${G_KIND[it.kind] || ''} ${G_SRC[it.src] || ''}${it.src === 'bilet' ? ` biletli${it.t ? ' · ' + it.t : ''}` : ''}`.trim(), gStars(it), gHrs(it), it.warn ? '⚠ ' + it.warn : '', it.desc, it.addr, it.g && it.g.url ? it.g.url : '', it.wiki ? 'Kaynak: ' + it.wiki.url : ''].filter(Boolean).join('\n');
+      out.push(pm(`${N.get(it)}. ${it.name}`, d, num(G_COLORS[i % G_COLORS.length], N.get(it)), it));
     });
-    // Günde tek ince çizgi (gidiş yönü); ara mesafeler ve günün toplamı açıklamada.
-    const line = [...(H ? [H] : []), ...pts, ...(H && x.back !== false ? [H] : [])], tot = x.walk ? `${gKmTxt(x.walk.all || x.walk.km)} yürüyüş${x.walk.metro ? `, metroyla ${gKmTxt(x.walk.km)}` : ''}` : '';
-    const legs = [...nums.map(it => Lg.get(it) ? gLegTxt(Lg.get(it), N.get(it)) : ''), Lg.get('ev') ? gLegTxt(Lg.get('ev'), '🏠') : ''].filter(Boolean);
-    if (line.length > 1) out.push(`<Placemark><name>${X(`🚶 ${tek ? `${i + 1}. gün · ` : ''}${tot || 'yürüyüş'}`)}</name><description>${X([tot ? 'Günün toplamı: ' + tot : '', ...legs].filter(Boolean).join('\n'))}</description><styleUrl>#cizgi${i}</styleUrl><LineString><tessellate>1</tessellate><coordinates>${line.map(it => `${it.lon},${it.lat},0`).join(' ')}</coordinates></LineString></Placemark>`);
     if (!tek) out.push('</Folder>');
   }
   if (tek) out.push('</Folder>');
