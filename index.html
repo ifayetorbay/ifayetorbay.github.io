@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031173331';</script>
-<script src="heybe-web.js?v=20261031173331"></script>
+<script>window.HEYBE_VER = '20261031174225';</script>
+<script src="heybe-web.js?v=20261031174225"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -261,7 +261,9 @@ nav.tabs svg{width:22px;height:22px}
 
 /* alt sayfa (form) */
 .scrim{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,#000 45%,transparent);display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--surface);width:100%;max-width:480px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
+html.sheetopen,html.sheetopen body{overflow:hidden}
+.scrim{overscroll-behavior:contain}
+.sheet{background:var(--surface);width:100%;max-width:480px;max-height:92vh;max-height:92dvh;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:22px 22px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
 .sheet h3{font-family:var(--display);font-weight:800;font-size:1.3rem;margin:0}
 .shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .x{border:0;background:var(--sunk);border-radius:99px;width:34px;height:34px;font-size:1.1rem;flex:none}
@@ -1732,7 +1734,8 @@ function maybeAskWho(){
 }
 function closeSheet(){
   const wasGuide = form && form.mode === 'guide';
-  form = null; clearDraft();
+  form = null; clearDraft(); document.documentElement.classList.remove('sheetopen');
+  if (gRec){ try { gRec.abort(); } catch(_) {} gRec = null; }
   if (wasGuide) render();
   const host = document.getElementById('sheetHost'), sc = host.querySelector('.scrim');
   if (!sc || calm()){ host.innerHTML = ''; return; }
@@ -1947,12 +1950,16 @@ function drawSheet(){
   const saveLbl = {expense:'Kaydet', delperson:'Aktar ve sil', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
-  host.innerHTML = `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${titles[f.mode]}">
-    <div class="shead"><h3>${titles[f.mode]}</h3><button class="x" data-act="close" aria-label="Kapat">×</button></div>
+  // Açık pencere yeniden çizilirken pencerenin kendisi korunur, yalnız içi yenilenir: telefonda kaydırma ve ivme kesilmez
+  // (her güncellemede pencereyi baştan kurmak iOS'ta kaydırmayı kilitliyordu).
+  const inner = `<div class="shead"><h3>${titles[f.mode]}</h3><button class="x" data-act="close" aria-label="Kapat">×</button></div>
     ${body}<div class="err" id="fErr"></div>
     ${saveLbl ? `<button class="btn pri block" data-act="save">${saveLbl}</button>` : ''}
-    ${f.id ? `<button class="btn danger block" data-act="del">${confirmDel ? 'Emin misin? Kalıcı olarak sil' : 'Sil'}</button>` : ''}
-  </div></div>`;
+    ${f.id ? `<button class="btn danger block" data-act="del">${confirmDel ? 'Emin misin? Kalıcı olarak sil' : 'Sil'}</button>` : ''}`;
+  const old = host.querySelector('.scrim:not(.closing) .sheet');
+  if (old){ old.innerHTML = inner; old.setAttribute('aria-label', titles[f.mode]); }
+  else host.innerHTML = `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${titles[f.mode]}">${inner}</div></div>`;
+  document.documentElement.classList.add('sheetopen');
 }
 
 // Euro dışı para biriminde kur satırı; kur bilinmiyorsa doğrudan giriş kutusu açılır.
@@ -2397,7 +2404,7 @@ function guideBody(){
       const days = cityDays(c), g = (S.trip.guide || {})[c], nw = gWish().filter(w => w.city === c).length;
       if (g && can && !g.yakinAt && !gRunning.has(c)) setTimeout(() => gNearby(c), 0);
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
-      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Vloglar, bloglar ve paylaşılan haritalarda en beğenilen rotalar araştırılıyor…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : '✨ Rota hazırlanıyor…'} Bir dakika kadar sürebilir; pencereyi kapatma.</p>`;
+      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Vloglar, bloglar ve paylaşılan haritalarda en beğenilen rotalar araştırılıyor…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : '✨ Rota hazırlanıyor…'} Bir dakika kadar sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
         h += g.ok ? `<p class="gok">✅ Onaylandı (${esc(nm(g.okBy || g.by))}). Plana, PDF'e ve Bugün şeridine girdi.</p>${gDelBtn(c, f)}`
@@ -2596,6 +2603,7 @@ function guidePayload(c){
 // Aralık dışında kalan durakları ayıklar (30 dk pay): bilet/yolculuk her zaman kalır; gezi yoksa yalnız onlar.
 const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src === 'bilet') return true; if (!w) return false; const t = hm(it.t); return t == null || (t >= w.a - 30 && t <= w.z + 30); });
 const gRunning = new Set();   // hazırlanan şehirler: aynı şehir için ikinci istek yok sayılır
+const gTok = {};             // şehir başına iş numarası: "Vazgeç" numarayı artırır, eski işin gelen sonucu yazılmaz
 async function guideMake(c){
   if (gRunning.has(c)) return;
   const f = form, {days, P, trip} = guidePayload(c); if (!days.length) return;
@@ -2603,7 +2611,7 @@ async function guideMake(c){
   try { return await guideMake0(c, f, days, P, trip); } finally { gRunning.delete(c); }
 }
 async function guideMake0(c, f, days, P, trip){
-  f.gbusy = c; drawSheetKeep();
+  const tok = gTok[c] = (gTok[c] || 0) + 1; f.gbusy = c; drawSheetKeep();
   // Önce (şehir başına bir kez) internetteki popüler rotalar araştırılır; olmazsa rehber onsuz hazırlanır.
   // Opus'la hazırlanırken araştırma da daha kapsamlı yapılır (vloglar, bloglar, paylaşılan haritalar; bir kez).
   const IL = S.trip.ilham || (S.trip.ilham = {}), useOpus = f.gopus ?? gOpusAuto(c); f.gopus = undefined;
@@ -2614,7 +2622,9 @@ async function guideMake0(c, f, days, P, trip){
   } catch(_) {} finally { f.gilham = null; drawSheetKeep(); }
   try {
     const model = useOpus ? 'opus' : undefined;
+    if (gTok[c] !== tok) return;
     const r = await window.claude.guide({mode:'rehber', trip, cities:[c], model});
+    if (gTok[c] !== tok) return;
     const byD = new Map((r.days || []).map(x => [x.d, x]));
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
@@ -2645,9 +2655,10 @@ async function guideRedoDay0(c, i){
   const {trip} = guidePayload(c), d = g.days[i].d;
   trip.gunler = trip.gunler.filter(x => x.d === d);
   trip.diger_gunlerde = g.days.filter((x, j) => j !== i).flatMap(x => x.items.filter(it => it.src !== 'bilet').map(it => it.name));
-  if (f) { f.gbusy = c; drawSheetKeep(); }
+  const tok = gTok[c] = (gTok[c] || 0) + 1; if (f) { f.gbusy = c; drawSheetKeep(); }
   try {
     const r = await window.claude.guide({mode:'rehber', trip, cities:[c]});
+    if (gTok[c] !== tok) return;
     const x = (r.days || []).find(y => y.d === d) || (r.days || [])[0];
     if (!x) throw 0;
     const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
@@ -2660,20 +2671,32 @@ async function guideRedoDay0(c, i){
   if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
 }
 // 🎙 Konuşarak yaz: tarayıcının ses tanıması (Türkçe); söylenenler "Serbest isteklerin" kutusunun sonuna eklenir.
+// Telefonlarda tarayıcının ses tanıması güvenilmez olabilir (izin sorup hiç ses almayabilir): dinleme 8 sn içinde ses gelmezse
+// ve en çok 60 sn sonra kendiliğinden kapanır; ikinci dokunuş hemen durdurur; hiçbir durumda düğme "Dinliyorum"da kalmaz.
 let gRec = null;
+function gMicOff(f, msg){
+  const r = gRec; gRec = null; clearTimeout(gMicOff.t1); clearTimeout(gMicOff.t2);
+  if (r){ r.onend = r.onerror = r.onresult = null; try { r.abort(); } catch(_) {} }
+  if (f && form === f && f.gmic){ f.gmic = false; drawSheetKeep(); }
+  if (msg) toast(msg);
+}
 function gMic(){
   const f = form, R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R || !f) return;
-  if (gRec){ try { gRec.stop(); } catch(_) {} return; }
-  gRec = new R(); gRec.lang = 'tr-TR'; gRec.continuous = true; gRec.interimResults = false;
+  if (gRec) return gMicOff(f);
+  let heard = false;
+  gRec = new R(); gRec.lang = 'tr-TR'; gRec.continuous = false; gRec.interimResults = false;
+  gMicOff.t1 = setTimeout(() => { if (!heard) gMicOff(f, 'Ses alınamadı. Klavyedeki 🎙 (dikte) ile söyleyebilirsin.'); }, 8000);
+  gMicOff.t2 = setTimeout(() => gMicOff(f), 60000);
   gRec.onresult = ev => {
+    heard = true;
     const said = [...ev.results].slice(ev.resultIndex).filter(r => r.isFinal).map(r => r[0].transcript).join(' ').trim(); if (!said) return;
     const P = S.trip.prefs || (S.trip.prefs = {}), me = P[S.me] || (P[S.me] = {});
     me.not = ((me.not || '') + (me.not ? ' ' : '') + said).slice(0, 1000); save();
     const el = document.getElementById('gNote'); if (el) el.value = me.not;
   };
-  gRec.onend = () => { gRec = null; if (form === f){ f.gmic = false; drawSheetKeep(); } };
-  gRec.onerror = e => { if (e && e.error === 'not-allowed') toast('Mikrofon izni verilmedi; klavyedeki 🎙 ile de söyleyebilirsin.'); };
-  try { gRec.start(); f.gmic = true; drawSheetKeep(); } catch(_) { gRec = null; }
+  gRec.onend = () => gMicOff(f);
+  gRec.onerror = e => gMicOff(f, e && /not-allowed|service-not-allowed/.test(e.error) ? 'Mikrofon izni verilmedi; klavyedeki 🎙 (dikte) ile söyleyebilirsin.' : e && e.error === 'no-speech' ? 'Ses alınamadı. Klavyedeki 🎙 (dikte) ile söyleyebilirsin.' : 'Konuşarak yazma bu telefonda çalışmadı; klavyedeki 🎙 (dikte) ile söyleyebilirsin.');
+  try { gRec.start(); f.gmic = true; drawSheetKeep(); } catch(_) { gMicOff(f, 'Konuşarak yazma başlatılamadı; klavyedeki 🎙 (dikte) ile söyleyebilirsin.'); }
 }
 // Wikipedia: tarihi yerin özeti açıklamaya kaynak olur (önce Türkçe, yoksa İngilizce); bağlantı "Kaynaklar"da gösterilir. Ücretsiz.
 async function gWiki(it, c){
@@ -3241,6 +3264,7 @@ function guideAct(d){
   if (d.g === 'redo'){ guideRedoDay(d.c, +d.i); return; }
   if (d.g === 'sharemenu'){ f.gshare = f.gshare === d.c ? null : d.c; drawSheetKeep(); return; }
   if (d.g === 'mic'){ gMic(); return; }
+  if (d.g === 'gstop'){ gTok[d.c] = (gTok[d.c] || 0) + 1; gRunning.delete(d.c); f.gbusy = null; f.gfood = null; f.gilham = null; drawSheetKeep(); toast('Durduruldu; rehber değişmedi.'); return; }
   if (d.g === 'gaadd'){ const t = ((f.gaT || {})[d.c] || '').trim(); if (!t) return toast('Önce yer adını yaz.'); guideAddWish(t, null, d.c); return; }
   if (d.g === 'share'){ guidePdf(d.c, true); return; }
   if (d.g === 'gdrop'){ const g = S.trip.guide[d.c], it = g.days[+d.i].items.splice(+d.k, 1)[0]; swOpen = null; f.gswap = {c:d.c, i:+d.i, k:+d.k, it}; gRoute(d.c, g, +d.i); save(); drawSheetKeep(); return; }
