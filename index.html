@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031193441';</script>
-<script src="heybe-web.js?v=20261031193441"></script>
+<script>window.HEYBE_VER = '20261031201000';</script>
+<script src="heybe-web.js?v=20261031201000"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2624,6 +2624,17 @@ function guidePayload(c){
   };
   return {days, P, trip};
 }
+// Mağaza dengesi (kullanıcının beğendiği Madrid günü: 18 gezi durağı / 6 mağaza; kendi Roma haritası: 21 tarihi yer / 8
+// alışveriş): günün omurgası gezi durakları. Mağaza en çok 6 ve gezi durağı sayısının üçte biri (en az 2); önce Primark ve
+// hediyelik, sonra modelin sırası. Aynı adlı mağaza bir kez.
+function gShopCap(items){
+  const gez = items.filter(it => it.kind !== 'dukkan' && it.kind !== 'gecis' && it.src !== 'bilet').length;
+  const max = Math.min(6, Math.max(2, Math.round(gez / 3))), seen = new Set();
+  const pri = it => /primark/i.test(it.name + ' ' + (it.desc || '')) ? 0 : /^Hediyelik/i.test(it.desc || '') ? 1 : 2;
+  const shops = items.filter(it => it.kind === 'dukkan').filter(it => { const k = String(it.name).toLocaleLowerCase('tr'); if (seen.has(k)) return false; seen.add(k); return true; });
+  const keep = new Set(shops.map((it, i) => [it, i]).sort((a, b) => pri(a[0]) - pri(b[0]) || a[1] - b[1]).slice(0, max).map(x => x[0]));
+  return items.filter(it => it.kind !== 'dukkan' || keep.has(it));
+}
 // Aralık dışında kalan durakları ayıklar (30 dk pay): bilet/yolculuk her zaman kalır; gezi yoksa yalnız onlar.
 const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src === 'bilet') return true; if (!w) return false; const t = hm(it.t); return t == null || (t >= w.a - 30 && t <= w.z + 30); });
 // Rehber hatalarında neden açıkça söylenir: Claude API kredisi bittiyse (sunucu 402) "hazırlanamadı" yerine bu yazılır.
@@ -2691,7 +2702,7 @@ async function guideMake0(c, f, days, P, trip){
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
     (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
-      days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gFit(y.items || [], w), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
+      days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
     gRouteAll(c);
     save(); toast(`🧭 ${c} rotası hazır; yemek seçenekleri seçiliyor…`);
     f.gfood = c; if (form === f) drawSheetKeep();
@@ -2724,7 +2735,7 @@ async function guideRedoDay0(c, i){
     const x = (r.days || []).find(y => y.d === d) || (r.days || [])[0];
     if (!x) throw 0;
     const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
-    day.items = gFit(x.items || [], w); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.turler = x.turler || day.turler || []; day.theme = ''; day.intro = ''; day.food = [];
+    day.items = gShopCap(gFit(x.items || [], w)); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.turler = x.turler || day.turler || []; day.theme = ''; day.intro = ''; day.food = [];
     gRoute(c, g, i); save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; yemek seçenekleri seçiliyor…`);
     await guideFood(c, [day]);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
