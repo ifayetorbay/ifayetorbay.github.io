@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031180331';</script>
-<script src="heybe-web.js?v=20261031180331"></script>
+<script>window.HEYBE_VER = '20261031180611';</script>
+<script src="heybe-web.js?v=20261031180611"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -266,8 +266,9 @@ html.sheetopen,html.sheetopen body{overflow:hidden}
 .sheet{background:var(--surface);width:100%;max-width:480px;max-height:92vh;max-height:92dvh;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:22px 22px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
 .sheet h3{font-family:var(--display);font-weight:800;font-size:1.3rem;margin:0}
 .shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
-/* Tutamak: pencerenin aşağı çekilerek kapandığını gösteren kısa çizgi */
-.sheet::before{content:"";flex:none;align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-8px 0 -8px}
+/* Başlık (tutamak, ad, ×) pencere kaydırılsa da üstte sabit kalır: her an oradan aşağı çekerek kapatılır. */
+.sheet>.shead{position:sticky;top:-18px;z-index:5;background:var(--surface);margin:-18px -16px 0;padding:24px 16px 10px;box-shadow:0 1px 0 var(--line)}
+.sheet>.shead::before{content:"";position:absolute;top:8px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:var(--line)}
 .x{border:0;background:var(--sunk);border-radius:99px;width:34px;height:34px;font-size:1.1rem;flex:none}
 .f{display:flex;flex-direction:column;gap:7px}
 .f>label,.f>.lab{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
@@ -6131,7 +6132,7 @@ document.addEventListener('pointerup', swEnd);
 document.addEventListener('pointercancel', swEnd);
 
 // ---- aşağı çekerek kapatma ----
-// Pencere en üstteyken (ya da her zaman başlığından) aşağı çekilince parmağı izler; 110 px'ten fazla ya da hızlı bir fiskeyle
+// Pencere en üstteyken ya da her zaman sabit başlığından (tutamak, ad, ×) aşağı çekilince parmağı izler; 110 px'ten fazla ya da hızlı bir fiskeyle
 // çekilirse kapanır (× ile aynı), yoksa yerine döner. iPhone'da Safari aşağı çekişi kendi esneme kaydırmasına çok erken
 // alıyor: bu yüzden aşağı yöndeki ilk harekette sahiplenilir (en üstte aşağı kaydırmanın zaten işi yok). Yukarı kaydırma,
 // yana kaydırma (satır silme) ve yazı/seçim kutuları etkilenmez.
