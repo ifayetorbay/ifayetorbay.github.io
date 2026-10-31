@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031201000';</script>
-<script src="heybe-web.js?v=20261031201000"></script>
+<script>window.HEYBE_VER = '20261031201715';</script>
+<script src="heybe-web.js?v=20261031201715"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2625,11 +2625,12 @@ function guidePayload(c){
   return {days, P, trip};
 }
 // Mağaza dengesi (kullanıcının beğendiği Madrid günü: 18 gezi durağı / 6 mağaza; kendi Roma haritası: 21 tarihi yer / 8
-// alışveriş): günün omurgası gezi durakları. Mağaza en çok 6 ve gezi durağı sayısının üçte biri (en az 2); önce Primark ve
+// alışveriş): günün omurgası gezi durakları. Mağaza en çok 7 ve gezi durağı sayısının ~%37'si (kullanıcı: üçte birden %10 fazla;
+// en az 2); önce Primark ve
 // hediyelik, sonra modelin sırası. Aynı adlı mağaza bir kez.
 function gShopCap(items){
   const gez = items.filter(it => it.kind !== 'dukkan' && it.kind !== 'gecis' && it.src !== 'bilet').length;
-  const max = Math.min(6, Math.max(2, Math.round(gez / 3))), seen = new Set();
+  const max = Math.min(7, Math.max(2, Math.round(gez * 0.37))), seen = new Set();
   const pri = it => /primark/i.test(it.name + ' ' + (it.desc || '')) ? 0 : /^Hediyelik/i.test(it.desc || '') ? 1 : 2;
   const shops = items.filter(it => it.kind === 'dukkan').filter(it => { const k = String(it.name).toLocaleLowerCase('tr'); if (seen.has(k)) return false; seen.add(k); return true; });
   const keep = new Set(shops.map((it, i) => [it, i]).sort((a, b) => pri(a[0]) - pri(b[0]) || a[1] - b[1]).slice(0, max).map(x => x[0]));
