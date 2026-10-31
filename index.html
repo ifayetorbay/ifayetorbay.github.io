@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031174225';</script>
-<script src="heybe-web.js?v=20261031174225"></script>
+<script>window.HEYBE_VER = '20261031175417';</script>
+<script src="heybe-web.js?v=20261031175417"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2267,7 +2267,8 @@ const GQ = [
   ['outlet', 'Outlet / AVM: hangi şehirlerde?', 'city'],
   ['aksam', 'Akşamlar', 1, ['Erken dinlenme', 'Akşam yürüyüşü', 'Gösteri (flamenko vb.)', 'Gece hayatı']],
   ['ulasim', 'Ulaşım', 1, ['Bol yürüyüş', 'Metro-otobüs', 'Taksi']],
-  ['butce', 'Yemek bütçesi', 1, ['€', '€€', '€€€']]
+  ['butce', 'Yemek bütçesi (kişi başı)', 1, ['€ ~10–15 €', '€€ ~15–30 €', '€€€ 30 €+']],
+  ['butceUst', 'Bütçe esnekliği', 1, ['Çok iyiyse bir üst seviye de olur', 'Yalnız seçtiğim seviye']]
 ];
 let gzUndo = null, gShareFile = null;
 const G_KIND = {gez:'🏛', yemek:'🍽', alis:'🛍', aksam:'🌙', gecis:'🚶', dukkan:'🏬'}, G_SRC = {liste:'⭐', oneri:'✨', bilet:'🎟'};
@@ -2295,8 +2296,28 @@ function guidePrefs(){
     else { const c = {}; all.forEach(p => (p[k] || []).forEach(v => { c[v] = (c[v] || 0) + 1; })); const v = Object.entries(c).sort((a, b) => b[1] - a[1]).map(x => x[0]); if (v.length) m[k] = k === 'ilgi' ? v.slice(0, 6) : v; }
   }
   const notes = all.map(p => p.not).filter(Boolean); if (notes.length) m.not = notes.join(' · ');
+  // Yemek bütçesi kesin kural gibi: grubun EN DÜŞÜK seviyesi ana seviye (az bütçeli kimse zorlanmasın). Daha yüksek seçen
+  // olursa bu "bir üst seviyeye izin" sayılır; herkes "Yalnız seçtiğim seviye" demedikçe izin açık.
+  const lv = all.map(p => gLevel(p.butce)).filter(Boolean);
+  if (lv.length){ const lo = Math.min(...lv); m.butce = ['€', '€€', '€€€'][lo - 1]; m.butce_ust = lo < 3 && (lv.some(v => v > lo) || !all.every(p => /^Yalnız/.test(p.butceUst || ''))); }
   return m;
 }
+// Fiyat seviyesi 1-3: tercih metninden ("€€ ~15–30 €") ya da Google'ın fiyat seviyesinden (PRICE_LEVEL_MODERATE gibi).
+const gLevel = v => { if (!v) return 0; const s = String(v); if (/PRICE_LEVEL_/.test(s)) return {INEXPENSIVE:1, MODERATE:2, EXPENSIVE:3, VERY_EXPENSIVE:3}[s.replace('PRICE_LEVEL_', '')] || 0; const m = s.match(/^€+/); return m ? Math.min(m[0].length, 3) : 0; };
+// 💶 Yemek bütçesi denetimi (yalnız restoranlar; fırın, tatlı, kahvaltı, pazar zaten ucuz): seviye Google'dan, yoksa modelin
+// yazdığı. Ana seviyenin üstü çıkar; bir üst seviyeye izin varsa günde EN ÇOK 1 "değer" istisnası kalır (Google 4,6+ ve
+// 2.000+ yorum; Google yoksa modelin "değer" işareti). İki seviye yukarısı hiç gelmez.
+function gBudget(g){
+  const P = guidePrefs(), base = gLevel(P.butce); if (!base) return;
+  for (const x of g.days){
+    const lvl = fd => gLevel(fd.g && fd.g.p) || +fd.fiyat || 0;
+    const great = fd => fd.g && fd.g.r && !fd.g.tahmin ? fd.g.r >= 4.6 && fd.g.n >= 2000 : !!fd.deger;
+    const up = (x.food || []).filter(fd => (!fd.tur || fd.tur === 'restoran') && lvl(fd) === base + 1 && P.butce_ust && great(fd))
+      .sort((a, b) => ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0))[0];
+    x.food = (x.food || []).filter(fd => { if (fd.tur && fd.tur !== 'restoran') return true; const l = lvl(fd); fd.deger = fd === up; return !l || l <= base || fd === up; });
+  }
+}
+const gPrice = fd => { const l = gLevel(fd.g && fd.g.p) || +fd.fiyat || 0; return l ? (fd.deger ? `⭐ Değer · ${'€'.repeat(l)}` : '€'.repeat(l)) : ''; };
 // Rehber penceresinde bir gün: başlık ve kısa giriş, duraklar (tek cümlelik özet, Google puanı, 🧭), sola kaydırınca "Çıkar",
 // dokununca "Başka güne taşı"; çıkarılan durak için "✨ Yerine öner" ve "Geri al".
 const gHrs = it => it.hrs ? `🕘 ${mh(it.hrs[0])}–${it.hrs[1] >= 1440 ? '24:00' : mh(it.hrs[1])}` : it.acik && /\d/.test(it.acik) ? `🕘 ${it.acik}` : '';
@@ -2346,7 +2367,7 @@ function gLegHtml(a, b){
   return `<div class="gleg">${km > 4 ? '🚇' : '🚶'} ${gKmTxt(km)} · ${km > 4 ? '' : `~${Math.round(km / 4.5 * 60)} dk ya da `}<a href="${gTransit(a, b)}transit" target="_blank" rel="noopener">🚇 Metro / otobüs</a> · <a href="${gTransit(a, b)}driving" target="_blank" rel="noopener">🚕 Taksi</a></div>`;
 }
 // Yemek seçeneği satırı (saatsiz): simge, ad, en yakın durak, kısa not, puan, yol tarifi.
-const gFoodRow = (c, fd) => `<div class="gfd"><span class="pic">${(G_FT[fd.tur] || G_FT.restoran)[0]}</span><span class="mid"><span class="d">${esc(fd.name)}${fd.yakin ? `<span class="m"> · ${esc(fd.yakin)} yakını</span>` : ''}</span>${fd.not ? `<span class="m">${esc(fd.not)}</span>` : ''}${gStars(fd) ? `<span class="gst">${gStars(fd)}</span>` : ''}</span><a class="btn sm" href="${fd.g && fd.g.url ? fd.g.url : mapsDir(fd.lat ? `${fd.lat},${fd.lon}` : `${fd.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(fd.name)}">🧭</a></div>`;
+const gFoodRow = (c, fd) => `<div class="gfd"><span class="pic">${(G_FT[fd.tur] || G_FT.restoran)[0]}</span><span class="mid"><span class="d">${esc(fd.name)}${gPrice(fd) ? `<span class="m"> · ${gPrice(fd)}</span>` : ''}${fd.yakin ? `<span class="m"> · ${esc(fd.yakin)} yakını</span>` : ''}</span>${fd.not ? `<span class="m">${esc(fd.not)}</span>` : ''}${gStars(fd) ? `<span class="gst">${gStars(fd)}</span>` : ''}</span><a class="btn sm" href="${fd.g && fd.g.url ? fd.g.url : mapsDir(fd.lat ? `${fd.lat},${fd.lon}` : `${fd.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(fd.name)}">🧭</a></div>`;
 const gOpusBox = (f, c) => `<label class="gopus"><input type="checkbox" data-g="gopus" ${(f.gopus ?? gOpusAuto(c)) ? 'checked' : ''}> 🧠 Daha dikkatli model (Opus)${gOpusAuto(c) ? ' · sıfırdan hazırlamada kendiliğinden açık' : ' · düzeltmeler normalde Sonnet\'le'} · maliyet yaklaşık 2 kat</label>`;
 function gDayHtml(c, g, x, i, f, can){
   gNormDay(x);
@@ -2847,7 +2868,7 @@ async function guideFood(c, days, model){
   }));
   const seen = new Set();
   for (const x of g.days) x.food = (x.food || []).filter(fd => { const k = fd.name.toLocaleLowerCase('tr'); if (seen.has(k)) return false; seen.add(k); return true; });
-  gNearFilter(g); save(); if (form && form.mode === 'guide') drawSheetKeep();
+  gNearFilter(g); gBudget(g); save(); if (form && form.mode === 'guide') drawSheetKeep();
 }
 // Opus: şehrin rehberi sıfırdan hazırlanırken (ilk kez ya da "Taslağı sil" sonrası) kendiliğinden Opus; revizeler (bu isteklerle
 // yeniden hazırla, günü yeniden, yerine öner) Sonnet. Kutu her zaman elle değiştirilebilir.
@@ -2896,6 +2917,7 @@ async function guideRate(c){
   }
   // Yemek seçenekleri: o gün kapalı, kalıcı kapanmış ya da puanı düşük (4,2 altı, 50+ yorum) olan havuzdan çıkar.
   for (const x of g.days) x.food = (x.food || []).filter(fd => !(fd.open && !gOpenOn(fd.open, x.d)) && !(fd.g && fd.g.r && fd.g.n >= 50 && fd.g.r < 4.2));
+  gBudget(g);
   // İstek listesindeki yer o gün kapalıysa açık olduğu başka bir güne taşınır (saatleri sonra düzeltilir);
   // kalıcı kapanmışsa ya da kalınan günlerin hiçbirinde açık değilse "Elenen istekler"e nedeniyle yazılır.
   for (const o of all.filter(o => o.it.src === 'liste' && shut(o))){
@@ -3065,7 +3087,7 @@ function guideKml(c){
   out.push('</Folder>');
   // 2) Yemek seçenekleri (saatsiz): restoranlar ayrı, tatlı-fırın-kahvaltı ayrı katman.
   const food = (pred, title) => {
-    const rows = g.days.flatMap((x, i) => (x.food || []).filter(fd => pred(fd) && ok(x, fd)).map(fd => pm(`${(G_FT[fd.tur] || G_FT.restoran)[0]} ${fd.name}`, [`${dayName(x, i)}${fd.yakin ? ' · ' + fd.yakin + ' yakını' : ''}`, fd.not, gStars(fd), fd.addr, fd.g && fd.g.url ? fd.g.url : ''].filter(Boolean).join('\n'), 'f-' + (G_FT[fd.tur] ? fd.tur : 'restoran'), fd)));
+    const rows = g.days.flatMap((x, i) => (x.food || []).filter(fd => pred(fd) && ok(x, fd)).map(fd => pm(`${(G_FT[fd.tur] || G_FT.restoran)[0]} ${fd.name}`, [`${dayName(x, i)}${fd.yakin ? ' · ' + fd.yakin + ' yakını' : ''}${gPrice(fd) ? ' · ' + gPrice(fd) : ''}`, fd.not, gStars(fd), fd.addr, fd.g && fd.g.url ? fd.g.url : ''].filter(Boolean).join('\n'), 'f-' + (G_FT[fd.tur] ? fd.tur : 'restoran'), fd)));
     if (rows.length) out.push(`<Folder><name>${X(title)}</name>${rows.join('')}</Folder>`);
   };
   food(fd => !fd.tur || fd.tur === 'restoran' || fd.tur === 'pazar', '🍽 Restoranlar ve yemek pazarları');
@@ -3139,7 +3161,7 @@ async function guidePdf(c, share){
       for (const fd of d.food.slice().sort((a, b) => Object.keys(G_FT).indexOf(a.tur) - Object.keys(G_FT).indexOf(b.tur))){
         const L = wrap(`${fd.not || ''}${gStars(fd) ? '  ' + gStars(fd) : ''}`, W - 2 * M - 150, FONT(500, 20), 3);
         need(38 + L.length * 26);
-        x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(`${(G_FT[fd.tur] || G_FT.restoran)[0]} ${fd.name}${fd.yakin ? ' · ' + fd.yakin + ' yakını' : ''}`.slice(0, 80), M + 60, y + 24);
+        x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(`${(G_FT[fd.tur] || G_FT.restoran)[0]} ${fd.name}${gPrice(fd) ? ' · ' + gPrice(fd) : ''}${fd.yakin ? ' · ' + fd.yakin + ' yakını' : ''}`.slice(0, 80), M + 60, y + 24);
         x.fillStyle = RPT.muted; x.font = FONT(500, 20); L.forEach((l, k) => x.fillText(l, M + 60, y + 52 + k * 26)); y += 36 + L.length * 26 + 6;
       }
     }
