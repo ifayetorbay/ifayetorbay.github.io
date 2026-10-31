@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031180611';</script>
-<script src="heybe-web.js?v=20261031180611"></script>
+<script>window.HEYBE_VER = '20261031182453';</script>
+<script src="heybe-web.js?v=20261031182453"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2428,7 +2428,7 @@ function guideBody(){
       const days = cityDays(c), g = (S.trip.guide || {})[c], nw = gWish().filter(w => w.city === c).length;
       if (g && can && !g.yakinAt && !gRunning.has(c)) setTimeout(() => gNearby(c), 0);
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
-      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Vloglar, bloglar ve paylaşılan haritalarda en beğenilen rotalar araştırılıyor…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : '✨ Rota hazırlanıyor…'} Bir dakika kadar sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
+      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Vloglar, bloglar ve paylaşılan haritalarda en beğenilen rotalar araştırılıyor…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : f.gstage === 'iskelet' ? '🧱 Günlerin iskeleti çıkarılıyor (semtler, duraklar)…' : /^gun /.test(f.gstage || '') ? `🗓 Günler aynı anda ayrıntılandırılıyor… ${f.gstage.slice(4)}` : '✨ Rota hazırlanıyor…'} Bir iki dakika sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
         h += g.ok ? `<p class="gok">✅ Onaylandı (${esc(nm(g.okBy || g.by))}). Plana, PDF'e ve Bugün şeridine girdi.</p>${gDelBtn(c, f)}`
@@ -2634,6 +2634,38 @@ async function guideMake(c){
   gRunning.add(c);
   try { return await guideMake0(c, f, days, P, trip); } finally { gRunning.delete(c); }
 }
+// Büyük şehirde rotayı tek istekte yazmak sunucunun 150 sn sınırını aşıyordu (504). Artık iki aşama: önce İSKELET (bütün
+// günler birlikte: tema, semtler, duraklar, istek listesinin dağıtımı, elenenler; kısa ve hızlı), sonra her gün AYNI ANDA
+// kendi iskeletiyle ayrıntılandırılır. Olmayan gün bir kez daha denenir; yine olmazsa boş kalır ("✨ Bu günü yeniden").
+async function gBuild(c, trip, model, f, tok){
+  const stage = s => { if (f){ f.gstage = s; if (form === f) drawSheetKeep(); } };
+  stage('iskelet');
+  const sk = await window.claude.guide({mode:'iskelet', trip, cities:[c], model});
+  if (gTok[c] !== tok) return null;
+  const SK = new Map((sk.days || []).map(x => [x.d, x]));
+  const todo = trip.gunler.filter(g => !/^YOK/.test(g.gezi_penceresi || '')), n = todo.length; let done = 0;
+  stage(`gun 0/${n}`);
+  const one = gd => {
+    const day = SK.get(gd.d) || null, mine = new Set(((day && day.duraklar) || []).map(y => y.name));
+    const t = {...trip, gunler:[gd], iskelet:day,
+      diger_gunlerde:(sk.days || []).filter(x => x.d !== gd.d).flatMap(x => (x.duraklar || []).map(y => y.name)),
+      istek_listesi:trip.istek_listesi.filter(w => mine.has(w)), zorunlu_yerler:(trip.zorunlu_yerler || []).filter(w => mine.has(w))};
+    return window.claude.guide({mode:'rehber', trip:t, cities:[c], model});
+  };
+  const res = await Promise.all(todo.map(async gd => {
+    let r = null;
+    for (let k = 0; k < 2 && !r && gTok[c] === tok; k++) try { r = await one(gd); } catch(_) {}
+    stage(`gun ${++done}/${n}`); return r;
+  }));
+  if (gTok[c] !== tok) return null;
+  const ok = res.filter(Boolean), uniq = (a, key) => [...new Map(a.map(v => [key(v), v])).values()];
+  if (!ok.length) throw new Error('gunler');
+  const miss = todo.filter((_, i) => !res[i]).map(gd => gd.gun);
+  if (miss.length) toast(`⚠ ${miss.join(', ')} hazırlanamadı; o günde "✨ Bu günü yeniden" ile tekrar dene.`);
+  stage('');
+  return {home:sk.home || (ok[0] || {}).home, days:ok.flatMap(r => r.days || []), unplaced:sk.unplaced || [],
+    tips:uniq([...(sk.tips || []), ...ok.flatMap(r => r.tips || [])], t => t), pratik:uniq(ok.flatMap(r => r.pratik || []), p => String(p.name).toLocaleLowerCase('tr'))};
+}
 async function guideMake0(c, f, days, P, trip){
   const tok = gTok[c] = (gTok[c] || 0) + 1; f.gbusy = c; drawSheetKeep();
   // Önce (şehir başına bir kez) internetteki popüler rotalar araştırılır; olmazsa rehber onsuz hazırlanır.
@@ -2647,8 +2679,8 @@ async function guideMake0(c, f, days, P, trip){
   try {
     const model = useOpus ? 'opus' : undefined;
     if (gTok[c] !== tok) return;
-    const r = await window.claude.guide({mode:'rehber', trip, cities:[c], model});
-    if (gTok[c] !== tok) return;
+    const r = await gBuild(c, trip, model, f, tok);
+    if (!r || gTok[c] !== tok) return;
     const byD = new Map((r.days || []).map(x => [x.d, x]));
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z);
@@ -2666,7 +2698,7 @@ async function guideMake0(c, f, days, P, trip){
     if (tab === 'gezi') render();
     return;
   } catch(e){ toast(e && e.code === 'quota' ? 'Günlük sınır doldu; yarın tekrar dene.' : 'Rehber hazırlanamadı; biraz sonra tekrar dene.'); }
-  f.gbusy = null; if (form === f) drawSheetKeep();
+  f.gbusy = null; f.gstage = ''; if (form === f) drawSheetKeep();
 }
 // Tek günü yeniden hazırla: diğer günler aynen kalır; o günün yerleri başka günlerde tekrarlanmaz. Açıklama ve başlık yeniden yazılır.
 async function guideRedoDay(c, i){
@@ -3289,7 +3321,7 @@ function guideAct(d){
   if (d.g === 'redo'){ guideRedoDay(d.c, +d.i); return; }
   if (d.g === 'sharemenu'){ f.gshare = f.gshare === d.c ? null : d.c; drawSheetKeep(); return; }
   if (d.g === 'mic'){ gMic(); return; }
-  if (d.g === 'gstop'){ gTok[d.c] = (gTok[d.c] || 0) + 1; gRunning.delete(d.c); f.gbusy = null; f.gfood = null; f.gilham = null; drawSheetKeep(); toast('Durduruldu; rehber değişmedi.'); return; }
+  if (d.g === 'gstop'){ gTok[d.c] = (gTok[d.c] || 0) + 1; gRunning.delete(d.c); f.gbusy = null; f.gfood = null; f.gilham = null; f.gstage = ''; drawSheetKeep(); toast('Durduruldu; rehber değişmedi.'); return; }
   if (d.g === 'gaadd'){ const t = ((f.gaT || {})[d.c] || '').trim(); if (!t) return toast('Önce yer adını yaz.'); guideAddWish(t, null, d.c); return; }
   if (d.g === 'share'){ guidePdf(d.c, true); return; }
   if (d.g === 'gdrop'){ const g = S.trip.guide[d.c], it = g.days[+d.i].items.splice(+d.k, 1)[0]; swOpen = null; f.gswap = {c:d.c, i:+d.i, k:+d.k, it}; gRoute(d.c, g, +d.i); save(); drawSheetKeep(); return; }
