@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261031224142';</script>
-<script src="heybe-web.js?v=20261031224142"></script>
+<script>window.HEYBE_VER = '20261031224216';</script>
+<script src="heybe-web.js?v=20261031224216"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2280,7 +2280,9 @@ const G_SHOP = [[/^Hediyelik/i, '🎁'], [/^Primark/i, '🛍'], [/^Spor/i, '👟
 const gIc = it => it.kind === 'dukkan' ? ((G_SHOP.find(([r]) => r.test(it.desc || '')) || [])[1] || '🏬') : G_KIND[it.kind] || '📍';
 // Gün renkleri haritadan (parklar yeşil, su mavi açık) ayrışan koyu tonlar; yemek turuncu.
 // Gün renkleri: numaralı rota tek bütün; günler aynı aileden koyu tonlarla sakin bir geçişle ayrılır (lacivert → petrol → mor …).
-const G_COLORS = ['1A237E', '00695C', '6A1B9A', '4E342E', '37474F', 'AD1457', '2E7D32', '0277BD'], G_FOOD = 'E65100';
+// Gün renkleri (kullanıcı: her gün farklı, ana renklerin koyu tonları): koyu mor, laciverte yakın mavi, siyaha yakın kahve,
+// en koyu yeşil, koyu kırmızı, koyu petrol, antrasit, bordo. Değişirse web/numara-simgeleri.py de çalıştırılır.
+const G_COLORS = ['4A148C', '0D47A1', '3E2723', '1B5E20', 'B71C1C', '004D40', '263238', '880E4F'], G_FOOD = 'E65100';
 // Yemek seçenekleri (saatsiz havuz): tür → simge, harita rengi, ad.
 const G_FT = {kahvalti:['☕', '6D4C41', 'Kahvaltı'], firin:['🥐', '8D6E63', 'Fırın'], restoran:['🍽', 'E65100', 'Restoran'], pazar:['🧺', 'BF360C', 'Yemek pazarı'], tatli:['🍨', 'AD1457', 'Tatlı · dondurma'], kafe:['☕', '6D4C41', 'Kafe']};
 // Seyahatin şehirleri, plan sırasıyla (konaklamalardan): Barselona, Madrid, Sevilla.
