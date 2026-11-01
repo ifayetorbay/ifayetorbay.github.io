@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101200639';</script>
-<script src="heybe-web.js?v=20261101200639"></script>
+<script>window.HEYBE_VER = '20261101200812';</script>
+<script src="heybe-web.js?v=20261101200812"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2397,7 +2397,7 @@ function gLegHtml(a, b){
 }
 // Yemek seçeneği satırı (saatsiz): simge, ad, en yakın durak, kısa not, puan, yol tarifi.
 const gFoodRow = (c, fd) => `<div class="gfd"><span class="pic">${(G_FT[fd.tur] || G_FT.restoran)[0]}</span><span class="mid"><span class="d">${esc(fd.name)}${gPrice(fd) ? `<span class="m"> · ${gPrice(fd)}</span>` : ''}${fd.yakin ? `<span class="m"> · ${esc(fd.yakin)} yakını</span>` : ''}</span>${fd.not ? `<span class="m">${esc(fd.not)}</span>` : ''}${gStars(fd) ? `<span class="gst">${gStars(fd)}</span>` : ''}</span><a class="btn sm" href="${fd.g && fd.g.url ? fd.g.url : mapsDir(fd.lat ? `${fd.lat},${fd.lon}` : `${fd.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(fd.name)}">🧭</a></div>`;
-const gOpusBox = (f, c) => `<label class="gopus"><input type="checkbox" data-g="gopus" ${(f.gopus ?? gOpusAuto(c)) ? 'checked' : ''}> 🧠 Opus ile planla (iskelet ve günler Opus, yemekler Sonnet; 31 Ekim'deki gibi)${gOpusAuto(c) ? ' · sıfırdan hazırlamada kendiliğinden açık' : ''} · şehir başına ~0,9 $</label>`;
+const gOpusBox = (f, c) => `<label class="gopus"><input type="checkbox" data-g="gopus" ${(f.gopus ?? gOpusAuto(c)) ? 'checked' : ''}> 🧠 Opus ile planla (iskelet, günler, yemekler ve yerine öneriler Opus; 31 Ekim'deki gibi)${gOpusAuto(c) ? ' · sıfırdan hazırlamada kendiliğinden açık' : ''} · şehir başına ~1,1 $</label>`;
 // 🧭 Google Haritalar'da günün rotası (kullanıcı: "My Maps dışında Google Haritalar'da da açılsın"): evden başlayıp günün
 // numaralı duraklarından geçen yürüyüş tarifi. Google Haritalar uygulaması bir tarifte en çok 10 nokta alır: fazlası sırayla
 // "1. kısım, 2. kısım" bağlantılarına bölünür (her kısım öncekinin son durağından başlar).
@@ -2922,7 +2922,7 @@ async function gFoodTop(c, g, idx){
     const lonely = x.items.some(it => it.src === 'liste' && it.lat && !(x.food || []).some(fd => fd.lat && gKm({lat:+fd.lat, lon:+fd.lon}, {lat:+it.lat, lon:+it.lon}) <= 0.45));
     if (rest >= 3 && !lonely) continue;
     const old = x.food || []; x.food = [];
-    await guideFood(c, [x]);
+    await guideFood(c, [x], g.model || undefined);
     x.food = [...old, ...(x.food || []).filter(fd => !old.some(o => gKey(o.name) === gKey(fd.name)))].slice(0, 10);
   }
 }
@@ -3067,7 +3067,7 @@ function gKmlImport(c, text){
   }
   const n = out.reduce((s, x) => s + x.items.length, 0), nf = out.reduce((s, x) => s + x.food.length, 0); if (!n) throw new Error('bos');
   const old = (S.trip.guide || {})[c];
-  (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home, days:out, unplaced:[], tips:cur.tips || [], pratik:cur.pratik || [], bavul:cur.bavul || [], yakinAt:cur.yakinAt || 0, model:'', kaynak:cur.kaynak || {}, dd:1,
+  (S.trip.guide || (S.trip.guide = {}))[c] = {at:Date.now(), by:S.me, ok:false, home, days:out, unplaced:[], tips:cur.tips || [], pratik:cur.pratik || [], bavul:cur.bavul || [], yakinAt:cur.yakinAt || 0, model:'opus', kaynak:cur.kaynak || {}, dd:1,
     prev:gStrip(old), chg:{at:Date.now(), by:S.me, log:[`📂 Haritadan geri yüklendi: ${n} durak, ${nf} yemek; sıra dosyadaki gibi. Beğenince ✅ Onayla.`]}};
   S.trip.guide[c].days.forEach((_, i) => gRoute(c, S.trip.guide[c], i, true)); save();
   return n;
@@ -3099,7 +3099,7 @@ async function gBuild(c, trip, model, f, tok){
     const t = {...trip, gunler:[gd], iskelet:day,
       diger_gunlerde:(sk.days || []).filter(x => x.d !== gd.d).flatMap(x => (x.duraklar || []).map(y => y.name)),
       istek_listesi:trip.istek_listesi.filter(w => mine.has(w)), zorunlu_yerler:(trip.zorunlu_yerler || []).filter(w => mine.has(w))};
-    // Model (kullanıcı 2026-11-01: 31 Ekim mantığına dönüş): Opus kutusu işaretliyse gün ayrıntıları da Opus; yemekler Sonnet.
+    // Model (kullanıcı 2026-11-01 son karar: 31 Ekim mantığı, komple Opus): Opus kutusu işaretliyse iskelet, günler, yemekler ve yerine öneriler Opus.
     return window.claude.guide({mode:'rehber', trip:t, cities:[c], model});
   };
   let err = null;
@@ -3147,7 +3147,7 @@ async function guideMake0(c, f, days, P, trip){
     f.gfood = c; if (form === f) drawSheetKeep();
     guideVerify(c);
     if (tab === 'gezi') render();
-    await guideFood(c, null);   // yemek seçenekleri Sonnet'le (Opus yalnız iskelette)
+    await guideFood(c, null, model);   // 31 Ekim'deki gibi: Opus seçiliyse yemekler de Opus (kullanıcı: Sonnet yemekte zayıf kaldı)
     f.gfood = null; f.gbusy = null; if (form === f) drawSheetKeep();
     // Maliyet: uzun açıklamalar ve şehir notları (rehberin en pahalı kısmı) taslakta yazılmaz; ✅ Onayla'dan sonra yazılır.
     await guideRate(c); gNearDone.delete(c); await gNearby(c);
@@ -3177,7 +3177,7 @@ async function guideRedoDay0(c, i){
     const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
     day.items = gShopCap(gFit(x.items || [], w)); gDedupe(g); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.turler = x.turler || day.turler || []; day.theme = ''; day.intro = ''; day.food = [];
     gRoute(c, g, i); save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; yemek seçenekleri seçiliyor…`);
-    await guideFood(c, [day]);
+    await guideFood(c, [day], g.model || undefined);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
     guideVerify(c); await guideRate(c); if (g.ok) await guideDetail(c); if (tab === 'gezi') render(); return;
   } catch(e){ toast(gErrMsg(e, 'Gün yeniden hazırlanamadı; biraz sonra tekrar dene.'), {ms:9000}); }
@@ -3484,7 +3484,8 @@ async function guideSwapAt(c, i, k, why, removed, again){
   const x = g.days[i], old = removed || x.items[k]; if (!old) return false;
   const no = [...new Set([...(g.no || []), old.name])]; g.no = no;
   try {
-    const r = await window.claude.guide({mode:'yerine', city:c, prefs:guidePrefs(), removed:{name:old.name, kind:old.kind, t:old.t, neden:why || 'kullanıcı çıkardı'}, no,
+    // Rehber Opus'la hazırlandıysa yerine/boşluk önerileri de Opus (kullanıcı: "Sonnet ekstra yer ve mağaza öneremiyor").
+    const r = await window.claude.guide({mode:'yerine', city:c, model:g.model || undefined, prefs:guidePrefs(), removed:{name:old.name, kind:old.kind, t:old.t, neden:why || 'kullanıcı çıkardı'}, no,
       day:{d:x.d, gun:planDay(x.d), items:x.items.filter(it => it !== old).map(it => ({t:it.t, name:it.name, kind:it.kind, lat:it.lat, lon:it.lon}))}});
     if (!r || !r.name) return false;
     const {usage, ...it} = r; it.src = 'oneri';
