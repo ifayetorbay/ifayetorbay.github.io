@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101150854';</script>
-<script src="heybe-web.js?v=20261101150854"></script>
+<script>window.HEYBE_VER = '20261101150943';</script>
+<script src="heybe-web.js?v=20261101150943"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2673,8 +2673,8 @@ function gDedupe(g, sk){
 // Aralık dışında kalan durakları ayıklar (30 dk pay): bilet/yolculuk her zaman kalır; gezi yoksa yalnız onlar.
 const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src === 'bilet') return true; if (!w) return false; const t = hm(it.t); return t == null || (t >= w.a - 30 && t <= w.z + 30); });
 // 🚶 Günlük adım (kullanıcının kendi Floransa/Roma haritalarından ve beğendiği Madrid gününden ölçüldü): evden eve yürüyüş +
-// yerlerin içinde dolaşma (kullanıcı: park/bahçe 1,5 km; büyük müze 1,5 km'nin üstü). Büyük müze/saray 2 km, çok büyük müze
-// (Vatikan, Louvre, Prado, MNAC…) 3 km, orta müze/saray 1,2 km, sahil 1 km, kilise 0,3 km, meydan/çeşme/cephe 0,15 km, cadde
+// yerlerin içinde dolaşma (kullanıcı: park/bahçe 1,5 km; büyük ve çok büyük müze 2 km, normal müze 1 km). Büyük müze/saray
+// ve çok büyük müze (Vatikan, Louvre, Prado, MNAC…) 2 km, normal müze/saray 1 km, sahil 1 km, kilise 0,3 km, meydan/çeşme/cephe 0,15 km, cadde
 // yürünen boyu (en çok 1,5 km), outlet köyü 2,5 km, pazar 0,4 km. 1 km ≈ 1.300 adım.
 // Tempo: [gezi durağı, hedef adım, üst sınır]. Yoğun = kullanıcının Roma ve Madrid günleri (~18–20 bin), Çok yoğun = Floransa
 // günü (~24–25 bin); hiçbir gün 28 bini geçmez.
@@ -2691,9 +2691,9 @@ function gInside(it){
   if (it.kind === 'gecis'){ const geo = (it.geom || []).reduce((s, w) => s + w.slice(1).reduce((t, p, k) => t + gKm({lat:w[k][0], lon:w[k][1]}, {lat:p[0], lon:p[1]}), 0), 0); return geo ? Math.min(1, geo / 2) : 0.5; }
   if (/\((cephe|dış)|teras|terrace|mirador|manzara|bakış/i.test(it.name)) return 0.15;
   if (it.kind === 'alis') return /outlet|village|designer/i.test(`${n} ${it.desc || ''}`) ? 2.5 : 0.4;
-  if (/vatikan|vatican|vaticani|louvre|prado|uffizi|british museum|hermitage|mnac|nacional d.art|reina sof/i.test(n)) return 3;
+  if (/vatikan|vatican|vaticani|louvre|prado|uffizi|british museum|hermitage|mnac|nacional d.art|reina sof/i.test(n)) return 2;
   if (/\b(park|parc|parque|jard[ií]n?s?|gardens?|giardin\w*)\b|bahçe|boboli|retiro|borghese/i.test(n) && !/^(plaça|plaza|piazza)/i.test(it.name)) return 1.5;
-  if (/m[üu]ze|museu|museo|museum|palau|palacio|palazzo|saray|alc[aá]zar|alhambra|sagrada|casa batll|casa mil|pedrera|bernab|camp nou|stadyum/i.test(n)) return (+it.sure || 0) >= 150 ? 2 : 1.2;
+  if (/m[üu]ze|museu|museo|museum|palau|palacio|palazzo|saray|alc[aá]zar|alhambra|sagrada|casa batll|casa mil|pedrera|bernab|camp nou|stadyum/i.test(n)) return (+it.sure || 0) >= 150 ? 2 : 1;
   if (/sahil|plaj|platja|playa|beach|spiaggia/i.test(n)) return 1;
   if (/kilise|katedral|catedral|cathedral|bazilika|bas[ií]lica|church|iglesia|esgl[eé]sia|duomo|chiesa/i.test(n)) return 0.3;
   return 0.15;
