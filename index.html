@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101221034';</script>
-<script src="heybe-web.js?v=20261101221034"></script>
+<script>window.HEYBE_VER = '20261101221823';</script>
+<script src="heybe-web.js?v=20261101221823"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -3211,12 +3211,13 @@ async function guideMake(c){
 async function gBuild(c, trip, model, f, tok){
   const stage = s => { if (f){ f.gstage = s; if (form === f) drawSheetKeep(); } };
   stage('iskelet');
-  const sk = await window.claude.guide({mode:'iskelet', trip, cities:[c], model});
+  let sk; try { sk = await window.claude.guide({mode:'iskelet', trip, cities:[c], model}); }
+  catch(e){ if (!model || (e && e.code === 'kredi')) throw e; sk = await window.claude.guide({mode:'iskelet', trip, cities:[c]}); }   // yedek: Sonnet
   if (gTok[c] !== tok) return null;
   const SK = new Map((sk.days || []).map(x => [x.d, x]));
   const todo = trip.gunler.filter(g => !/^YOK/.test(g.gezi_penceresi || '')), n = todo.length; let done = 0;
   stage(`gun 0/${n}`);
-  const one = gd => {
+  const one = (gd, model) => {
     const day = SK.get(gd.d) || null, mine = new Set(((day && day.duraklar) || []).map(y => y.name));
     const t = {...trip, gunler:[gd], iskelet:day,
       diger_gunlerde:(sk.days || []).filter(x => x.d !== gd.d).flatMap(x => (x.duraklar || []).map(y => y.name)),
@@ -3227,7 +3228,8 @@ async function gBuild(c, trip, model, f, tok){
   let err = null;
   const res = await Promise.all(todo.map(async gd => {
     let r = null;
-    for (let k = 0; k < 2 && !r && gTok[c] === tok; k++) try { r = await one(gd); } catch(e){ err = e; if (e && e.code === 'kredi') break; }
+    // İkinci deneme Sonnet'le (Opus'un yarısı sürede): Supabase'in 150 sn sınırına takılan (504) gün boş kalmasın.
+    for (let k = 0; k < 2 && !r && gTok[c] === tok; k++) try { r = await one(gd, k ? undefined : model); } catch(e){ err = e; if (e && e.code === 'kredi') break; }
     // Tek günlük istekte model tarihi farklı yazsa da gün kaybolmasın: dönen gün o günün tarihine bağlanır.
     if (r && r.days && r.days[0]) r.days[0].d = gd.d;
     stage(`gun ${++done}/${n}`); return r;
@@ -3539,14 +3541,19 @@ async function guideFood(c, days, model){
   const prefs = guidePrefs(), il = ((S.trip.ilham || {})[c] || {}).yemek || [], N = gNums(c, g), T = gFoodTypes(g.days.filter(x => !x.yol).length);
   const todo = (days || g.days).filter(x => !x.yol && x.items.length);
   await Promise.all(todo.map(async x => {
+    let q = null;
     try {
       const no = g.days.filter(y => y !== x).flatMap(y => (y.food || []).map(fd => fd.name));
       // Günün türleri: rota modelinin (Opus) şehre ve semte göre seçtiği; seçim yapılmışsa yalnız seçilenler; yoksa sıra sıra dağıtım.
       const mt = (x.turler || []).filter(t => !T.secili.length || T.secili.some(s => s.toLocaleLowerCase('tr').startsWith(String(t).toLocaleLowerCase('tr').slice(0, 4))));
-      const r = await window.claude.guide({mode:'yemek', city:c, model, prefs, ilham:il, no, turler:mt.length >= 2 ? mt : T.gun(g.days.indexOf(x)), secili:T.secili,
-        day:{d:x.d, gun:planDay(x.d), ev:(g.home || {}).addr || '', rota:x.items.filter(it => it.lat).map(it => ({no:N.get(it) || '', name:it.name, kind:it.kind, lat:it.lat, lon:it.lon}))}});
+      q = {mode:'yemek', city:c, model, prefs, ilham:il, no, turler:mt.length >= 2 ? mt : T.gun(g.days.indexOf(x)), secili:T.secili,
+        day:{d:x.d, gun:planDay(x.d), ev:(g.home || {}).addr || '', rota:x.items.filter(it => it.lat).map(it => ({no:N.get(it) || '', name:it.name, kind:it.kind, lat:it.lat, lon:it.lon}))}};
+      const r = await window.claude.guide(q);
       x.food = (r.food || []).filter(fd => fd && fd.name);
-    } catch(_) {}
+    } catch(e) {
+      // Opus 150 sn sınırına ya da yazı sınırına takılırsa o gün yemeksiz kalmasın: bir kez Sonnet'le.
+      if (q && q.model && !(e && e.code === 'kredi')) try { const r = await window.claude.guide({...q, model:undefined}); x.food = (r.food || []).filter(fd => fd && fd.name); } catch(_) {}
+    }
   }));
   const seen = new Set();
   for (const x of g.days) x.food = (x.food || []).filter(fd => { const k = fd.name.toLocaleLowerCase('tr'); if (seen.has(k)) return false; seen.add(k); return true; });
