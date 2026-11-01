@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261102013243';</script>
-<script src="heybe-web.js?v=20261102013243"></script>
+<script>window.HEYBE_VER = '20261102013612';</script>
+<script src="heybe-web.js?v=20261102013612"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -3350,13 +3350,14 @@ async function guideMake0(c, f, days, P, trip){
   const IL = S.trip.ilham || (S.trip.ilham = {}), useOpus = f.gopus ?? gOpusAuto(c); f.gopus = undefined;
   // 2026-11-01/02: dört kaynak ailesi AYNI ANDA (YouTube, bloglar, resmî site + rehberler, Google'ın en çok yorumlu yerleri);
   // harmanlanır ve Google'la doğrulanır (yukarıdaki METODOLOJİ).
-  // Eski biçimdeki araştırma (v yok: yalnız bloglar, sayısız) bir kez yenilenir.
-  if (!IL[c] || IL[c].v !== 2 || (useOpus && !IL[c].derin)) try {
+  // Eski biçimdeki araştırma bir kez yenilenir: v yok (yalnız bloglar, sayısız) ya da v 2 (2026-11-02 gecesi YouTube ve blog
+  // araştırması bozuk JSON yüzünden düşmüş, yalnız rehber + Google kalmıştı). v 3: JSON kurtarma ve Sonnet araştırma.
+  if (!IL[c] || IL[c].v !== 3 || (useOpus && !IL[c].derin)) try {
     f.gilham = c; drawSheetKeep();
     const rs = (await Promise.allSettled([...['youtube', 'blog', 'rehber'].map(k => window.claude.guide({mode:'ilham', city:c, days:days.length, derin:useOpus, kaynak:k})), gTopSights(c)]))
       .filter(o => o.status === 'fulfilled' && o.value && Array.isArray(o.value.rotalar)).map(o => o.value);
     if (!rs.some(r => r.kaynak !== 'google')) rs.length = 0;   // yalnız Google geldiyse araştırma sayılmaz, bir dahaki sefere yeniden
-    if (rs.length){ IL[c] = {v:2, at:Date.now(), derin:useOpus, ...gIlhamMerge(rs)}; await gIlhamVerify(c, IL[c]); save();
+    if (rs.length){ IL[c] = {v:3, at:Date.now(), derin:useOpus, ...gIlhamMerge(rs)}; await gIlhamVerify(c, IL[c]); save();
       trip.populer_rotalar = IL[c].rotalar; trip.populer_yerler = gPopular(c); }
   } catch(_) {} finally { f.gilham = null; drawSheetKeep(); }
   try {
