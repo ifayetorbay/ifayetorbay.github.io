@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101214700';</script>
-<script src="heybe-web.js?v=20261101214700"></script>
+<script>window.HEYBE_VER = '20261101215630';</script>
+<script src="heybe-web.js?v=20261101215630"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2888,6 +2888,7 @@ async function guideImprove(c){
   try {
     await guideRate(c);
     const rv = []; try { await guideReview(c, rv); } catch(_) {}
+    { const L = []; if (gOutletFix(c, S.trip.guide[c], L)) rv.push(...L.map(l => '🛍 ' + l)); }
     const g = S.trip.guide[c], filled = [];
     for (const [i, x] of g.days.entries()){ if (await gFill(c, g, i)) filled.push(i); }
     if (filled.length){ gNearFilter(g); await gFoodTop(c, g, filled); }
@@ -3054,6 +3055,37 @@ async function guideReview(c, log){
   for (const i of touched){ gRoute(c, g, i, gKeepOrder); for (const d of gTempoFit(c, g, i, keep)){ n++; L.push(`↓ ${d.name}: ${i + 1}. gün tempo sınırını aşıyordu, Elenenler'e indi`); } }
   if (touched.size){ gNearFilter(g); await gFoodTop(c, g, [...touched]); }
   log.push(...L.map(l => l === r.not ? '🧠 Denetim: ' + l : '🧠 ' + l));
+  return n;
+}
+// 🛍 Outlet günü kuralı (kullanıcı 2026-11-01: "La Roca'dan önce üç durak koymuş, belki imkânsız; sonra da Barceloneta'ya koymuş,
+// outlet 8'de bitince oraya gitme şansımız yok. İyileştir dememe rağmen"): modele bırakılmaz, her şehirde aynı uygulanır.
+// 1) Outletten SONRA durak olmaz (dönüş akşam; yalnız ev ve yolculuk satırları kalır). 2) Outletten önce en çok 3 kısa durak ve
+// yalnız evden outlete giden yolun ~1 km yakınında (servis/tren şehrin o yanından kalkar). Çıkanlar rotayı en az uzatan başka
+// güne taşınır (istek listesi ⭐ dahil); yer yoksa nedeniyle Elenenler'e iner.
+function gOutletFix(c, g, log){
+  const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null; let n = 0;
+  g.days.forEach((x, i) => {
+    const o = x.items.find(gOutlet); if (!o || !o.lat) return;
+    const k = x.items.indexOf(o), O = {lat:+o.lat, lon:+o.lon}, fixed = it => it.src === 'bilet' || it.kind === 'gecis';
+    // Doğru parçasına uzaklık (km): ev → outlet hattı.
+    const seg = p => { if (!H) return 0; const f = Math.cos(H.lat * Math.PI / 180), ax = (O.lon - H.lon) * f, ay = O.lat - H.lat, px = (p.lon - H.lon) * f, py = p.lat - H.lat;
+      const t = Math.max(0, Math.min(1, (px * ax + py * ay) / (ax * ax + ay * ay || 1))); return Math.hypot(px - t * ax, py - t * ay) * 111; };
+    const after = x.items.slice(k + 1).filter(it => !fixed(it));
+    const before = x.items.slice(0, k).filter(it => !fixed(it) && it.lat);
+    const keepB = before.filter(it => seg({lat:+it.lat, lon:+it.lon}) <= 1).sort((a, b) => ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0)).slice(0, 3);
+    const out = [...after, ...before.filter(it => !keepB.includes(it))];
+    // Sonradan kalan caddeler (outletten sonra yürünmez) de çıkar.
+    x.items = x.items.filter((it, j) => !out.includes(it) && !(j > k && it.kind === 'gecis'));
+    for (const it of out){
+      n++; const why = after.includes(it) ? 'outletten sonraydı; akşam dönüşte gezi yok' : 'outletten önceydi ama servisin yolundan uzak';
+      const j0 = gBestDay(c, {...g, days:g.days.map((y, q) => q === i ? {...y, yol:true} : y)}, it);   // outlet günü aday değil
+      if (j0 >= 0){ const y = g.days[j0]; y.items.push(it); gPlaceBest(g, y, it); gRoute(c, g, j0, gKeepOrder); log.push(`📅 ${it.name}: ${i + 1}. günden ${j0 + 1}. güne (${why})`);
+        // Taşınanlar dolu günü aşırı doldurmasın: tempo sınırı aşılırsa o günün rotadan en uzak ✨ önerisi elenir (istek ⭐ kalır).
+        for (const d of gTempoFit(c, g, j0, new Set([gKey(it.name)]))) log.push(`↓ ${d.name}: ${j0 + 1}. gün tempo sınırını aşıyordu, Elenenler'e indi`); }
+      else { g.unplaced = [...(g.unplaced || []).filter(u => gKey(u.name) !== gKey(it.name)), {name:it.name, why:`${i + 1}. gün outlet günü: ${why}; başka günde yer yok.`, lat:it.lat, lon:it.lon}]; log.push(`↓ ${it.name}: ${i + 1}. gün ${why}, Elenenler'e indi`); }
+    }
+    if (out.length) gRoute(c, g, i, true);
+  });
   return n;
 }
 // 📂 Haritadan geri yükle: Heybe'nin dışa aktardığı KML (My Maps dosyası) rehbere geri okunur: gün katmanları, numaralı duraklar
@@ -3244,6 +3276,7 @@ async function gFinish(c){
         done('denetle'); }
       catch(_) {} finally { if (f){ f.gbusy = null; f.gstage = ''; if (form === f) drawSheetKeep(); } }
     }
+    { const L = [], g = (S.trip.guide || {})[c]; if (g && gOutletFix(c, g, L)){ gNearFilter(g); g.chg = {at:Date.now(), by:S.me, log:[...((g.chg || {}).log || []), ...L.map(l => '🛍 ' + l)]}; save(); } }
     if (((S.trip.guide || {})[c] || {}).todo?.includes('yakin')){ gNearDone.delete(c); await gNearby(c); done('yakin'); }
   } finally { gFinishing.delete(c); }
   if (tab === 'gezi') render(); if (form && form.mode === 'guide') drawSheetKeep();
@@ -3366,7 +3399,8 @@ const G_SURE = it => +it.sure || (it.kind === 'gecis' || it.kind === 'dukkan' ? 
 function gFixDup(x){
   if (!x || !x.items) return false;
   const seen = new Set(), n = x.items.length;
-  x.items = x.items.filter(it => { const k = it.src === 'bilet' ? 'b:' + gKey(it.name) + '|' + (it.t || '') : it; if (seen.has(k)) return false; seen.add(k); return true; });
+  // Aynı yer aynı günde iki kez (2026-11-01: iki "Parc de la Ciutadella") da tek kalır; biletlerde saat de anahtara girer.
+  x.items = x.items.filter(it => { const k = it.src === 'bilet' ? 'b:' + gKey(it.name) + '|' + (it.t || '') : 'n:' + gKey(it.name); if (seen.has(k)) return false; seen.add(k); return true; });
   return x.items.length !== n;
 }
 let gKeepOrder = false;   // "Bu planı iyileştir" sırasında bütün sıralar korunur
