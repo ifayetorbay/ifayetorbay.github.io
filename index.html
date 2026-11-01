@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101200812';</script>
-<script src="heybe-web.js?v=20261101200812"></script>
+<script>window.HEYBE_VER = '20261101201710';</script>
+<script src="heybe-web.js?v=20261101201710"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2744,7 +2744,8 @@ const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src 
 // (~18–20 bin), Çok yoğun = Floransa günü (14 yer, ~24–25 bin); hiçbir gün 28 bini geçmez. Durak tavanı 2026-11-01: 47 duraklı
 // Opus planı "çok yoğunda bile fazla" bulundu (beğenilen günler 7–14 durak).
 const G_STEP = 1300;
-const G_TEMPO = {Sakin:[5, 10000, 12000], Dengeli:[8, 15000, 17000], 'Yoğun':[11, 19000, 22000], 'Çok yoğun':[14, 24500, 28000]};
+// Durak tavanları Opus'a giden talimatla (31 Ekim metni: sakin ≈ 6, dengeli ≈ 10, yoğun ≈ 14, çok yoğun ≈ 16) aynı (2026-11-01).
+const G_TEMPO = {Sakin:[6, 10000, 12000], Dengeli:[10, 15000, 17000], 'Yoğun':[14, 19000, 22000], 'Çok yoğun':[16, 24500, 28000]};
 const gTempo = () => G_TEMPO[guidePrefs().tempo] || G_TEMPO['Yoğun'];
 // 🚇 Metro yalnız seçilirse (şehir başına; kullanıcı: "genelde yürüyüş planı isteniyor"): seçilmezse bütün aralar yürünür sayılır.
 const gMetro = c => !!(((S.trip.greq || {})[c] || {}).metro);
