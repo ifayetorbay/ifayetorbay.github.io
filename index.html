@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101160947';</script>
-<script src="heybe-web.js?v=20261101160947"></script>
+<script>window.HEYBE_VER = '20261101161049';</script>
+<script src="heybe-web.js?v=20261101161049"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2394,7 +2394,7 @@ function gLegHtml(a, b){
 }
 // Yemek seçeneği satırı (saatsiz): simge, ad, en yakın durak, kısa not, puan, yol tarifi.
 const gFoodRow = (c, fd) => `<div class="gfd"><span class="pic">${(G_FT[fd.tur] || G_FT.restoran)[0]}</span><span class="mid"><span class="d">${esc(fd.name)}${gPrice(fd) ? `<span class="m"> · ${gPrice(fd)}</span>` : ''}${fd.yakin ? `<span class="m"> · ${esc(fd.yakin)} yakını</span>` : ''}</span>${fd.not ? `<span class="m">${esc(fd.not)}</span>` : ''}${gStars(fd) ? `<span class="gst">${gStars(fd)}</span>` : ''}</span><a class="btn sm" href="${fd.g && fd.g.url ? fd.g.url : mapsDir(fd.lat ? `${fd.lat},${fd.lon}` : `${fd.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(fd.name)}">🧭</a></div>`;
-const gOpusBox = (f, c) => `<label class="gopus"><input type="checkbox" data-g="gopus" ${(f.gopus ?? gOpusAuto(c)) ? 'checked' : ''}> 🧠 Daha dikkatli model (Opus)${gOpusAuto(c) ? ' · sıfırdan hazırlamada kendiliğinden açık' : ' · düzeltmeler normalde Sonnet\'le'} · maliyet yaklaşık 2 kat</label>`;
+const gOpusBox = (f, c) => `<label class="gopus"><input type="checkbox" data-g="gopus" ${(f.gopus ?? gOpusAuto(c)) ? 'checked' : ''}> 🧠 Opus ile planla (günlerin iskeleti Opus, ayrıntılar ve yemekler Sonnet)${gOpusAuto(c) ? ' · sıfırdan hazırlamada kendiliğinden açık' : ''} · şehir başına ~0,8 $</label>`;
 // Şehir kartının özet şeridi: durum, gün/durak/adım özeti, üç ana düğme ve "⋯ Diğer" menüsü.
 function gBarHtml(c, g, f, can, must){
   const T = gTempo(), live = g.days.filter(x => !x.yol && x.items.length), st = live.map(x => gSteps(c, x)).filter(Boolean);
@@ -3082,7 +3082,8 @@ async function gBuild(c, trip, model, f, tok){
     const t = {...trip, gunler:[gd], iskelet:day,
       diger_gunlerde:(sk.days || []).filter(x => x.d !== gd.d).flatMap(x => (x.duraklar || []).map(y => y.name)),
       istek_listesi:trip.istek_listesi.filter(w => mine.has(w)), zorunlu_yerler:(trip.zorunlu_yerler || []).filter(w => mine.has(w))};
-    return window.claude.guide({mode:'rehber', trip:t, cities:[c], model});
+    // Maliyet (kullanıcı 2026-11-01 onayı): Opus yalnız iskelette (günlerin planı); gün ayrıntıları Sonnet'le.
+    return window.claude.guide({mode:'rehber', trip:t, cities:[c]});
   };
   let err = null;
   const res = await Promise.all(todo.map(async gd => {
@@ -3128,7 +3129,7 @@ async function guideMake0(c, f, days, P, trip){
     f.gfood = c; if (form === f) drawSheetKeep();
     guideVerify(c);
     if (tab === 'gezi') render();
-    await guideFood(c, null, model);
+    await guideFood(c, null);   // yemek seçenekleri Sonnet'le (Opus yalnız iskelette)
     f.gfood = null; f.gbusy = null; if (form === f) drawSheetKeep();
     // Maliyet: uzun açıklamalar ve şehir notları (rehberin en pahalı kısmı) taslakta yazılmaz; ✅ Onayla'dan sonra yazılır.
     await guideRate(c); gNearDone.delete(c); await gNearby(c);
