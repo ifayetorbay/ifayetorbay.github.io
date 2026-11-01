@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101193659';</script>
-<script src="heybe-web.js?v=20261101193659"></script>
+<script>window.HEYBE_VER = '20261101194300';</script>
+<script src="heybe-web.js?v=20261101194300"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2284,7 +2284,8 @@ const GQ = [
   ['outlet', 'Outlet / AVM: hangi şehirlerde?', 'city'],
   ['aksam', 'Akşamlar', 1, ['Erken dinlenme', 'Akşam yürüyüşü', 'Gösteri (flamenko vb.)', 'Gece hayatı']],
   ['ulasim', 'Ulaşım', 1, ['Bol yürüyüş', 'Metro-otobüs', 'Taksi']],
-  ['butce', 'Yemek bütçesi (kişi başı)', 1, ['€ ~10–15 €', '€€ ~15–30 €', '€€€ 30 €+']],
+  // Aralıklar Google'ın fiyat aralıklarıyla aynı (kullanıcı 2026-11-01: "Google'a uygun hale getirelim"): 10–20, 20–30, 30+.
+  ['butce', 'Yemek bütçesi (kişi başı)', 1, ['€ ~10–20 €', '€€ ~20–30 €', '€€€ 30 €+']],
   ['butceUst', 'Bütçe esnekliği', 1, ['Çok iyiyse bir üst seviye de olur', 'Yalnız seçtiğim seviye']]
 ];
 let gzUndo = null, gShareFile = null;
@@ -2321,15 +2322,16 @@ function guidePrefs(){
   if (lv.length){ const lo = Math.min(...lv); m.butce = ['€', '€€', '€€€'][lo - 1]; m.butce_ust = lo < 3 && (lv.some(v => v > lo) || !all.every(p => /^Yalnız/.test(p.butceUst || ''))); }
   return m;
 }
-// Fiyat seviyesi 1-3: tercih metninden ("€€ ~15–30 €") ya da Google'ın fiyat seviyesinden (PRICE_LEVEL_MODERATE gibi).
+// Fiyat seviyesi 1-3: tercih metninden ("€€ ~20–30 €") ya da Google'ın fiyat seviyesinden (PRICE_LEVEL_MODERATE gibi).
 const gLevel = v => { if (!v) return 0; const s = String(v); if (/PRICE_LEVEL_/.test(s)) return {INEXPENSIVE:1, MODERATE:2, EXPENSIVE:3, VERY_EXPENSIVE:3}[s.replace('PRICE_LEVEL_', '')] || 0; const m = s.match(/^€+/); return m ? Math.min(m[0].length, 3) : 0; };
 // 💶 Yemek bütçesi denetimi (yalnız restoranlar; fırın, tatlı, kahvaltı, pazar zaten ucuz): seviye Google'dan, yoksa modelin
 // yazdığı. Ana seviyenin üstü çıkar; bir üst seviyeye izin varsa günde EN ÇOK 2 "değer" istisnası kalır (Google 4,6+ ve
 // 2.000+ yorum; Google yoksa modelin "değer" işareti). İki seviye yukarısı hiç gelmez.
-// Google'ın euro fiyat aralığı (pr = [başlangıç, bitiş]) varsa seviye onun ortasından: ≤17,5 € → €, ≤32 € → €€, üstü €€€.
+// Google'ın euro fiyat aralığı (pr = [başlangıç, bitiş]) varsa seviye onun ortasından: ≤20 € (Google'ın 10–20 €'su) → €,
+// ≤30 € (20–30 €) → €€, üstü €€€.
 // Yoksa Google'ın fiyat düzeyi; ama Google Avrupa'da "orta" (MODERATE) düzeyi ~10–30 € için kullanıyor: € seçen grupta bu düzey
 // bütçeyi aşmış sayılmaz (önceki hata: Barselona'daki restoranların hepsi "orta" çıktığı için hepsi eleniyordu).
-const gPrLv = pr => { if (!pr || !pr[0]) return 0; const m = pr[1] ? (pr[0] + pr[1]) / 2 : pr[0] + 10; return m <= 17.5 ? 1 : m <= 32 ? 2 : 3; };
+const gPrLv = pr => { if (!pr || !pr[0]) return 0; const m = pr[1] ? (pr[0] + pr[1]) / 2 : pr[0] + 10; return m <= 20 ? 1 : m <= 30 ? 2 : 3; };
 const gFdLv = (fd, base) => { const G = fd.g || {}, a = gPrLv(G.pr); if (a) return a; const b = gLevel(G.p); return b === 2 && base === 1 ? 1 : b || +fd.fiyat || 0; };
 function gBudget(g){
   const P = guidePrefs(), base = gLevel(P.butce); if (!base) return;
@@ -2491,7 +2493,7 @@ function guideBody(){
     h += `<p class="note"><b>${nm(S.me)}</b> olarak cevaplıyorsun; hepsi isteğe bağlı. Yemek kısıtları kesin kuraldır, diğerlerinde grubun çoğunluğu geçerli olur.${who.length ? ` Cevaplayanlar: ${who.map(nm).join(', ')}.` : ''}</p>`;
     for (const [k, l, n, opts] of GQ){
       const list = n === 'city' ? cities : opts, cur = me[k];
-      h += `<div class="f"><span class="lab">${l}</span><div class="chips">${list.map(v => `<button type="button" class="chip" data-g="pref" data-k="${k}" data-v="${esc(v)}" aria-pressed="${n === 1 ? cur === v : (cur || []).includes(v)}">${esc(v)}</button>`).join('')}</div></div>`;
+      h += `<div class="f"><span class="lab">${l}</span><div class="chips">${list.map(v => `<button type="button" class="chip" data-g="pref" data-k="${k}" data-v="${esc(v)}" aria-pressed="${n === 1 ? cur === v || (k === 'butce' && !!cur && gLevel(cur) === gLevel(v)) : (cur || []).includes(v)}">${esc(v)}</button>`).join('')}</div></div>`;
     }
     const mic = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
     h += `<div class="f"><span class="lab">Serbest isteklerin${help('serbest')}</span><span class="note">Aklındakini kendi cümlelerinle yaz${mic ? ' ya da 🎙 ile söyle' : ''}; şehri ve günü belirt. Ayrıntı için <b>?</b></span>
