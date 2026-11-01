@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101145806';</script>
-<script src="heybe-web.js?v=20261101145806"></script>
+<script>window.HEYBE_VER = '20261101150854';</script>
+<script src="heybe-web.js?v=20261101150854"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2728,6 +2728,22 @@ function gTempoFit(c, g, i, keep){
   }
   return out;
 }
+// Sınır yüzünden çıkan uzak durağın yerine (günde en çok 2) rotanın TAM ÜSTÜNDE kısa, yüksek puanlı, ücretsiz bir yer istenir
+// (kullanıcı: "onların yerine içeriden mantıklı, puanı yüksek yerler eklenebilir"). Yenisi de sınırı aşırırsa geri çıkar.
+async function gTempoRefill(c, g, i, dropped){
+  const x = g.days[i]; let n = 0;
+  for (const old of (dropped || []).slice(0, 2)){
+    const before = new Set(x.items);
+    const ok = await guideSwapAt(c, i, x.items.length, 'Günlük yürüyüş (adım) sınırı yüzünden çıkarıldı: rotadan çok uzaktı. Yerine rotanın TAM ÜSTÜNDE ya da iki durak arasındaki yolun en çok ~300 m yanında, kısa gezilen (meydan, kilise, cephe, manzara noktası, küçük bahçe), ücretsiz, Google ≈4.5+ ve 3.000+ yorumlu bir yer öner; günü uzatma.', old);
+    const nw = x.items.find(it => !before.has(it)); if (!ok || !nw) continue;
+    const s = gSteps(c, x), dup = g.days.some(y => y.items.some(it => it !== nw && gKey(it.name) === gKey(nw.name)));
+    if (dup || (s && s.steps > s.cap)){ x.items.splice(x.items.indexOf(nw), 1); gRoute(c, g, i); continue; }
+    nw.yerine = old.name; n++;
+    const u = (g.unplaced || []).find(u => u.name === old.name); if (u) u.why += ` Yerine rotanın üstündeki ${nw.name} kondu.`;
+  }
+  if (n) save();
+  return n;
+}
 // 🎟 Önceden saatli bilet gereken ünlü yerler (dışı/cephesi değil, içine giriliyorsa): durakta uyarı.
 const G_TKT = /park g[üu]ell|sagrada fam|casa batll|casa mil|pedrera|palau g[üu]ell|alhambra|alc[aá]zar|palacio real|bernab|camp nou|vatikan|vatican|vaticani|sistin|kolezyum|colosseo|colosseum|uffizi|accademia|galleria borghese|borghese gallery|museo del prado/i;
 const gTkt = it => it.src !== 'bilet' && G_TKT.test(it.name) && !/\((cephe|dış)/i.test(it.name);
@@ -2816,7 +2832,8 @@ async function guideEdit0(c){
       day.items.push(it); touched.add(i); n++; log.push(`+ ${a.name} → ${i + 1}. gün · ${planDay(day.d)}`);
       g.unplaced = (g.unplaced || []).filter(u => gKey(u.name) !== gKey(a.name));
     }
-    for (const i of touched){ gRoute(c, g, i); for (const d of gTempoFit(c, g, i, keep)){ n++; log.push(`↓ ${d.name}: ${i + 1}. gün tempo sınırını aşıyordu, Elenenler'e indi`); } }
+    for (const i of touched){ gRoute(c, g, i); const dr = gTempoFit(c, g, i, keep); for (const d of dr){ n++; log.push(`↓ ${d.name}: ${i + 1}. gün tempo sınırını aşıyordu (rotadan en uzak öneri), Elenenler'e indi`); }
+      if (dr.length && await gTempoRefill(c, g, i, dr)) g.days[i].items.filter(it => it.yerine && dr.some(d => d.name === it.yerine)).forEach(it => log.push(`+ ${it.name}: ${it.yerine} yerine, rotanın üstünde`)); }
     gNearFilter(g);
     await gFoodTop(c, g, [...touched]);
     R.must = (R.must || []).filter(x => !g.days.some(y => y.items.some(it => gKey(it.name) === gKey(x))));
@@ -2980,7 +2997,8 @@ async function guideMake0(c, f, days, P, trip){
     (S.trip.guide || (S.trip.guide = {}))[c] = {prev:old || undefined, at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
       days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
     gDedupe(S.trip.guide[c], r.sk); S.trip.guide[c].dd = 1;
-    gRouteAll(c); S.trip.guide[c].days.forEach((_, i) => gTempoFit(c, S.trip.guide[c], i));
+    gRouteAll(c); const drops = S.trip.guide[c].days.map((_, i) => gTempoFit(c, S.trip.guide[c], i));
+    for (const [i, d] of drops.entries()) if (d.length) await gTempoRefill(c, S.trip.guide[c], i, d);
     save(); toast(`🧭 ${c} rotası hazır; yemek seçenekleri seçiliyor…`);
     f.gfood = c; if (form === f) drawSheetKeep();
     guideVerify(c);
@@ -3014,7 +3032,7 @@ async function guideRedoDay0(c, i){
     if (!x) throw 0;
     const day = g.days[i], P2 = tripPlan(), x0 = cityDays(c).find(y => y.d === d), w = x0 ? gWindow(c, x0, P2) : null;
     day.items = gShopCap(gFit(x.items || [], w)); gDedupe(g); day.yol = !w; day.rain = w ? x.rain || day.rain : ''; day.turler = x.turler || day.turler || []; day.theme = ''; day.intro = ''; day.food = [];
-    gRoute(c, g, i); gTempoFit(c, g, i); save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; yemek seçenekleri seçiliyor…`);
+    gRoute(c, g, i); await gTempoRefill(c, g, i, gTempoFit(c, g, i)); save(); toast(`🧭 ${i + 1}. gün yeniden hazırlandı; yemek seçenekleri seçiliyor…`);
     await guideFood(c, [day]);
     if (f) { f.gbusy = null; if (form === f) drawSheetKeep(); }
     guideVerify(c); await guideRate(c); if (g.ok) await guideDetail(c); if (tab === 'gezi') render(); return;
