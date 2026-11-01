@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101161049';</script>
-<script src="heybe-web.js?v=20261101161049"></script>
+<script>window.HEYBE_VER = '20261101165722';</script>
+<script src="heybe-web.js?v=20261101165722"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2375,7 +2375,7 @@ function gLegs(c, g, x){
   const H = g.home && g.home.lat ? g.home : null, N = gNums(c, g), m = new Map();
   let prev = H, from = H ? '🏠' : '', acc = 0;
   for (const it of x.items){
-    if (!it.lat || !it.lon || gFar(g, it) || !gVisit(c, x.d, it)) continue;
+    if (!it.lat || !it.lon || it.kind === 'gecis' || gFar(g, it) || !gVisit(c, x.d, it)) continue;
     if (prev) acc += gKm({lat:+prev.lat, lon:+prev.lon}, {lat:+it.lat, lon:+it.lon}) * 1.25;
     prev = it; const no = N.get(it); if (!no) continue;
     if (from) m.set(it, {km:acc, from}); from = String(no); acc = 0;
@@ -2767,7 +2767,7 @@ function gTempoFit(c, g, i, keep){
   const maxN = x.items.some(gOutlet) ? x.items.filter(it => it.src !== 'oneri' && gIsVisit(c, x, it)).length + 3 : T[0];
   for (let guard = 0; guard < 20; guard++){
     const s = gSteps(c, x), n = x.items.filter(it => gIsVisit(c, x, it)).length;
-    const pts = x.items.filter(it => it.lat && it.lon && !gFar(g, it));
+    const pts = x.items.filter(it => it.lat && it.lon && it.kind !== 'gecis' && !gFar(g, it));
     // Uzun ara (kullanıcının Roma/Floransa haritalarında iki durak arası hiç 2,5 km'yi geçmiyor): metro seçilmediyse iki durak
     // arasındaki yürüyüş 2,5 km'den uzunsa o aranın ucundaki öneri aday olur (ev, bilet/yolculuk ve outlet aralarına bakılmaz).
     const free = it => gIsVisit(c, x, it) && !gOutlet(it) && !(it.src === 'bilet' && G_TRAVEL.test(it.name));
@@ -2814,7 +2814,7 @@ async function gTempoRefill(c, g, i, dropped){
 function gPlaceBest(g, x, it){
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null, P = q => ({lat:+q.lat, lon:+q.lon});
   x.items.splice(x.items.indexOf(it), 1);
-  const idx = x.items.map((q, k) => [q, k]).filter(([q]) => q.lat && q.lon && !gFar(g, q)), p = P(it);
+  const idx = x.items.map((q, k) => [q, k]).filter(([q]) => q.lat && q.lon && q.kind !== 'gecis' && !gFar(g, q)), p = P(it);
   let bk = x.items.length, bv = Infinity;
   for (let j = 0; j <= idx.length; j++){
     const a = j ? P(idx[j - 1][0]) : H, b = j < idx.length ? P(idx[j][0]) : x.back !== false ? H : null;
@@ -2885,7 +2885,7 @@ function gBestDay(c, g, it, d){
   let best = -1, bv = Infinity;
   g.days.forEach((x, i) => {
     if (x.yol || (it.open && !gOpenOn(it.open, x.d))) return;
-    const pts = [H, ...x.items.filter(q => q.lat && q.lon && !gFar(g, q)).map(q => ({lat:+q.lat, lon:+q.lon})), x.back !== false ? H : null].filter(Boolean);
+    const pts = [H, ...x.items.filter(q => q.lat && q.lon && q.kind !== 'gecis' && !gFar(g, q)).map(q => ({lat:+q.lat, lon:+q.lon})), x.back !== false ? H : null].filter(Boolean);
     let ins = pts.length ? Infinity : 5; for (let k = 0; k < pts.length - 1; k++) ins = Math.min(ins, gKm(pts[k], p) + gKm(p, pts[k + 1]) - gKm(pts[k], pts[k + 1]));
     if (pts.length === 1) ins = gKm(pts[0], p) * 2;
     const gez = x.items.filter(q => q.kind !== 'gecis' && q.kind !== 'dukkan' && q.src !== 'bilet').length, s = gSteps(c, x);
@@ -3237,7 +3237,12 @@ function gNums(c, g){ const m = new Map(); let n = 0; g.days.forEach(x => gNormD
 // sıralar denenir, fazlasında en yakın komşu + 2-opt/taşıma iyileştirmesi, çok başlangıçlı). Biletli ziyaret saatinde olmalı;
 // öncesindeki duraklar ona doğru yaklaşır. Açılış-kapanış saati ve gezi penceresi ceza olarak hesaba girer. Saat gösterilmez;
 // iç saat yalnız bu denetim içindir (yürüme 4,5 km/sa, kuş uçuşu × 1,25; 2,5 km'den uzun ara metro sayılır).
-const G_SURE = it => +it.sure || (it.kind === 'gecis' || it.kind === 'dukkan' ? 15 : it.kind === 'alis' ? 90 : 45);
+// Gezme süresi (dk): modelin verdiği; yoksa türüne göre (meydan/cephe/manzara 15, kilise 30, park 40, müze/saray 90; önce hepsi
+// 45'ti, uzun günlerde bilet saatine yetişilemiyor görünüp sıra gereksiz zikzaklanıyordu).
+const G_SURE = it => +it.sure || (it.kind === 'gecis' || it.kind === 'dukkan' ? 15 : it.kind === 'alis' ? 90
+  : /\((cephe|dış)|pla[çc]a|plaza|piazza|meydan|font|çeşme|mirador|teras|pont|köprü|arc /i.test(it.name) ? 15
+  : /kilise|catedral|cathedral|bas[ií]lica|esgl[eé]sia|iglesia|santa maria/i.test(it.name) ? 30
+  : /\b(park|parc|parque|jard[ií]n?s?)\b|bahçe/i.test(it.name) ? 40 : /m[üu]ze|museu|museo|palau|palacio|sagrada|casa mil/i.test(it.name) ? 90 : 30);
 // keep: sıra olduğu gibi kalır (haritadan geri yüklenen rehber: kullanıcının beğendiği sıra); yalnız mesafeler hesaplanır.
 let gKeepOrder = false;   // "Bu planı iyileştir" sırasında bütün sıralar korunur
 function gRoute(c, g, i, keep){
@@ -3246,7 +3251,9 @@ function gRoute(c, g, i, keep){
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null;
   const x0 = cityDays(c).find(y => y.d === x.d), w = x0 ? gWindow(c, x0, tripPlan()) : null;
   const pin = x.items.filter(it => it.src === 'bilet' && !gVisit(c, x.d, it));
-  const nodes = x.items.filter(it => !pin.includes(it) && it.lat && it.lon && !gFar(g, it)), rest = x.items.filter(it => !pin.includes(it) && !nodes.includes(it));
+  // Caddeler (gecis) rotaya düğüm olarak girmez: zaten iki durağın arasında yürünür; uzun caddelerin (Gran Via, Diagonal) tek
+  // noktası kilometrelerce ötede çıkabiliyor ve rotayı, mesafeleri, adımı bozuyordu. Sıralamadan sonra en yakın durağın ardına konur.
+  const nodes = x.items.filter(it => !pin.includes(it) && it.kind !== 'gecis' && it.lat && it.lon && !gFar(g, it)), streets = x.items.filter(it => it.kind === 'gecis'), rest = x.items.filter(it => !pin.includes(it) && !nodes.includes(it) && it.kind !== 'gecis');
   const n = nodes.length, pts = [...nodes.map(it => ({lat:+it.lat, lon:+it.lon})), ...(H ? [H] : [])], h = H ? n : -1, back = x.back !== false;
   const D = pts.map(a => pts.map(b => gKm(a, b) * 1.25));
   const pr = guidePrefs(), t0 = (w ? w.a : 600) + (/^Evde/.test(pr.kahvalti || '') ? 0 : 40);
@@ -3292,11 +3299,21 @@ function gRoute(c, g, i, keep){
     take(improve(nn));
     for (let r = 0; r < 12; r++){ const o = best.slice().sort(() => Math.random() - .5); take(improve(o)); }
   }
+  // Güvence: bulunan sıra verilen sıradan (model ya da kullanıcı) %20'den uzunsa ve bilet saatini daha iyi tutturmuyorsa verilen
+  // sıra kalır (ceza ağırlıkları biletli günde gereksiz zikzak üretebiliyordu).
+  { const id = cost([...Array(n).keys()]); if (bc.dist > id.dist * 1.2 && id.bad.length <= bc.bad.length){ best = [...Array(n).keys()]; bc = id; } }
   const ord = best.map(k => nodes[k]);
   best.forEach((k, j) => { const it = nodes[k]; it.hw = bc.bad.includes(k) ? (fix[k] != null ? 'bilet saatine yetişmek zor; sırayı kontrol et' : `açık saatleri ${mh(hrs[k][0])}–${hrs[k][1] >= 1440 ? '24:00' : mh(hrs[k][1])}; sırası uymayabilir`) : ''; });
   // Tren ve ev giriş-çıkışı: saatine göre sıranın önüne ya da arkasına.
   const out = ord.slice();
   for (const it of pin){ const t = hm(it.t); let j = t == null ? 0 : bc.at.findIndex(a => a > t); if (j < 0) j = out.length; out.splice(j, 0, it); }
+  // Cadde, gerçek çizgisi (yoksa noktası) en yakın durağın hemen ardına.
+  for (const st of streets){
+    const P = (st.geom || []).flat(); if (!P.length && st.lat) P.push([+st.lat, +st.lon]);
+    let bk = out.length - 1, bd = Infinity;
+    out.forEach((it, k) => { if (!it.lat) return; for (const q of P){ const d = gKm({lat:q[0], lon:q[1]}, {lat:+it.lat, lon:+it.lon}); if (d < bd){ bd = d; bk = k; } } });
+    out.splice(bk + 1, 0, st);
+  }
   x.items = [...out, ...rest];
   // km = metroyla gidilirse kalan yürüme; all = metroya hiç binilmezse toplam yürüme (6 km'den uzun aralar, ör. outlet ya da
   // havalimanı, zaten yürünmez: toplamına girmez).
@@ -3315,7 +3332,7 @@ function gFoodTypes(n){
 // Yakınlık: bir noktanın o günün yürüyüş hattına uzaklığı (km); 2,5 km'den uzun (toplu taşımalı) aralar hat sayılmaz.
 function gLineKm(g, x, p){
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null;
-  const pts = [...(H ? [H] : []), ...x.items.filter(it => it.lat && it.lon && !gFar(g, it)).map(it => ({lat:+it.lat, lon:+it.lon})), ...(H && x.back !== false ? [H] : [])];
+  const pts = [...(H ? [H] : []), ...x.items.filter(it => it.lat && it.lon && it.kind !== 'gecis' && !gFar(g, it)).map(it => ({lat:+it.lat, lon:+it.lon})), ...(H && x.back !== false ? [H] : [])];
   const q = {lat:+p.lat, lon:+p.lon}; let best = Infinity;
   for (let k = 0; k < pts.length; k++){
     const a = pts[k], b = pts[k + 1]; best = Math.min(best, gKm(a, q)); if (!b || gKm(a, b) > 2.5) continue;
@@ -3327,7 +3344,14 @@ function gLineKm(g, x, p){
 }
 // Yemek seçenekleri günün hattının en çok 450 m yakınında; pratik noktalar herhangi bir günün hattının (ya da evin) 800 m yakınında.
 function gNearFilter(g){
-  for (const x of g.days) if (!x.yol && x.items.length) x.food = (x.food || []).filter(fd => !fd.lat || gLineKm(g, x, fd) <= 0.45);
+  // Hiçbir gün restoransız kalmasın: 450 m içinde 3'ten az restoran varsa en yakınları 800 m'ye kadar kalır.
+  const isR = fd => !fd.tur || fd.tur === 'restoran';
+  for (const x of g.days) if (!x.yol && x.items.length){
+    const all = (x.food || []).map(fd => [fd, fd.lat ? gLineKm(g, x, fd) : 0]), keep = new Set(all.filter(([, d]) => d <= 0.45).map(([fd]) => fd));
+    const nR = [...keep].filter(isR).length;
+    if (nR < 3) all.filter(([fd, d]) => isR(fd) && !keep.has(fd) && d <= 0.8).sort((a, b) => a[1] - b[1]).slice(0, 3 - nR).forEach(([fd]) => keep.add(fd));
+    x.food = (x.food || []).filter(fd => keep.has(fd));
+  }
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null;
   g.pratik = (g.pratik || []).filter(p => !p.lat || (H && gKm(H, {lat:+p.lat, lon:+p.lon}) <= 0.8) || g.days.some(x => !x.yol && x.items.length && gLineKm(g, x, p) <= 0.8));
 }
@@ -3515,7 +3539,8 @@ async function guideVerify(c){
     await new Promise(r => setTimeout(r, 1100));
   }
   for (const it of items){
-    if (it.ok !== undefined) continue;
+    // Cadde konumu OSM aramasıyla değiştirilmez (uzun caddenin tek noktası rotadan km'lerce uzak çıkabiliyor); çizgisi ayrıca alınır.
+    if (it.ok !== undefined || it.kind === 'gecis') continue;
     try {
       const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(`${it.name}, ${c}`)}`).then(r => r.json());
       const h = r && r[0], la = h && +h.lat, lo = h && +h.lon;
