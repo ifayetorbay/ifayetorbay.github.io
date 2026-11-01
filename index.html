@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101215630';</script>
-<script src="heybe-web.js?v=20261101215630"></script>
+<script>window.HEYBE_VER = '20261101220548';</script>
+<script src="heybe-web.js?v=20261101220548"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -3059,9 +3059,12 @@ async function guideReview(c, log){
 }
 // 🛍 Outlet günü kuralı (kullanıcı 2026-11-01: "La Roca'dan önce üç durak koymuş, belki imkânsız; sonra da Barceloneta'ya koymuş,
 // outlet 8'de bitince oraya gitme şansımız yok. İyileştir dememe rağmen"): modele bırakılmaz, her şehirde aynı uygulanır.
-// 1) Outletten SONRA durak olmaz (dönüş akşam; yalnız ev ve yolculuk satırları kalır). 2) Outletten önce en çok 3 kısa durak ve
-// yalnız evden outlete giden yolun ~1 km yakınında (servis/tren şehrin o yanından kalkar). Çıkanlar rotayı en az uzatan başka
-// güne taşınır (istek listesi ⭐ dahil); yer yoksa nedeniyle Elenenler'e iner.
+// Outletin SAATİNE göre (kullanıcı: "12–20 yazdıysam yarım gün, sonrasına bir şey konmaz; 09–12 yazılırsa 12'den sonra başka
+// yerlere gidilebilir; tam gün yazılırsa o güne hiç durak konmaz"): yol süresi uzaklıktan (~40 km/sa + 20 dk) tahmin edilir.
+// 1) Önce: günün başlangıcından outlete çıkışa kalan süre kadar (durak başına gezme + ~15 dk yürüyüş), en çok 3 durak ve yalnız
+// evden outlete giden hattın ~1 km yakınında. 2) Sonra: outletten dönüşten günün sonuna en az 2 saat kalıyorsa duraklar kalır,
+// yoksa hiç durak olmaz. 3) Saat yazılmadıysa ve süresi 8 saat ya da daha uzunsa tam gün: o güne başka durak konmaz.
+// Çıkanlar rotayı en az uzatan başka güne taşınır (istek listesi ⭐ dahil); yer yoksa nedeniyle Elenenler'e iner.
 function gOutletFix(c, g, log){
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null; let n = 0;
   g.days.forEach((x, i) => {
@@ -3070,14 +3073,20 @@ function gOutletFix(c, g, log){
     // Doğru parçasına uzaklık (km): ev → outlet hattı.
     const seg = p => { if (!H) return 0; const f = Math.cos(H.lat * Math.PI / 180), ax = (O.lon - H.lon) * f, ay = O.lat - H.lat, px = (p.lon - H.lon) * f, py = p.lat - H.lat;
       const t = Math.max(0, Math.min(1, (px * ax + py * ay) / (ax * ax + ay * ay || 1))); return Math.hypot(px - t * ax, py - t * ay) * 111; };
-    const after = x.items.slice(k + 1).filter(it => !fixed(it));
+    const x0 = cityDays(c).find(y => y.d === x.d), w = (x0 && gWindow(c, x0, tripPlan())) || {a:9 * 60, z:23 * 60};
+    const yolDk = Math.max(30, Math.round((H ? gKm(H, O) : 30) / 40 * 60) + 20), dur = +o.sure || 240, st = hm(o.t);
+    const full = st == null && dur >= 480, beg = st != null ? st : w.a + yolDk, end = beg + dur;
+    const roomB = full ? 0 : beg - yolDk - w.a, roomA = full ? false : w.z - (end + yolDk) >= 120;
+    const after = roomA ? [] : x.items.slice(k + 1).filter(it => !fixed(it));
     const before = x.items.slice(0, k).filter(it => !fixed(it) && it.lat);
-    const keepB = before.filter(it => seg({lat:+it.lat, lon:+it.lon}) <= 1).sort((a, b) => ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0)).slice(0, 3);
+    let used = 0;
+    const keepB = before.filter(it => seg({lat:+it.lat, lon:+it.lon}) <= 1).sort((a, b) => ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0))
+      .filter(it => { const m = (+it.sure || 20) + 15; if (used + m > roomB) return false; used += m; return true; }).slice(0, 3);
     const out = [...after, ...before.filter(it => !keepB.includes(it))];
     // Sonradan kalan caddeler (outletten sonra yürünmez) de çıkar.
-    x.items = x.items.filter((it, j) => !out.includes(it) && !(j > k && it.kind === 'gecis'));
+    x.items = x.items.filter((it, j) => !out.includes(it) && !(!roomA && j > k && it.kind === 'gecis') && !(full && it.kind === 'gecis'));
     for (const it of out){
-      n++; const why = after.includes(it) ? 'outletten sonraydı; akşam dönüşte gezi yok' : 'outletten önceydi ama servisin yolundan uzak';
+      n++; const why = full ? 'outlet tam gün' : after.includes(it) ? 'outletten sonraydı; dönüşten sonra gezi için vakit yok' : seg({lat:+it.lat, lon:+it.lon}) > 1 ? 'outletten önceydi ama outlet yolundan uzak' : 'outletten önce vakit yetmiyor';
       const j0 = gBestDay(c, {...g, days:g.days.map((y, q) => q === i ? {...y, yol:true} : y)}, it);   // outlet günü aday değil
       if (j0 >= 0){ const y = g.days[j0]; y.items.push(it); gPlaceBest(g, y, it); gRoute(c, g, j0, gKeepOrder); log.push(`📅 ${it.name}: ${i + 1}. günden ${j0 + 1}. güne (${why})`);
         // Taşınanlar dolu günü aşırı doldurmasın: tempo sınırı aşılırsa o günün rotadan en uzak ✨ önerisi elenir (istek ⭐ kalır).
