@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101220548';</script>
-<script src="heybe-web.js?v=20261101220548"></script>
+<script>window.HEYBE_VER = '20261101221034';</script>
+<script src="heybe-web.js?v=20261101221034"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2419,7 +2419,7 @@ function gBarHtml(c, g, f, can, must){
   return `<div class="gbar${g.ok ? ' ok' : ''}">
     <div class="gbs"><b>${g.ok ? `✅ Onaylandı · ${esc(nm(g.okBy || g.by))}` : '📝 Taslak'}</b><span>${g.days.length} gün · ${nv} durak${avg ? ` · günde ~${avg.toLocaleString('tr-TR')} adım` : ''} · ${esc(guidePrefs().tempo || 'Yoğun')}${over ? ` · <b class="gover">⚠ ${over} gün sınırın üstünde</b>` : ''}</span></div>
     ${can ? `<div class="gbb">${btn('improve', f.gbusy === c && f.gstage === 'iyilestir' ? 'İyileştiriliyor…' : '✨ İyileştir')}${btn('gedit', `✏️ Yer ekle / değiştir${must.size ? ` (${must.size})` : ''}`, f.gedit === c ? 'on' : '')}${g.ok ? '' : btn('approve', '✅ Onayla', 'pri')}<button type="button" class="btn sm" data-g="gmore" data-c="${C}" aria-expanded="${more}">⋯</button></div>` : ''}
-    ${can && !f.gedit && !more && !g.ok ? `<p class="gbh">Önce bak; gerekirse <b>✨ İyileştir</b> (sıra korunur, uzak ya da az yorumlu yerler değişir, rotanın üstündeki ünlü yerler eklenir) ya da <b>✏️ Yer ekle</b>. Beğenince <b>✅ Onayla</b>: açıklamalar yazılır, plan PDF'e ve Bugün şeridine girer.</p>` : ''}
+    ${can && !f.gedit && !more && !g.ok ? `<p class="gbh">Plan hazırlanınca kendiliğinden iyileştirilir (puanlar, denetim, outlet kuralı; ne değiştiği "Son değişiklik"te). <b>✨ İyileştir</b>'i yalnız elle değişiklikten sonra kullan; yer eklemek ya da çıkarmak için <b>✏️ Yer ekle</b>. Beğenince <b>✅ Onayla</b>: açıklamalar yazılır, plan PDF'e ve Bugün şeridine girer.</p>` : ''}
     ${more ? `<div class="gmenu">
       ${can ? `<button type="button" class="link" data-g="gremake" data-c="${C}">🔄 Baştan hazırla (bütün plan yeniden yazılır)</button>` : ''}
       ${can ? `<label class="link">📂 Haritadan geri yükle (Heybe'nin KML dosyası)<input type="file" class="gkml" data-gkc="${C}" hidden></label>` : ''}
@@ -2526,7 +2526,7 @@ function guideBody(){
       if (g && g.days.map(gFixDup).some(Boolean)) save();
       if (g && g.todo) gResume(c);
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
-      if (f.gbusy !== c && gFinishing.has(c)) h += `<p class="note">⏳ Son adımlar sürüyor: Google puanları, 🧠 denetim, bavul emanetçileri. Bitene kadar sayfadan çıkma; My Maps ve PDF sonra.</p>`;
+      if (f.gbusy !== c && gFinishing.has(c)) h += `<p class="note">⏳ Son adımlar sürüyor: Google puanları, ✨ iyileştirme ve 🧠 denetim, bavul emanetçileri. Bitene kadar sayfadan çıkma; My Maps ve PDF sonra.</p>`;
       if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Vloglar, bloglar ve paylaşılan haritalarda en beğenilen rotalar araştırılıyor…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : f.gstage === 'duzelt' ? '✏️ Değişiklik uygulanıyor (yalnız ilgili gün)…' : f.gstage === 'iyilestir' ? '✨ Plan iyileştiriliyor: denetim (günlerin bölgesi), puanlar, uzak ve az yorumlu yerler, rotanın üstündeki ünlü yerler…' : f.gstage === 'denetle' ? '🧠 Plan denetleniyor: her gün tek bölgede mi, varış/outlet/ayrılış günleri doğru mu, az yorumlu öneri var mı…' : f.gstage === 'iskelet' ? '🧱 Günlerin iskeleti çıkarılıyor (semtler, duraklar)…' : /^gun /.test(f.gstage || '') ? `🗓 Günler aynı anda ayrıntılandırılıyor… ${f.gstage.slice(4)}` : '✨ Rota hazırlanıyor…'} Bir iki dakika sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
@@ -2879,12 +2879,13 @@ async function gFill(c, g, i, max){
 // plan yeniden yazılmaz, SIRA korunur. 1) Puanlar (Google, 40'arlı) ve zayıf öneriler: 1.000 yorumun altındaki ya da o gün kapalı
 // öneri yerine aynı semtte daha bilineni; 2) tempo sınırı ve durak tavanı: rotaya en çok yürüyüş katan öneri çıkar; 3) yer olan
 // günlere rotanın üstünde ünlü yerler (en çok 3). Kullanıcının listesi ve biletler dokunulmaz. Önce kopya (↩).
-async function guideImprove(c){
-  if (gRunning.has(c)) return; gRunning.add(c);
-  const f = form, g0 = gNorm((S.trip.guide || {})[c]); if (!g0){ gRunning.delete(c); return; }
-  gSnap(c); gKeepOrder = true;
+// İyileştirmenin özü (✨ İyileştir ve hazırlamanın sonu ortak; kullanıcı 2026-11-01: "en iyi halini getirsin, iyileştirmeye gerek
+// kalmasın"): Google puanları + sıkı ölçü (az yorumlu öneri, tempo, uzun ara), 🧠 denetim, 🛍 outlet kuralı, boş yere ünlü yer.
+// Sıra korunur. Değişikliklerin listesini döndürür.
+async function gImproveCore(c){
+  const g0 = gNorm((S.trip.guide || {})[c]); if (!g0) return [];
+  const prevKeep = gKeepOrder; gKeepOrder = true;
   const was = g0.days.map(x => new Map(x.items.filter(it => gIsVisit(c, x, it)).map(it => [gKey(it.name), it.name])));
-  if (f){ f.gbusy = c; f.gstage = 'iyilestir'; drawSheetKeep(); }
   try {
     await guideRate(c);
     const rv = []; try { await guideReview(c, rv); } catch(_) {}
@@ -2899,10 +2900,20 @@ async function guideImprove(c){
       for (const [k, it] of now) if (!old.has(k) && !wasAll.has(k)) log.push(`+ ${i + 1}. gün: ${it.name}${it.g && it.g.n ? ` (⭐ ${String(it.g.r).replace('.', ',')} · ${it.g.n.toLocaleString('tr-TR')} yorum)` : ''}${it.dolgu ? ' · rotanın üstünde, boş yere' : ' · zayıf önerinin yerine'}`);
       const s = gSteps(c, x); if (s) log.push(`${i + 1}. gün: ${x.items.filter(it => gIsVisit(c, x, it)).length} durak · ${gStepTxt(s)}`);
     });
-    g.chg = {at:Date.now(), by:S.me, log:[...rv, ...log, 'Sıra ve öteki yerler aynen kaldı.']};
+    return [...rv, ...log];
+  } finally { gKeepOrder = prevKeep; }
+}
+async function guideImprove(c){
+  if (gRunning.has(c)) return; gRunning.add(c);
+  const f = form; if (!gNorm((S.trip.guide || {})[c])){ gRunning.delete(c); return; }
+  gSnap(c);
+  if (f){ f.gbusy = c; f.gstage = 'iyilestir'; drawSheetKeep(); }
+  try {
+    const log = await gImproveCore(c), g = S.trip.guide[c];
+    g.chg = {at:Date.now(), by:S.me, log:[...log, 'Sıra ve öteki yerler aynen kaldı.']};
     save(); toast('✨ Plan iyileştirildi: değişiklikler "Son değişiklik"te. Beğenmezsen ↩ Önceki taslağa dön.', {ms:8000});
   } catch(e){ toast(gErrMsg(e, 'İyileştirme yapılamadı; biraz sonra tekrar dene.'), {ms:9000}); }
-  finally { gKeepOrder = false; gRunning.delete(c); }
+  finally { gRunning.delete(c); }
   if (f){ f.gbusy = null; f.gstage = ''; if (form === f) drawSheetKeep(); }
   if (tab === 'gezi') render();
 }
@@ -3251,7 +3262,7 @@ async function guideMake0(c, f, days, P, trip){
     (S.trip.guide || (S.trip.guide = {}))[c] = {prev:old || undefined, at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
       days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
     gDedupe(S.trip.guide[c], r.sk); S.trip.guide[c].dd = 1;
-    S.trip.guide[c].todo = ['puan', 'denetle', 'yakin'];   // yemeklerden sonraki adımlar; sayfadan çıkılırsa açılışta tamamlanır
+    S.trip.guide[c].todo = ['iyilestir', 'yakin'];   // yemeklerden sonraki adımlar; sayfadan çıkılırsa açılışta tamamlanır
     // 31 Ekim'deki gibi (kullanıcı 2026-11-01: "harita mantığını beğendiğimiz 31 Ekim haritasına döndürelim"): hazırlarken
     // otomatik kırpma yok; uzak/az yorumlu yerleri ayıklamak ve yakındaki ünlü yerleri eklemek "✨ İyileştir"in işi.
     gRouteAll(c);
@@ -3276,16 +3287,15 @@ async function gFinish(c){
   const g0 = (S.trip.guide || {})[c]; if (!g0 || !g0.todo || gFinishing.has(c)) return; gFinishing.add(c);
   const f = form, done = k => { const g = (S.trip.guide || {})[c]; if (g && g.todo){ g.todo = g.todo.filter(t => t !== k); if (!g.todo.length) delete g.todo; save(); } };
   try {
-    if (g0.todo.includes('puan')){ await guideRate(c); done('puan'); }
-    if (((S.trip.guide || {})[c] || {}).todo?.includes('denetle')){
-      // 🧠 Denetim: hazırlanan plan bir kez editör gözüyle gözden geçirilir (gün türü, bölge bütünlüğü, öneri kalitesi).
-      try { if (f){ f.gbusy = c; f.gstage = 'denetle'; if (form === f) drawSheetKeep(); }
-        const L = []; if (await guideReview(c, L)){ const g = S.trip.guide[c]; g.chg = {at:Date.now(), by:S.me, log:[...L, 'Plan hazırlandıktan sonra denetlendi; öteki yerler aynen kaldı.']}; }
-        else if (L.length) S.trip.guide[c].chg = {at:Date.now(), by:S.me, log:L};
-        done('denetle'); }
+    // Hazırlanan plan kendiliğinden İyileştir'den geçer (puanlar, denetim, outlet kuralı, boş yere ünlü yer): kullanıcının ayrıca
+    // ✨ İyileştir'e basmasına gerek kalmaz. Eski kayıtlarda yalnız "puan"/"denetle" yazılı olabilir; ikisi de bu adımla biter.
+    if (g0.todo.some(t => t === 'iyilestir' || t === 'puan' || t === 'denetle')){
+      try { if (f){ f.gbusy = c; f.gstage = 'iyilestir'; if (form === f) drawSheetKeep(); }
+        const L = await gImproveCore(c), g = S.trip.guide[c];
+        g.chg = {at:Date.now(), by:S.me, log:[...L, `Plan hazırlandıktan sonra kendiliğinden iyileştirildi (✨ İyileştir'e basmaya gerek yok).`]};
+        ['iyilestir', 'puan', 'denetle'].forEach(done); }
       catch(_) {} finally { if (f){ f.gbusy = null; f.gstage = ''; if (form === f) drawSheetKeep(); } }
     }
-    { const L = [], g = (S.trip.guide || {})[c]; if (g && gOutletFix(c, g, L)){ gNearFilter(g); g.chg = {at:Date.now(), by:S.me, log:[...((g.chg || {}).log || []), ...L.map(l => '🛍 ' + l)]}; save(); } }
     if (((S.trip.guide || {})[c] || {}).todo?.includes('yakin')){ gNearDone.delete(c); await gNearby(c); done('yakin'); }
   } finally { gFinishing.delete(c); }
   if (tab === 'gezi') render(); if (form && form.mode === 'guide') drawSheetKeep();
@@ -3295,7 +3305,7 @@ function gResume(c){
   const g = (S.trip.guide || {})[c];
   if (!g || !g.todo || !g.todo.length || g.by !== S.me || gResumed.has(c) || gFinishing.has(c) || gRunning.has(c) || (form && form.gbusy === c)) return;
   gResumed.add(c);
-  setTimeout(() => { toast(`⏳ ${c} rehberinin yarım kalan adımları tamamlanıyor (Google puanları, denetim)…`, {ms:6000}); gFinish(c); }, 0);
+  setTimeout(() => { toast(`⏳ ${c} rehberinin yarım kalan adımları tamamlanıyor (Google puanları, iyileştirme, denetim)…`, {ms:6000}); gFinish(c); }, 0);
 }
 // Tek günü yeniden hazırla: diğer günler aynen kalır; o günün yerleri başka günlerde tekrarlanmaz. Açıklama ve başlık yeniden yazılır.
 async function guideRedoDay(c, i){
@@ -3745,7 +3755,7 @@ function gVisit(c, d, it){
 function gNotReady(c){
   const g = (S.trip.guide || {})[c], f = form;
   if (!(gRunning.has(c) || gFinishing.has(c) || (f && f.gbusy === c) || (g && g.todo && g.todo.length && g.by === S.me))) return false;
-  toast('⏳ Hazırlık bitmedi: Google puanları ve plan denetimi tamamlanıyor. Bitince yeniden dene; bu sırada sayfadan çıkma.', {ms:7000});
+  toast('⏳ Hazırlık bitmedi: Google puanları, iyileştirme ve denetim tamamlanıyor. Bitince yeniden dene; bu sırada sayfadan çıkma.', {ms:7000});
   if (g && g.todo && g.todo.length && !gFinishing.has(c)){ gResumed.delete(c); gResume(c); }
   return true;
 }
