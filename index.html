@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261102004753';</script>
-<script src="heybe-web.js?v=20261102004753"></script>
+<script>window.HEYBE_VER = '20261102005825';</script>
+<script src="heybe-web.js?v=20261102005825"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2358,7 +2358,8 @@ function gSources(g){
   const K = g.kaynak || {}, wiki = [...new Map(g.days.flatMap(x => x.items.filter(it => it.wiki && it.wiki.url).map(it => [it.wiki.url, it.wiki]))).values()];
   return [
     K.google ? {t:`Google Haritalar: puan ve yorum sayıları (${new Date(K.google).toLocaleDateString('tr-TR')})`} : null,
-    ...(g.ilhamK || []).map(k => ({t:`${k.tur === 'youtube' ? '▶ YouTube' : '📝 Blog'}: ${k.baslik || k.url}${k.kanal ? ' · ' + k.kanal : ''}${+k.abone ? ' · ' + (+k.abone).toLocaleString('tr-TR') + ' abone' : ''}${+k.izlenme ? ' · ' + (+k.izlenme).toLocaleString('tr-TR') + ' izlenme' : ''}`, url:k.url})),
+    ...(g.ilhamM ? [{t:`📚 Yöntem: ${g.ilhamM}`}] : []),
+    ...(g.ilhamK || []).map(k => ({t:`${k.tur === 'youtube' ? '▶ YouTube' : k.tur === 'rehber' ? '📖 Rehber' : '📝 Blog'}: ${k.baslik || k.url}${k.kanal ? ' · ' + k.kanal : ''}${+k.abone ? ' · ' + (+k.abone).toLocaleString('tr-TR') + ' abone' : ''}${+k.izlenme ? ' · ' + (+k.izlenme).toLocaleString('tr-TR') + ' izlenme' : ''}`, url:k.url})),
     ...(g.ilhamK || []).filter(k => k.harita && /^https?:/.test(k.harita)).map(k => ({t:`🗺 ${k.kanal || 'Kaynak'}: açıklamadaki harita/rota`, url:k.harita})),
     ...(g.ilhamK && g.ilhamK.length ? [] : (K.rota || []).map(u => ({t:'Popüler rotalar (internet)', url:u}))),
     ...(K.web || []).map(u => ({t:'İnternet araması', url:u})),
@@ -2529,7 +2530,7 @@ function guideBody(){
       if (g && g.todo) gResume(c);
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
       if (f.gbusy !== c && gFinishing.has(c)) h += `<p class="note">⏳ Son adımlar sürüyor: Google puanları, ✨ iyileştirme ve 🧠 denetim, bavul emanetçileri. Bitene kadar sayfadan çıkma; My Maps ve PDF sonra.</p>`;
-      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 YouTube\'un en çok izlenen gezi vlogları ve en beğenilen bloglar, haritalar araştırılıyor (en sık geçen yerler öne alınır)…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : f.gstage === 'duzelt' ? '✏️ Değişiklik uygulanıyor (yalnız ilgili gün)…' : f.gstage === 'iyilestir' ? '✨ Plan iyileştiriliyor: denetim (günlerin bölgesi), puanlar, uzak ve az yorumlu yerler, rotanın üstündeki ünlü yerler…' : f.gstage === 'denetle' ? '🧠 Plan denetleniyor: her gün tek bölgede mi, varış/outlet/ayrılış günleri doğru mu, az yorumlu öneri var mı…' : f.gstage === 'iskelet' ? '🧱 Günlerin iskeleti çıkarılıyor (semtler, duraklar)…' : /^gun /.test(f.gstage || '') ? `🗓 Günler aynı anda ayrıntılandırılıyor… ${f.gstage.slice(4)}` : '✨ Rota hazırlanıyor…'} Bir iki dakika sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
+      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Dört kaynak araştırılıyor: YouTube\'un en çok izlenen gezi kanalları, bloglar ve forumlar, resmî site ve rehber kitaplar, Google\'ın en çok yorumlu yerleri; sonra Google\'la doğrulanacak…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : f.gstage === 'duzelt' ? '✏️ Değişiklik uygulanıyor (yalnız ilgili gün)…' : f.gstage === 'iyilestir' ? '✨ Plan iyileştiriliyor: denetim (günlerin bölgesi), puanlar, uzak ve az yorumlu yerler, rotanın üstündeki ünlü yerler…' : f.gstage === 'denetle' ? '🧠 Plan denetleniyor: her gün tek bölgede mi, varış/outlet/ayrılış günleri doğru mu, az yorumlu öneri var mı…' : f.gstage === 'iskelet' ? '🧱 Günlerin iskeleti çıkarılıyor (semtler, duraklar)…' : /^gun /.test(f.gstage || '') ? `🗓 Günler aynı anda ayrıntılandırılıyor… ${f.gstage.slice(4)}` : '✨ Rota hazırlanıyor…'} Bir iki dakika sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
         // Şehir kartının başı (kullanıcı: "iyileştir, yeniden yap gibi düğmeler altta kalıyor"): özet şeridi, üç ana iş
@@ -3253,7 +3254,8 @@ async function gBuild(c, trip, model, f, tok){
 // kalır ama modele gönderilmez (neden de yazılır). Listedeki hiçbir yer zorunlu değildir; tempo, bölge, ücretsiz giriş, bilet ve
 // outlet kuralları her zaman önce gelir (rehber istemi F). Google kotası: şehir başına bir kez, en çok 30 yer.
 async function gIlhamVerify(c, I){
-  const Y = (I.yerler || []).slice(0, 30); if (!Y.length || !window.claude || !window.claude.guide) return;
+  const Y = (I.yerler || []).filter(y => !y.g).slice(0, 30); if (!window.claude || !window.claude.guide) return;
+  if (!Y.length){ I.dogrulama = {at:Date.now(), src:'google', gecen:(I.yerler || []).filter(y => y.ok).length, toplam:(I.yerler || []).length}; return; }
   let r; try { r = await window.claude.guide({mode:'puan', city:c, items:Y.map(y => ({name:y.ad, lat:0, lon:0}))}); } catch(_) { return; }
   const pts = Y.map((y, k) => (r.items || [])[k]).filter(v => v && v.lat), cx = pts.length ? {lat:pts.map(v => v.lat).sort((a, b) => a - b)[pts.length >> 1], lon:pts.map(v => v.lon).sort((a, b) => a - b)[pts.length >> 1]} : null;
   Y.forEach((y, k) => { const v = (r.items || [])[k];
@@ -3261,34 +3263,57 @@ async function gIlhamVerify(c, I){
     y.g = {r:v.r, n:v.n, tahmin:!!v.tahmin}; if (v.lat){ y.lat = v.lat; y.lon = v.lon; }
     y.ok = !v.kapali && v.r >= 4.4 && v.n >= 1000 && !(cx && v.lat && gKm(cx, {lat:v.lat, lon:v.lon}) > 25);
     y.neden = y.ok ? '' : v.kapali ? 'kalıcı kapalı' : cx && v.lat && gKm(cx, {lat:v.lat, lon:v.lon}) > 25 ? 'şehrin dışında' : `Google ${String(v.r).replace('.', ',')} · ${(+v.n || 0).toLocaleString('tr-TR')} yorum (ölçünün altında)`; });
-  I.dogrulama = {at:Date.now(), src:r.src || '', gecen:Y.filter(y => y.ok).length, toplam:Y.length};
+  I.dogrulama = {at:Date.now(), src:r.src || '', gecen:(I.yerler || []).filter(y => y.ok).length, toplam:(I.yerler || []).length};
 }
+// Kaynaklar listesindeki tek satırlık yöntem özeti (rehberde ve PDF'te).
+const gIlhamTxt = I => !I || !I.yerler ? '' : `${(I.aileler || []).map(a => ({youtube:'YouTube', blog:'bloglar/forumlar', rehber:'resmî site ve rehberler', google:'Google'}[a] || a)).join(', ')} harmanlandı; ${I.yerler.length} yerden ${I.dogrulama ? I.dogrulama.gecen : '?'} tanesi Google'da doğrulandı (4,4+ · 1.000+ yorum, açık, şehir içinde). Liste ilhamdır; tempo, bölge, ücretsiz giriş ve bilet kuralları önce gelir.`;
 // Modele giden popüler yerler: doğrulama yapıldıysa yalnız geçenler (Google puanıyla); yapılamadıysa ham liste (eski kayıt).
 const gPopular = c => { const I = (S.trip.ilham || {})[c] || {}, Y = I.yerler || [];
-  return (I.dogrulama ? Y.filter(y => y.ok) : Y).map(y => ({ad:y.ad, kac_kaynak:y.kac_kaynak, ...(y.yt ? {youtube:true} : {}), ...(y.g ? {google:`${y.g.r} · ${y.g.n} yorum`} : {})})); };
-// İki araştırmanın birleşimi: yerler adına göre toplanır (kac_kaynak toplanır; YouTube'da geçen yer işaretlenir), en sık geçenler
-// önce (en çok 30); kaynaklar izlenmeye göre; rotalar, yemekler ve ipuçları ikisinden.
+  return (I.dogrulama ? Y.filter(y => y.ok) : Y).map(y => ({ad:y.ad, kac_kaynak:y.kac_kaynak, ...(y.aile ? {aile:y.aile.length} : {}), ...(y.yt ? {youtube:true} : {}), ...(y.gizli ? {gizli:true} : {}), ...(y.g ? {google:`${y.g.r} · ${y.g.n} yorum`} : {})})); };
+// 📚 METODOLOJİ (kullanıcı 2026-11-02: "hepsini harmanlayalım, metodolojimizi ekleyelim"; her şehirde ve herkes için aynı):
+//  1) Dört kaynak ailesi AYNI ANDA: ▶ YouTube (en az 6 farklı çok aboneli kanal), 📝 bloglar/forumlar/paylaşılan haritalar,
+//     📖 resmî turizm sitesi + Wikivoyage + Rick Steves / Lonely Planet rotaları + Atlas Obscura (gizli yerler), 📍 Google'ın
+//     en çok yorumlu gezi yerleri (ölçümle; 3.000+ yorum).
+//  2) Harmanlama: aynı yer aksan duyarsız tek satırda (Güell = Guell); "aile" = kaç farklı kaynak ailesinde geçtiği (en güvenilir
+//     ölçü), "kac_kaynak" = toplam kaç kanal/sitede geçtiği. Sıra: aile → kac_kaynak → Google yorum sayısı. Gizli yerler sona.
+//  3) İkincileme: her yer Google'da doğrulanır (açık, şehir içinde, 4,4+ · 1.000+ yorum); geçmeyen modele gitmez.
+//  4) Kullanım: liste İLHAMDIR, zorunlu değil; tempo, bölge, ücretsiz giriş, bilet ve outlet kuralları önce gelir.
 function gIlhamMerge(rs){
-  const Y = new Map(), key = n => gKey(String(n).normalize('NFD').replace(/[\u0300-\u036f]/g, ''));   // Güell = Guell
-  for (const r of rs) for (const y of r.yerler || []){ if (!y || !y.ad) continue; const k = key(y.ad), o = Y.get(k);
-    if (o){ o.kac_kaynak += +y.kac_kaynak || 1; if (r.kaynak === 'youtube') o.yt = 1; } else Y.set(k, {ad:y.ad, kac_kaynak:+y.kac_kaynak || 1, not:y.not || '', ...(r.kaynak === 'youtube' ? {yt:1} : {})}); }
-  const yerler = [...Y.values()].sort((a, b) => b.kac_kaynak - a.kac_kaynak || (b.yt || 0) - (a.yt || 0)).slice(0, 30);
-  const kaynaklar = rs.flatMap(r => (r.kaynaklar || []).map(k => ({...k, tur:r.kaynak}))).filter(k => k && k.url).sort((a, b) => (+b.izlenme || 0) - (+a.izlenme || 0) || (+b.abone || 0) - (+a.abone || 0)).slice(0, 12);
-  return {yerler, kaynaklar, rotalar:rs.flatMap(r => r.rotalar || []).slice(0, 8), yemek:rs.flatMap(r => r.yemek || []).slice(0, 24),
-    ipuclari:rs.flatMap(r => r.ipuclari || []).slice(0, 6), urls:[...new Set([...kaynaklar.map(k => k.url), ...rs.flatMap(r => r.urls || [])])].slice(0, 12)};
+  const Y = new Map(), key = n => gKey(String(n).normalize('NFD').replace(/[̀-ͯ]/g, ''));   // Güell = Guell
+  for (const r of rs) for (const y of r.yerler || []){ if (!y || !y.ad) continue; const k = key(y.ad), o = Y.get(k) || {ad:y.ad, kac_kaynak:0, aile:[], not:''};
+    o.kac_kaynak += +y.kac_kaynak || 1; if (!o.aile.includes(r.kaynak)) o.aile.push(r.kaynak); if (!o.not && y.not) o.not = y.not;
+    if (r.kaynak === 'youtube') o.yt = 1; if (y.gizli) o.gizli = 1; if (y.g){ o.g = y.g; o.ok = y.ok; o.lat = y.lat; o.lon = y.lon; }
+    Y.set(k, o); }
+  // Bir yer başka bir kaynakta da geçiyorsa artık "gizli" sayılmaz.
+  for (const o of Y.values()) if (o.gizli && o.aile.length > 1) delete o.gizli;
+  const yerler = [...Y.values()].sort((a, b) => (a.gizli ? 1 : 0) - (b.gizli ? 1 : 0) || b.aile.length - a.aile.length || b.kac_kaynak - a.kac_kaynak || ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0)).slice(0, 40);
+  const kaynaklar = rs.flatMap(r => (r.kaynaklar || []).map(k => ({...k, tur:r.kaynak}))).filter(k => k && k.url).sort((a, b) => (+b.izlenme || 0) - (+a.izlenme || 0) || (+b.abone || 0) - (+a.abone || 0)).slice(0, 16);
+  return {yerler, kaynaklar, aileler:[...new Set(rs.map(r => r.kaynak))], rotalar:rs.flatMap(r => r.rotalar || []).slice(0, 10), yemek:rs.flatMap(r => r.yemek || []).slice(0, 24),
+    ipuclari:rs.flatMap(r => r.ipuclari || []).slice(0, 8), urls:[...new Set([...kaynaklar.map(k => k.url), ...rs.flatMap(r => r.urls || [])])].slice(0, 16)};
+}
+// 📍 Google'ın en çok yorumlu gezi yerleri (dördüncü kaynak; ölçüm, yorum değil): şehir merkezinin 5 km çevresinde beş arama,
+// her birinden en iyi 8, en az 3.000 yorum. Puan sayacının içinde (~10 istek, şehir başına bir kez). Gelenler zaten doğrulanmış sayılır.
+async function gTopSights(c){
+  const Q = ['top tourist attractions', 'famous historic landmarks', 'viewpoint mirador', 'famous square plaza', 'park garden'];
+  let r; try { r = await window.claude.guide({mode:'yakin', city:c, items:Q.map(q => ({q, near:c, r:5000, n:8, min:3000}))}); } catch(_) { return null; }
+  const seen = new Set(), yerler = [];
+  for (const it of r.items || []) for (const p of it.list || []){ const k = gKey(p.name); if (seen.has(k) || !(p.r >= 4.4)) continue; seen.add(k);
+    yerler.push({ad:p.name, kac_kaynak:1, g:{r:p.r, n:p.n}, ok:true, lat:p.lat, lon:p.lon}); }
+  return yerler.length ? {kaynak:'google', yerler, rotalar:[], kaynaklar:[]} : null;
 }
 async function guideMake0(c, f, days, P, trip){
   const tok = gTok[c] = (gTok[c] || 0) + 1; f.gbusy = c; drawSheetKeep();
   // Önce (şehir başına bir kez) internetteki popüler rotalar araştırılır; olmazsa rehber onsuz hazırlanır.
   // Opus'la hazırlanırken araştırma da daha kapsamlı yapılır (vloglar, bloglar, paylaşılan haritalar; bir kez).
   const IL = S.trip.ilham || (S.trip.ilham = {}), useOpus = f.gopus ?? gOpusAuto(c); f.gopus = undefined;
-  // 2026-11-01 (kullanıcı: "YouTuber'ların ve puanı yüksek vlogların analizlerini daha çok dikkate al"): iki araştırma AYNI ANDA
-  // (YouTube'un en çok izlenen gezi vlogları + en beğenilen bloglar/haritalar/forumlar); yerler kaç kaynakta geçtiğiyle birleşir.
+  // 2026-11-01/02: dört kaynak ailesi AYNI ANDA (YouTube, bloglar, resmî site + rehberler, Google'ın en çok yorumlu yerleri);
+  // harmanlanır ve Google'la doğrulanır (yukarıdaki METODOLOJİ).
   // Eski biçimdeki araştırma (v yok: yalnız bloglar, sayısız) bir kez yenilenir.
   if (!IL[c] || IL[c].v !== 2 || (useOpus && !IL[c].derin)) try {
     f.gilham = c; drawSheetKeep();
-    const rs = (await Promise.allSettled(['youtube', 'blog'].map(k => window.claude.guide({mode:'ilham', city:c, days:days.length, derin:useOpus, kaynak:k}))))
+    const rs = (await Promise.allSettled([...['youtube', 'blog', 'rehber'].map(k => window.claude.guide({mode:'ilham', city:c, days:days.length, derin:useOpus, kaynak:k})), gTopSights(c)]))
       .filter(o => o.status === 'fulfilled' && o.value && Array.isArray(o.value.rotalar)).map(o => o.value);
+    if (!rs.some(r => r.kaynak !== 'google')) rs.length = 0;   // yalnız Google geldiyse araştırma sayılmaz, bir dahaki sefere yeniden
     if (rs.length){ IL[c] = {v:2, at:Date.now(), derin:useOpus, ...gIlhamMerge(rs)}; await gIlhamVerify(c, IL[c]); save();
       trip.populer_rotalar = IL[c].rotalar; trip.populer_yerler = gPopular(c); }
   } catch(_) {} finally { f.gilham = null; drawSheetKeep(); }
@@ -3301,7 +3326,7 @@ async function guideMake0(c, f, days, P, trip){
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z), old = gStrip((S.trip.guide || {})[c]);
     (S.trip.guide || (S.trip.guide = {}))[c] = {prev:old || undefined, at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
-      days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}, ilhamK:(IL[c] && IL[c].kaynaklar) || []};
+      days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}, ilhamK:(IL[c] && IL[c].kaynaklar) || [], ilhamM:gIlhamTxt(IL[c])};
     gDedupe(S.trip.guide[c], r.sk); S.trip.guide[c].dd = 1;
     S.trip.guide[c].todo = ['iyilestir', 'yakin'];   // yemeklerden sonraki adımlar; sayfadan çıkılırsa açılışta tamamlanır
     // 31 Ekim'deki gibi (kullanıcı 2026-11-01: "harita mantığını beğendiğimiz 31 Ekim haritasına döndürelim"): hazırlarken
