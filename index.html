@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101155555';</script>
-<script src="heybe-web.js?v=20261101155555"></script>
+<script>window.HEYBE_VER = '20261101155752';</script>
+<script src="heybe-web.js?v=20261101155752"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2710,7 +2710,7 @@ const gStepTxt = s => s ? `~${s.steps.toLocaleString('tr-TR')} adım` : '';
 // Tempo sınırı: günün adımı sınırı ya da gezi durağı sayısı tavanı aşarsa, rotaya EN ÇOK fazladan yürüyüş katan öneri (✨; iki
 // komşu durak arasından sapma + içerideki yürüyüş; az yorumlu olana ek ceza) çıkar ve "Elenenler"e nedeniyle yazılır; sınırın
 // altına inene kadar. Kullanıcının listesi (⭐), biletler (🎟), caddeler ve yeni eklenenler hiç çıkmaz. Outlet gününde outletten
-// önce en çok 2 gezi durağı kalır. Metro seçilmediyse uzak aralar metroya alınmaz (yürüyüş sayılır).
+// önce en çok 3 gezi durağı kalır (kullanıcı). Metro seçilmediyse uzak aralar metroya alınmaz (yürüyüş sayılır).
 const gIsVisit = (c, x, it) => it.kind !== 'gecis' && it.kind !== 'dukkan' && gVisit(c, x.d, it);
 const gOutlet = it => it.kind === 'alis' && (/outlet|village|designer/i.test(it.name) || +it.sure >= 240);
 // Az yorumlu öneri önce çıkar; çok bilinen (20.000+ yorum) yer korunur.
@@ -2718,7 +2718,7 @@ const gRevPen = it => !it.g || !it.g.n || it.g.tahmin ? 0.3 : it.g.n < 1000 ? 2 
 function gTempoFit(c, g, i, keep){
   const x = g.days[i], out = []; if (!x || x.yol) return out;
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null, P = q => ({lat:+q.lat, lon:+q.lon}), T = gTempo();
-  const maxN = x.items.some(gOutlet) ? x.items.filter(it => it.src !== 'oneri' && gIsVisit(c, x, it)).length + 2 : T[0];
+  const maxN = x.items.some(gOutlet) ? x.items.filter(it => it.src !== 'oneri' && gIsVisit(c, x, it)).length + 3 : T[0];
   for (let guard = 0; guard < 20; guard++){
     const s = gSteps(c, x), n = x.items.filter(it => gIsVisit(c, x, it)).length;
     const over = s && s.steps > s.cap, many = n > maxN; if (!over && !many) break;
@@ -2733,7 +2733,7 @@ function gTempoFit(c, g, i, keep){
     if (!best) break;
     x.items.splice(x.items.indexOf(best), 1); out.push(best);
     const t = guidePrefs().tempo || 'Yoğun';
-    (g.unplaced || (g.unplaced = [])).push({name:best.name, why:over ? `${t} tempo sınırı (~${s.cap.toLocaleString('tr-TR')} adım): ${i + 1}. günün rotasına en çok yürüyüş katan öneriydi.` : x.items.some(gOutlet) ? `Outlet günü: outletten önce en çok 2 durak.` : `${t} tempoda günde en çok ${maxN} gezi durağı: ${i + 1}. günün rotasına en çok yürüyüş katan${gRevPen(best) >= 2 ? ', az yorumlu' : ''} öneriydi.`, lat:best.lat, lon:best.lon});
+    (g.unplaced || (g.unplaced = [])).push({name:best.name, why:over ? `${t} tempo sınırı (~${s.cap.toLocaleString('tr-TR')} adım): ${i + 1}. günün rotasına en çok yürüyüş katan öneriydi.` : x.items.some(gOutlet) ? `Outlet günü: outletten önce en çok 3 durak.` : `${t} tempoda günde en çok ${maxN} gezi durağı: ${i + 1}. günün rotasına en çok yürüyüş katan${gRevPen(best) >= 2 ? ', az yorumlu' : ''} öneriydi.`, lat:best.lat, lon:best.lon});
     gRoute(c, g, i);
   }
   return out;
