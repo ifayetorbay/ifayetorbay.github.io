@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101221823';</script>
-<script src="heybe-web.js?v=20261101221823"></script>
+<script>window.HEYBE_VER = '20261102004547';</script>
+<script src="heybe-web.js?v=20261102004547"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2358,7 +2358,9 @@ function gSources(g){
   const K = g.kaynak || {}, wiki = [...new Map(g.days.flatMap(x => x.items.filter(it => it.wiki && it.wiki.url).map(it => [it.wiki.url, it.wiki]))).values()];
   return [
     K.google ? {t:`Google Haritalar: puan ve yorum sayıları (${new Date(K.google).toLocaleDateString('tr-TR')})`} : null,
-    ...(K.rota || []).map(u => ({t:'Popüler rotalar (internet)', url:u})),
+    ...(g.ilhamK || []).map(k => ({t:`${k.tur === 'youtube' ? '▶ YouTube' : '📝 Blog'}: ${k.baslik || k.url}${k.kanal ? ' · ' + k.kanal : ''}${+k.abone ? ' · ' + (+k.abone).toLocaleString('tr-TR') + ' abone' : ''}${+k.izlenme ? ' · ' + (+k.izlenme).toLocaleString('tr-TR') + ' izlenme' : ''}`, url:k.url})),
+    ...(g.ilhamK || []).filter(k => k.harita && /^https?:/.test(k.harita)).map(k => ({t:`🗺 ${k.kanal || 'Kaynak'}: açıklamadaki harita/rota`, url:k.harita})),
+    ...(g.ilhamK && g.ilhamK.length ? [] : (K.rota || []).map(u => ({t:'Popüler rotalar (internet)', url:u}))),
     ...(K.web || []).map(u => ({t:'İnternet araması', url:u})),
     ...wiki.map(w => ({t:`Wikipedia: ${w.t}`, url:w.url})),
     {t:'Konumlar: OpenStreetMap katkıcıları'}, {t:'Derleme ve açıklamalar: Claude (Anthropic)'}
@@ -2527,7 +2529,7 @@ function guideBody(){
       if (g && g.todo) gResume(c);
       h += `<div class="gcity"><div class="pdh"><b>${esc(c)}</b><span>${days.length ? `${planDay(days[0].d)} – ${planDay(days[days.length - 1].d)} · ${days.length} gün` : ''}${nw ? ` · ⭐ ${nw} istek` : ''}</span></div>`;
       if (f.gbusy !== c && gFinishing.has(c)) h += `<p class="note">⏳ Son adımlar sürüyor: Google puanları, ✨ iyileştirme ve 🧠 denetim, bavul emanetçileri. Bitene kadar sayfadan çıkma; My Maps ve PDF sonra.</p>`;
-      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 Vloglar, bloglar ve paylaşılan haritalarda en beğenilen rotalar araştırılıyor…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : f.gstage === 'duzelt' ? '✏️ Değişiklik uygulanıyor (yalnız ilgili gün)…' : f.gstage === 'iyilestir' ? '✨ Plan iyileştiriliyor: denetim (günlerin bölgesi), puanlar, uzak ve az yorumlu yerler, rotanın üstündeki ünlü yerler…' : f.gstage === 'denetle' ? '🧠 Plan denetleniyor: her gün tek bölgede mi, varış/outlet/ayrılış günleri doğru mu, az yorumlu öneri var mı…' : f.gstage === 'iskelet' ? '🧱 Günlerin iskeleti çıkarılıyor (semtler, duraklar)…' : /^gun /.test(f.gstage || '') ? `🗓 Günler aynı anda ayrıntılandırılıyor… ${f.gstage.slice(4)}` : '✨ Rota hazırlanıyor…'} Bir iki dakika sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
+      if (f.gbusy === c) h += `<p class="note">${f.gilham === c ? '🔎 YouTube\'un en çok izlenen gezi vlogları ve en beğenilen bloglar, haritalar araştırılıyor (en sık geçen yerler öne alınır)…' : f.gfood === c ? '🍽 Rotanın üstündeki en iyi yemek, tatlı ve fırın yerleri seçiliyor…' : f.gstage === 'duzelt' ? '✏️ Değişiklik uygulanıyor (yalnız ilgili gün)…' : f.gstage === 'iyilestir' ? '✨ Plan iyileştiriliyor: denetim (günlerin bölgesi), puanlar, uzak ve az yorumlu yerler, rotanın üstündeki ünlü yerler…' : f.gstage === 'denetle' ? '🧠 Plan denetleniyor: her gün tek bölgede mi, varış/outlet/ayrılış günleri doğru mu, az yorumlu öneri var mı…' : f.gstage === 'iskelet' ? '🧱 Günlerin iskeleti çıkarılıyor (semtler, duraklar)…' : /^gun /.test(f.gstage || '') ? `🗓 Günler aynı anda ayrıntılandırılıyor… ${f.gstage.slice(4)}` : '✨ Rota hazırlanıyor…'} Bir iki dakika sürebilir.</p><button type="button" class="btn sm" data-g="gstop" data-c="${esc(c)}">✖ Vazgeç</button>`;
       if (g){
         if (f.gdetail && f.gdetail.c === c) h += `<p class="note">✍️ Açıklamalar yazılıyor… ${f.gdetail.done}/${f.gdetail.n} gün</p>`;
         // Şehir kartının başı (kullanıcı: "iyileştir, yeniden yap gibi düğmeler altta kalıyor"): özet şeridi, üç ana iş
@@ -2714,6 +2716,7 @@ function guidePayload(c){
     istek_listesi:gWish().filter(w => w.city === c).map(w => w.name),
     // İnternette en beğenilen rotaların özeti (şehir başına bir kez araştırılır; ilham, kural değil).
     populer_rotalar:((S.trip.ilham || {})[c] || {}).rotalar || [],
+    populer_yerler:(((S.trip.ilham || {})[c] || {}).yerler || []).map(y => ({ad:y.ad, kac_kaynak:y.kac_kaynak, ...(y.yt ? {youtube:true} : {})})),
     // Taslaktan sonra kullanıcının istekleri: mutlaka eklenecek yerler ve serbest değişiklik notu.
     zorunlu_yerler:((S.trip.greq || {})[c] || {}).must || [],
     kullanici_notu:(a => a ? `KESİN TALİMAT: "${a}". Gün ve saat verildiyse o güne koy; mümkün değilse en yakın uygun güne koy ve nedenini tips'in ilk maddesinde yaz.` : '')(((S.trip.greq || {})[c] || {}).ask || ''),
@@ -3055,6 +3058,7 @@ async function guideReview(c, log){
   }).filter(Boolean);
   if (!gunler.length) return 0;
   const plan = {ev:H ? {adres:(g.home || {}).addr || '', lat:r4(H.lat), lon:r4(H.lon)} : null, metro:gMetro(c) ? 'evet' : 'hayır (tamamen yürüyüş)', gunler,
+    populer_yerler:(((S.trip.ilham || {})[c] || {}).yerler || []).slice(0, 25).map(y => ({ad:y.ad, kac_kaynak:y.kac_kaynak})),
     elenenler:(g.unplaced || []).slice(0, 25).map(u => ({ad:u.name, istek:W.has(gKey(u.name)), neden:String(u.why || '').slice(0, 120)}))};
   const r = await window.claude.guide({mode:'denetle', city:c, model:g.model || undefined, prefs:{...guidePrefs(), metro:gMetro(c) ? 'evet' : 'hayır'}, plan});
   if (!r || (!(r.ekle || []).length && !(r.cikar || []).length && !(r.tasi || []).length)){ if (r && r.not) log.push('🧠 Denetim: ' + r.not); return 0; }
@@ -3243,15 +3247,31 @@ async function gBuild(c, trip, model, f, tok){
   return {sk, home:sk.home || (ok[0] || {}).home, days:ok.flatMap(r => r.days || []), unplaced:sk.unplaced || [],
     tips:uniq([...(sk.tips || []), ...ok.flatMap(r => r.tips || [])], t => t), pratik:uniq(ok.flatMap(r => r.pratik || []), p => String(p.name).toLocaleLowerCase('tr'))};
 }
+// İki araştırmanın birleşimi: yerler adına göre toplanır (kac_kaynak toplanır; YouTube'da geçen yer işaretlenir), en sık geçenler
+// önce (en çok 30); kaynaklar izlenmeye göre; rotalar, yemekler ve ipuçları ikisinden.
+function gIlhamMerge(rs){
+  const Y = new Map(), key = n => gKey(String(n).normalize('NFD').replace(/[\u0300-\u036f]/g, ''));   // Güell = Guell
+  for (const r of rs) for (const y of r.yerler || []){ if (!y || !y.ad) continue; const k = key(y.ad), o = Y.get(k);
+    if (o){ o.kac_kaynak += +y.kac_kaynak || 1; if (r.kaynak === 'youtube') o.yt = 1; } else Y.set(k, {ad:y.ad, kac_kaynak:+y.kac_kaynak || 1, not:y.not || '', ...(r.kaynak === 'youtube' ? {yt:1} : {})}); }
+  const yerler = [...Y.values()].sort((a, b) => b.kac_kaynak - a.kac_kaynak || (b.yt || 0) - (a.yt || 0)).slice(0, 30);
+  const kaynaklar = rs.flatMap(r => (r.kaynaklar || []).map(k => ({...k, tur:r.kaynak}))).filter(k => k && k.url).sort((a, b) => (+b.izlenme || 0) - (+a.izlenme || 0) || (+b.abone || 0) - (+a.abone || 0)).slice(0, 12);
+  return {yerler, kaynaklar, rotalar:rs.flatMap(r => r.rotalar || []).slice(0, 8), yemek:rs.flatMap(r => r.yemek || []).slice(0, 24),
+    ipuclari:rs.flatMap(r => r.ipuclari || []).slice(0, 6), urls:[...new Set([...kaynaklar.map(k => k.url), ...rs.flatMap(r => r.urls || [])])].slice(0, 12)};
+}
 async function guideMake0(c, f, days, P, trip){
   const tok = gTok[c] = (gTok[c] || 0) + 1; f.gbusy = c; drawSheetKeep();
   // Önce (şehir başına bir kez) internetteki popüler rotalar araştırılır; olmazsa rehber onsuz hazırlanır.
   // Opus'la hazırlanırken araştırma da daha kapsamlı yapılır (vloglar, bloglar, paylaşılan haritalar; bir kez).
   const IL = S.trip.ilham || (S.trip.ilham = {}), useOpus = f.gopus ?? gOpusAuto(c); f.gopus = undefined;
-  if (!IL[c] || (useOpus && !IL[c].derin)) try {
+  // 2026-11-01 (kullanıcı: "YouTuber'ların ve puanı yüksek vlogların analizlerini daha çok dikkate al"): iki araştırma AYNI ANDA
+  // (YouTube'un en çok izlenen gezi vlogları + en beğenilen bloglar/haritalar/forumlar); yerler kaç kaynakta geçtiğiyle birleşir.
+  // Eski biçimdeki araştırma (v yok: yalnız bloglar, sayısız) bir kez yenilenir.
+  if (!IL[c] || IL[c].v !== 2 || (useOpus && !IL[c].derin)) try {
     f.gilham = c; drawSheetKeep();
-    const r = await window.claude.guide({mode:'ilham', city:c, days:days.length, derin:useOpus});
-    if (r && Array.isArray(r.rotalar)){ IL[c] = {at:Date.now(), derin:useOpus, rotalar:r.rotalar, yemek:r.yemek || [], ipuclari:r.ipuclari || [], urls:r.urls || []}; save(); trip.populer_rotalar = r.rotalar; }
+    const rs = (await Promise.allSettled(['youtube', 'blog'].map(k => window.claude.guide({mode:'ilham', city:c, days:days.length, derin:useOpus, kaynak:k}))))
+      .filter(o => o.status === 'fulfilled' && o.value && Array.isArray(o.value.rotalar)).map(o => o.value);
+    if (rs.length) IL[c] = {v:2, at:Date.now(), derin:useOpus, ...gIlhamMerge(rs)};
+    if (rs.length){ save(); trip.populer_rotalar = IL[c].rotalar; trip.populer_yerler = IL[c].yerler; }
   } catch(_) {} finally { f.gilham = null; drawSheetKeep(); }
   try {
     const model = useOpus ? 'opus' : undefined;
@@ -3262,7 +3282,7 @@ async function guideMake0(c, f, days, P, trip){
     // Gün evde biter; şehirden ayrılış günü ve seyahatin son günü yolda (gar/havalimanı) biter.
     const out = (x, i) => i === days.length - 1 && (x.city.includes('→') || x.d === P.z), old = gStrip((S.trip.guide || {})[c]);
     (S.trip.guide || (S.trip.guide = {}))[c] = {prev:old || undefined, at:Date.now(), by:S.me, ok:false, home:{addr:trip.gunler[0].konaklama, lat:r.home && r.home.lat, lon:r.home && r.home.lon},
-      days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}};
+      days:days.map((x, i) => { const w = gWindow(c, x, P), y = byD.get(x.d) || {}; return {d:x.d, back:!out(x, i), yol:!w, items:gShopCap(gFit(y.items || [], w)), rain:w ? y.rain || '' : '', turler:y.turler || []}; }), unplaced:r.unplaced || [], tips:(r.tips || []).slice(0, 5), pratik:r.pratik || [], model:model || '', kaynak:IL[c] && IL[c].urls.length ? {rota:IL[c].urls} : {}, ilhamK:(IL[c] && IL[c].kaynaklar) || []};
     gDedupe(S.trip.guide[c], r.sk); S.trip.guide[c].dd = 1;
     S.trip.guide[c].todo = ['iyilestir', 'yakin'];   // yemeklerden sonraki adımlar; sayfadan çıkılırsa açılışta tamamlanır
     // 31 Ekim'deki gibi (kullanıcı 2026-11-01: "harita mantığını beğendiğimiz 31 Ekim haritasına döndürelim"): hazırlarken
