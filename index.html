@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101165722';</script>
-<script src="heybe-web.js?v=20261101165722"></script>
+<script>window.HEYBE_VER = '20261101193659';</script>
+<script src="heybe-web.js?v=20261101193659"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -404,6 +404,7 @@ html.sheetopen,html.sheetopen body{overflow:hidden}
 .gfd .d{font-weight:650;font-size:.88rem}
 .gfd .m{font-size:.8rem;color:var(--muted)}
 .gover{color:var(--warn,#B45309);font-weight:700}
+.gdayact{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.gdelask{border-color:var(--neg)}.btn.neg{background:var(--neg);color:#fff;border-color:var(--neg)}
 .gbar{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:6px 0 10px;background:var(--surface)}
 .gbar.ok{border-color:var(--pos)}
 .gbs{display:flex;flex-direction:column;gap:2px}.gbs span{font-size:.82rem;color:var(--muted)}
@@ -2395,6 +2396,17 @@ function gLegHtml(a, b){
 // Yemek seçeneği satırı (saatsiz): simge, ad, en yakın durak, kısa not, puan, yol tarifi.
 const gFoodRow = (c, fd) => `<div class="gfd"><span class="pic">${(G_FT[fd.tur] || G_FT.restoran)[0]}</span><span class="mid"><span class="d">${esc(fd.name)}${gPrice(fd) ? `<span class="m"> · ${gPrice(fd)}</span>` : ''}${fd.yakin ? `<span class="m"> · ${esc(fd.yakin)} yakını</span>` : ''}</span>${fd.not ? `<span class="m">${esc(fd.not)}</span>` : ''}${gStars(fd) ? `<span class="gst">${gStars(fd)}</span>` : ''}</span><a class="btn sm" href="${fd.g && fd.g.url ? fd.g.url : mapsDir(fd.lat ? `${fd.lat},${fd.lon}` : `${fd.name}, ${c}`)}" target="_blank" rel="noopener" aria-label="Haritada: ${esc(fd.name)}">🧭</a></div>`;
 const gOpusBox = (f, c) => `<label class="gopus"><input type="checkbox" data-g="gopus" ${(f.gopus ?? gOpusAuto(c)) ? 'checked' : ''}> 🧠 Opus ile planla (günlerin iskeleti Opus, ayrıntılar ve yemekler Sonnet)${gOpusAuto(c) ? ' · sıfırdan hazırlamada kendiliğinden açık' : ''} · şehir başına ~0,8 $</label>`;
+// 🧭 Google Haritalar'da günün rotası (kullanıcı: "My Maps dışında Google Haritalar'da da açılsın"): evden başlayıp günün
+// numaralı duraklarından geçen yürüyüş tarifi. Google Haritalar uygulaması bir tarifte en çok 10 nokta alır: fazlası sırayla
+// "1. kısım, 2. kısım" bağlantılarına bölünür (her kısım öncekinin son durağından başlar).
+function gDayMaps(c, g, x){
+  const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null;
+  const pts = [...(H ? [H] : []), ...x.items.filter(it => gIsVisit(c, x, it) && it.lat && it.lon && !gFar(g, it) && !gOutlet(it)).map(it => ({lat:+it.lat, lon:+it.lon})), ...(H && x.back !== false ? [H] : [])];
+  if (pts.length - (H ? 1 : 0) - (H && x.back !== false ? 1 : 0) < 1) return [];
+  const out = [];
+  for (let a = 0; a < pts.length - 1; a += 9) out.push(`https://www.google.com/maps/dir/${pts.slice(a, a + 10).map(p => `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`).join('/')}/data=!4m2!4m1!3e2`);
+  return out;
+}
 // Şehir kartının özet şeridi: durum, gün/durak/adım özeti, üç ana düğme ve "⋯ Diğer" menüsü.
 function gBarHtml(c, g, f, can, must){
   const T = gTempo(), live = g.days.filter(x => !x.yol && x.items.length), st = live.map(x => gSteps(c, x)).filter(Boolean);
@@ -2410,9 +2422,11 @@ function gBarHtml(c, g, f, can, must){
       ${can ? `<label class="link">📂 Haritadan geri yükle (Heybe'nin KML dosyası)<input type="file" class="gkml" data-gkc="${C}" hidden></label>` : ''}
       ${g.prev ? `<button type="button" class="link" data-g="gundo" data-c="${C}" ${busy}>↩ Önceki taslağa dön</button>` : ''}
       <button type="button" class="link" data-g="kml" data-c="${C}">🗺 Google Haritalar'a (My Maps) aktar</button>
+      <span class="gbh">📱 My Maps'e yüklenen harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır. Tek günü tarif olarak açmak için gün başlığındaki 🧭 Rota.</span>
       <button type="button" class="link" data-g="pdf" data-c="${C}">📄 Rehber raporu (PDF)</button>
-      <button type="button" class="link gdel" data-g="gdel" data-c="${C}">${f.gdelc === c ? '⚠️ Emin misin? Dokun, rehber tamamen silinsin' : `🗑 ${C} rehberini sil`}</button>
+      <button type="button" class="link gdel" data-g="gdel" data-c="${C}">🗑 ${C} rehberini sil</button>
     </div>` : ''}
+    ${f.gdelc === c ? gDelAsk(c) : ''}
     ${f.gremake === c ? `<div class="callout"><b>🔄 Bütün plan baştan yazılsın mı?</b><span>Bütün günler yeniden hazırlanır, şimdiki plan değişir (⋯ → ↩ Önceki taslağa dön ile geri gelir).</span>${gOpusBox(f, c)}<div class="ptools" style="margin-top:0"><button type="button" class="btn sm" data-g="make" data-c="${C}" ${busy}>⚠️ Evet, baştan hazırla</button><button type="button" class="link" data-g="gremake" data-c="">Vazgeç</button></div></div>` : ''}
   </div>`;
 }
@@ -2440,7 +2454,7 @@ function gDayHtml(c, g, x, i, f, can){
   const S0 = gSteps(c, x), nv = x.items.filter(it => gIsVisit(c, x, it)).length, lv = !S0 ? '' : S0.steps > S0.cap ? 'over' : S0.steps > gTempo()[1] ? 'warn' : 'ok';
   const walk = S0 ? ` · <span class="gstep ${lv}" title="Yürüyüş ${gKmTxt(S0.km)}${gMetro(c) && x.walk.metro ? ', metroyla' : ''}; sınır ~${S0.cap.toLocaleString('tr-TR')} adım">${nv} durak · ${gStepTxt(S0)}${lv === 'over' ? ' ⚠' : ''}</span>` : '', Lg = gLegs(c, g, x);
   const food = (x.food || []).slice().sort((a, b) => Object.keys(G_FT).indexOf(a.tur) - Object.keys(G_FT).indexOf(b.tur));
-  return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>${x.yol ? '🚆 Yolculuk günü · gezi yok' : `🏠 evden${x.back === false ? '' : ' eve'}${walk}`}</span>${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</div>`
+  return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>${x.yol ? '🚆 Yolculuk günü · gezi yok' : `🏠 evden${x.back === false ? '' : ' eve'}${walk}`}</span><span class="gdayact">${gDayMaps(c, g, x).map((u, k, A) => `<a class="link" href="${u}" target="_blank" rel="noopener">🧭 Rota${A.length > 1 ? ` ${k + 1}. kısım` : ''}</a>`).join(' ')}${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</span></div>`
     + (x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : '')
     + (x.yol ? gTravelHtml(c, x.d) : '') + gLugHtml(gLuggage().filter(l => l.d === x.d && l.city === c))
     + x.items.map((it, k) => {
@@ -3741,6 +3755,16 @@ function gTodayHtml(){
   return `<section class="gtoday"><div class="ts-l">Bugün${theme ? ' · ' + esc(theme) : ''}</div>${items.map(it => `<div class="gtrow"><span class="pt num">${it._n || '·'}</span><span>${G_KIND[it.kind] || '📍'} ${esc(it.name)}</span><a class="btn sm" href="${mapsDir(it.lat ? `${it.lat},${it.lon}` : it.name)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(it.name)}">🧭</a></div>`).join('')}</section>`;
 }
 // Haritanın küçük taslağı (My Maps'te nasıl görüneceği): günlerin çizgileri kendi renginde, yemek turuncu, 🏠 ev. Altlık harita yok.
+// 🗑 Rehberi silme onayı (kullanıcı: "sil deyince içeri giriyor, onayı başka yerde; anlaşılması zor"): sil'e basılan yerde, tek
+// kutuda: ne silineceği, iki düğme (Evet, sil · Vazgeç). Silindikten sonra 8 sn "Geri al".
+let gCardDel = null, gDelUndo = null;
+const gDelAsk = c => `<div class="callout gdelask"><b>🗑 ${esc(c)} rehberi silinsin mi?</b><span>Günler, yemekler ve "Yer ekle" istekleri silinir; istek listesi ve tercihler kalır. Sonra baştan hazırlayabilirsin.</span><div class="ptools" style="margin-top:4px"><button type="button" class="btn sm neg" data-g="gdelyes" data-c="${esc(c)}">🗑 Evet, sil</button><button type="button" class="btn sm" data-g="gdelno" data-c="${esc(c)}">Vazgeç</button></div></div>`;
+function gDelete(c){
+  gDelUndo = {c, g:(S.trip.guide || {})[c], r:(S.trip.greq || {})[c]};
+  delete S.trip.guide[c]; if (S.trip.greq) delete S.trip.greq[c];
+  gCardDel = null; save();
+  toast(`🗑 ${c} rehberi silindi.`, {act:'gundel', label:'Geri al', ms:8000});
+}
 function gMiniMap(g, c){
   gNorm(g); const H = g.home && g.home.lat ? g.home : null, pts = g.days.flatMap(x => x.items.filter(it => gVisit(c, x.d, it) && it.lat && it.lon && !gFar(g, it)));
   const all = [...pts, ...(H ? [H] : [])]; if (all.length < 2) return '';
@@ -3777,7 +3801,8 @@ function viewGezi(){
       h += gMiniMap(g, c) + `<div class="gthemes">${g.days.map((x, i) => `<span><i style="background:#${G_COLORS[i % G_COLORS.length]}"></i>${i + 1}. gün${x.theme ? ' · ' + esc(x.theme) : ''}</span>`).join('')}</div>`;
       if (g.extra && (g.extra.uygun || []).length) h += `<p class="gnote">🍽 ${g.extra.uygun.slice(0, 4).map(u => esc(u.ad)).join(' · ')}</p>`;
       if (g.unplaced && g.unplaced.length) h += `<p class="gnote warn">✖ ${g.unplaced.length} istek sığmadı · nedenleri rehberde</p>`;
-      h += `<div class="ptools" style="margin-top:4px"><button class="btn sm" data-g="view" data-c="${esc(c)}">${g.ok ? 'Rehberi aç' : '📝 Bak ve onayla'}</button><button class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rapor</button><button class="btn sm" data-g="delcard" data-c="${esc(c)}">🗑 Sil</button><button class="btn sm pri" data-g="kml" data-c="${esc(c)}">🗺 Haritalar'a aktar</button></div>`;
+      h += gCardDel === c ? gDelAsk(c)
+        : `<div class="ptools" style="margin-top:4px"><button class="btn sm" data-g="view" data-c="${esc(c)}">${g.ok ? 'Rehberi aç' : '📝 Bak ve onayla'}</button><button class="btn sm" data-g="pdf" data-c="${esc(c)}">📄 Rapor</button><button class="btn sm" data-g="delcard" data-c="${esc(c)}">🗑 Sil</button><button class="btn sm pri" data-g="kml" data-c="${esc(c)}">🗺 Haritalar'a aktar</button></div>`;
     } else h += `<p class="gnote">Henüz rehber yok. Önce istekler, sonra tercihler, en son rehber.</p><button class="btn sm pri" data-g="start" data-c="${esc(c)}">✨ ${esc(c)} rehberini hazırla</button>`;
     h += `</section>`;
   }
@@ -3792,7 +3817,9 @@ function guideAct(d){
   // Şehir kartından: o şehrin akışı İstekler → Tercihler → Rehber; rehber yalnız son adımdaki düğmeyle hazırlanır (kendiliğinden başlamaz).
   if (d.g === 'start'){ openSheet({mode:'guide', gcity:d.c, gstep:0}); return; }
   if (d.g === 'view'){ openSheet({mode:'guide', gcity:d.c, gstep:2}); return; }
-  if (d.g === 'delcard'){ openSheet({mode:'guide', gcity:d.c, gstep:2, gdelc:d.c}); return; }
+  if (d.g === 'delcard'){ gCardDel = d.c; render(); return; }
+  if (d.g === 'gdelno'){ gCardDel = null; if (f && f.mode === 'guide'){ f.gdelc = null; drawSheetKeep(); } else render(); return; }
+  if (d.g === 'gdelyes'){ gDelete(d.c); if (f && f.mode === 'guide'){ Object.assign(f, {gdelc:null, gmore:null, gswap:null, gcity:d.c, gstep:0}); drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0); } else render(); return; }
   if (!f || f.mode !== 'guide') return;
   if (d.g === 'step'){
     f.gstep = +d.v; drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
@@ -3829,12 +3856,7 @@ function guideAct(d){
   if (d.g === 'unswap'){ const w = f.gswap; if (w){ S.trip.guide[w.c].days[w.i].items.splice(w.k, 0, w.it); gRoute(w.c, S.trip.guide[w.c], w.i); f.gswap = null; save(); drawSheetKeep(); } return; }
   if (d.g === 'swap'){ guideSwap(); return; }
   // Sıfırla: şehrin rehberi ve taslak sonrası istekleri (mutlaka ekle, değişiklik notu) silinir; akış baştan açılır.
-  if (d.g === 'gdel'){
-    if (f.gdelc !== d.c){ f.gdelc = d.c; drawSheetKeep(); return; }
-    delete S.trip.guide[d.c]; if (S.trip.greq) delete S.trip.greq[d.c];
-    Object.assign(f, {gdelc:null, gswap:null, gcity:d.c, gstep:0}); save(); drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0);
-    toast(`🗑 ${d.c} rehberi silindi. Baştan: istekler → tercihler → rehber.`); return;
-  }
+  if (d.g === 'gdel'){ f.gdelc = d.c; f.gmore = null; drawSheetKeep(); document.querySelector('#sheetHost .gdelask')?.scrollIntoView({block:'center', behavior:'smooth'}); return; }
   if (d.g === 'must'){ const G = S.trip.greq || (S.trip.greq = {}), R = G[d.c] || (G[d.c] = {}), m = new Set(R.must || []); if (m.has(d.n)) m.delete(d.n); else m.add(d.n); R.must = [...m]; save(); drawSheetKeep(); return; }
   if (d.g === 'approve'){ const g = (S.trip.guide || {})[d.c]; if (!g) return; g.ok = true; g.okBy = S.me; g.okAt = Date.now(); save(); drawSheetKeep(); toast(`✅ ${d.c} rehberi onaylandı; ayrıntılı açıklamalar ve şehir notları yazılıyor…`); guideDetail(d.c); return; }
 }
@@ -6875,6 +6897,7 @@ document.addEventListener('click', ev => {
       closeSheet(); render(); toast('Kasa kayıtları silindi'); break;
     case 'close': closeSheet(); break;
     case 'helpclose': t.closest('.hbox').remove(); break;
+    case 'gundel': { const u = gDelUndo; if (!u) break; (S.trip.guide || (S.trip.guide = {}))[u.c] = u.g; if (u.r) (S.trip.greq || (S.trip.greq = {}))[u.c] = u.r; gDelUndo = null; save(); t.closest('.toast')?.remove(); if (form && form.mode === 'guide') drawSheet(); else render(); toast(`↩ ${u.c} rehberi geri geldi.`); break; }
     case 'editplan':
       editPlan = true; planDraft = {v:S.trip.plan ? nf0.format(S.trip.plan) : '', cur:planCurOf()}; render();
       { const i = document.getElementById('planInp'); if (i){ i.focus(); i.select(); } } break;
