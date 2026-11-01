@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261101145611';</script>
-<script src="heybe-web.js?v=20261101145611"></script>
+<script>window.HEYBE_VER = '20261101145806';</script>
+<script src="heybe-web.js?v=20261101145806"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2689,7 +2689,7 @@ function gInside(it){
   if (it.kind === 'dukkan') return 0.1;
   // Cadde: rota zaten ortasından geçer; yürünen fazlası boyunun yarısı kadar sayılır (en çok 1 km).
   if (it.kind === 'gecis'){ const geo = (it.geom || []).reduce((s, w) => s + w.slice(1).reduce((t, p, k) => t + gKm({lat:w[k][0], lon:w[k][1]}, {lat:p[0], lon:p[1]}), 0), 0); return geo ? Math.min(1, geo / 2) : 0.5; }
-  if (/\((cephe|dış)/i.test(it.name)) return 0.15;
+  if (/\((cephe|dış)|teras|terrace|mirador|manzara|bakış/i.test(it.name)) return 0.15;
   if (it.kind === 'alis') return /outlet|village|designer/i.test(`${n} ${it.desc || ''}`) ? 2.5 : 0.4;
   if (/vatikan|vatican|vaticani|louvre|prado|uffizi|british museum|hermitage|mnac|nacional d.art|reina sof/i.test(n)) return 3;
   if (/\b(park|parc|parque|jard[ií]n?s?|gardens?|giardin\w*)\b|bahçe|boboli|retiro|borghese/i.test(n) && !/^(plaça|plaza|piazza)/i.test(it.name)) return 1.5;
