@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261102013612';</script>
-<script src="heybe-web.js?v=20261102013612"></script>
+<script>window.HEYBE_VER = '20261102125000';</script>
+<script src="heybe-web.js?v=20261102125000"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2472,7 +2472,7 @@ function gDayHtml(c, g, x, i, f, can){
   // Gün başlığında toplam yürüyüş ve adım (yerlerin içi dahil); tempo sınırını aşan günde uyarı.
   // Gün başlığında durak ve adım rozeti: yeşil hedefin altında, sarı sınıra yakın, kırmızı sınırın üstünde.
   const S0 = gSteps(c, x), nv = x.items.filter(it => gIsVisit(c, x, it)).length, lv = !S0 ? '' : S0.steps > S0.cap ? 'over' : S0.steps > gTempo()[1] ? 'warn' : 'ok';
-  const walk = S0 ? ` · <span class="gstep ${lv}" title="Yürüyüş ${gKmTxt(S0.km)}${gMetro(c) && x.walk.metro ? ', metroyla' : ''}; sınır ~${S0.cap.toLocaleString('tr-TR')} adım">${nv} durak · ${gStepTxt(S0)}${lv === 'over' ? ' ⚠' : ''}</span>` : '', Lg = gLegs(c, g, x);
+  const walk = S0 ? ` · <span class="gstep ${lv}" title="Yürüyüş ${gKmTxt(S0.km)}${gMetro(c) && x.walk.metro ? ', metroyla' : ''}${S0.tr ? `; 2,5 km'den uzun ${gKmTxt(S0.tr)} metro/taksi önerilir` : ''}; yerlerin içinde ~${gKmTxt(S0.ic)} ayrıca; sınır ~${S0.cap.toLocaleString('tr-TR')} adım">${nv} durak · ${gStepTxt(S0)}${lv === 'over' ? ' ⚠' : ''}${S0.tr ? ` · 🚇 ${gKmTxt(S0.tr)}` : ''}</span>` : '', Lg = gLegs(c, g, x);
   const food = (x.food || []).slice().sort((a, b) => Object.keys(G_FT).indexOf(a.tur) - Object.keys(G_FT).indexOf(b.tur));
   return `<div class="pday"><div class="pdh"><b>${i + 1}. gün · ${planDay(x.d)}</b><span>${x.yol ? '🚆 Yolculuk günü · gezi yok' : `🏠 evden${x.back === false ? '' : ' eve'}${walk}`}</span><span class="gdayact">${gDayMaps(c, g, x).map((u, k, A) => `<a class="link" href="${u}" target="_blank" rel="noopener">🧭 Rota${A.length > 1 ? ` ${k + 1}. kısım` : ''}</a>`).join(' ')}${can ? `<button type="button" class="link gredo" data-g="redo" data-c="${esc(c)}" data-i="${i}" ${f.gbusy || f.gdetail ? 'disabled' : ''}>✨ Bu günü yeniden</button>` : ''}</span></div>`
     + (x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : '')
@@ -2766,6 +2766,7 @@ const gFit = (items, w) => items.map(it => ({...it})).filter(it => { if (it.src 
 // (~18–20 bin), Çok yoğun = Floransa günü (14 yer, ~24–25 bin); hiçbir gün 28 bini geçmez. Durak tavanı 2026-11-01: 47 duraklı
 // Opus planı "çok yoğunda bile fazla" bulundu (beğenilen günler 7–14 durak).
 const G_STEP = 1300;
+const G_LONG = 2.5;   // bu uzunluğun üstündeki ara yürünmez sayılır (metro/taksi önerilir; gLegTxt ile aynı sınır)
 // Durak tavanları Opus'a giden talimatla (31 Ekim metni: sakin ≈ 6, dengeli ≈ 10, yoğun ≈ 14, çok yoğun ≈ 16) aynı (2026-11-01).
 const G_TEMPO = {Sakin:[6, 10000, 12000], Dengeli:[10, 15000, 17000], 'Yoğun':[14, 19000, 22000], 'Çok yoğun':[16, 24500, 28000]};
 const gTempo = () => G_TEMPO[guidePrefs().tempo] || G_TEMPO['Yoğun'];
@@ -2787,10 +2788,15 @@ function gInside(it){
   return 0.15;
 }
 // Günün toplam yürüyüşü (km) ve adımı; cap = seçilen tempoda üst sınır.
+// 2026-11-02 düzeltme (kullanıcı: "yollar düştü"; 11 haritanın karşılaştırması): tempo sınırları kullanıcının Roma/Madrid
+// haritalarından YALNIZ yürünen yolla ölçülmüştü (Madrid 14,7 km ≈ 19 bin adım), ama hesap yerlerin içini (park 1,1 km, müze
+// 1,8 km…) da ekliyordu: beğenilen 31 Ekim haritasının 2. günü (14,6 km) bile ~26 bin görünüp kırpılıyordu. Artık sınırla
+// karşılaştırılan adım yalnız yürünen yol (2,5 km'den uzun aralar hariç); yerlerin içi ayrı bilgi (ic).
 function gSteps(c, x){
   if (!x || x.yol || !x.walk) return null;
-  const route = gMetro(c) ? x.walk.km : (x.walk.all || x.walk.km), km = Math.round((route + x.items.reduce((s, it) => s + gInside(it), 0)) * 10) / 10;
-  return {km, steps:Math.round(km * G_STEP / 500) * 500, cap:gTempo()[2]};
+  const route = gMetro(c) ? x.walk.km : (x.walk.all ?? x.walk.km), km = Math.round(route * 10) / 10;
+  const ic = Math.round(x.items.reduce((s, it) => s + gInside(it), 0) * 10) / 10;
+  return {km, steps:Math.round(km * G_STEP / 500) * 500, cap:gTempo()[2], ic, tr:x.walk.tr || 0};
 }
 const gStepTxt = s => s ? `~${s.steps.toLocaleString('tr-TR')} adım` : '';
 // Tempo sınırı: günün adımı sınırı ya da gezi durağı sayısı tavanı aşarsa, rotaya EN ÇOK fazladan yürüyüş katan öneri (✨; iki
@@ -2804,7 +2810,8 @@ const gRevPen = it => !it.g || !it.g.n || it.g.tahmin ? 0.3 : it.g.n < 1000 ? 2 
 function gTempoFit(c, g, i, keep){
   const x = g.days[i], out = []; if (!x || x.yol) return out;
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null, P = q => ({lat:+q.lat, lon:+q.lon}), T = gTempo();
-  const maxN = x.items.some(gOutlet) ? x.items.filter(it => it.src !== 'oneri' && gIsVisit(c, x, it)).length + 3 : T[0];
+  // Outlet gününün sabahını outlet kuralı (gOutletFix) düzenler: fazlası başka güne TAŞINIR; burada silinmez (2026-11-02 altın test).
+  const maxN = T[0];
   for (let guard = 0; guard < 20; guard++){
     const s = gSteps(c, x), n = x.items.filter(it => gIsVisit(c, x, it)).length;
     const pts = x.items.filter(it => it.lat && it.lon && it.kind !== 'gecis' && !gFar(g, it));
@@ -2813,7 +2820,9 @@ function gTempoFit(c, g, i, keep){
     const free = it => gIsVisit(c, x, it) && !gOutlet(it) && !(it.src === 'bilet' && G_TRAVEL.test(it.name));
     const longs = new Set();
     if (!gMetro(c)) pts.filter(free).forEach((it, k, V) => { const b = V[k + 1]; if (b && gKm(P(it), P(b)) * 1.25 > 2.5){ longs.add(it); longs.add(b); } });
-    const over = s && s.steps > s.cap, many = n > maxN, far = [...longs].some(it => it.src === 'oneri' && !(keep && keep.has(gKey(it.name))));
+    // Adım sınırı aşılınca durak SİLİNMEZ, günün başında ⚠ uyarısı çıkar (2026-11-02: kırpma her seferinde planı 19–26 durağa
+    // indiriyordu). Yalnız gerçekten yürünmez bir günde (sınırın %30 üstü; Yoğun'da ~28.500) en zayıf öneri çıkar.
+    const over = s && s.steps > Math.round(s.cap * 1.3), many = n > maxN, far = [...longs].some(it => it.src === 'oneri' && !(keep && keep.has(gKey(it.name))));
     if (!over && !many && !far) break;
     let best = null, bv = -1;
     pts.forEach((it, k) => {
@@ -3098,9 +3107,14 @@ async function gEnsureFixed(c, g, log){
       const stay = b.kind === 'in' || b.kind === 'out', name = (b.e.desc || '') + (stay ? (b.kind === 'in' ? ' giriş' : ' çıkış') : '');
       const t = b.kind === 'out' ? bkTime(b.e.until || b.e.when) || '' : bkTime(b.e.when) || '';
       let at = -1, k = -1;
-      g.days.forEach((y, q) => { if (at >= 0 || (stay && q !== j)) return; const kk = y.items.findIndex(it => it.src === 'bilet' && (gSame(it.name, b.e.desc || name) || (t && it.t === t && q === j))); if (kk >= 0){ at = q; k = kk; } });
+      // Önce biletli kayıt aranır; yoksa aynı yer başka biçimde (⭐ istek ya da ✨ öneri; ör. outlet) varsa o bilete çevrilir.
+      const find = ok => g.days.forEach((y, q) => { if (at >= 0 || (stay && q !== j)) return; const kk = y.items.findIndex(it => ok(it) && it.kind !== 'gecis' && (gSame(it.name, b.e.desc || name) || (t && it.t === t && q === j && it.src === 'bilet'))); if (kk >= 0){ at = q; k = kk; } });
+      find(it => it.src === 'bilet'); if (at < 0 && !stay) find(() => true);
+      if (at >= 0 && g.days[at].items[k].src !== 'bilet') g.days[at].items[k].src = 'bilet';
       let it;
-      if (at < 0){ it = {t, name, kind:'gez', src:'bilet', desc:'', addr:b.e.dest || '', acik:'', sure:b.kind === 'event' ? 90 : 30, hat:''}; need.push(it); g.days[j].items.push(it); n++; log.push(`🎟 ${name}: plandan düşmüştü, ${j + 1}. güne saatiyle geri kondu`); }
+      // Outlet/AVM bileti 'alis' türünde ve süresiyle yaratılır (outlet kuralı onu tanısın).
+      const shop = /outlet|village|designer|avm|mall/i.test(name), dur = b.e.until && b.e.when ? Math.round((new Date(b.e.until) - new Date(b.e.when)) / 60000) : 0;
+      if (at < 0){ it = {t, name, kind:shop ? 'alis' : 'gez', src:'bilet', desc:'', addr:b.e.dest || '', acik:'', sure:shop ? (dur > 0 && dur < 900 ? dur : 480) : b.kind === 'event' ? 90 : 30, hat:''}; need.push(it); g.days[j].items.push(it); n++; log.push(`🎟 ${name}: plandan düşmüştü, ${j + 1}. güne saatiyle geri kondu`); }
       else { it = g.days[at].items[k]; if (at !== j){ g.days[at].items.splice(k, 1); g.days[j].items.push(it); n++; log.push(`🎟 ${it.name}: ${at + 1}. günden kendi gününe (${j + 1}. gün) alındı`); } }
       if (t && it.t !== t){ it.t = t; n++; }
       // Biletli ziyaret başka yerde öneri olarak da geçiyorsa oradan çıkar (aynı yer iki kez gezilmesin).
@@ -3551,9 +3565,9 @@ function gRoute(c, g, i, keep){
   // Sıra her zaman gerçek mesafeye göre en kısa seçilir (metroyla gidilen ara da mesafesi kadar sayılır; uzağa sıçrama ucuz değil).
   const leg = km => km > 2.5 ? [0, 25, 1] : [km, km / 4.5 * 60, 0];
   const cost = ord => {
-    let t = t0, walk = 0, metro = 0, dist = 0, all = 0, pen = 0, lunch = false, prev = h; const at = [], bad = [];
+    let t = t0, walk = 0, metro = 0, dist = 0, all = 0, tr = 0, pen = 0, lunch = false, prev = h; const at = [], bad = [];
     for (const k of ord){
-      if (prev >= 0){ const L = leg(D[prev][k]); walk += L[0]; t += L[1]; metro += L[2]; dist += D[prev][k]; all += D[prev][k] > 6 ? 0 : D[prev][k]; }
+      if (prev >= 0){ const L = leg(D[prev][k]); walk += L[0]; t += L[1]; metro += L[2]; dist += D[prev][k]; if (D[prev][k] > G_LONG) tr += D[prev][k]; else all += D[prev][k]; }
       if (!lunch && t >= 810){ t += 75; lunch = true; }
       if (fix[k] != null){ if (t > fix[k] + 10){ pen += 30 + (t - fix[k]) / 6; bad.push(k); } else { pen += (fix[k] - t) / 60 * 0.8; t = fix[k]; } }
       else if (hrs[k] && hrs[k][1] > hrs[k][0]){
@@ -3562,9 +3576,9 @@ function gRoute(c, g, i, keep){
       }
       at.push(t); t += dur[k]; prev = k;
     }
-    if (back && h >= 0 && prev >= 0){ const L = leg(D[prev][h]); walk += L[0]; metro += L[2]; dist += D[prev][h]; all += D[prev][h] > 6 ? 0 : D[prev][h]; }
+    if (back && h >= 0 && prev >= 0){ const L = leg(D[prev][h]); walk += L[0]; metro += L[2]; dist += D[prev][h]; if (D[prev][h] > G_LONG) tr += D[prev][h]; else all += D[prev][h]; }
     if (w && t > w.z + 30) pen += (t - w.z) / 60;
-    return {c:dist + pen, dist, all, walk, metro, at, bad};
+    return {c:dist + pen, dist, all, tr, walk, metro, at, bad};
   };
   let best = [...Array(n).keys()], bc = cost(best);
   const take = o => { const r = cost(o); if (r.c < bc.c - 1e-9){ best = o.slice(); bc = r; return true; } return false; };
@@ -3604,9 +3618,10 @@ function gRoute(c, g, i, keep){
     out.splice(bk + 1, 0, st);
   }
   x.items = [...out, ...rest];
-  // km = metroyla gidilirse kalan yürüme; all = metroya hiç binilmezse toplam yürüme (6 km'den uzun aralar, ör. outlet ya da
-  // havalimanı, zaten yürünmez: toplamına girmez).
-  x.walk = {km:Math.round(bc.walk * 10) / 10, metro:bc.metro, all:Math.round(bc.all * 10) / 10};
+  // km = metroyla gidilirse kalan yürüme; all = metroya hiç binilmezse toplam yürüme. 2,5 km'den uzun aralar (ör. evden uzak
+  // biletli yere, outlete, gara) yürüyüşe sayılmaz, "🚇 metro/taksi önerilir" olur; tr = bu araların toplamı (2026-11-02: evden
+  // 3,7 km ve 5,6 km'lik iki ara yüzünden tempo kuralı Sagrada gününü 3 durağa indirmişti).
+  x.walk = {km:Math.round(bc.walk * 10) / 10, metro:bc.metro, all:Math.round(bc.all * 10) / 10, tr:Math.round(bc.tr * 10) / 10};
 }
 const gRouteAll = c => { const g = (S.trip.guide || {})[c]; if (g) g.days.forEach((_, i) => gRoute(c, g, i)); };
 // Yemek seçenekleri: her günün rotası için saatsiz havuz (restoran, tatlı, fırın, kahvaltı); günler aynı anda istenir,
