@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261102140101';</script>
-<script src="heybe-web.js?v=20261102140101"></script>
+<script>window.HEYBE_VER = '20261102175622';</script>
+<script src="heybe-web.js?v=20261102175622"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2339,15 +2339,16 @@ function gBudget(g){
   for (const x of g.days){
     const lvl = fd => gFdLv(fd, base), before = x.food || [];
     const great = fd => fd.g && fd.g.r && !fd.g.tahmin ? fd.g.r >= 4.6 && fd.g.n >= 2000 : !!fd.deger;
-    const up = (x.food || []).filter(fd => (!fd.tur || fd.tur === 'restoran') && lvl(fd) === base + 1 && P.butce_ust && great(fd))
+    const up = (x.food || []).filter(fd => !fd.gsel && (!fd.tur || fd.tur === 'restoran') && lvl(fd) === base + 1 && P.butce_ust && great(fd))
       .sort((a, b) => ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0)).slice(0, 2);
-    x.food = (x.food || []).filter(fd => { if (fd.tur && fd.tur !== 'restoran') return true; const l = lvl(fd); fd.deger = up.includes(fd); return !l || l <= base || fd.deger; });
+    // Google'dan seçilenler (gsel) kendi etiketiyle kalır: atıştırmalık, ⭐ Değer, ✨ Özel akşam, 🍴 Bib Gourmand.
+    x.food = (x.food || []).filter(fd => { if (fd.gsel || (fd.tur && fd.tur !== 'restoran')) return true; const l = lvl(fd); fd.deger = up.includes(fd); return !l || l <= base || fd.deger; });
     // Hiçbir gün restoransız kalmasın: 3'ten az kaldıysa elenenlerin en ucuzları (eşitse en çok yorumlu) geri gelir.
     const isR = fd => !fd.tur || fd.tur === 'restoran', left = x.food.filter(isR).length;
     if (left < 3) x.food.push(...before.filter(fd => isR(fd) && !x.food.includes(fd)).sort((a, b) => lvl(a) - lvl(b) || ((b.g && b.g.n) || 0) - ((a.g && a.g.n) || 0)).slice(0, 3 - left));
   }
 }
-const gPrice = fd => { const l = gFdLv(fd, gLevel(guidePrefs().butce)), pr = fd.g && fd.g.pr && fd.g.pr[0] ? ` (${fd.g.pr[0]}${fd.g.pr[1] ? '–' + fd.g.pr[1] : '+'} €)` : ''; return l ? `${fd.deger ? '⭐ Değer · ' : ''}${'€'.repeat(l)}${pr}` : ''; };
+const gPrice = fd => { const l = gFdLv(fd, gLevel(guidePrefs().butce)), pr = fd.g && fd.g.pr && fd.g.pr[0] ? ` (${fd.g.pr[0]}${fd.g.pr[1] ? '–' + fd.g.pr[1] : '+'} €)` : ''; return l ? `${fd.bib ? '🍴 Michelin Bib Gourmand · ' : ''}${fd.ozel ? '✨ Özel akşam · ' : ''}${fd.deger ? '⭐ Değer · ' : ''}${'€'.repeat(l)}${pr}` : ''; };
 // Rehber penceresinde bir gün: başlık ve kısa giriş, duraklar (tek cümlelik özet, Google puanı, 🧭), sola kaydırınca "Çıkar",
 // dokununca "Başka güne taşı"; çıkarılan durak için "✨ Yerine öner" ve "Geri al".
 const gHrs = it => it.hrs ? `🕘 ${mh(it.hrs[0])}–${it.hrs[1] >= 1440 ? '24:00' : mh(it.hrs[1])}` : it.acik && /\d/.test(it.acik) ? `🕘 ${it.acik}` : '';
@@ -2426,6 +2427,8 @@ function gBarHtml(c, g, f, can, must){
     ${more ? `<div class="gmenu">
       ${can ? `<button type="button" class="link" data-g="gremake" data-c="${C}">🔄 Baştan hazırla (bütün plan yeniden yazılır)</button>` : ''}
       ${can ? `<label class="link">📂 Haritadan geri yükle (Heybe'nin KML dosyası)<input type="file" class="gkml" data-gkc="${C}" hidden></label>` : ''}
+      ${can ? `<button type="button" class="link" data-g="gfood" data-c="${C}" ${busy}>${f.gbusy === c && f.gstage === 'yemek' ? 'Yemekler yenileniyor…' : '🍽 Yemekleri yenile (rota aynen kalır; Google puanı ve yorumuyla)'}</button>` : ''}
+      <label class="link">🛂 Konsolosluk için uyruk <select class="inp gsel" data-g="guyruk" data-c="${C}"><option value="">Gösterme</option>${COUNTRIES.map(([k, n]) => `<option value="${k}" ${gUyruk() === k ? 'selected' : ''}>${gFlag(k)} ${esc(n)}</option>`).join('')}</select></label>
       ${g.prev ? `<button type="button" class="link" data-g="gundo" data-c="${C}" ${busy}>↩ Önceki taslağa dön</button>` : ''}
       <button type="button" class="link" data-g="kml" data-c="${C}">🗺 Google Haritalar'a (My Maps) aktar</button>
       <span class="gbh">📱 My Maps'e yüklenen harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır. Tek günü tarif olarak açmak için gün başlığındaki 🧭 Rota.</span>
@@ -2543,7 +2546,8 @@ function guideBody(){
         h += g.days.map((x, i) => gDayHtml(c, g, x, i, f, can)).join('');
         if (g.unplaced && g.unplaced.length) h += `<div class="pmiss gun"><b>Elenen istekler · neden?</b>${g.unplaced.map(u => `<div class="gunrow"><span>✖ <b>${esc(u.name)}</b>: ${esc(u.why)}</span><button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(u.name)}" aria-pressed="${must.has(u.name)}">${must.has(u.name) ? '✓ Eklenecek' : '➕ Mutlaka ekle'}</button></div>`).join('')}</div>`;
         const PR = {wc:'🚻', emanet:'🧳', ulasim:'🚇', eczane:'💊', diger:'ℹ️'};
-        if ((g.pratik || []).length || (g.bavul || []).length) h += `<div class="pmiss"><b>Pratik noktalar</b>${(g.bavul || []).map(b => `<span class="gtip">🧳 <a href="${b.g && b.g.url ? b.g.url : mapsDir(`${b.lat},${b.lon}`)}" target="_blank" rel="noopener">${esc(b.name)}</a> · ${esc(gBavulTxt(b))}</span>`).join('')}${(g.pratik || []).filter(p => !(p.tur === 'emanet' && (g.bavul || []).length)).map(p => `<span class="gtip">${PR[p.tur] || 'ℹ️'} <a href="${mapsDir(p.lat ? `${p.lat},${p.lon}` : `${p.name}, ${c}`)}" target="_blank" rel="noopener">${esc(p.name)}</a>${p.not ? ' · ' + esc(p.not) : ''}</span>`).join('')}</div>`;
+        const EL = gElci(g);
+        if ((g.pratik || []).length || (g.bavul || []).length || EL) h += `<div class="pmiss"><b>Pratik noktalar</b>${EL ? `<span class="gtip">${gFlag(EL.cc)} <a href="${EL.url || mapsDir(`${EL.lat},${EL.lon}`)}" target="_blank" rel="noopener">${esc(EL.name)}</a> · ${esc(EL.addr)}</span>` : ''}${(g.bavul || []).map(b => `<span class="gtip">🧳 <a href="${b.g && b.g.url ? b.g.url : mapsDir(`${b.lat},${b.lon}`)}" target="_blank" rel="noopener">${esc(b.name)}</a> · ${esc(gBavulTxt(b))}</span>`).join('')}${(g.pratik || []).filter(p => !(p.tur === 'emanet' && (g.bavul || []).length)).map(p => `<span class="gtip">${PR[p.tur] || 'ℹ️'} <a href="${mapsDir(p.lat ? `${p.lat},${p.lon}` : `${p.name}, ${c}`)}" target="_blank" rel="noopener">${esc(p.name)}</a>${p.not ? ' · ' + esc(p.not) : ''}</span>`).join('')}</div>`;
         if (g.tips && g.tips.length) h += `<div class="pmiss"><b>İpuçları</b>${g.tips.map(t => `<span class="gtip">• ${esc(t)}</span>`).join('')}</div>`;
         if (g.extra){ const E = g.extra;
           h += `<details class="why gnotes"><summary>📒 Şehir notları: sana uygun yemekler, bilmeniz gerekenler, ifadeler</summary><div class="wl">`
@@ -2910,6 +2914,7 @@ async function gImproveCore(c, auto){
   const prevKeep = gKeepOrder; gKeepOrder = true;
   const was = g0.days.map(x => new Map(x.items.filter(it => gIsVisit(c, x, it)).map(it => [gKey(it.name), it.name])));
   try {
+    await gPrep(c, g0);
     await guideRate(c);
     const rv = [...(S.trip.guide[c].fixLog || [])]; delete S.trip.guide[c].fixLog;
     try { await guideReview(c, rv); } catch(_) {}
@@ -2927,6 +2932,10 @@ async function gImproveCore(c, auto){
       for (const [k, it] of now) if (!old.has(k) && !wasAll.has(k)) log.push(`+ ${i + 1}. gün: ${it.name}${it.g && it.g.n ? ` (⭐ ${String(it.g.r).replace('.', ',')} · ${it.g.n.toLocaleString('tr-TR')} yorum)` : ''}${it.dolgu ? ' · rotanın üstünde, boş yere' : ' · zayıf önerinin yerine'}`);
       const s = gSteps(c, x); if (s) log.push(`${i + 1}. gün: ${x.items.filter(it => gIsVisit(c, x, it)).length} durak · ${gStepTxt(s)}`);
     });
+    // Rota değişen günlerin yemekleri yeniden seçilir (2026-11-02: denetim durakları taşıyınca yemekler eski semtte kalıyordu).
+    const moved = g.days.filter((x, i) => { const now = new Set(x.items.filter(it => gIsVisit(c, x, it)).map(it => gKey(it.name))), old = was[i];
+      return !x.yol && x.items.length && (now.size !== old.size || [...now].some(k => !old.has(k)) || (x.food || []).some(fd => !fd.gsel)); });
+    if (moved.length){ try { await guideFood(c, moved, g.model || undefined); gNearFilter(g); log.push(`🍽 ${moved.length} günün yemekleri rotaya göre yeniden seçildi`); } catch(_) {} }
     return [...rv, ...log];
   } finally { gKeepOrder = prevKeep; }
 }
@@ -3094,6 +3103,14 @@ async function guideReview(c, log){
       if (lt && !x.items.slice(x.items.indexOf(lt) + 1).some(it => gIsVisit(c, x, it) && it.src !== 'bilet')){
         const x0 = cityDays(c).find(y => y.d === x.d), w = (x0 && gWindow(c, x0, tripPlan())) || {z:23 * 60}, bos = Math.min(w.z, 20 * 60) - (hm(lt.t) + Math.min(+lt.sure || 90, 150));
         if (bos >= 120) sorunlar.push(`${dn}: ${lt.name} (${lt.t}) sonrası ~${String(Math.round(bos / 30) / 2).replace('.', ',')} saat boş; biletli yerin çevresinden ya da eve dönüş yolundan 2-4 ünlü ücretsiz yer ekle`); } }
+    // Outlet sabahı boşsa (2026-11-02: La Roca 12:00, sabah hiçbir şey yoktu): servis noktasının çevresinden 2-3 kısa durak.
+    { const o = x.items.find(gOutlet), st = o && hm(o.t);
+      if (o && st != null && o.lat && H && !x.items.slice(0, x.items.indexOf(o)).some(it => gIsVisit(c, x, it) && it.src !== 'bilet')){
+        const x0 = cityDays(c).find(y => y.d === x.d), w = (x0 && gWindow(c, x0, tripPlan())) || {a:9 * 60}, yol = Math.round(gKm(H, {lat:+o.lat, lon:+o.lon}) / 40 * 60) + 20, bos = st - yol - w.a, SPn = g.outletStop && g.outletStop.lat ? g.outletStop : null;
+        if (bos >= 75) sorunlar.push(`${dn}: outlet günü sabahı ~${String(Math.round(bos / 30) / 2).replace('.', ',')} saat boş; ${SPn ? `outlet servisinin kalktığı ${SPn.name} (${r4(+SPn.lat)},${r4(+SPn.lon)}) çevresinden (1 km)` : 'evden outlete giden yolun üstünden'} outletten önceye 2-3 kısa ünlü ücretsiz yer ekle`); } }
+    // Ayrılış günü ağırsa (iki ve daha çok uzun geçiş): bir bölgeyi başka güne taşımayı söyler.
+    if (x.back === false){ const longs = V.filter((it, k) => V[k + 1] && gKm({lat:+it.lat, lon:+it.lon}, {lat:+V[k + 1].lat, lon:+V[k + 1].lon}) * 1.25 > G_LONG && !G_TRAVEL.test(V[k + 1].name)).length;
+      if (longs >= 2) sorunlar.push(`${dn}: ayrılış günü ${longs} uzun (metro) geçiş var; gün ağır, bir bölgeyi (biletli olmayan) yeri olan başka bir güne taşı`); }
     if (x.back === false){ const tv = [...x.items].reverse().find(it => it.src === 'bilet' && G_TRAVEL.test(it.name) && it.lat), last = [...V].reverse().find(it => it !== tv && it.src !== 'bilet');
       if (tv && last && gKm({lat:+last.lat, lon:+last.lon}, {lat:+tv.lat, lon:+tv.lon}) > 2.5) sorunlar.push(`${dn}: ayrılış günü ${last.name} ile bitiyor, gara (${tv.name}) ${r1(gKm({lat:+last.lat, lon:+last.lon}, {lat:+tv.lat, lon:+tv.lon}))} km; son durakları gara giden yöne al`); }
   });
@@ -3195,8 +3212,10 @@ function gOutletFix(c, g, log){
   g.days.forEach((x, i) => {
     const o = x.items.find(gOutlet); if (!o || !o.lat) return;
     const k = x.items.indexOf(o), O = {lat:+o.lat, lon:+o.lon}, fixed = it => it.src === 'bilet' || it.kind === 'gecis';
-    // Doğru parçasına uzaklık (km): ev → outlet hattı.
-    const seg = p => { if (!H) return 0; const f = Math.cos(H.lat * Math.PI / 180), ax = (O.lon - H.lon) * f, ay = O.lat - H.lat, px = (p.lon - H.lon) * f, py = p.lat - H.lat;
+    // Doğru parçasına uzaklık (km): ev → outlet servisinin kalktığı yer (2026-11-02: La Roca servisi Passeig de Gràcia'dan; düz ev → outlet
+    // çizgisi sabah duraklarını yanlış yerde arıyordu); servis bulunamadıysa ev → outlet.
+    const SP = g.outletStop && g.outletStop.lat ? {lat:+g.outletStop.lat, lon:+g.outletStop.lon} : O;
+    const seg = p => { if (!H) return 0; const f = Math.cos(H.lat * Math.PI / 180), ax = (SP.lon - H.lon) * f, ay = SP.lat - H.lat, px = (p.lon - H.lon) * f, py = p.lat - H.lat;
       const t = Math.max(0, Math.min(1, (px * ax + py * ay) / (ax * ax + ay * ay || 1))); return Math.hypot(px - t * ax, py - t * ay) * 111; };
     const x0 = cityDays(c).find(y => y.d === x.d), w = (x0 && gWindow(c, x0, tripPlan())) || {a:9 * 60, z:23 * 60};
     const yolDk = Math.max(30, Math.round((H ? gKm(H, O) : 30) / 40 * 60) + 20), dur = +o.sure || 240, st = hm(o.t);
@@ -3741,7 +3760,7 @@ function gNearFilter(g){
   // Hiçbir gün restoransız kalmasın: 450 m içinde 3'ten az restoran varsa en yakınları 800 m'ye kadar kalır.
   const isR = fd => !fd.tur || fd.tur === 'restoran';
   for (const x of g.days) if (!x.yol && x.items.length){
-    const all = (x.food || []).map(fd => [fd, fd.lat ? gLineKm(g, x, fd) : 0]), keep = new Set(all.filter(([, d]) => d <= 0.45).map(([fd]) => fd));
+    const all = (x.food || []).map(fd => [fd, fd.lat ? gLineKm(g, x, fd) : 0]), keep = new Set(all.filter(([fd, d]) => d <= 0.45 || (fd.gsel && x.items.some(gOutlet))).map(([fd]) => fd));
     const nR = [...keep].filter(isR).length;
     if (nR < 3) all.filter(([fd, d]) => isR(fd) && !keep.has(fd) && d <= 0.8).sort((a, b) => a[1] - b[1]).slice(0, 3 - nR).forEach(([fd]) => keep.add(fd));
     x.food = (x.food || []).filter(fd => keep.has(fd));
@@ -3749,8 +3768,127 @@ function gNearFilter(g){
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null;
   g.pratik = (g.pratik || []).filter(p => !p.lat || (H && gKm(H, {lat:+p.lat, lon:+p.lon}) <= 0.8) || g.days.some(x => !x.yol && x.items.length && gLineKm(g, x, p) <= 0.8));
 }
+// 🍽 Yemek yerlerini Google bulur (2026-11-02, kullanıcı: "yorumu olmayan yerler çıkıyor; fırın, tatlı, dondurma, pizzada bütçe
+// önemli değil, ünlüsü gelsin; restoranda iyi orta yerler olsun, pahalı da olabilir; Bib Gourmand listesi de olsun"). Model yer
+// önermez: günün rotası çevresinde tür tür Google araması yapılır, model ("yemeknot") yalnız seçilenlere not yazar. Sıra ağırlıklı
+// puanla (IMDb / TripAdvisor yöntemi): WR = n/(n+m)·r + m/(n+m)·4,3, eksi rotaya uzaklık; 40 yorumlu 4,9, 8.000 yorumlu 4,6'nın önüne
+// geçemez. Eşikler: restoran 4,4 · 1.000; atıştırmalık (fırın, tatlı, dondurma, pizza, kahvaltı) 4,5 · 500, bütçeye bakılmaz;
+// yemek pazarı 4,3 · 2.000; Bib Gourmand 4,2 · 200. Google'da bulunmayan, o gün kapalı ya da rotaya 450 m'den uzak yer gösterilmez.
+// Restoran: günde 3 bütçe içi, 1 "⭐ Değer" (bir üst seviye, 4,6 · 2.000), 1 "✨ Özel akşam" (€€€, 4,6), varsa 1 "🍴 Bib Gourmand".
+const G_FQ = [
+  {k:'pizza', q:'pizzeria', tur:'restoran', at:1, pre:'Pizza', n:2},
+  {k:'firin', q:'bakery pastry shop', tur:'firin', at:1, n:2},
+  {k:'tatli', q:'pastisseria churros chocolate dessert', tur:'tatli', at:1, n:2},
+  {k:'dondurma', q:'gelato ice cream', tur:'tatli', at:1, pre:'Dondurma', n:1},
+  {k:'kahvalti', q:'breakfast brunch cafe', tur:'kahvalti', at:1, n:2, ilk:1},
+  {k:'pazar', q:'food market', tur:'pazar', at:1, n:1, r:4.3, min:2000}];
+const G_FCUI = [[/tapas/i, 'tapas bar'], [/deniz|balık|seafood/i, 'seafood restaurant'], [/katalan|catal/i, 'Catalan restaurant'], [/ev yemek|geleneksel|yerel mutfak|lokanta/i, 'traditional local restaurant'],
+  [/sokak|street/i, 'street food'], [/(^|\s)et\b|ızgara|grill|steak/i, 'grill restaurant'], [/pizza|makarna|ital/i, 'Italian restaurant'], [/asya|japon|sushi|çin|asian/i, 'Asian restaurant'],
+  [/vejetar|vegan/i, 'vegetarian restaurant'], [/türk|kebap|döner/i, 'Turkish restaurant'], [/paella|pilav/i, 'paella restaurant']];
+const gWR = (r, n, m) => n / (n + m) * r + m / (n + m) * 4.3;
+// Michelin Bib Gourmand listesi (şehir başına bir kez; ad listesi internetten, konum ve puan Google'dan) S.trip.ilham[şehir].bib.
+async function gBib(c, g){
+  const I = (S.trip.ilham || (S.trip.ilham = {}))[c] || (S.trip.ilham[c] = {});
+  if (I.bib) return I.bib.yerler || [];
+  let r; try { r = await window.claude.guide({mode:'ilham', city:c, kaynak:'michelin'}); } catch(_) { return []; }
+  const Y = (r && r.yerler || []).filter(y => y && y.ad).slice(0, 30), cc = gCenter(g);
+  let q = {items:[]}; if (Y.length) try { q = await window.claude.guide({mode:'puan', city:c, items:Y.map(y => ({name:y.ad, lat:cc && cc.lat, lon:cc && cc.lon}))}); } catch(_) {}
+  I.bib = {at:Date.now(), yerler:Y.map((y, k) => ({y, v:(q.items || [])[k] || {}})).filter(({v}) => v.lat && v.r >= 4.2 && v.n >= 200 && !v.kapali && (!cc || gKm(cc, v) < 25))
+    .map(({y, v}) => ({name:v.name || y.ad, mutfak:y.mutfak || '', addr:v.addr || '', lat:v.lat, lon:v.lon, r:v.r, n:v.n, p:v.p || '', pr:v.pr || null, url:v.url || '', gun:v.gun || null, saat:v.saat || null}))};
+  save(); return I.bib.yerler;
+}
+async function gFoodGoogle(c, g, days, model){
+  const todo = (days || g.days).filter(x => !x.yol && x.items.some(it => it.lat && !gFar(g, it)));
+  if (!todo.length) return true;
+  const P = guidePrefs(), base = gLevel(P.butce) || 2, veg = (P.kisit || []).some(k => /vejetar/i.test(k)), evde = /^Evde/.test(P.kahvalti || '');
+  const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null, SP = g.outletStop && g.outletStop.lat ? {lat:+g.outletStop.lat, lon:+g.outletStop.lon} : null;
+  const bib = await gBib(c, g).catch(() => []);
+  const R = await Promise.all(todo.map(async x => {
+    const od = x.items.some(gOutlet), pts = od ? [SP || H].filter(Boolean) : x.items.filter(it => it.lat && !gFar(g, it) && !gOutlet(it)).map(it => ({lat:+it.lat, lon:+it.lon}));
+    if (!pts.length) return null;
+    const la = pts.map(p => p.lat), lo = pts.map(p => p.lon), cc = {lat:(Math.min(...la) + Math.max(...la)) / 2, lon:(Math.min(...lo) + Math.max(...lo)) / 2};
+    const rad = Math.round(Math.min(3000, Math.max(700, Math.max(...pts.map(p => gKm(cc, p))) * 1000 + 400)));
+    const cui = [...new Set([...(veg ? ['vegetarian restaurant'] : []), ...(x.turler || []).map(t => (G_FCUI.find(([re]) => re.test(t)) || [0, 'restaurant'])[1])])];
+    for (const d of ['restaurant', 'tapas bar']) if (cui.length < 2 && !cui.includes(d)) cui.push(d);
+    // Outlet günü: dönüşte servisin indiği yerin çevresinde akşam yemeği ve tatlı (gezi durağı yok).
+    const Q = [...cui.slice(0, 3).map(q => ({k:'rest', q, tur:'restoran'})), ...(od ? G_FQ.filter(o => o.k === 'tatli') : G_FQ.filter(o => !(evde && o.ilk)))];
+    let r; try { r = await window.claude.guide({mode:'yakin', city:c, lat:cc.lat, lon:cc.lon, items:Q.map(o => ({q:o.q, lat:cc.lat, lon:cc.lon, r:rad, min:200, n:20}))}); } catch(e){ return e && e.code === 'kredi' ? 'kredi' : 'yok'; }
+    if (!r || r.src !== 'google') return 'yok';
+    return {x, od, Q, L:(r.items || []).map(v => (v && v.list) || [])};
+  }));
+  if (R.includes('yok')) return false;
+  const other = new Set(g.days.filter(y => !todo.includes(y)).flatMap(y => (y.food || []).map(fd => gKey(fd.name)))), used = new Set(), sel = [];
+  for (const o of R){
+    if (!o || o === 'kredi') continue;
+    const {x, od, Q, L} = o, V = x.items.filter(it => gIsVisit(c, x, it) && it.lat && !gFar(g, it)), first = V.slice(0, 3).map(it => ({lat:+it.lat, lon:+it.lon}));
+    const dist = p => od ? gKm(SP || H, p) : gLineKm(g, x, p), near = p => { let b = null, d = 9; for (const it of V){ const k = gKm({lat:+it.lat, lon:+it.lon}, p); if (k < d){ d = k; b = it; } } return b ? b.name : ''; };
+    const lv = p => gFdLv({g:{p:p.p, pr:p.pr}}, base), C = [];
+    Q.forEach((q, k) => (L[k] || []).forEach(p => {
+      if (!p.lat || !p.r) return; const d = dist(p), lim = q.r ? {r:q.r, n:q.min} : q.at ? {r:4.5, n:500} : {r:4.4, n:1000};
+      if (d > (od ? 0.6 : 0.45) || p.r < lim.r || p.n < lim.n || !gOpenOn({gun:p.gun, saat:p.saat}, x.d)) return;
+      C.push({p, q, d, key:gKey(p.name), s:gWR(p.r, p.n, q.at ? 500 : 1000) - 0.25 * d});
+    }));
+    for (const b of bib){ const d = dist(b); if (d <= 0.6 && gOpenOn({gun:b.gun, saat:b.saat}, x.d)) C.push({p:b, q:{k:'rest', tur:'restoran'}, d, key:gKey(b.name), s:9 - d, bib:1}); }
+    C.sort((a, b) => b.s - a.s);
+    const day = [], take = (f, n, mark) => { for (const cnd of C){ if (n <= 0) break; if (used.has(cnd.key) || other.has(cnd.key) || !f(cnd)) continue; used.add(cnd.key); day.push({...cnd, ...(mark || {})}); n--; } };
+    take(cnd => cnd.bib, 1, {bib:1});
+    take(cnd => cnd.q.k === 'rest' && !cnd.bib && (!lv(cnd.p) || lv(cnd.p) <= base), od ? 2 : 3);
+    if (P.butce_ust) take(cnd => cnd.q.k === 'rest' && !cnd.bib && lv(cnd.p) === base + 1 && cnd.p.r >= 4.6 && cnd.p.n >= 2000, 1, {deger:1});
+    if (base < 3) take(cnd => cnd.q.k === 'rest' && !cnd.bib && lv(cnd.p) >= 3 && cnd.p.r >= 4.6, 1, {ozel:1});
+    for (const q of (od ? G_FQ.filter(o => o.k === 'tatli') : G_FQ)) take(cnd => cnd.q === q && (!q.ilk || first.some(f => gKm(f, cnd.p) <= 0.35) || (H && gKm(H, cnd.p) <= 0.35)), od ? 1 : q.n);
+    sel.push({x, day, near});
+  }
+  // Notlar (yer önermez): ne sipariş edilir · fiyat · uyarı; yemek kısıtına uymayan yer (uygun=false) çıkar.
+  const flat = sel.flatMap(o => o.day.map(d => ({o, d}))), prefs = guidePrefs();
+  let N = {items:[]}; if (flat.length) try { N = await gAsk({mode:'yemeknot', city:c, prefs, items:flat.map(({o, d}, i) => ({i, ad:d.p.name, tur:d.q.k === 'rest' ? (d.q.q || 'restaurant') : d.q.k, google:`${d.p.r} · ${d.p.n} yorum`, fiyat:'€'.repeat(lv0(d.p, base) || 0), yakin:o.near(d.p), ...(d.bib ? {michelin:'Bib Gourmand'} : {}), ...(d.p.mutfak ? {mutfak:d.p.mutfak} : {})}))}, model); } catch(_) {}
+  const NT = new Map((N.items || []).map(n => [n.i, n]));
+  for (const o of sel){
+    o.x.food = o.day.map(d => ({d, n:NT.get(flat.findIndex(f => f.d === d))})).filter(({n}) => !n || n.uygun !== false).map(({d, n}) => {
+      const p = d.p, wd = new Date(o.x.d + 'T12:00').getDay();
+      return {name:gCleanName(p.name), tur:d.q.tur, not:(n && n.not) || (d.q.pre ? d.q.pre + ' · ' : '') + (p.mutfak || ''), addr:p.addr || '', lat:p.lat, lon:p.lon, yakin:o.near(p), fiyat:lv0(p, base) || 1,
+        deger:!!d.deger, ozel:!!d.ozel, bib:!!d.bib, atis:!!d.q.at, gsel:1, ok:1, g:{r:p.r, n:p.n, p:p.p || '', pr:p.pr || null, url:p.url || ''}, open:{kapali:false, gun:p.gun || null, saat:p.saat || null},
+        hrs:p.saat && !g247(p) ? p.saat[wd] || null : null};
+    });
+  }
+  return true;
+}
+const lv0 = (p, base) => gFdLv({g:{p:p.p, pr:p.pr}}, base);
+// Outlet servis noktası ve konsolosluk (tek Google isteği; şehir başına bir kez, rehberde saklanır).
+const gUyruk = () => S.trip.uyruk === undefined ? 'TR' : S.trip.uyruk;
+const gFlag = cc => cc ? String.fromCodePoint(...[...cc.toUpperCase()].map(ch => 127397 + ch.charCodeAt(0))) : '';
+const gPlain = t => String(t || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+const gCNames = cc => [...new Set(['en', 'tr', 'es', 'ca', 'it', 'fr', 'de', 'pt', 'nl', 'el'].map(l => { try { return gPlain(new Intl.DisplayNames([l], {type:'region'}).of(cc)).slice(0, 5); } catch(_) { return ''; } }).concat(cc === 'TR' ? ['turke', 'turki'] : []).filter(n => n.length >= 4))];
+async function gPrep(c, g){
+  const cc = gCenter(g); if (!cc || !window.claude || !window.claude.guide) return;
+  const o = g.days.flatMap(x => x.items).find(gOutlet), U = gUyruk(), q = [];
+  if (o && !g.outletStop) q.push({k:'stop', q:`${o.name} shuttle bus stop`, lat:cc.lat, lon:cc.lon, r:6000, min:1, n:5});
+  if (U && !(g.elci && g.elci.cc === U)){ let en = U; try { en = new Intl.DisplayNames(['en'], {type:'region'}).of(U); } catch(_) {} q.push({k:'elci', q:`${en} consulate general embassy`, lat:cc.lat, lon:cc.lon, r:15000, min:1, n:10}); }
+  if (!q.length) return;
+  let r; try { r = await window.claude.guide({mode:'yakin', city:c, lat:cc.lat, lon:cc.lon, items:q}); } catch(_) { return; }
+  if (!r || r.src !== 'google') return;
+  q.forEach((o2, k) => {
+    const L = ((r.items || [])[k] || {}).list || [];
+    if (o2.k === 'stop'){ const sp = L.find(p => p.lat && gKm(cc, p) < 8 && /bus|shuttle|express|parada|autob|servis/i.test(p.name)); g.outletStop = sp ? {name:sp.name, lat:sp.lat, lon:sp.lon, addr:sp.addr || ''} : {none:1}; }
+    else { const nm = gCNames(U), sp = L.find(p => /consul|embass|embaj|ambasc|botschaft|konsul|elçilik|elcilik|konsolos|cónsul|consolat|ambassade|πρεσβ/i.test(gPlain(p.name)) && nm.some(n => gPlain(p.name).includes(n)));
+      g.elci = sp ? {cc:U, name:sp.name, addr:sp.addr || '', lat:sp.lat, lon:sp.lon, url:sp.url || '', r:sp.r, n:sp.n} : {cc:U, none:1}; }
+  });
+  save();
+}
+const gElci = g => { const e = g && g.elci; return e && e.lat && e.cc === gUyruk() ? e : null; };
+// 🍽 Yemekleri yenile: rota aynen kalır, yalnız yemek seçenekleri Google'dan baştan seçilir (bütün şehir ya da verilen günler).
+async function guideFoodRefresh(c){
+  const g = gNorm((S.trip.guide || {})[c]), f = form; if (!g || gRunning.has(c)) return; gRunning.add(c);
+  try { if (f){ f.gbusy = c; f.gstage = 'yemek'; drawSheetKeep(); }
+    await gPrep(c, g); await guideFood(c, null, g.model || undefined); gNearFilter(g);
+    const n = g.days.reduce((a, x) => a + (x.food || []).length, 0);
+    g.chg = {at:Date.now(), by:S.me, log:[`🍽 Yemekler yenilendi: ${n} yer (Google puanı ve yorum sayısıyla seçildi, rota aynı).`]}; save();
+    toast(`🍽 Yemekler yenilendi: ${n} yer.`);
+  } catch(e){ toast(gErrMsg(e, 'Yemekler yenilenemedi; biraz sonra tekrar dene.')); }
+  finally { gRunning.delete(c); if (f){ f.gbusy = null; f.gstage = ''; } drawSheetKeep(); if (tab === 'gezi') render(); }
+}
 async function guideFood(c, days, model){
   const g = (S.trip.guide || {})[c]; if (!g || !window.claude || !window.claude.guide) return;
+  try { if (await gFoodGoogle(c, g, days, model)) return; } catch(e){ if (e && e.code === 'kredi') throw e; }   // Google yoksa eski yöntem (model önerir)
   const prefs = guidePrefs(), il = ((S.trip.ilham || {})[c] || {}).yemek || [], N = gNums(c, g), T = gFoodTypes(g.days.filter(x => !x.yol).length);
   const todo = (days || g.days).filter(x => !x.yol && x.items.length);
   await Promise.all(todo.map(async x => {
@@ -4044,7 +4182,8 @@ function guideKml(c){
   // 4) ℹ️ Pratik: en çok 6; önce bavul emanetçisi (ev ve gar), sonra WC, ulaşım, eczane.
   const PR = {wc:'🚻', emanet:'🧳', ulasim:'🚇', eczane:'💊', diger:'ℹ️'}, ord = ['wc', 'ulasim', 'eczane', 'diger', 'emanet'];
   const PC = {wc:[1733, '0288D1'], ulasim:[1626, '616161'], emanet:[1885, '424242'], eczane:[503, '2E7D32'], diger:[503, '757575']};
-  const prat = [...(g.bavul || []).filter(b => b.lat).map(b => pm(b.name, `🧳 ${gBavulTxt(b)}` + (b.addr ? '\n' + b.addr : '') + (b.g && b.g.url ? '\n' + b.g.url : ''), ico(1885, '424242'), b)),
+  const EL = gElci(g), flagSt = cc => { const id = `heybe-flag-${cc}`; if (!styles.has(id)) styles.set(id, `<Style id="${id}"><IconStyle><scale>1</scale><Icon><href>https://ifayetorbay.github.io/icons/flag/${cc.toLowerCase()}.png</href></Icon></IconStyle></Style>`); return id; };
+  const prat = [...(EL ? [pm(EL.name, `${gFlag(EL.cc)} Konsolosluk / büyükelçilik · pasaport kaybı ve acil durumlarda\n${EL.addr}${EL.url ? '\n' + EL.url : ''}`, flagSt(EL.cc), EL)] : []), ...(g.bavul || []).filter(b => b.lat).map(b => pm(b.name, `🧳 ${gBavulTxt(b)}` + (b.addr ? '\n' + b.addr : '') + (b.g && b.g.url ? '\n' + b.g.url : ''), ico(1885, '424242'), b)),
     ...(g.pratik || []).filter(p => ok(null, p) && !(p.tur === 'emanet' && (g.bavul || []).length)).sort((a, b) => ord.indexOf(a.tur) - ord.indexOf(b.tur)).map(p => pm(p.name, `${PR[p.tur] || 'ℹ️'} ${p.not || ''}`, ico(...(PC[p.tur] || PC.diger)), p))].slice(0, 6);
   if (prat.length) out.push(`<Folder><name>ℹ️ Pratik</name>${prat.join('')}</Folder>`);
   out.push('</Document></kml>'); out[3] = [...styles.values()].join('\n');
@@ -4118,7 +4257,7 @@ async function guidePdf(c, share){
   };
   sec('Elenen istekler · neden?', (g.unplaced || []).map(u => `✖ ${u.name}: ${u.why}`), '#9A5A08');
   sec('İpuçları', (g.tips || []).map(t => '• ' + t), RPT.ink);
-  sec('Pratik noktalar', [...(g.bavul || []).map(b => `🧳 ${b.name}: ${gBavulTxt(b)}`), ...(g.pratik || []).filter(p => !(p.tur === 'emanet' && (g.bavul || []).length))].map(p => typeof p === 'string' ? p : `${({wc:'🚻', emanet:'🧳', ulasim:'🚇', eczane:'💊'})[p.tur] || 'ℹ️'} ${p.name}${p.not ? ': ' + p.not : ''}`), RPT.ink);
+  sec('Pratik noktalar', [...(gElci(g) ? [`${gFlag(gElci(g).cc)} ${gElci(g).name}: ${gElci(g).addr}`] : []), ...(g.bavul || []).map(b => `🧳 ${b.name}: ${gBavulTxt(b)}`), ...(g.pratik || []).filter(p => !(p.tur === 'emanet' && (g.bavul || []).length))].map(p => typeof p === 'string' ? p : `${({wc:'🚻', emanet:'🧳', ulasim:'🚇', eczane:'💊'})[p.tur] || 'ℹ️'} ${p.name}${p.not ? ': ' + p.not : ''}`), RPT.ink);
   const E = g.extra;
   const srcRows = gSources(g).map(k => `• ${k.t}${k.url ? ' — ' + k.url : ''}`);
   if (E){
@@ -4242,6 +4381,7 @@ function guideAct(d){
   if (d.g === 'gedit'){ f.gedit = f.gedit === d.c ? null : d.c; f.gmore = null; drawSheetKeep(); return; }
   if (d.g === 'gmore'){ f.gmore = f.gmore === d.c ? null : d.c; drawSheetKeep(); return; }
   if (d.g === 'gremake'){ f.gremake = d.c || null; drawSheetKeep(); return; }
+  if (d.g === 'gfood'){ f.gmore = null; guideFoodRefresh(d.c); return; }
   if (d.g === 'gundo'){ if (gPrevBack(d.c)){ drawSheetKeep(); if (tab === 'gezi') render(); toast('↩ Önceki taslağa dönüldü (yeniden dokunursan yenisi gelir).'); } return; }
   if (d.g === 'kml'){ guideKml(d.c); return; }
   if (d.g === 'pdf'){ guidePdf(d.c); return; }
@@ -7462,6 +7602,7 @@ document.addEventListener('input', ev => {
 document.addEventListener('change', async ev => {
   const el = ev.target, b = el.dataset.bind;
   if (form && el.dataset.g === 'gopus'){ form.gopus = el.checked; return; }
+  if (form && el.dataset.g === 'guyruk'){ S.trip.uyruk = el.value; const g = (S.trip.guide || {})[el.dataset.c]; save(); if (g){ delete g.elci; await gPrep(el.dataset.c, g); } drawSheetKeep(); return; }
   if (form && el.dataset.g === 'gmetro'){ const G = S.trip.greq || (S.trip.greq = {}); (G[el.dataset.c] || (G[el.dataset.c] = {})).metro = el.checked; save(); drawSheetKeep(); return; }
   if (form && el.classList.contains('gkml') && el.files && el.files[0]){
     const c = el.dataset.gkc;
