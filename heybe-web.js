@@ -152,7 +152,8 @@
     async guide(payload){
       await ready;
       const {data, error} = await sb.functions.invoke('rehber', {body:payload});
-      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : st === 402 ? 'kredi' : 'cloud'}; }
+      // Durum kodu yoksa istek sunucuya ulaşamadı ya da yolda koptu (ekran kilitlendi, uygulamadan çıkıldı): "net".
+      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : st === 402 ? 'kredi' : st ? 'cloud' : 'net', status:st || 0}; }
       if (!data || data.error) throw {code:'cloud'};
       return data;
     },

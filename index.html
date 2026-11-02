@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261102132058';</script>
-<script src="heybe-web.js?v=20261102132058"></script>
+<script>window.HEYBE_VER = '20261102140101';</script>
+<script src="heybe-web.js?v=20261102140101"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2624,13 +2624,22 @@ async function gNearby(c){
   const g = (S.trip.guide || {})[c], cc = g && gCenter(g); if (!g || !cc || g.yakinAt || gNearDone.has(c) || !window.claude || !window.claude.guide) return;
   gNearDone.add(c);
   const H = g.home && g.home.lat ? g.home : null, st = gStation(c);
-  const q = [H ? {q:'luggage storage', lat:+H.lat, lon:+H.lon, r:800} : null, st ? {q:'luggage storage', near:st, r:700} : null, {q:'Primark', lat:cc.lat, lon:cc.lon, r:5000, min:100, n:10}].filter(Boolean);
+  const q = [H ? {q:'luggage storage', lat:+H.lat, lon:+H.lon, r:800} : null, st ? {q:'luggage storage', near:st, r:700} : null, {q:'Primark', lat:cc.lat, lon:cc.lon, r:5000, min:100, n:10},
+    // Hediyelik (kural "mutlaka"; model çoğu kez koymuyor): Google'da 4,5+ ve 300+ yorumlu, bir günün rotasının 200 m yakınında en çok 2.
+    {q:'souvenir gift shop', lat:cc.lat, lon:cc.lon, r:4000, min:300, n:10}].filter(Boolean);
   let r; try { r = await window.claude.guide({mode:'yakin', city:c, lat:cc.lat, lon:cc.lon, items:q}); } catch(_) { return; }
   if (!r || r.src !== 'google') return;
   g.bavul = [];
   q.forEach((o, k) => {
     const v = (r.items || [])[k] || {}, L = v.list || [];
     if (o.q === 'luggage storage'){ const b = L[0]; if (b) g.bavul.push({yer:o.near ? 'gar' : 'ev', at:o.near ? st : '', name:b.name, addr:b.addr || '', lat:b.lat, lon:b.lon, km:b.km, g:{r:b.r, n:b.n, url:b.url || ''}}); return; }
+    if (o.q === 'souvenir gift shop'){
+      let k2 = 0; const used = new Set(g.days.map((x, j) => x.items.some(it => /^Hediyelik/.test(it.desc || '')) ? j : -1));
+      for (const p of L){ if (k2 >= 2) break; if (!p.lat || (+p.r || 0) < 4.5) continue;
+        const j = g.days.findIndex((x, q2) => !x.yol && x.items.length && !used.has(q2) && !x.items.some(gOutlet) && gLineKm(g, x, p) <= 0.2); if (j < 0) continue;
+        g.days[j].items.push({t:'', name:p.name, kind:'dukkan', src:'oneri', desc:'Hediyelik · Google\'da çok iyi yorumlu hediyelik dükkânı; rotanın üstünde.', addr:p.addr || '', lat:p.lat, lon:p.lon, hat:'', ok:1, g:{r:p.r, n:p.n, url:p.url || ''}});
+        used.add(j); gRoute(c, g, j); k2++; }
+      return; }
     if (g.days.some(x => x.items.some(it => /primark/i.test(it.name)))) return;
     for (const p of L){
       const j = g.days.findIndex(x => !x.yol && x.items.length && gLineKm(g, x, p) <= 0.5); if (j < 0) continue;
@@ -2906,7 +2915,7 @@ async function gImproveCore(c, auto){
     try { await guideReview(c, rv); } catch(_) {}
     { const L = []; if (gOutletFix(c, S.trip.guide[c], L)) rv.push(...L.map(l => '🛍 ' + l)); }
     // Son söz kesin kurallarda: biletler kendi gününde, adlar temiz.
-    await gEnsureFixed(c, S.trip.guide[c], rv); gCleanNames(S.trip.guide[c]);
+    await gEnsureFixed(c, S.trip.guide[c], rv); gCleanNames(S.trip.guide[c]); gShopTidy(S.trip.guide[c], rv);
     const g = S.trip.guide[c], filled = [];
     // Boş yer doldurma yalnız elle "✨ İyileştir"de (hazırlamanın sonunda eksik ünlü yeri denetim tek istekte ekler; 8–16 istek kalkar).
     if (!auto) for (const [i, x] of g.days.entries()){ if (await gFill(c, g, i, 2)) filled.push(i); }
@@ -3079,6 +3088,12 @@ async function guideReview(c, log){
     if (s && s.steps > s.cap) sorunlar.push(`${dn}: yürüyüş ~${s.steps} adım, sınır ${s.cap}; rotadan en uzak öneriyi kendi bölgesindeki güne taşı ya da çıkar`);
     V.forEach((it, k) => { const b = V[k + 1]; if (b && it.src !== 'bilet' && b.src !== 'bilet' && gKm({lat:+it.lat, lon:+it.lon}, {lat:+b.lat, lon:+b.lon}) * 1.25 > G_LONG) sorunlar.push(`${dn}: ${it.name} → ${b.name} arası ${r1(gKm({lat:+it.lat, lon:+it.lon}, {lat:+b.lat, lon:+b.lon}) * 1.25)} km (bölge dışı sıçrama)`); });
     V.filter(it => it.src === 'oneri' && it.g && it.g.n && !it.g.tahmin && it.g.n < 1000).forEach(it => sorunlar.push(`${dn}: ${it.name} yalnız ${it.g.n} yorum (zayıf öneri)`));
+    // Biletten sonra boş kalan gün (2026-11-02: Sagrada 15:15'ten sonra hiçbir şey yoktu): son biletli yerden sonra gezi durağı yoksa
+    // ve akşam 20'ye 2 saatten çok varsa (ziyaret en çok 2,5 saat sayılır) denetime söylenir (yolculuk, outlet, ev giriş-çıkışı sayılmaz).
+    { const tk = x.items.filter(it => it.src === 'bilet' && hm(it.t) != null && !G_TRAVEL.test(it.name) && !gOutlet(it) && !/ (giriş|çıkış)$/.test(it.name)), lt = tk[tk.length - 1];
+      if (lt && !x.items.slice(x.items.indexOf(lt) + 1).some(it => gIsVisit(c, x, it) && it.src !== 'bilet')){
+        const x0 = cityDays(c).find(y => y.d === x.d), w = (x0 && gWindow(c, x0, tripPlan())) || {z:23 * 60}, bos = Math.min(w.z, 20 * 60) - (hm(lt.t) + Math.min(+lt.sure || 90, 150));
+        if (bos >= 120) sorunlar.push(`${dn}: ${lt.name} (${lt.t}) sonrası ~${String(Math.round(bos / 30) / 2).replace('.', ',')} saat boş; biletli yerin çevresinden ya da eve dönüş yolundan 2-4 ünlü ücretsiz yer ekle`); } }
     if (x.back === false){ const tv = [...x.items].reverse().find(it => it.src === 'bilet' && G_TRAVEL.test(it.name) && it.lat), last = [...V].reverse().find(it => it !== tv && it.src !== 'bilet');
       if (tv && last && gKm({lat:+last.lat, lon:+last.lon}, {lat:+tv.lat, lon:+tv.lon}) > 2.5) sorunlar.push(`${dn}: ayrılış günü ${last.name} ile bitiyor, gara (${tv.name}) ${r1(gKm({lat:+last.lat, lon:+last.lon}, {lat:+tv.lat, lon:+tv.lon}))} km; son durakları gara giden yöne al`); }
   });
@@ -3111,8 +3126,20 @@ async function guideReview(c, log){
   return n;
 }
 // Model yer adının içine düzeltme notu yazabiliyor ("Palau de la Música değil — Parc de Joan Miró"): yalnız yerin adı kalır.
-const gCleanName = n => String(n || '').replace(/^.*?\s(değil|yerine|degil)\s*[—–-]+\s*/i, '').replace(/\s*[—–-]+\s*(değil|yerine).*$/i, '').trim();
-function gCleanNames(g){ let n = 0; for (const x of g.days) for (const it of x.items){ const k = gCleanName(it.name); if (k && k !== it.name){ it.name = k; n++; } } return n; }
+// Alışveriş düzeni (2026-11-02): açıklaması "mağaza yok" diyen cadde alışveriş caddesi değildir, çıkar; aynı marka şehirde bir kez
+// (en çok yorumlusu kalır; Primark dahil); aynı türde 200 m içindeki pratik nokta (iki El Corte Inglés tuvaleti gibi) bir kez.
+function gShopTidy(g, log){
+  const brand = it => { const w = gKey(it.name).split(' '); return w[0].length <= 3 ? w.slice(0, 2).join(' ') : w[0]; }, best = new Map();   // "El Corte…" iki sözcük
+  for (const x of g.days) for (const it of x.items) if (it.kind === 'dukkan'){ const b = best.get(brand(it)); if (!b || ((it.g && it.g.n) || 0) > ((b.g && b.g.n) || 0)) best.set(brand(it), it); }
+  for (const x of g.days) x.items = x.items.filter(it => {
+    if (it.kind === 'gecis' && it.src !== 'liste' && /mağaza (yok|bulunmaz)/i.test(it.desc || '')){ log && log.push(`− ${it.name}: mağazası olmayan cadde, alışverişten çıktı`); return false; }
+    if (it.kind === 'dukkan' && best.get(brand(it)) !== it){ log && log.push(`− ${it.name}: aynı marka başka günde var`); return false; }
+    return true; });
+  const P = []; g.pratik = (g.pratik || []).filter(p => { if (p.lat && P.some(q => q.tur === p.tur && gKm({lat:+q.lat, lon:+q.lon}, {lat:+p.lat, lon:+p.lon}) < 0.2)) return false; P.push(p); return true; });
+}
+// "Bar Seco? Değil: Tapas 24? Değil: La Bodegueta" gibi modelin düşünme notu kalmış adlarda son ad alınır (2026-11-02, yemek adları).
+const gCleanName = n => String(n || '').split(/\?\s*(?:değil|degil|yerine)\s*:?\s*/i).pop().replace(/^.*?\s(değil|yerine|degil)\s*[—–-]+\s*/i, '').replace(/\s*[—–-]+\s*(değil|yerine).*$/i, '').trim();
+function gCleanNames(g){ let n = 0; for (const x of g.days) for (const it of [...x.items, ...(x.food || [])]){ const k = gCleanName(it.name); if (k && k !== it.name){ it.name = k; n++; } } return n; }
 // 🎟 Biletler ve yolculuklar KESİN (kullanıcı 2026-11-02: "seyahat planımdaki bilet günlerini atlamış; günü saati belliyken başka
 // yere koymuş"): seyahat planındaki her bilet, yolculuk ve ev giriş-çıkışı kendi gününde, kendi saatiyle rehberde olur; model
 // unutsa da, başka güne koysa da. Aynı yer başka günde ✨ öneri olarak geçiyorsa (ör. biletli Casa Milà varken başka günde "Casa
@@ -3141,6 +3168,8 @@ async function gEnsureFixed(c, g, log){
       if (at < 0){ it = {t, name, kind:shop ? 'alis' : 'gez', src:'bilet', desc:'', addr:b.e.dest || '', acik:'', sure:shop ? (dur > 0 && dur < 900 ? dur : 480) : b.kind === 'event' ? 90 : 30, hat:''}; need.push(it); g.days[j].items.push(it); n++; log.push(`🎟 ${name}: plandan düşmüştü, ${j + 1}. güne saatiyle geri kondu`); }
       else { it = g.days[at].items[k]; if (at !== j){ g.days[at].items.splice(k, 1); g.days[j].items.push(it); n++; log.push(`🎟 ${it.name}: ${at + 1}. günden kendi gününe (${j + 1}. gün) alındı`); } }
       if (t && it.t !== t){ it.t = t; n++; }
+      // Bilete çevrilen outletin süresi yoksa kayıttan (bitiş − başlangıç) ya da yarım gün sayılmasın diye 8 saat (outlet kuralı buna bakar).
+      if (shop && !(+it.sure >= 60)) it.sure = dur > 0 && dur < 900 ? dur : 480;
       // Biletli ziyaret başka yerde öneri olarak da geçiyorsa oradan çıkar (aynı yer iki kez gezilmesin).
       if (b.kind === 'event') g.days.forEach(y => { y.items = y.items.filter(o => { const dup = o !== it && o.src !== 'bilet' && o.kind !== 'gecis' && gSame(o.name, it.name); if (dup){ n++; log.push(`− ${o.name}: biletli ziyaretle aynı yer (${j + 1}. gün)`); if (!it.lat && o.lat){ it.lat = o.lat; it.lon = o.lon; } } return !dup; }); });
       if (!it.lat && (b.kind === 'in' || b.kind === 'out') && H){ it.lat = H.lat; it.lon = H.lon; }
@@ -3172,7 +3201,7 @@ function gOutletFix(c, g, log){
     const x0 = cityDays(c).find(y => y.d === x.d), w = (x0 && gWindow(c, x0, tripPlan())) || {a:9 * 60, z:23 * 60};
     const yolDk = Math.max(30, Math.round((H ? gKm(H, O) : 30) / 40 * 60) + 20), dur = +o.sure || 240, st = hm(o.t);
     const full = st == null && dur >= 480, beg = st != null ? st : w.a + yolDk, end = beg + dur;
-    const roomB = full ? 0 : beg - yolDk - w.a, roomA = full ? false : w.z - (end + yolDk) >= 120;
+    const roomB = full ? 0 : beg - yolDk - w.a, roomA = full ? false : Math.min(w.z, 21 * 60) - (end + yolDk) >= 120;   // gezi akşam 21'de biter: 12–20 outletinden sonra durak yok
     const after = roomA ? [] : x.items.slice(k + 1).filter(it => !fixed(it));
     const before = x.items.slice(0, k).filter(it => !fixed(it) && it.lat);
     let used = 0;
@@ -3293,10 +3322,25 @@ async function guideMake(c){
 // Büyük şehirde rotayı tek istekte yazmak sunucunun 150 sn sınırını aşıyordu (504). Artık iki aşama: önce İSKELET (bütün
 // günler birlikte: tema, semtler, duraklar, istek listesinin dağıtımı, elenenler; kısa ve hızlı), sonra her gün AYNI ANDA
 // kendi iskeletiyle ayrıntılandırılır. Olmayan gün bir kez daha denenir; yine olmazsa boş kalır ("✨ Bu günü yeniden").
+// Bağlantı kopması (2026-11-02): telefonun ekranı kilitlenince ya da uygulamadan çıkılınca tarayıcı açık istekleri keser; Opus'un
+// dört günü ~48. saniyede koptu, yedek Sonnet'in seyrek planı haritaya girdi. Kopan istek ("net") sayfa yeniden görünür olunca AYNI
+// modelle tekrar istenir (en çok 2 kez); Sonnet'e yalnız gerçek hata ya da süre aşımında geçilir. Hazırlama sürerken ekran açık tutulur.
+const gVisible = () => document.visibilityState === 'visible' ? Promise.resolve() : new Promise(res => {
+  const f = () => { if (document.visibilityState === 'visible'){ document.removeEventListener('visibilitychange', f); gAwake(true); res(); } };
+  document.addEventListener('visibilitychange', f); });
+async function gAsk(q, model){
+  for (let k = 0; ; k++){
+    try { return await window.claude.guide({...q, model}); }
+    catch(e){ if (!(e && e.code === 'net') || k >= 2) throw e; await gVisible(); await new Promise(r => setTimeout(r, 1500)); }
+  }
+}
+let gLock = null;
+async function gAwake(on){ try { if (on && !gLock && navigator.wakeLock){ gLock = await navigator.wakeLock.request('screen'); gLock.addEventListener('release', () => { gLock = null; }); } else if (!on && gLock) await gLock.release(); } catch(_) {} }
 async function gBuild(c, trip, model, f, tok){
   const stage = s => { if (f){ f.gstage = s; if (form === f) drawSheetKeep(); } };
   stage('iskelet');
-  let sk; try { sk = await window.claude.guide({mode:'iskelet', trip, cities:[c], model}); }
+  gAwake(true);
+  let sk; try { sk = await gAsk({mode:'iskelet', trip, cities:[c]}, model); }
   catch(e){ if (!model || (e && e.code === 'kredi')) throw e; sk = await window.claude.guide({mode:'iskelet', trip, cities:[c]}); }   // yedek: Sonnet
   if (gTok[c] !== tok) return null;
   const SK = new Map((sk.days || []).map(x => [x.d, x]));
@@ -3309,7 +3353,7 @@ async function gBuild(c, trip, model, f, tok){
       diger_gunlerde:(sk.days || []).filter(x => x.d !== gd.d).flatMap(x => (x.duraklar || []).map(y => y.name)),
       istek_listesi:trip.istek_listesi.filter(w => mine.has(w)), zorunlu_yerler:(trip.zorunlu_yerler || []).filter(w => mine.has(w))};
     // Model (kullanıcı 2026-11-01 son karar: 31 Ekim mantığı, komple Opus): Opus kutusu işaretliyse iskelet, günler, yemekler ve yerine öneriler Opus.
-    return window.claude.guide({mode:'rehber', trip:t, cities:[c], model});
+    return gAsk({mode:'rehber', trip:t, cities:[c]}, model);
   };
   let err = null;
   const res = await Promise.all(todo.map(async gd => {
@@ -3467,7 +3511,7 @@ async function gFinish(c){
       catch(_) {} finally { if (f){ f.gbusy = null; f.gstage = ''; if (form === f) drawSheetKeep(); } }
     }
     if (((S.trip.guide || {})[c] || {}).todo?.includes('yakin')){ gNearDone.delete(c); await gNearby(c); done('yakin'); }
-  } finally { gFinishing.delete(c); }
+  } finally { gFinishing.delete(c); gAwake(false); }
   if (tab === 'gezi') render(); if (form && form.mode === 'guide') drawSheetKeep();
 }
 const gResumed = new Set();   // oturum başına bir deneme: adım hata verirse her çizimde yeniden istenmesin
@@ -3717,8 +3761,8 @@ async function guideFood(c, days, model){
       const mt = (x.turler || []).filter(t => !T.secili.length || T.secili.some(s => s.toLocaleLowerCase('tr').startsWith(String(t).toLocaleLowerCase('tr').slice(0, 4))));
       q = {mode:'yemek', city:c, model, prefs, ilham:il, no, turler:mt.length >= 2 ? mt : T.gun(g.days.indexOf(x)), secili:T.secili,
         day:{d:x.d, gun:planDay(x.d), ev:(g.home || {}).addr || '', rota:x.items.filter(it => it.lat).map(it => ({no:N.get(it) || '', name:it.name, kind:it.kind, lat:it.lat, lon:it.lon}))}};
-      const r = await window.claude.guide(q);
-      x.food = (r.food || []).filter(fd => fd && fd.name);
+      const r = await gAsk(q, q.model);
+      x.food = (r.food || []).filter(fd => fd && fd.name).map(fd => ({...fd, name:gCleanName(fd.name)}));
     } catch(e) {
       // Opus 150 sn sınırına ya da yazı sınırına takılırsa o gün yemeksiz kalmasın: bir kez Sonnet'le.
       if (q && q.model && !(e && e.code === 'kredi')) try { const r = await window.claude.guide({...q, model:undefined}); x.food = (r.food || []).filter(fd => fd && fd.name); } catch(_) {}
