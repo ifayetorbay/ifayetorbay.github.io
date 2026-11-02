@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261102130306';</script>
-<script src="heybe-web.js?v=20261102130306"></script>
+<script>window.HEYBE_VER = '20261102132058';</script>
+<script src="heybe-web.js?v=20261102132058"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -3082,8 +3082,19 @@ async function guideReview(c, log){
     if (x.back === false){ const tv = [...x.items].reverse().find(it => it.src === 'bilet' && G_TRAVEL.test(it.name) && it.lat), last = [...V].reverse().find(it => it !== tv && it.src !== 'bilet');
       if (tv && last && gKm({lat:+last.lat, lon:+last.lon}, {lat:+tv.lat, lon:+tv.lon}) > 2.5) sorunlar.push(`${dn}: ayrılış günü ${last.name} ile bitiyor, gara (${tv.name}) ${r1(gKm({lat:+last.lat, lon:+last.lon}, {lat:+tv.lat, lon:+tv.lon}))} km; son durakları gara giden yöne al`); }
   });
-  const eksik = (((S.trip.ilham || {})[c] || {}).yerler || []).filter(y => y.ok && gStrong(y) && !y.gizli && !have.has(gKey(y.ad)) && !g.days.some(x => x.items.some(it => gSame(it.name, y.ad)))).slice(0, 8);
-  eksik.forEach(y => sorunlar.push(`eksik ünlü yer: ${y.ad} (${(y.aile || []).length} kaynak ailesi, ${y.kac_kaynak} kaynak${y.g ? ', Google ' + y.g.n + ' yorum' : ''}${y.lat ? `, konum ${r4(+y.lat)},${r4(+y.lon)}` : ''}): bölgesine uyan güne ekle`));
+  // Eksik ünlü yer (2026-11-02, kullanıcı: "yakındaki çok yorumlu yer atlanmasın ama uzaktaki çok ünlü de kaybolmasın"):
+  // ün = kaynak ailesi + kaynak/4 (en çok 1,5) + log10(yorum/1000); puan = ün − rotaya uzaklık cezası (ilk 300 m yok, sonra km başına 1).
+  // Uzaklık o günün yürüyüş hattına (evden değil). İki kontenjan: hattın 500 m yakınında en çok 5; çok ünlü (3+ aile ya da 30.000+ yorum)
+  // ve 0,5–3 km uzakta en çok 3. Outlet günü hedef değildir.
+  const hedef = g.days.map((x, i) => [x, i]).filter(([x]) => !x.yol && x.items.some(it => it.lat) && !x.items.some(gOutlet));
+  const aday = hedef.length ? (((S.trip.ilham || {})[c] || {}).yerler || []).filter(y => y.ok && y.lat && gStrong(y) && !y.gizli && !have.has(gKey(y.ad)) && !g.days.some(x => x.items.some(it => gSame(it.name, y.ad)))).map(y => {
+    let best = null; for (const [x, i] of hedef){ const d = gLineKm(g, x, {lat:+y.lat, lon:+y.lon}); if (!best || d < best.d) best = {d, i}; }
+    const n = (y.g && y.g.n) || 0, aile = (y.aile || []).length, un = aile + Math.min(1.5, (+y.kac_kaynak || 0) / 4) + Math.max(0, Math.log10(n / 1000));
+    return {y, n, aile, d:best.d, i:best.i, p:un - Math.max(0, best.d - 0.3)};
+  }) : [];
+  const byP = (a, b) => b.p - a.p, bilgi = a => `${a.y.ad} (${a.aile} kaynak ailesi, ${a.y.kac_kaynak} kaynak${a.n ? ', Google ' + a.n + ' yorum' : ''}, konum ${r4(+a.y.lat)},${r4(+a.y.lon)})`;
+  aday.filter(a => a.d <= 0.5).sort(byP).slice(0, 5).forEach(a => sorunlar.push(`eksik ünlü yer (rotaya yakın): ${bilgi(a)}: ${a.i + 1}. günün rotasına ${gKmTxt(a.d)}; kısa sapmayla o güne ekle`));
+  aday.filter(a => a.d > 0.5 && a.d <= 3 && (a.aile >= 3 || a.n >= 30000)).sort(byP).slice(0, 3).forEach(a => sorunlar.push(`eksik çok ünlü yer (uzak): ${bilgi(a)}: en yakın ${a.i + 1}. günün rotasına ${gKmTxt(a.d)}; rota bozulmayacaksa bölgesine uyan güne al ya da o günün zayıf bir ✨ önerisiyle değiştir`));
   const plan = {ev:H ? {adres:(g.home || {}).addr || '', lat:r4(H.lat), lon:r4(H.lon)} : null, metro:gMetro(c) ? 'evet' : 'hayır (tamamen yürüyüş)', gunler, sorunlar,
     populer_yerler:gPopular(c).slice(0, 25),
     elenenler:(g.unplaced || []).slice(0, 25).map(u => ({ad:u.name, istek:W.has(gKey(u.name)), neden:String(u.why || '').slice(0, 120)}))};
