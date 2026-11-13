@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261102181833';</script>
-<script src="heybe-web.js?v=20261102181833"></script>
+<script>window.HEYBE_VER = '20261113235312';</script>
+<script src="heybe-web.js?v=20261113235312"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -4841,6 +4841,16 @@ const cloudMetas = new Map(), cloudEnts = new Map();
 // lastMeta / lastEnt: açık seyahatin buluttaki son bilinen hali (sadece açık seyahat).
 let lastMeta = null, seenTid = null, pushTimer = null, pushP = Promise.resolve();
 const lastEnt = new Map();
+// Bu cihazın bulutta gördüğü kayıt kimlikleri. Bulutta bir kez görülmüş kayıt artık orada yoksa başka bir cihazda
+// silinmiştir; ilk bağlantıda buluta geri yüklenmez (eskiden silinen kayıt eski kopyası olan cihazdan dirilirdi).
+const SEEN_KEY = 'yol-hesabi-gorulen';
+let seenIds = (() => { try { const v = JSON.parse(localStorage.getItem(SEEN_KEY) || 'null'); return Array.isArray(v) ? new Set(v) : null; } catch(_) { return null; } })();
+function markSeen(ids){
+  const S0 = seenIds || new Set(); let ch = !seenIds;
+  for (const id of ids) if (!S0.has(id)){ S0.add(id); ch = true; }
+  seenIds = S0; if (!ch) return;
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify([...S0].slice(-20000))); } catch(_) {}
+}
 const clone = o => JSON.parse(JSON.stringify(o));
 // Alan sırasından bağımsız karşılaştırma metni (sunucu alanları farklı sırayla döndürebilir).
 const canon = v => Array.isArray(v) ? '[' + v.map(canon).join(',') + ']'
@@ -4873,7 +4883,7 @@ async function pushDiff(){
     const ids = new Set();
     for (const e of S.entries){
       ids.add(e.id); const j = canon(e);
-      if (lastEnt.get(e.id) !== j){ await db.doc('entries/' + e.id).set(clone(e)); lastEnt.set(e.id, j); }
+      if (lastEnt.get(e.id) !== j){ await db.doc('entries/' + e.id).set(clone(e)); lastEnt.set(e.id, j); markSeen([e.id]); }
     }
     for (const id of [...lastEnt.keys()]) if (!ids.has(id)){ await db.doc('entries/' + id).delete(); lastEnt.delete(id); }
     cloud = 'on';
@@ -4952,7 +4962,10 @@ function firstMerge(){
     rEntries.forEach(e => lastEnt.set(e.id, canon(e)));
     const sameTrip = !local.sample && local.people.length > 0 && local.people.every(p => (rm.people || []).some(q => q.id === p.id));
     if (!local.sample && !sameTrip && local.entries.length){ try { localStorage.setItem('yol-hesabi-yedek', JSON.stringify(local)); } catch(_) {} }
-    const extra = sameTrip ? local.entries.filter(e => !rEntries.some(r => r.id === e.id)) : [];
+    // Buluta gitmemiş kayıtlar eklenir; bulutta görülüp sonra kaybolanlar (başka cihazda silinmiş) eklenmez.
+    // Bu cihaz henüz hiç not tutmadıysa (eski sürümden geçiş) yalnız son 24 saatin kayıtları buluta gitmemiş sayılır.
+    const fresh = e => seenIds ? !seenIds.has(e.id) : (+e.at || 0) > Date.now() - 864e5;
+    const extra = sameTrip ? local.entries.filter(e => !rEntries.some(r => r.id === e.id) && fresh(e)) : [];
     S = {sample:false, tid:local.tid, trip:rm.trip, people:noIban(rm.people || []), learned:rm.learned || {}, lastCur:rm.lastCur || 'EUR', me:local.me, entries:rEntries.concat(extra)};
     lastMeta = canon(rm0); seenTid = S.tid;
     fixMe();
@@ -4961,7 +4974,7 @@ function firstMerge(){
     const first = ids.includes('main') ? 'main' : ids[0];
     if (first){ openCloudTrip(first); loadMe(); themeNow = null; }
   }
-  merged = true; cloud = 'on';
+  merged = true; cloud = 'on'; markSeen(cloudEnts.keys());
   syncSoon();
 }
 function onRemote(kind){
@@ -5040,7 +5053,7 @@ async function startCloud(){
   }, () => {});
   db.collection('entries').onSnapshot(snap => {
     entSnap = snap; cloudEnts.clear(); snap.docs.forEach(d => cloudEnts.set(d.id, d.data()));
-    gotEnt = true; onRemote('ent');
+    gotEnt = true; onRemote('ent'); if (merged) markSeen(cloudEnts.keys());   // ilk birleştirme eski notla yapılır
   }, fail);
 }
 
