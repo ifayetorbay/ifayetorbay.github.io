@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261118133436';</script>
-<script src="heybe-web.js?v=20261118133436"></script>
+<script>window.HEYBE_VER = '20261118140450';</script>
+<script src="heybe-web.js?v=20261118140450"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -939,10 +939,14 @@ const HP = (() => {
   // Açık saat yalnız içine girilen yerde: pazar, kapılı park/bahçe ve içi gezilecek yer (inside: istek listesindeki müze ya da bilet).
   // Önerilen yerler ücretli yerin ücretsiz bölümüdür (cephe, avlu, meydan): dışarıdan gezilir, kapı saati bağlamaz.
   const hrs = c => MARKET.test(c.name) ? c.hrs || [480, 1230] : PARK.test(c.name) && !OUT.test(c.name) ? c.hrs || [480, 1260] : c.inside ? c.hrs || [600, 1080] : null;
-  const closed = c => c.cl || (MARKET.test(c.name) ? [0] : null);
+  // Kapalı gün de açık saat gibi yalnız içine girilen yerde (dış cephe, meydan, anıt her gün gezilir).
+  const closed = c => OUT.test(c.name) && !MARKET.test(c.name) && !c.inside ? null : c.cl || (MARKET.test(c.name) ? [0] : null);
   // Ün: kaynak ailesi + kaynak sayısı/4 (en çok 1,5) + log10(yorum/1000) (uygulamanın denetim formülüyle aynı); düşük puana ceza.
-  const fame = c => { let u = (+c.aile || 0) + Math.min(1.5, (+c.kk || 0) / 4) + (c.n ? Math.log10(Math.max(c.n, 50) / 1000) : -0.4); if (c.r && c.r < 4.3) u -= 0.6; if (c.r >= 4.7) u += 0.15; return u; };
-  const value = c => Math.min(6, Math.max(0.25, 1 + fame(c))) + (c.wish ? (dur(c) >= 120 && MUSEUM.test(c.name) ? 1 : 5) : 0) + (c.lock != null ? 20 : 0);
+  // Google yorumu yoksa Wikipedia'daki dil sayısı (links; Sagrada 110 ≈ 338 bin yorumla aynı ölçek): 2 × log10(links/6).
+  const fame = c => { let u = (+c.aile || 0) + Math.min(1.5, (+c.kk || 0) / 4) + (c.n ? Math.log10(Math.max(c.n, 50) / 1000) : c.links ? 2 * Math.log10(Math.max(c.links, 3) / 6) : -0.4); if (c.r && c.r < 4.3) u -= 0.6; if (c.r >= 4.7) u += 0.15; return u; };
+  // Yedek kaynak (c.weak: yalnız Wikidata'da geçen yer): araştırmanın ve rehberin yerleriyle eşit değerdeyse geride kalır, boşluk doldurur.
+  const value = c => Math.min(6, Math.max(0.25, 1 + fame(c) - (c.weak ? WEAK : 0))) + (c.wish ? (dur(c) >= 120 && MUSEUM.test(c.name) ? 1 : 5) : 0) + (c.lock != null ? 20 : 0);
+  let WEAK = 1.2;
   // Eşleştirme sözcükleri: biletli yerin başka bir öneri olarak tekrar gelmesini önlemek için.
   const GEN = new Set(['casa', 'placa', 'plaza', 'parc', 'museu', 'museo', 'basilica', 'santa', 'maria', 'sant', 'san', 'del', 'de', 'la', 'el', 'les', 'els', 'bilet', 'muze', 'cephe']);
   const toks = n => String(n).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ı/g, 'i').replace(/[^a-z\d]+/g, ' ').split(' ').filter(w => w.length >= 4 && !GEN.has(w));
@@ -954,14 +958,19 @@ const HP = (() => {
     .split(' ').filter(Boolean).map(w => w.replace(/k/g, 'c')).map(w => SYN[w] || w).filter(w => w.length >= 3 && !GEN2.has(w));
   // Meydan ile meydandaki yapı (Piazza del Popolo – Santa Maria del Popolo) ayrı yerlerdir.
   const PLZ = /pla[çc]a|plaza|piazza|meydan|\bsquare\b|\bplace\b/i;
-  const same = (a, b) => { if (km(a, b) > 0.25 || PLZ.test(a.name) !== PLZ.test(b.name)) return false; const A = stoks(a.name), B = stoks(b.name);
+  let COMMON = new Set();   // adaylarda sık geçen sözcükler (şehir adı vb.): plan başında hesaplanır, eşleşme sayılmaz
+  const names = o => [o.name, ...(o.alt || [])], tokAll = o => [...new Set(names(o).flatMap(stoks))].filter(w => !COMMON.has(w));
+  // Sadeleştirilmiş adı birebir aynı olan yakın iki kayıt her zaman aynı yerdir (sözcükleri genel olsa da: "Catedral de Barcelona").
+  const flat = n => String(n).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z\d]+/g, ' ').trim();
+  const same = (a, b) => { if (km(a, b) > 0.25) return false; const fa = names(a).map(flat); if (names(b).some(n => fa.includes(flat(n)))) return true;
+    if (PLZ.test(a.name) !== PLZ.test(b.name)) return false; const A = tokAll(a), B = tokAll(b);
     return B.some(w => A.includes(w) || A.some(v => Math.min(v.length, w.length) >= 5 && (v.startsWith(w) || w.startsWith(v)))); };
 
   function plan(I){
-    const T = TEMPO[I.tempo] || TEMPO['Yoğun'], capKm = T[1] / STEP, capN = T[0], tz = I.tz ?? 60;
+    const T = TEMPO[I.tempo] || TEMPO['Yoğun'], capKm = T[1] / STEP, capN = T[0], tz = I.tz ?? 60; WEAK = (I.w && I.w.weak) ?? 1.2;
     // Cezalar (puan biriminde; ünlü bir yer ≈ 3–5): yürünen km, metroyla gidilen km, metro (gün ortasında; günün ilk ve son arası
     // hafif: akşam eve metroyla dönmek doğal), bekleme, aynı semtin iki güne bölünmesi.
-    const W = {walk:0.3, ride:I.walkOnly ? 0.3 : 0.1, hop:I.walkOnly ? 2.5 : 0.6, hopEnd:0.5, wait:0.004, time:0, split:1.2, regret:0.3, corr:0.3, corrR:1.5, coR:1.2, zd:1.3, zreg:1.0, eve:0.7, late:0.02, ...(I.w || {})};
+    const W = {walk:0.3, ride:I.walkOnly ? 0.3 : 0.1, hop:I.walkOnly ? 2.5 : 0.6, hopEnd:0.5, wait:0.004, time:0, split:1.2, regret:0.3, corr:0.3, corrR:1.5, coR:1.2, zd:1.3, zreg:1.0, eve:0.7, late:0.02, thin:0.6, load:0.05, anc:0.4, ancB:0.3, ...(I.w || {})};
     const H = {lat:+I.home.lat, lon:+I.home.lon, name:'Ev'}, P = [H], pid = p => { P.push(p); return P.length - 1; };
     // Günler ve koridorlar (segment): başlangıç noktası/saati → (bilet, ev çıkışı, outlet servisi) → bitiş noktası/saati.
     const days = I.days.map((d, di) => {
@@ -976,25 +985,29 @@ const HP = (() => {
       if (p >= 0 && d.end) segs.push({s:p, e:d.end.p === 'home' ? 0 : pid({lat:+d.end.lat, lon:+d.end.lon, name:d.end.name}), t0:t, t1:d.end.t, ord:[]});
       // Gün türü (kullanıcının kuralları ve İDEAL harita): öğleden sonra başlayan varış günü hafif (durak tavanı pencereyle orantılı ×0,6);
       // outlet sabahında en çok 3 durak, ev → servis hattının 1 km yakınında (servisi kaçırmamak için).
-      if (d.start >= 780 && segs.length){ const h = ((d.end ? d.end.t : segs[segs.length - 1].t1) - d.start) / 60; segs.forEach(s => { s.maxN = Math.max(2, Math.round(capN * h / 12 * 0.6)); }); }
+      if (d.start >= 780 && segs.length){ const h = ((d.end ? d.end.t : segs[segs.length - 1].t1) - d.start) / 60; segs.forEach(s => { s.maxN = Math.max(2, Math.round(capN * h / 12 * 0.6)); if (s.t1 - s.t0 >= 180) s.minN = Math.min(2, s.maxN); }); }
       segs.forEach(s => { if (s.ev && s.ev.last && s.ev.dur >= 240){ s.maxN = Math.min(s.maxN ?? 3, 3); s.line = 1.0; } });
+      // 3 saatten uzun her boş aralıkta mümkünse en az 2 durak (yumuşak; 2026-11-18 Sevilla: derli toplu merkez tek güne toplanıp
+      // varış günü 3 + 4,5 saatlik boşluklarla boş kalıyordu).
+      segs.forEach(s => { if (s.minN == null && s.t1 - s.t0 >= 180 && !(s.ev && s.ev.last)) s.minN = Math.min(2, s.maxN ?? 2); });
       // Öğle molası (60 dk): 13:15'i içeren en az 3 saatlik koridorda, yoksa 13:00–15:00 arasında başlayan ilk koridorda.
       const L = segs.find(s => s.t0 <= 795 && s.t1 >= 795 && s.t1 - s.t0 >= 180) || segs.find(s => s.t0 >= 780 && s.t0 <= 900);
       if (L) L.lunch = true;
-      return {d:d.d, not:d.not || '', segs, ss, wd};
+      return {d:d.d, not:d.not || '', segs, ss, wd, tk:(d.ev || []).filter(e => e.p !== 'home' && !e.last && e.lat != null).map(e => ({lat:+e.lat, lon:+e.lon}))};
     });
     const EVS = days.flatMap(d => d.segs.filter(s => s.ev && s.e).map(s => ({...P[s.e], tk:toks(s.ev.name)})));
     // Adaylar: konumu olan, şehrin içinde (evden 25 km), çıkarılmamış; biletli yerin 200 m yakınında aynı adı taşıyan öneri olmaz.
     const C = [];
+    { const f = new Map(); for (const c of I.cands || []) for (const w of new Set(names(c).flatMap(stoks))) f.set(w, (f.get(w) || 0) + 1); COMMON = new Set([...f].filter(([, n]) => n >= Math.max(4, (I.cands || []).length * 0.06)).map(([w]) => w)); }
     for (const c of I.cands || []){
       // Aynı yer iki kez gelmez (araştırma ve rehber farklı dillerde yazabilir): ilk kayıt kalır; istek, kilit ve daha çok yorum ona geçer.
       const q = c.lat != null && C.find(z => same(z, c));
-      if (q){ if (c.wish) q.wish = true; if (c.lock != null && q.lock == null) q.lock = c.lock; if ((c.n || 0) > (q.n || 0)){ q.r = c.r; q.n = c.n; } if (c.aile > (q.aile || 0)) q.aile = c.aile; if (c.kk > (q.kk || 0)) q.kk = c.kk; q.v = value(q); continue; }
+      if (q){ if (c.wish) q.wish = true; if (c.lock != null && q.lock == null) q.lock = c.lock; if ((c.n || 0) > (q.n || 0)){ q.r = c.r; q.n = c.n; } if (c.aile > (q.aile || 0)) q.aile = c.aile; if (c.kk > (q.kk || 0)) q.kk = c.kk; if (c.links > (q.links || 0)) q.links = c.links; if (c.alt) q.alt = [...new Set([...(q.alt || []), c.name, ...c.alt])]; if (!c.weak) q.weak = false; q.v = value(q); continue; }
       // Semt, tepe ya da bölge adı (Google türü neighborhood / natural_feature / sublocality) durak değildir: semt planlayıcının birimidir.
       if (c.lat == null || c.off || c.area || km(H, c) > 25) continue;
       if (c.paid || (PAID.test(c.name) && !FREEPART.test(c.name))){ if (!c.wish && c.lock == null && !c.inside) continue; }
-      const tk = toks(c.name);
-      if (EVS.some(e => km(e, c) < 0.2 && tk.some(w => e.tk.includes(w)))) continue;
+      const tk = [...new Set([c.name, ...(c.alt || [])].flatMap(toks))];
+      if (EVS.some(e => km(e, c) < 0.08 || (km(e, c) < 0.2 && tk.some(w => e.tk.includes(w))))) continue;
       C.push({...c, i:pid({lat:+c.lat, lon:+c.lon, name:c.name}), v:value(c), du:dur(c), h:hrs(c), cl:closed(c), view:VIEW.test(c.name), park:PARK.test(c.name) && !VIEW.test(c.name)});
     }
     // Noktanın a–b doğrusuna uzaklığı (km, düz).
@@ -1004,6 +1017,11 @@ const HP = (() => {
     for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) D[a * N + b] = km(P[a], P[b]) * WALK_F;
     // Yakınlık bağı (semt bütünlüğü): birbirine W.coR km'den yakın iki yer farklı günlere düşerse ceza = W.split × küçük değer/3 ×
     // (1 − uzaklık/W.coR). Kümeleme yok (yoğun merkezlerde kümeler ya her şeyi birleştiriyor ya limanı bölüyordu); yakın olan birlikte.
+    // Erim şehrin yayılımıyla (adayların merkeze medyan uzaklığı): yaygın şehirde (1,1 km üstü: Barselona, Roma) 1,2 km; derli toplu
+    // şehirde daralır (Sevilla ~0,87 km → ~0,67 km; 2026-11-18: 1,2 km'de bütün eski şehir birbirine bağlanıp tek güne toplanıyor,
+    // varış günü boş kalıyordu). Tek günlük şehirde etkisi yok (günler arası kural).
+    if (!(I.w && I.w.coR)){ const md = a => [...a].sort((x, y) => x - y)[a.length >> 1], m = C.length ? {lat:md(C.map(c => +c.lat)), lon:md(C.map(c => +c.lon))} : null;
+      const sp = m ? md(C.map(c => km(m, c))) : 1.2; W.sp = sp; W.coR = sp >= 1.1 ? 1.2 : Math.max(0.5, 1.2 * Math.pow(sp / 1.1, 2.5)); }
     const nb = C.map(() => []), dayOf = new Int8Array(C.length).fill(-1);
     for (let p = 0; p < C.length; p++) for (let q = p + 1; q < C.length; q++){ const d = km(C[p], C[q]); if (d < W.coR){ const w = W.split * Math.min(C[p].v, C[q].v) / 3 * (1 - d / W.coR); nb[p].push([q, w]); nb[q].push([p, w]); } }
     // Bir yer bir güne eklenince (add) / bir günden çıkınca (rem) bağ cezasının değişimi, puan artışı olarak.
@@ -1032,6 +1050,7 @@ const HP = (() => {
       day.segs.forEach((s, si) => {
         const ord = ords ? ords[si] : s.ord; let t = s.t0, prev = s.s, lunch = !!s.lunch; const rows = [];
         if (s.maxN != null && ord.length > s.maxN) ok = false;
+        if (s.minN && ord.length < s.minN) pen += W.thin * (s.minN - ord.length);
         if (s.line && ord.some(k => toLine(P[C[k].i], P[s.s], P[s.e]) > s.line)) ok = false;
         for (const k of ord){
           if (lunch && t >= 765){ t += 60; lunch = false; if (out) rows.push({mola:'öğle', at:Math.round(t - 60)}); }
@@ -1039,7 +1058,7 @@ const HP = (() => {
           if (L[2]) pen += W.hop + W.ride * L[3];
           if (c.h){ if (t < c.h[0]){ wait += c.h[0] - t; t = c.h[0]; } if (t + c.du > c.h[1] + 5) ok = false; }
           if (c.cl && c.cl.includes(day.wd)) ok = false;
-          val += c.v * tmul(c, t, day.ss, sun); n++;
+          val += c.v * tmul(c, t, day.ss, sun) * (day.tk.some(p => km(p, c) <= W.anc) ? 1 + W.ancB : 1); n++;
           if (s.s !== s.e){ const ex = (D[s.s * N + c.i] + D[c.i * N + s.e] - D[s.s * N + s.e]) / WALK_F - W.corrR; if (ex > 0) pen += W.corr * ex; }
           if (out) rows.push({k, at:Math.round(t), leg:{km:Math.round(L[3] * 10) / 10, dk:Math.round(L[0]), metro:!!L[2]}});
           t += c.du; prev = c.i;
@@ -1053,7 +1072,9 @@ const HP = (() => {
         if (out) out.push({rows, back:{km:Math.round(L[3] * 10) / 10, dk:Math.round(L[0]), metro:!!L[2]}, end:Math.round(t)});
       });
       if (hops > MAX_HOPS || walk > capKm || n > capN) ok = false;
-      return {ok, obj:val - W.walk * walk - pen - W.wait * wait - W.time * used, used, walk, hops, n};
+      // Gün yükü (çok günlü şehirde): 10'dan sonraki her durak giderek pahalı, yerler günlere yayılır (2026-11-18 Sevilla: 1. gün boş,
+      // 2. gün 14 durak). Tek günlük şehirde yayılacak gün yok (Madrid'in onaylı günü 16 durak): uygulanmaz.
+      return {ok, obj:val - W.walk * walk - pen - W.wait * wait - W.time * used - (days.length > 1 ? W.load * Math.max(0, n - 10) ** 2 : 0), used, walk, hops, n};
     }
     const used = new Set(), base = days.map((_, di) => sim(di));
     const ordsOf = di => days[di].segs.map(s => s.ord.slice());
@@ -1223,7 +1244,7 @@ const HP = (() => {
           stops:out[si].rows.map(w => w.mola ? w : {name:C[w.k].name, at:w.at, dk:C[w.k].du, leg:w.leg, wish:!!C[w.k].wish, lock:C[w.k].lock != null})}))};
     });
     const left = C.filter((c, k) => !used.has(k) && (c.wish || c.lock != null)).map(c => ({name:c.name, why:days.every((_, di) => !allowed(c, di)) ? 'o günlerde kapalı' : 'süreye ya da günlük metro sınırına sığmadı'}));
-    return {days:res, out:left, puan:Math.round(bestV * 100) / 100, aday:C.length, gun:base.map(r => Math.round(r.obj * 100) / 100), semt:Math.round(bond() * 100) / 100};
+    return {days:res, out:left, puan:Math.round(bestV * 100) / 100, aday:C.length, gun:base.map(r => Math.round(r.obj * 100) / 100), semt:Math.round(bond() * 100) / 100, erim:Math.round(W.coR * 100) / 100, yayilim:Math.round((W.sp || 0) * 100) / 100};
     }
   }
   return {plan, sunset, km, dur, fame, value, same};
@@ -2915,11 +2936,17 @@ function guideBody(){
 
           <details class="why gmore"><summary>📚 Kaynaklar</summary><div class="wl">${gSources(g).map(k => `<p class="gp">${k.url ? `<a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.t)}</a>` : esc(k.t)}</p>`).join('')}
             </div></details>`;
-      } else if (can && f.gbusy !== c){
-        const nW = gWish().filter(w => w.city === c).length, mine = Object.keys(((S.trip.prefs || {})[S.me]) || {}).length;
-        h += `<p class="note">Hazır olunca bas: <b>⭐ ${nW} istek</b> · tercihlerin ${mine ? '<b>dolu</b>' : '<b>boş</b> (istersen 2. adımda doldur)'}. Rehber yalnız bu düğmeyle hazırlanır.</p>
-          ${gOpusBox(f, c)}
-          <button type="button" class="btn block pri" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ ${esc(c)} rehberini hazırla</button>`;
+      } else {
+        if (can && f.gbusy !== c){
+          const nW = gWish().filter(w => w.city === c).length, mine = Object.keys(((S.trip.prefs || {})[S.me]) || {}).length;
+          h += `<p class="note">Hazır olunca bas: <b>⭐ ${nW} istek</b> · tercihlerin ${mine ? '<b>dolu</b>' : '<b>boş</b> (istersen 2. adımda doldur)'}. Rehber yalnız bu düğmeyle hazırlanır.</p>
+            ${gOpusBox(f, c)}
+            <button type="button" class="btn block pri" data-g="make" data-c="${esc(c)}" ${f.gbusy ? 'disabled' : ''}>✨ ${esc(c)} rehberini hazırla</button>`;
+        }
+        // 🧪 Rehber olmadan deneme (2026-11-18): ev ve biletler OpenStreetMap'ten, ünlü yerler Wikidata'dan; Google ve model yok.
+        h += gTrialHtml(c);
+        if (!(S.trip.gtrial || {})[c] && gTrialBusy !== c) h += `<button type="button" class="btn sm" data-g="gtrial" data-c="${esc(c)}">🧪 Rehber olmadan yeni planlayıcıyla dene</button>
+          <p class="note">Ev, bilet ve tren konumları OpenStreetMap'ten, şehrin ünlü yerleri Wikidata'dan alınır; Google ve yapay zekâ kullanılmaz. Mevcut hiçbir şey değişmez.</p>`;
       }
       h += `</div>`;
     }
@@ -3552,7 +3579,7 @@ function gCleanNames(g){ let n = 0; for (const x of g.days) for (const it of [..
 // Milà (dış cephe)") oradan çıkar. Her şehirde, hazırlamanın ve iyileştirmenin sonunda uygulanır (son söz bu kuralda).
 const gSame = (a, b) => { const A = gKey(gCleanName(a)).split(' ').filter(w => w.length > 2), B = new Set(gKey(gCleanName(b)).split(' ').filter(w => w.length > 2));
   if (!A.length || !B.size) return false; const hit = A.filter(w => B.has(w)).length; return hit >= 2 || (hit === 1 && Math.min(A.length, B.size) === 1); };
-async function gEnsureFixed(c, g, log){
+async function gEnsureFixed(c, g, log, local){
   const P = tripPlan(); if (!P || !g || !g.days) return 0;
   const mine = it => it.e && !it.e.priv && !((it.kind === 'in' || it.kind === 'out') && stayCity(it.e) !== c);
   const H = g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null, need = [];
@@ -3566,7 +3593,8 @@ async function gEnsureFixed(c, g, log){
       let at = -1, k = -1;
       // Önce biletli kayıt aranır; yoksa aynı yer başka biçimde (⭐ istek ya da ✨ öneri; ör. outlet) varsa o bilete çevrilir.
       const find = ok => g.days.forEach((y, q) => { if (at >= 0 || (stay && q !== j)) return; const kk = y.items.findIndex(it => ok(it) && it.kind !== 'gecis' && (gSame(it.name, b.e.desc || name) || (t && it.t === t && q === j && it.src === 'bilet'))); if (kk >= 0){ at = q; k = kk; } });
-      find(it => it.src === 'bilet'); if (at < 0 && !stay) find(() => true);
+      // Ev giriş/çıkışı yalnız giriş/çıkış satırıyla eşleşir (2026-11-18: "Sevilla Ev" adı şehir adı yüzünden trenle eşleşip trenin saatini değiştiriyordu).
+      find(it => it.src === 'bilet' && (!stay || /giriş|çıkış|check-?(in|out)/i.test(it.name))); if (at < 0 && !stay) find(() => true);
       if (at >= 0 && g.days[at].items[k].src !== 'bilet') g.days[at].items[k].src = 'bilet';
       let it;
       // Outlet/AVM bileti 'alis' türünde ve süresiyle yaratılır (outlet kuralı onu tanısın).
@@ -3583,7 +3611,7 @@ async function gEnsureFixed(c, g, log){
   }
   // Konumu bilinmeyen geri konanlar: Google'dan (tek istek).
   const miss = need.filter(it => !it.lat);
-  if (miss.length) try { const cc = gCenter(g), r = await window.claude.guide({mode:'puan', city:c, items:miss.map(it => ({name:it.name, lat:cc && cc.lat, lon:cc && cc.lon}))});
+  if (miss.length && !local) try { const cc = gCenter(g), r = await window.claude.guide({mode:'puan', city:c, items:miss.map(it => ({name:it.name, lat:cc && cc.lat, lon:cc && cc.lon}))});
     miss.forEach((it, k) => { const v = (r.items || [])[k]; if (v && v.lat){ it.lat = v.lat; it.lon = v.lon; if (!it.addr) it.addr = v.addr || ''; } }); } catch(_) {}
   if (n) g.days.forEach((_, i) => gRoute(c, g, i, gKeepOrder));
   return n;
@@ -4636,8 +4664,81 @@ function gTz(d){
   const y = +d.slice(0, 4), last = m => { const t = new Date(Date.UTC(y, m + 1, 0)); return t.getUTCDate() - t.getUTCDay(); }, md = d.slice(5);
   return base + (md >= `03-${String(last(2)).padStart(2, '0')}` && md < `10-${String(last(9)).padStart(2, '0')}` ? 60 : 0);
 }
-function gPlanInput(c, walkOnly){
-  const g = gNorm((S.trip.guide || {})[c]); if (!g || !g.home || !g.home.lat) return null;
+// 📚 Wikidata (2026-11-18, kullanıcı onayı): ücretsiz, Google'sız kaynak; telif serbest (CC0). Şehir merkezinin 5 km çevresindeki
+// gezilecek yerler (yapı, meydan, park, bahçe, anıt, çeşme, manzara, pazar, plaj, köprü, kilise, saray): konum ve ün (kaç dilde
+// Wikipedia maddesi var: Sagrada 110, Park Güell 55, Casa Batlló 51). Stadyum, otel, cadde ve içi gezilen müze çıkar (kural).
+// Adlar şehrin dillerinde ve İngilizce (aynı yeri farklı dildeki adıyla tanımak için); gösterilen ad, rehberdeki adlarla en çok
+// eşleşen dilde (Barselona'da Katalanca). Şehir başına bir kez telefonda sorgulanır, S.trip.wd[şehir]'de saklanır.
+const G_LANGS = {ES:['es', 'ca', 'eu', 'gl'], IT:['it'], FR:['fr'], PT:['pt'], DE:['de'], AT:['de'], CH:['de', 'fr', 'it'], NL:['nl'], BE:['nl', 'fr'], GB:['en'], IE:['en'], GR:['el'], TR:['tr'], CZ:['cs'], HU:['hu'], PL:['pl'], HR:['hr'], DK:['da'], SE:['sv'], NO:['nb'], FI:['fi'], US:['en'], MA:['ar', 'fr'], EG:['ar']};
+const G_WD_CLS = 'wd:Q41176 wd:Q811979 wd:Q174782 wd:Q22698 wd:Q1107656 wd:Q4989906 wd:Q483453 wd:Q1440300 wd:Q330284 wd:Q40080 wd:Q12280 wd:Q33506 wd:Q16970 wd:Q570116 wd:Q2319498 wd:Q24354 wd:Q839954';
+const G_WD_DROP = /venue|arena|stadium|circuit|hotel|skyscraper|tower block|brewery|restaurant|caf[eé]|zoo|aquarium|funicular|cable car|seaport|marina|shipyard|street|avenue|boulevard|university|school|library|office|administration|bullring|television tower|prison|science museum|chocolate|sports|residential complex|apartment|amusement park|theme park|water park/i;
+const G_WD_MUSEUM = /\b(museo|museu|museum|musée|müzesi|fundaci[oó]n?|fondation|fundació|macba|cosmocaixa)\b/i;
+async function gWikidata(c, ctr, cc0){
+  const W = S.trip.wd || (S.trip.wd = {}); if (W[c] && W[c].yerler) return W[c];
+  // Şehrin ülkesi (seyahatte birden çok ülke olabilir): OpenStreetMap'in bulduğu ülke, yoksa seyahatin ülkesi.
+  const cc = cc0 || (themeCountry() || [])[0] || '', langs = [...new Set([...(G_LANGS[cc] || []), 'en', 'es', 'ca', 'it', 'fr', 'de', 'pt', 'nl', 'el', 'tr'])];
+  const q = `SELECT ?item ?lat ?lon ?links (SAMPLE(?tl) AS ?tur) (GROUP_CONCAT(DISTINCT CONCAT(LANG(?l), ":", ?l); SEPARATOR="|") AS ?adlar) WHERE {
+    SERVICE wikibase:around { ?item wdt:P625 ?loc . bd:serviceParam wikibase:center "Point(${(+ctr.lon).toFixed(4)} ${(+ctr.lat).toFixed(4)})"^^geo:wktLiteral . bd:serviceParam wikibase:radius "5" . }
+    ?item wikibase:sitelinks ?links . FILTER(?links >= 5)
+    ?item wdt:P31 ?t . ?t wdt:P279* ?cls . VALUES ?cls { ${G_WD_CLS} }
+    BIND(geof:latitude(?loc) AS ?lat) BIND(geof:longitude(?loc) AS ?lon)
+    ?item rdfs:label ?l . FILTER(LANG(?l) IN (${langs.map(l => `"${l}"`).join(',')}))
+    OPTIONAL { ?t rdfs:label ?tl . FILTER(LANG(?tl) = "en") }
+  } GROUP BY ?item ?lat ?lon ?links ORDER BY DESC(?links) LIMIT 250`;
+  // Wikidata yoğunken geçici hata verebiliyor (2026-11-18 denemesi): bir kez daha denenir.
+  const get = async () => { const ac = new AbortController(), to = setTimeout(() => ac.abort(), 60000);
+    try { const r = await fetch('https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q), {headers:{Accept:'application/sparql-results+json'}, signal:ac.signal});
+      if (!r.ok) throw new Error('wd ' + r.status); return (await r.json()).results.bindings; } finally { clearTimeout(to); } };
+  try {
+    let B; try { B = await get(); } catch(_) { await new Promise(r => setTimeout(r, 3000)); B = await get(); }
+    const g = (S.trip.guide || {})[c] || {};
+    const P = B.map(b => { const A = {}; String((b.adlar || {}).value || '').split('|').forEach(x => { const i = x.indexOf(':'); if (i > 0 && !A[x.slice(0, i)]) A[x.slice(0, i)] = x.slice(i + 1); }); return {A, b}; });
+    // Gösterilecek dil: rehberdeki ve araştırmadaki adlarla en çok eşleşen (eşleşme yoksa ülkenin ilk dili).
+    const have = new Set([...(((S.trip.ilham || {})[c] || {}).yerler || []).map(y => gKey(y.ad)), ...(g.days || []).flatMap(x => x.items.map(it => gKey(it.name)))]);
+    const dil = langs.map(l => [l, P.filter(p => p.A[l] && have.has(gKey(p.A[l]))).length]).reduce((m, x) => x[1] > m[1] ? x : m, [(G_LANGS[cc] || ['en'])[0], 0])[0];
+    const yerler = [];
+    for (const {A, b} of P){
+      const tur = (b.tur || {}).value || '', adlar = [...new Set(langs.map(l => A[l]).filter(Boolean))].slice(0, 6);
+      if (!adlar.length || G_WD_DROP.test(tur) || (/museum/i.test(tur) && adlar.some(a => G_WD_MUSEUM.test(a)))) continue;
+      yerler.push({ad:A[dil] || A[langs[0]] || A.en || adlar[0], adlar, lat:+(+b.lat.value).toFixed(6), lon:+(+b.lon.value).toFixed(6), links:+b.links.value, tur});
+    }
+    W[c] = {at:Date.now(), dil, yerler}; save(); return W[c];
+  } catch(e){ return null; }
+}
+// 🗺 Rehberi olmayan şehir (2026-11-18, kullanıcı onayı): evin, biletlerin, garın ve istek listesindeki yerlerin konumu
+// OpenStreetMap'ten (Nominatim; ücretsiz, saniyede en çok bir istek). Bulunan konum S.trip.geo'da saklanır, bir daha sorulmaz.
+let gGeoLast = 0;
+const gGeoKey = q => String(q).toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
+async function gGeo(q){
+  const G = S.trip.geo || (S.trip.geo = {}), k = gGeoKey(q); if (!k) return null; if (k in G) return G[k];
+  const w = gGeoLast + 1100 - Date.now(); if (w > 0) await new Promise(r => setTimeout(r, w)); gGeoLast = Date.now();
+  try { const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&q=' + encodeURIComponent(q)); if (!r.ok) return null;
+    const j = await r.json(); G[k] = j[0] ? {lat:+(+j[0].lat).toFixed(6), lon:+(+j[0].lon).toFixed(6), cc:String((j[0].address || {}).country_code || '').toUpperCase()} : null; save(); return G[k]; } catch(_) { return null; }
+}
+// Rehberi olmayan şehrin iskeleti: seyahat planından ev, ev giriş/çıkışı, biletler, tren/uçak (gEnsureFixed, Google'sız); konumlar OSM'den.
+async function gTrialSkeleton(c){
+  const days = cityDays(c), P = tripPlan(); if (!days.length) return null;
+  const st = (days.find(x => x.st && stayCity(x.st) === c) || {}).st, addr = st && !st.priv ? (st.dest || st.desc || '') : '';
+  const withCity = a => gKey(a).includes(gKey(c)) ? a : `${a}, ${c}`;
+  const hp = addr ? await gGeo(withCity(addr)) : null; if (!hp) return null;
+  const g = {home:{addr, lat:hp.lat, lon:hp.lon}, skeleton:true,
+    days:days.map((x, i) => ({d:x.d, back:!(i === days.length - 1 && (String(x.city || '').includes('→') || x.d === P.z)), yol:!gWindow(c, x, P), items:[], food:[]}))};
+  await gEnsureFixed(c, g, [], true);
+  for (const it of g.days.flatMap(x => x.items).filter(it => !it.lat)){
+    const p = await gGeo(withCity(it.addr || it.name.replace(/\s*(giriş|çıkış)$/i, '')));
+    if (p && gKm(hp, p) < 60){ it.lat = p.lat; it.lon = p.lon; }
+  }
+  return g;
+}
+// Wikidata'dan planlayıcıya giden ünlü yerler: şehrin en ünlüsünün dil sayısının %22'si (en az 12; Barselona'da 24). Ölçüm
+// (2026-11-18): en ünlüler eklenince İDEAL'e uyum korunuyor, orta ünlüler eklendikçe düşüyor.
+// Havuz küçükse (rehbersiz şehir) gün başına ~8 aday olacak kadar daha az ünlüler de alınır (minN).
+const gWdTop = (c, minN = 0) => { const Y = ((S.trip.wd || {})[c] || {}).yerler || []; if (!Y.length) return []; const th = Math.max(12, Math.round(Math.max(...Y.map(y => y.links)) * 0.22));
+  const top = Y.filter(y => y.links >= th); return top.length >= minN ? top : [...Y].sort((a, b) => b.links - a.links).slice(0, minN); };
+const gPlanCenter = g => { const pts = (g.days || []).flatMap(x => x.items).filter(it => it.lat && it.src !== 'bilet'), med = a => a.sort((p, q) => p - q)[a.length >> 1];
+  return pts.length ? {lat:med(pts.map(i => +i.lat)), lon:med(pts.map(i => +i.lon))} : g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null; };
+function gPlanInput(c, walkOnly, g0){
+  const g = g0 || gNorm((S.trip.guide || {})[c]); if (!g || !g.home || !g.home.lat) return null;
   const P = tripPlan(), pr = guidePrefs(), kah = /^Evde/.test(pr.kahvalti || '') ? 0 : 40, gd = new Map(g.days.map(x => [x.d, x])), days = [];
   const pts = g.days.flatMap(x => x.items).filter(it => it.lat && it.src !== 'bilet'), med = a => a.sort((p, q) => p - q)[a.length >> 1];
   const center = pts.length ? {lat:med(pts.map(i => +i.lat)), lon:med(pts.map(i => +i.lon))} : {lat:+g.home.lat, lon:+g.home.lon};
@@ -4645,9 +4746,13 @@ function gPlanInput(c, walkOnly){
   for (const x0 of cityDays(c)){
     const w = gWindow(c, x0, P), x = gd.get(x0.d); if (!w || !x) continue;
     let start = w.a + (w.a < 720 ? kah : 0), end = {p:'home', t:Math.min(1230, w.z)}; const ev = [], not = [];
-    for (const it of x.items.filter(it => it.src === 'bilet')){
+    // Şehre bu gün gelen yolculuk (plandaki varış saati): gün varıştan 45 dk sonra başlar.
+    if (x0.d === (cityDays(c)[0] || {}).d) for (const b of x0.items.filter(b => b.kind === 'trip' && b.e && b.e.until && !b.e.priv)){ const a = hm(b.e.until), dep = hm(b.e.when); if (a != null && dep != null && a > dep && a < 1080) start = Math.max(start, a + 45); }
+    const BL = x.items.filter(it => it.src === 'bilet');
+    for (const it of BL){
       const t = hm(it.t);
-      if (/giriş|check-?in/i.test(it.name)){ if (t != null){ start = Math.max(start, t + 15); not.push(`ev girişi ${mh(t)}`); } continue; }
+      // Ev girişi: varıştan sonra 2 saatten azsa gün girişten başlar; daha uzunsa bavul emanete, gün varıştan başlar.
+      if (/giriş|check-?in/i.test(it.name)){ if (t != null){ if (t - start <= 120) start = Math.max(start, t + 15); not.push(t - start > 120 ? `bavul emanete, ev girişi ${mh(t)}` : `ev girişi ${mh(t)}`); } continue; }
       // Ayrılış günü ev sabah boşaltılır, bavul emanetçiye (evin ya da garın yakını): çıkış günün ortasında durak olmaz.
       if (/çıkış|check-?out/i.test(it.name)){ not.push('ev çıkışı sabah, bavul emanete'); continue; }
       if (gOutlet(it)){
@@ -4655,7 +4760,8 @@ function gPlanInput(c, walkOnly){
         ev.push({name:it.name, lat:+it.lat, lon:+it.lon, t:t ?? 600, dur:du, via:{name:sp ? sp.name : 'Outlet servisi', lat:sp ? +sp.lat : center.lat, lon:sp ? +sp.lon : center.lon, min:45}, last:du >= 240});
         not.push(`🛍 ${short(it.name)} ${mh(t ?? 600)}`); continue;
       }
-      if (G_TRAVEL.test(it.name) && !gVisit(c, x.d, it)){
+      // Yolculuk (tren, uçak, gar): adından tanınır (eski eşleştirme şehir adı yüzünden treni ziyaret sanabiliyordu).
+      if (G_TRAVEL.test(it.name) && !/m[üu]ze|museum|museo|museu|stad|tour\b|\btur\b/i.test(it.name)){
         if (it.lat && t != null && t >= start + 60){ const air = /havaliman|airport|aeropuerto|aeroporto/i.test(it.name); end = {name:it.name, lat:+it.lat, lon:+it.lon, t:t - (air ? 120 : 30)}; not.push(`${air ? '✈️' : '🚆'} ${short(it.name)} ${mh(t)}`); }
         continue;
       }
@@ -4680,8 +4786,11 @@ function gPlanInput(c, walkOnly){
   for (const u of g.unplaced || []) if (u.lat) add({name:u.name, lat:+u.lat, lon:+u.lon, wish:!!u.istek, area:G_AREA.test(String(u.name).trim())});
   const I = (S.trip.ilham || {})[c] || {};
   for (const y of I.yerler || []) if (y.lat && (!I.dogrulama || y.ok)) add({name:y.ad, lat:+y.lat, lon:+y.lon, r:y.g && y.g.r, n:y.g && y.g.n, aile:(y.aile || []).length, kk:+y.kac_kaynak || 0, area:G_AREA.test(String(y.ad).trim())});
+  for (const y of gWdTop(c, Math.max(0, 8 * days.length - C.length))) C.push({name:y.ad, alt:y.adlar.filter(a => a !== y.ad), lat:y.lat, lon:y.lon, links:y.links, weak:!g.skeleton});
+  // İstek listesindeki yer başka kaynakta yoksa OpenStreetMap konumuyla (guideTrial önceden sorar).
+  for (const w of gWish().filter(w => w.city === c)){ const p = (S.trip.geo || {})[gGeoKey(`${w.name}, ${c}`)]; if (p && gKm(g.home, p) < 25) C.push({name:w.name, lat:p.lat, lon:p.lon, wish:true}); }
   const W = new Set(gWish().filter(w => w.city === c).map(w => gKey(w.name)));
-  C.forEach(q => { if (W.has(gKey(q.name))) q.wish = true; });
+  C.forEach(q => { if (W.has(gKey(q.name)) || (q.alt || []).some(a => W.has(gKey(a)))) q.wish = true; });
   return {g, src:new Map(C.map(q => [q.name, q.src])), input:{home:{lat:+g.home.lat, lon:+g.home.lon}, tz:gTz(days.length ? days[0].d : isoDay(Date.now())), tempo:pr.tempo || 'Yoğun', walkOnly, days, cands:C.map(({src, ...o}) => o)}};
 }
 // Planlayıcının sonucunu rehber biçimine çevirir (My Maps, adım, mesafe aynı kodla); kayıtlı rehbere dokunmaz.
@@ -4712,23 +4821,42 @@ function gTrialGuide(c, A, R){
   T.days.forEach((_, i) => gRoute(c, T, i, true));
   return T;
 }
-function guideTrial(c, walkOnly){
-  const T0 = (S.trip.gtrial || {})[c], A = gPlanInput(c, walkOnly ?? (T0 ? T0.walkOnly : true));
-  if (!A) return toast('Deneme için önce bu şehrin rehberi gerekli (ev ve biletlerin konumu oradan alınır).');
+let gTrialBusy = null, gTrialMsg = '';
+async function guideTrial(c, walkOnly){
+  if (gTrialBusy) return;
+  const step = m => { gTrialMsg = m; if (form && form.mode === 'guide'){ form.gmore = null; drawSheetKeep(); } else if (tab === 'gezi') render(); };
+  let g = (S.trip.guide || {})[c], A;
+  gTrialBusy = c;
+  try {
+    // Rehber yoksa seyahat planından iskelet (ev, biletler, tren; konumlar OpenStreetMap'ten).
+    if (!g){ step('🗺 Ev ve biletlerin konumu OpenStreetMap\'ten bulunuyor…'); g = await gTrialSkeleton(c);
+      if (!g) return toast('Evin konumu bulunamadı: seyahat planında konaklamanın adresini (Gidilecek yer) yaz.', {ms:7000}); }
+    const ctr = gPlanCenter(g);
+    if (ctr && !((S.trip.wd || {})[c] || {}).yerler){ step('📚 Şehrin ünlü yerleri Wikidata\'dan alınıyor (şehir başına bir kez, yarım dakika sürebilir)…');
+      const hg = g.home && g.home.addr ? (S.trip.geo || {})[gGeoKey(gKey(g.home.addr).includes(gKey(c)) ? g.home.addr : `${g.home.addr}, ${c}`)] : null, cc = (hg && hg.cc) || ((await gGeo(c)) || {}).cc || '';
+      if (!await gWikidata(c, ctr, cc)) toast('📚 Wikidata\'ya ulaşılamadı; deneme kayıtlı yerlerle hesaplanıyor.', {ms:5000}); }
+    // İstek listesindeki ve hiçbir kaynakta olmayan yerlerin konumu (en çok 12; saniyede bir istek).
+    const known = new Set([...g.days.flatMap(x => x.items.map(it => gKey(it.name))), ...((((S.trip.wd || {})[c] || {}).yerler || []).flatMap(y => y.adlar.map(gKey)))]);
+    const ask = gWish().filter(w => w.city === c && !known.has(gKey(w.name)) && !(gGeoKey(`${w.name}, ${c}`) in (S.trip.geo || {}))).slice(0, 12);
+    if (ask.length){ step(`📍 İstek listesindeki ${ask.length} yerin konumu bulunuyor…`); for (const w of ask) await gGeo(`${w.name}, ${c}`); }
+    const T0 = (S.trip.gtrial || {})[c]; A = gPlanInput(c, walkOnly ?? (T0 ? T0.walkOnly : true), (S.trip.guide || {})[c] ? null : g);
+  } finally { gTrialBusy = null; gTrialMsg = ''; }
+  if (!A) return toast('Deneme için evin konumu gerekli.');
   const t0 = performance.now(), R = HP.plan(A.input), ms = Math.round(performance.now() - t0);
   const res = R.days.map(d => ({d:d.d, not:d.not, km:d.walkKm, adim:d.adim, metro:d.metro, n:d.n, ok:d.ok,
     segs:d.segs.map(s => ({ev:s.ev, st:s.stops.map(x => x.mola ? {m:1, at:Math.round(x.at)} : {n:x.name, at:x.at, w:x.wish ? 1 : 0, mt:x.leg.metro ? 1 : 0})}))}));
-  (S.trip.gtrial || (S.trip.gtrial = {}))[c] = {at:Date.now(), by:S.me, walkOnly:A.input.walkOnly, ms, aday:R.aday, out:R.out, res, guide:gTrialGuide(c, A, R)};
+  (S.trip.gtrial || (S.trip.gtrial = {}))[c] = {at:Date.now(), by:S.me, walkOnly:A.input.walkOnly, ms, aday:R.aday, wd:A.input.cands.filter(o => o.links).length, skel:!!A.g.skeleton, out:R.out, res, guide:gTrialGuide(c, A, R)};
   save(); if (form && form.mode === 'guide'){ form.gmore = null; drawSheetKeep(); }
   toast(`🧪 ${c}: yeni planlayıcıyla deneme hazır (${ms} ms, ${R.aday} aday). Mevcut rehber değişmedi.`, {ms:6000});
 }
 function gTrialHtml(c){
+  if (gTrialBusy === c) return `<div class="gask gtrial"><p class="note">${esc(gTrialMsg || '🧪 Hazırlanıyor…')} Bitince yeni planlayıcı hesaplayacak.</p></div>`;
   const T = (S.trip.gtrial || {})[c]; if (!T) return ''; const C = esc(c); let no = 0;
   const day = (r, i) => `<div class="gtd"><div class="gtdh"><b>${i + 1}. gün · ${planDay(r.d)}</b><span>${esc(r.not)}</span></div>
     <div class="gtl">${r.segs.map(s => s.st.map(x => x.m ? `<p class="gtm">${mh(x.at)} 🍽 öğle molası</p>` : `<p><b class="gtn">${++no}</b><span class="gtt">${mh(x.at)}</span>${x.w ? '⭐ ' : ''}${esc(x.n)}${x.mt ? ' 🚇' : ''}</p>`).join('') + (s.ev ? `<p class="gte"><b class="gtn">${++no}</b>🎟 ${esc(s.ev)}</p>` : '')).join('')}</div>
     <span class="gtx">${r.n} durak · 🚶 ${String(r.km).replace('.', ',')} km ≈ ${r.adim.toLocaleString('tr-TR')} adım${r.metro ? ` · 🚇 ${r.metro} kez` : ''}${r.ok ? '' : ' · ⚠ süreye sığmıyor'}</span></div>`;
   return `<div class="gask gtrial"><div class="gedh"><b>🧪 Yeni planlayıcı · deneme</b><button type="button" class="x" data-g="gtrialx" data-c="${C}" aria-label="Denemeyi kapat">×</button></div>
-    <p class="note">Mevcut rehber değişmedi. ${esc(nm(T.by))}, ${dayLabel(T.at)} · ${T.aday} aday · ${T.ms} ms. Kayıtlı araştırma ve Google verisiyle hesaplandı; model ve Google'a istek atılmadı.</p>
+    <p class="note">${T.skel ? 'Bu şehrin rehberi yok: ev, bilet ve tren konumları OpenStreetMap\'ten, ünlü yerler Wikidata\'dan.' : 'Mevcut rehber değişmedi; kayıtlı araştırma, Google verisi ve Wikidata\'yla hesaplandı.'} ${esc(nm(T.by))}, ${dayLabel(T.at)} · ${T.aday} aday${T.wd ? ` · Wikidata'dan ${T.wd} kayıt (aynı yerler birleşir)` : ''} · ${T.ms} ms. Model ve Google'a istek atılmadı.</p>
     <label class="gopus"><input type="checkbox" data-g="gtrialwalk" data-c="${C}" ${T.walkOnly ? 'checked' : ''}> 🚶 Yalnız yürüyüş (metro yalnız çok uzak yerlere; işaret kalkınca uzak aralarda metro; günde en çok 2)</label>
     ${T.res.map(day).join('')}
     ${T.out.length ? `<p class="note">Sığmayan istekler: ${T.out.map(o => esc(o.name)).join(', ')}</p>` : ''}
