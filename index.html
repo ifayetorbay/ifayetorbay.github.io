@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261113235312';</script>
-<script src="heybe-web.js?v=20261113235312"></script>
+<script>window.HEYBE_VER = '20261118133436';</script>
+<script src="heybe-web.js?v=20261118133436"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -362,6 +362,16 @@ html.sheetopen,html.sheetopen body{overflow:hidden}
 .gask{display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .gask .lab{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
 .gask>.btn{align-self:flex-start}
+.gtrial{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.gtd{border-top:1px solid var(--line);padding:8px 0 4px}
+.gtdh{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.gtdh span,.gtx{color:var(--muted);font-size:.8rem}
+.gtl{margin:6px 0 4px}
+.gtl p{margin:0;font-size:.9rem;line-height:1.6}
+.gtn{display:inline-block;min-width:1.7em;font-variant-numeric:tabular-nums}
+.gtt{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.8rem;margin-right:6px}
+.gte{font-weight:700}
+.gtm{color:var(--muted);font-size:.82rem;padding-left:1.7em}
 .gsteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .gstep{border:0;border-radius:14px;background:var(--surface);padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;color:inherit}
 .gstep b{font-family:var(--display);font-weight:800;font-size:1.05rem}
@@ -884,6 +894,340 @@ function settle(bal, min = 5){
   }
   return out;
 }
+</script>
+
+<script id="plan">
+// ---- Koridor planlayıcı (2026-11-17; DOM kullanmaz, model ve Google çağırmaz; test: node tests/plan-test.mjs) ----
+// Kullanıcının ideal haritalarından (asıl ölçü Barselona İDEAL; ayrıca Madrid ile kendi Floransa ve Roma haritaları) çıkan kurallar:
+// 1) Gün, sabit noktalar (ev, bilet, outlet servisi, gar) arasında ilerleyen bir KORİDORdur; boş zaman bu koridorun üstündeki
+//    en ünlü yerlerle dolar. 2) Durak sayısını SÜRE belirler (varış akşamı 3, tam gün 12–16). 3) İçeride yürünür. Metro, yalnız
+//    yürüyüşte (varsayılan) yalnız çok uzak aralarda (4 km'den uzun), "metro kullan" seçildiyse 2 km'den uzun aralarda; günde en çok 2.
+// 4) Manzara ve park karanlıkta değer kaybeder; gün batımına denk gelen manzara küçük bir ödül alır (zorunlu değil).
+// 5) Yemek molası öğle saatinde ayrılır (yemek yerleri sonra Google'dan rotanın çevresinde seçilir; rotaya durak olarak girmez).
+// Yöntem: zaman pencereli Takım Yönelim Problemi için Yinelemeli Yerel Arama (Vansteenwegen vd. 2009): açgözlü ekleme, günler
+// arası taşıma, yer değiştirme, 2-opt ve tohumlu sarsma. Aynı girdiye her zaman aynı sonuç. Kurallar ayrı ayrı yer taşımaz; hepsi
+// tek bir puanın (hpObj) kısıtı ya da cezasıdır.
+const HP = (() => {
+  const RAD = Math.PI / 180, WALK_F = 1.25, KMH = 4.5, FAR = 4.0, METRO = 2.0, MAX_HOPS = 2, STEP = 1300;
+  const TEMPO = {Sakin:[6, 12000], Dengeli:[10, 17000], 'Yoğun':[14, 22000], 'Çok yoğun':[16, 28000]};
+  const km = (a, b) => Math.hypot((a.lat - b.lat) * 111, (a.lon - b.lon) * 111 * Math.cos(a.lat * RAD));
+  // Tohumlu rastgele (mulberry32): sarsma her çalıştırmada aynı.
+  const rng = s => () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  // Gün batımı (NOAA yaklaşık formülü), yerel saat (dakika); tz = saat farkı (dakika, ör. İspanya kışın 60).
+  function sunset(lat, lon, d, tz){
+    const t = new Date(d + 'T12:00:00Z'), n = Math.round((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 864e5) + 1, g = 2 * Math.PI / 365 * (n - 1);
+    const eq = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+    const de = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+    const ha = Math.acos(Math.cos(90.833 * RAD) / (Math.cos(lat * RAD) * Math.cos(de)) - Math.tan(lat * RAD) * Math.tan(de)) / RAD;
+    return Math.round(720 - 4 * (lon - ha) - eq + tz);
+  }
+  // Yer türleri (ad üstünden; araştırma türü verirse o geçer).
+  const OUT = /\((cephe|dış)|pla[çc]a|plaza|piazza|meydan|\bfont\b|fuente|fontana|çeşme|mirador|teras|terrace|\bpont\b|ponte|köprü|\barc\b|arco|monument|anıt|colom|kolomb|sahil|platja|playa|beach|spiaggia|port vell|rambla de mar|bunkers|cascada|puerta del sol|puerta de alc|columnes/i;
+  const VIEW = /mirador|teras|terrace|manzara|bunkers|tibidabo|michelangelo|piazzale|belvedere|gianicolo|pincio|vistillas|sahil|platja|playa|beach|spiaggia|plaj|viewpoint/i;
+  const PARK = /\b(park|parc|parque|jard[ií]n?s?|jardins|giardin\w*|gardens?)\b|bahçe|boboli|retiro|borghese|ciutadella/i;
+  const BIG = /vatikan|vatican|vaticani|louvre|prado|uffizi|british museum|hermitage|mnac|nacional d.art|reina sof/i;
+  const MUSEUM = /m[üu]ze|museu|museo|museum|palau|palacio|palazzo|saray|alc[aá]zar|alhambra|galleria/i;
+  const CHURCH = /kilise|catedral|cathedral|katedral|bazilika|bas[ií]lica|church|iglesia|esgl[eé]sia|duomo|chiesa|santa maria|vaftizhane/i;
+  const MARKET = /mercat|mercado|mercato|market|pazar/i;
+  // Yalnız içi gezilen ücretli yer (kullanıcı kuralı 2026-11-02): müze içi, teleferik, füniküler, kule, stadyum turu. İstek listesi,
+  // bilet ve kilitli yer bu kuraldan etkilenmez; adı ücretsiz bölümü söylüyorsa (cephe, dış, avlu, bahçe, teras) önerilebilir.
+  const PAID = /^(museu|museo|museum|müze)\b|m[üu]zesi\b|telef[eè]ric|telef[eé]rico|teleferik|funicular|füniküler|cable car|\bstad(ium|yum|io|ium tour)|bernab|camp nou/i;
+  const FREEPART = /\((cephe|dış|avlu|bahçe|teras)|cephe\)|terasları|teras\b|jard[ií]n|garden|bahçe/i;
+  // Gezme süresi (dk): araştırmanın verdiği; yoksa türüne göre (uygulamanın eski G_SURE ölçüsüyle aynı, çok büyük müze 150).
+  const dur = c => +c.dur || (BIG.test(c.name) ? 150 : /park g[üu]ell|boboli|retiro|villa borghese/i.test(c.name) ? 75
+    : OUT.test(c.name) && !MUSEUM.test(c.name) ? 15 : MARKET.test(c.name) ? 30 : CHURCH.test(c.name) ? 30 : PARK.test(c.name) ? 40 : MUSEUM.test(c.name) ? 90 : 30);
+  // Açık saat yalnız içine girilen yerde: pazar, kapılı park/bahçe ve içi gezilecek yer (inside: istek listesindeki müze ya da bilet).
+  // Önerilen yerler ücretli yerin ücretsiz bölümüdür (cephe, avlu, meydan): dışarıdan gezilir, kapı saati bağlamaz.
+  const hrs = c => MARKET.test(c.name) ? c.hrs || [480, 1230] : PARK.test(c.name) && !OUT.test(c.name) ? c.hrs || [480, 1260] : c.inside ? c.hrs || [600, 1080] : null;
+  const closed = c => c.cl || (MARKET.test(c.name) ? [0] : null);
+  // Ün: kaynak ailesi + kaynak sayısı/4 (en çok 1,5) + log10(yorum/1000) (uygulamanın denetim formülüyle aynı); düşük puana ceza.
+  const fame = c => { let u = (+c.aile || 0) + Math.min(1.5, (+c.kk || 0) / 4) + (c.n ? Math.log10(Math.max(c.n, 50) / 1000) : -0.4); if (c.r && c.r < 4.3) u -= 0.6; if (c.r >= 4.7) u += 0.15; return u; };
+  const value = c => Math.min(6, Math.max(0.25, 1 + fame(c))) + (c.wish ? (dur(c) >= 120 && MUSEUM.test(c.name) ? 1 : 5) : 0) + (c.lock != null ? 20 : 0);
+  // Eşleştirme sözcükleri: biletli yerin başka bir öneri olarak tekrar gelmesini önlemek için.
+  const GEN = new Set(['casa', 'placa', 'plaza', 'parc', 'museu', 'museo', 'basilica', 'santa', 'maria', 'sant', 'san', 'del', 'de', 'la', 'el', 'les', 'els', 'bilet', 'muze', 'cephe']);
+  const toks = n => String(n).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ı/g, 'i').replace(/[^a-z\d]+/g, ' ').split(' ').filter(w => w.length >= 4 && !GEN.has(w));
+  // Aynı yer mi (farklı dilde ad: "Katalunya Meydanı" = "Plaça de Catalunya", "Triomf Kemeri" = "Arc de Triomf"): 250 m içinde ve
+  // sadeleştirilmiş adlarda ortak bir sözcük (k→c; Türkçe ve yerel tür sözcükleri atılır; 5+ harfte biri öbürünün başıysa da olur).
+  const SYN = {meydani:'placa', meydan:'placa', kemeri:'arc', parki:'parc', aniti:'monument', katedrali:'catedral', bazilikasi:'basilica', cesmesi:'font', colom:'colomb', mnac:'nacional'};
+  const GEN2 = new Set([...GEN, 'parc', 'park', 'parque', 'monument', 'catedral', 'font', 'jardins', 'mercat', 'mercado', 'palau', 'palacio', 'puerta', 'carrer', 'calle', 'teras', 'terasi', 'teraslari', 'dis', 'cevresi', 'kapi', 'centre', 'arc']);
+  const stoks = n => String(n).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ı/g, 'i').replace(/\(.*?\)/g, ' ').replace(/[^a-z\d]+/g, ' ')
+    .split(' ').filter(Boolean).map(w => w.replace(/k/g, 'c')).map(w => SYN[w] || w).filter(w => w.length >= 3 && !GEN2.has(w));
+  // Meydan ile meydandaki yapı (Piazza del Popolo – Santa Maria del Popolo) ayrı yerlerdir.
+  const PLZ = /pla[çc]a|plaza|piazza|meydan|\bsquare\b|\bplace\b/i;
+  const same = (a, b) => { if (km(a, b) > 0.25 || PLZ.test(a.name) !== PLZ.test(b.name)) return false; const A = stoks(a.name), B = stoks(b.name);
+    return B.some(w => A.includes(w) || A.some(v => Math.min(v.length, w.length) >= 5 && (v.startsWith(w) || w.startsWith(v)))); };
+
+  function plan(I){
+    const T = TEMPO[I.tempo] || TEMPO['Yoğun'], capKm = T[1] / STEP, capN = T[0], tz = I.tz ?? 60;
+    // Cezalar (puan biriminde; ünlü bir yer ≈ 3–5): yürünen km, metroyla gidilen km, metro (gün ortasında; günün ilk ve son arası
+    // hafif: akşam eve metroyla dönmek doğal), bekleme, aynı semtin iki güne bölünmesi.
+    const W = {walk:0.3, ride:I.walkOnly ? 0.3 : 0.1, hop:I.walkOnly ? 2.5 : 0.6, hopEnd:0.5, wait:0.004, time:0, split:1.2, regret:0.3, corr:0.3, corrR:1.5, coR:1.2, zd:1.3, zreg:1.0, eve:0.7, late:0.02, ...(I.w || {})};
+    const H = {lat:+I.home.lat, lon:+I.home.lon, name:'Ev'}, P = [H], pid = p => { P.push(p); return P.length - 1; };
+    // Günler ve koridorlar (segment): başlangıç noktası/saati → (bilet, ev çıkışı, outlet servisi) → bitiş noktası/saati.
+    const days = I.days.map((d, di) => {
+      const segs = [], ss = sunset(H.lat, H.lon, d.d, tz), wd = new Date(d.d + 'T12:00').getDay();
+      let t = d.start, p = 0;
+      for (const ev of [...(d.ev || [])].sort((a, b) => a.t - b.t)){
+        const ep = ev.p === 'home' ? 0 : pid({lat:+ev.lat, lon:+ev.lon, name:ev.name}), tp = ev.via ? pid({lat:+ev.via.lat, lon:+ev.via.lon, name:ev.via.name}) : ep;
+        segs.push({s:p, e:tp, t0:t, t1:ev.t - (ev.pre || 0) - (ev.via ? ev.via.min : 0), ev, ord:[]});
+        if (ev.last){ p = -1; break; }
+        t = ev.t + ev.dur; p = ep;
+      }
+      if (p >= 0 && d.end) segs.push({s:p, e:d.end.p === 'home' ? 0 : pid({lat:+d.end.lat, lon:+d.end.lon, name:d.end.name}), t0:t, t1:d.end.t, ord:[]});
+      // Gün türü (kullanıcının kuralları ve İDEAL harita): öğleden sonra başlayan varış günü hafif (durak tavanı pencereyle orantılı ×0,6);
+      // outlet sabahında en çok 3 durak, ev → servis hattının 1 km yakınında (servisi kaçırmamak için).
+      if (d.start >= 780 && segs.length){ const h = ((d.end ? d.end.t : segs[segs.length - 1].t1) - d.start) / 60; segs.forEach(s => { s.maxN = Math.max(2, Math.round(capN * h / 12 * 0.6)); }); }
+      segs.forEach(s => { if (s.ev && s.ev.last && s.ev.dur >= 240){ s.maxN = Math.min(s.maxN ?? 3, 3); s.line = 1.0; } });
+      // Öğle molası (60 dk): 13:15'i içeren en az 3 saatlik koridorda, yoksa 13:00–15:00 arasında başlayan ilk koridorda.
+      const L = segs.find(s => s.t0 <= 795 && s.t1 >= 795 && s.t1 - s.t0 >= 180) || segs.find(s => s.t0 >= 780 && s.t0 <= 900);
+      if (L) L.lunch = true;
+      return {d:d.d, not:d.not || '', segs, ss, wd};
+    });
+    const EVS = days.flatMap(d => d.segs.filter(s => s.ev && s.e).map(s => ({...P[s.e], tk:toks(s.ev.name)})));
+    // Adaylar: konumu olan, şehrin içinde (evden 25 km), çıkarılmamış; biletli yerin 200 m yakınında aynı adı taşıyan öneri olmaz.
+    const C = [];
+    for (const c of I.cands || []){
+      // Aynı yer iki kez gelmez (araştırma ve rehber farklı dillerde yazabilir): ilk kayıt kalır; istek, kilit ve daha çok yorum ona geçer.
+      const q = c.lat != null && C.find(z => same(z, c));
+      if (q){ if (c.wish) q.wish = true; if (c.lock != null && q.lock == null) q.lock = c.lock; if ((c.n || 0) > (q.n || 0)){ q.r = c.r; q.n = c.n; } if (c.aile > (q.aile || 0)) q.aile = c.aile; if (c.kk > (q.kk || 0)) q.kk = c.kk; q.v = value(q); continue; }
+      // Semt, tepe ya da bölge adı (Google türü neighborhood / natural_feature / sublocality) durak değildir: semt planlayıcının birimidir.
+      if (c.lat == null || c.off || c.area || km(H, c) > 25) continue;
+      if (c.paid || (PAID.test(c.name) && !FREEPART.test(c.name))){ if (!c.wish && c.lock == null && !c.inside) continue; }
+      const tk = toks(c.name);
+      if (EVS.some(e => km(e, c) < 0.2 && tk.some(w => e.tk.includes(w)))) continue;
+      C.push({...c, i:pid({lat:+c.lat, lon:+c.lon, name:c.name}), v:value(c), du:dur(c), h:hrs(c), cl:closed(c), view:VIEW.test(c.name), park:PARK.test(c.name) && !VIEW.test(c.name)});
+    }
+    // Noktanın a–b doğrusuna uzaklığı (km, düz).
+    const toLine = (p, a, b) => { const f = Math.cos(a.lat * RAD) * 111, ax = a.lon * f, ay = a.lat * 111, bx = b.lon * f - ax, by = b.lat * 111 - ay, px = p.lon * f - ax, py = p.lat * 111 - ay;
+      const L = bx * bx + by * by, u = L ? Math.max(0, Math.min(1, (px * bx + py * by) / L)) : 0; return Math.hypot(px - u * bx, py - u * by); };
+    const N = P.length, D = new Float64Array(N * N);
+    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) D[a * N + b] = km(P[a], P[b]) * WALK_F;
+    // Yakınlık bağı (semt bütünlüğü): birbirine W.coR km'den yakın iki yer farklı günlere düşerse ceza = W.split × küçük değer/3 ×
+    // (1 − uzaklık/W.coR). Kümeleme yok (yoğun merkezlerde kümeler ya her şeyi birleştiriyor ya limanı bölüyordu); yakın olan birlikte.
+    const nb = C.map(() => []), dayOf = new Int8Array(C.length).fill(-1);
+    for (let p = 0; p < C.length; p++) for (let q = p + 1; q < C.length; q++){ const d = km(C[p], C[q]); if (d < W.coR){ const w = W.split * Math.min(C[p].v, C[q].v) / 3 * (1 - d / W.coR); nb[p].push([q, w]); nb[q].push([p, w]); } }
+    // Bir yer bir güne eklenince (add) / bir günden çıkınca (rem) bağ cezasının değişimi, puan artışı olarak.
+    const dz = (k, add, rem) => { let g = 0; for (const [j, w] of nb[k]){ const dj = dayOf[j]; if (dj < 0 || j === k) continue; if (rem != null && dj !== rem) g += w; if (add != null && dj !== add) g -= w; } return g; };
+    const zAdd = (k, di) => { dayOf[k] = di; }, zDel = k => { dayOf[k] = -1; };
+    // Semtler (1. kademe): tam bağlantılı birleştirme; bir semtin en uzak iki yeri arası W.zd km'yi geçmez (yoğun merkezde zincirleme
+    // olmaz, liman ya da Montjuïc kendi semti olur).
+    let ZS = C.map((_, k) => [k]);
+    for (;;){ let bi = -1, bj = -1, bd = Infinity;
+      for (let i = 0; i < ZS.length; i++) for (let j = i + 1; j < ZS.length; j++){ let m = 0; for (const p of ZS[i]) for (const q of ZS[j]){ const d = km(C[p], C[q]); if (d > m) m = d; } if (m < bd){ bd = m; bi = i; bj = j; } }
+      if (bi < 0 || bd > W.zd) break; ZS[bi] = ZS[bi].concat(ZS[bj]); ZS.splice(bj, 1); }
+    ZS.forEach((m, z) => m.forEach(k => { C[k].z = z; }));
+    const bond = () => { let s = 0; for (let k = 0; k < C.length; k++) if (dayOf[k] >= 0) for (const [j, w] of nb[k]) if (j > k && dayOf[j] >= 0 && dayOf[j] !== dayOf[k]) s += w; return s; };
+    // Bir ara: yürüyüş ya da metro (çok uzaksa her zaman; metro seçiliyse 2 km'den uzunsa ve günün metro hakkı varsa).
+    const leg = (a, b, left) => { const w = D[a * N + b];
+      if (w > FAR || (!I.walkOnly && w > METRO && left > 0)) return [12 + w / WALK_F / 18 * 60, 0.25, 1, w];
+      return [w / KMH * 60, w, 0, w]; };
+    // Saate göre değer: karanlıkta manzara ve park değer kaybeder; gün batımındaki manzara ödül alır.
+    // Akşam (gün batımından 1 saat sonra): istek listesinde olmayan açık hava durakları W.eve katsayısıyla (yorgunluk, karanlık).
+    // Manzara/sahil: gün batımından önceki 90 dakikada (altın saat) günde bir kez ödül; batıştan 15 dk sonra yarı, 45 dk sonra ×0,3 değer.
+    const tmul = (c, t, ss, sun) => c.view ? (t >= ss - 90 && t <= ss + 5 ? (sun.u ? 1 : (sun.u = 1, 1.25)) : t > ss + 45 ? 0.3 : t > ss + 15 ? 0.5 : 1) : c.park && t > ss + 15 ? 0.4
+      : t > ss + 60 && !c.wish && !c.inside && !MARKET.test(c.name) ? W.eve : 1;
+    // Günün benzetimi: süreler, bekleme, öğle molası, yürüyüş, metro sayısı ve puan.
+    function sim(di, ords, out){
+      const day = days[di], last = day.segs.length - 1, sun = {}; let hops = 0, walk = 0, val = 0, wait = 0, used = 0, n = 0, ok = true, pen = 0;
+      day.segs.forEach((s, si) => {
+        const ord = ords ? ords[si] : s.ord; let t = s.t0, prev = s.s, lunch = !!s.lunch; const rows = [];
+        if (s.maxN != null && ord.length > s.maxN) ok = false;
+        if (s.line && ord.some(k => toLine(P[C[k].i], P[s.s], P[s.e]) > s.line)) ok = false;
+        for (const k of ord){
+          if (lunch && t >= 765){ t += 60; lunch = false; if (out) rows.push({mola:'öğle', at:Math.round(t - 60)}); }
+          const c = C[k], L = leg(prev, c.i, MAX_HOPS - hops); t += L[0]; walk += L[1]; hops += L[2];
+          if (L[2]) pen += W.hop + W.ride * L[3];
+          if (c.h){ if (t < c.h[0]){ wait += c.h[0] - t; t = c.h[0]; } if (t + c.du > c.h[1] + 5) ok = false; }
+          if (c.cl && c.cl.includes(day.wd)) ok = false;
+          val += c.v * tmul(c, t, day.ss, sun); n++;
+          if (s.s !== s.e){ const ex = (D[s.s * N + c.i] + D[c.i * N + s.e] - D[s.s * N + s.e]) / WALK_F - W.corrR; if (ex > 0) pen += W.corr * ex; }
+          if (out) rows.push({k, at:Math.round(t), leg:{km:Math.round(L[3] * 10) / 10, dk:Math.round(L[0]), metro:!!L[2]}});
+          t += c.du; prev = c.i;
+        }
+        if (lunch && s.t1 - t >= 60){ t += 60; if (out) rows.push({mola:'öğle', at:Math.round(t - 60)}); }
+        const L = leg(prev, s.e, MAX_HOPS - hops); t += L[0]; walk += L[1]; hops += L[2];
+        if (L[2]) pen += (si === last ? W.hopEnd : W.hop) + W.ride * L[3];
+        if (t > s.t1 + 1) ok = false;
+        used += t - s.t0;
+        if (W.late && s.e === 0){ const lt = Math.min(t, s.t1) - Math.max(s.t0, day.ss + 60); if (lt > 0 && ord.length) pen += W.late * lt; }
+        if (out) out.push({rows, back:{km:Math.round(L[3] * 10) / 10, dk:Math.round(L[0]), metro:!!L[2]}, end:Math.round(t)});
+      });
+      if (hops > MAX_HOPS || walk > capKm || n > capN) ok = false;
+      return {ok, obj:val - W.walk * walk - pen - W.wait * wait - W.time * used, used, walk, hops, n};
+    }
+    const used = new Set(), base = days.map((_, di) => sim(di));
+    const ordsOf = di => days[di].segs.map(s => s.ord.slice());
+    const total = () => base.reduce((s, r) => s + r.obj, 0) - bond();
+    const allowed = (c, di) => (c.lock == null || c.lock === di) && !(c.cl && c.cl.includes(days[di].wd));
+    // Ekleme (pişmanlıklı): her yer için her günün en iyi sırası bulunur; önce, en iyi günü ile ikinci en iyi günü arasındaki fark
+    // (pişmanlık) büyük olan yer yerleşir: yalnız bir güne iyi sığan yer (ör. varış akşamına liman) iki güne de sığan yerden
+    // (ör. Montjuïc: varış akşamı ya da gara giden son gün) önce. Puan = (artış)² / (harcanan süre) + W.regret × pişmanlık.
+    function insertAll(){
+      for (;;){
+        let pick = null;
+        for (let k = 0; k < C.length; k++){
+          if (used.has(k)) continue; const c = C[k]; let b1 = null, g2 = 0;
+          for (let di = 0; di < days.length; di++){
+            if (!allowed(c, di)) continue; const day = days[di], b0 = base[di], dzk = dz(k, di); let bd = null;
+            day.segs.forEach((s, si) => {
+              if (s.t1 - s.t0 < 25) return;
+              const o = s.ord;
+              for (let pos = 0; pos <= o.length; pos++){
+                const a = pos ? C[o[pos - 1]].i : s.s, z = pos < o.length ? C[o[pos]].i : s.e;
+                if (D[a * N + c.i] + D[c.i * N + z] - D[a * N + z] > 6) continue;
+                const ords = ordsOf(di); ords[si].splice(pos, 0, k);
+                const r = sim(di, ords); if (!r.ok) continue;
+                const gain = r.obj - b0.obj + dzk; if (gain <= 0) continue;
+                const sc = gain * gain / (r.used - b0.used + 10);
+                if (!bd || sc > bd.sc) bd = {sc, gain, di, si, pos, r};
+              }
+            });
+            if (!bd) continue;
+            if (!b1 || bd.sc > b1.sc){ if (b1) g2 = Math.max(g2, b1.gain); b1 = bd; } else g2 = Math.max(g2, bd.gain);
+          }
+          if (!b1) continue;
+          const key = b1.sc + W.regret * Math.max(0, b1.gain - g2);
+          if (!pick || key > pick.key) pick = {...b1, k, key};
+        }
+        if (!pick) return;
+        days[pick.di].segs[pick.si].ord.splice(pick.pos, 0, pick.k); used.add(pick.k); zAdd(pick.k, pick.di); base[pick.di] = pick.r;
+      }
+    }
+    // Bir semtin kullanılmayan yerlerini tek bir koridora en iyi sıralarla doldurur; eklenenleri döndürür.
+    function fillZone(members, di, si){
+      const s = days[di].segs[si], put = [];
+      for (;;){ let bd = null;
+        for (const k of members){ if (used.has(k) || !allowed(C[k], di)) continue; const c = C[k], dzk = dz(k, di);
+          for (let pos = 0; pos <= s.ord.length; pos++){ const ords = ordsOf(di); ords[si].splice(pos, 0, k); const r = sim(di, ords); if (!r.ok) continue;
+            const gain = r.obj - base[di].obj + dzk; if (gain <= 0) continue; const sc = gain * gain / (r.used - base[di].used + 10);
+            if (!bd || sc > bd.sc) bd = {sc, k, pos, r}; } }
+        if (!bd) return put;
+        s.ord.splice(bd.pos, 0, bd.k); used.add(bd.k); zAdd(bd.k, di); base[di] = bd.r; put.push(bd.k);
+      }
+    }
+    // Semtleri koridorlara yerleştir (pişmanlıklı): her semt için her koridordaki kazanç hesaplanır; önce en iyi koridoru ile ikinci en
+    // iyi koridoru arasındaki fark büyük olan semt yerleşir (liman yalnız varış akşamına uyar; Montjuïc varış akşamına da gara giden
+    // son güne de). Böylece "bir yer → bir gün" yerine "bir semt → bir gün" kararı verilir.
+    function placeZones(){
+      for (;;){
+        let pick = null; const v0 = total();
+        for (const m of ZS){
+          if (!m.some(k => !used.has(k))) continue; let b1 = null, g2 = 0;
+          for (let di = 0; di < days.length; di++) days[di].segs.forEach((s, si) => {
+            if (s.t1 - s.t0 < 25 || !m.some(k => !used.has(k) && allowed(C[k], di))) return;
+            const keep = s.ord.slice(), b0 = base[di], put = fillZone(m, di, si);
+            if (!put.length) return;
+            const gain = total() - v0;
+            put.forEach(k => { used.delete(k); zDel(k); }); s.ord = keep; base[di] = b0;
+            if (gain <= 0) return;
+            if (!b1 || gain > b1.gain){ if (b1) g2 = Math.max(g2, b1.gain); b1 = {gain, di, si}; } else g2 = Math.max(g2, gain);
+          });
+          if (!b1) continue;
+          const key = b1.gain + W.zreg * (b1.gain - g2);
+          if (!pick || key > pick.key) pick = {...b1, m, key};
+        }
+        if (!pick) return;
+        fillZone(pick.m, pick.di, pick.si);
+      }
+    }
+    const apply = (di, ords) => { days[di].segs.forEach((s, si) => { s.ord = ords[si]; }); base[di] = sim(di); };
+    // Yerel arama: koridor içinde 2-opt ve taşıma, günler arası taşıma, kullanılmayan daha iyi bir yerle değiştirme.
+    function local(){
+      let better = true, pass = 0;
+      while (better && pass++ < 6){
+        better = false;
+        for (let di = 0; di < days.length; di++) days[di].segs.forEach((s, si) => {
+          const n = s.ord.length;
+          for (let p = 0; p < n - 1; p++) for (let q = p + 1; q < n; q++){
+            const ords = ordsOf(di); ords[si] = [...s.ord.slice(0, p), ...s.ord.slice(p, q + 1).reverse(), ...s.ord.slice(q + 1)];
+            const r = sim(di, ords); if (r.ok && r.obj > base[di].obj + 1e-9){ apply(di, ords); better = true; return; }
+          }
+        });
+        // Bir yeri başka güne/koridora/sıraya taşı (iki günün toplam puanı artıyorsa).
+        for (let di = 0; di < days.length && !better; di++) for (let si = 0; si < days[di].segs.length && !better; si++){
+          const s = days[di].segs[si];
+          for (let p = 0; p < s.ord.length && !better; p++){
+            const k = s.ord[p], from = ordsOf(di); from[si].splice(p, 1); const rf = sim(di, from); if (!rf.ok) continue;
+            for (let dj = 0; dj < days.length && !better; dj++){
+              if (!allowed(C[k], dj)) continue;
+              for (let sj = 0; sj < days[dj].segs.length && !better; sj++){
+                const t = days[dj].segs[sj]; if (t.t1 - t.t0 < 25) continue;
+                for (let q = 0; q <= (dj === di && sj === si ? s.ord.length - 1 : t.ord.length); q++){
+                  if (dj === di && sj === si && q === p) continue;
+                  const to = dj === di ? from.map(o => o.slice()) : ordsOf(dj); to[sj].splice(q, 0, k);
+                  const rt = sim(dj, to); if (!rt.ok) continue;
+                  const gain = dj === di ? rt.obj - base[di].obj : rf.obj + rt.obj - base[di].obj - base[dj].obj + dz(k, dj, di);
+                  if (gain > 1e-9){ if (dj === di) apply(di, to); else { apply(di, from); apply(dj, to); zDel(k, di); zAdd(k, dj); } better = true; break; }
+                }
+              }
+            }
+          }
+        }
+        // Değiştirme: kullanılan bir öneriyi, kullanılmayan bir yerle aynı noktada değiştir.
+        for (let di = 0; di < days.length && !better; di++) for (let si = 0; si < days[di].segs.length && !better; si++){
+          const s = days[di].segs[si];
+          for (let p = 0; p < s.ord.length && !better; p++){
+            const k = s.ord[p]; if (C[k].lock != null) continue;
+            for (let m = 0; m < C.length; m++){
+              if (used.has(m) || !allowed(C[m], di)) continue;
+              const ords = ordsOf(di); ords[si][p] = m; const r = sim(di, ords);
+              if (!r.ok) continue;
+              const gRem = dz(k, null, di); zDel(k, di); const gAdd = dz(m, di); zAdd(k, di);
+              if (r.obj - base[di].obj + gRem + gAdd > 1e-9){ apply(di, ords); used.delete(k); zDel(k, di); used.add(m); zAdd(m, di); better = true; break; }
+            }
+          }
+        }
+        if (better) insertAll();
+      }
+    }
+
+    const snap = () => days.map(d => d.segs.map(s => s.ord.slice()));
+    const load = S => { used.clear(); dayOf.fill(-1); days.forEach((d, di) => { d.segs.forEach((s, si) => { s.ord = S[di][si].slice(); s.ord.forEach(k => { used.add(k); zAdd(k, di); }); }); base[di] = sim(di); }); };
+    // Değerlendirme modu (I.fix: gün → koridor → yer adları): verilen planı (ör. kullanıcının elle düzelttiği) aynı ölçüyle puanlar.
+    if (I.fix){
+      const nk = n => String(n).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z\d]+/g, ' ').trim();
+      I.fix.forEach((segs, di) => segs.forEach((names, si) => { const s = days[di] && days[di].segs[si]; if (!s) return;
+        s.ord = names.map(n => C.findIndex(c => c.name === n || nk(c.name) === nk(n))).filter(k => k >= 0 && !used.has(k));
+        s.ord.forEach(k => { used.add(k); zAdd(k, di); }); }));
+      days.forEach((_, di) => { base[di] = sim(di); });
+      return result(total());
+    }
+    placeZones(); insertAll(); local();
+    let bestS = snap(), bestV = total();
+    const R = rng(I.seed || 17), iters = I.iters ?? 80;
+    for (let it = 0; it < iters; it++){
+      // Sarsma: bir ya da iki günden ardışık 1–3 yeri çıkar (kilitli olanlar kalır), sonra yeniden ekle ve iyileştir.
+      const zoneKick = R() < 0.5, nd = zoneKick ? 0 : 1 + (R() < 0.35 ? 1 : 0);
+      if (zoneKick){ const zs = [...new Set([...used].filter(k => C[k].lock == null).map(k => C[k].z))]; const nz = 1 + (R() < 0.4 ? 1 : 0);
+        for (let r = 0; r < nz && zs.length; r++){ const z = zs.splice(Math.floor(R() * zs.length), 1)[0];
+          days.forEach((d, di) => { let hit = false; d.segs.forEach(s => { s.ord = s.ord.filter(k => { if (C[k].z === z && C[k].lock == null){ used.delete(k); zDel(k); hit = true; return false; } return true; }); }); if (hit) base[di] = sim(di); }); }
+        placeZones(); }
+      for (let r = 0; r < nd; r++){
+        const di = Math.floor(R() * days.length), segs = days[di].segs.filter(s => s.ord.length); if (!segs.length) continue;
+        const s = segs[Math.floor(R() * segs.length)], len = 1 + Math.floor(R() * 3), p = Math.floor(R() * s.ord.length);
+        const cut = s.ord.splice(p, len).filter(k => { if (C[k].lock != null){ s.ord.splice(p, 0, k); return false; } return true; });
+        cut.forEach(k => { used.delete(k); zDel(k, di); }); base[di] = sim(di);
+      }
+      insertAll(); local();
+      const v = total();
+      if (v > bestV + 1e-9){ bestV = v; bestS = snap(); } else load(bestS);
+    }
+    load(bestS);
+    return result(bestV);
+    // Çıktı: günler, koridorlar, duraklar (saat, ara mesafe, metro), dışarıda kalan istekler.
+    function result(bestV){
+    const res = days.map((day, di) => {
+      const out = [], r = sim(di, null, out);
+      return {d:day.d, not:day.not, gunbatimi:day.ss, walkKm:Math.round(r.walk * 10) / 10, adim:Math.round(r.walk * STEP / 500) * 500, metro:r.hops, n:r.n, ok:r.ok,
+        segs:day.segs.map((s, si) => ({from:P[s.s].name, to:s.e != null ? P[s.e].name : '', t0:s.t0, t1:s.t1, ev:s.ev ? s.ev.name : '', end:out[si].end, back:out[si].back,
+          stops:out[si].rows.map(w => w.mola ? w : {name:C[w.k].name, at:w.at, dk:C[w.k].du, leg:w.leg, wish:!!C[w.k].wish, lock:C[w.k].lock != null})}))};
+    });
+    const left = C.filter((c, k) => !used.has(k) && (c.wish || c.lock != null)).map(c => ({name:c.name, why:days.every((_, di) => !allowed(c, di)) ? 'o günlerde kapalı' : 'süreye ya da günlük metro sınırına sığmadı'}));
+    return {days:res, out:left, puan:Math.round(bestV * 100) / 100, aday:C.length, gun:base.map(r => Math.round(r.obj * 100) / 100), semt:Math.round(bond() * 100) / 100};
+    }
+  }
+  return {plan, sunset, km, dur, fame, value, same};
+})();
 </script>
 
 <script>
@@ -2423,7 +2767,7 @@ function gBarHtml(c, g, f, can, must){
   const btn = (g0, txt, cls = '') => `<button type="button" class="btn sm ${cls}" data-g="${g0}" data-c="${C}" ${busy}>${txt}</button>`;
   return `<div class="gbar${g.ok ? ' ok' : ''}">
     <div class="gbs"><b>${g.ok ? `✅ Onaylandı · ${esc(nm(g.okBy || g.by))}` : '📝 Taslak'}</b><span>${g.days.length} gün · ${nv} durak${avg ? ` · günde ~${avg.toLocaleString('tr-TR')} adım` : ''} · ${esc(guidePrefs().tempo || 'Yoğun')}${over ? ` · <b class="gover">⚠ ${over} gün sınırın üstünde</b>` : ''}</span></div>
-    ${can ? `<div class="gbb">${btn('improve', f.gbusy === c && f.gstage === 'iyilestir' ? 'İyileştiriliyor…' : '✨ İyileştir')}${btn('gedit', `✏️ Yer ekle / değiştir${must.size ? ` (${must.size})` : ''}`, f.gedit === c ? 'on' : '')}${g.ok ? '' : btn('approve', '✅ Onayla', 'pri')}<button type="button" class="btn sm" data-g="gmore" data-c="${C}" aria-expanded="${more}">⋯</button></div>` : ''}
+    ${!can ? `<div class="gbb"><button type="button" class="btn sm" data-g="gmore" data-c="${C}" aria-expanded="${more}">⋯</button></div>` : ''}${can ? `<div class="gbb">${btn('improve', f.gbusy === c && f.gstage === 'iyilestir' ? 'İyileştiriliyor…' : '✨ İyileştir')}${btn('gedit', `✏️ Yer ekle / değiştir${must.size ? ` (${must.size})` : ''}`, f.gedit === c ? 'on' : '')}${g.ok ? '' : btn('approve', '✅ Onayla', 'pri')}<button type="button" class="btn sm" data-g="gmore" data-c="${C}" aria-expanded="${more}">⋯</button></div>` : ''}
     ${can && !f.gedit && !more && !g.ok ? `<p class="gbh">Plan hazırlanınca kendiliğinden iyileştirilir (puanlar, denetim, outlet kuralı; ne değiştiği "Son değişiklik"te). <b>✨ İyileştir</b>'i yalnız elle değişiklikten sonra kullan; yer eklemek ya da çıkarmak için <b>✏️ Yer ekle</b>. Beğenince <b>✅ Onayla</b>: açıklamalar yazılır, plan PDF'e ve Bugün şeridine girer.</p>` : ''}
     ${more ? `<div class="gmenu">
       ${can ? `<button type="button" class="link" data-g="gremake" data-c="${C}">🔄 Baştan hazırla (bütün plan yeniden yazılır)</button>` : ''}
@@ -2431,6 +2775,7 @@ function gBarHtml(c, g, f, can, must){
       ${can ? `<button type="button" class="link" data-g="gfood" data-c="${C}" ${busy}>${f.gbusy === c && f.gstage === 'yemek' ? 'Yemekler yenileniyor…' : '🍽 Yemekleri yenile (rota aynen kalır; Google puanı ve yorumuyla)'}</button>` : ''}
       <label class="link">🛂 Konsolosluk için uyruk <select class="inp gsel" data-g="guyruk" data-c="${C}"><option value="">Gösterme</option>${COUNTRIES.map(([k, n]) => `<option value="${k}" ${gUyruk() === k ? 'selected' : ''}>${gFlag(k)} ${esc(n)}</option>`).join('')}</select></label>
       ${g.prev ? `<button type="button" class="link" data-g="gundo" data-c="${C}" ${busy}>↩ Önceki taslağa dön</button>` : ''}
+      <button type="button" class="link" data-g="gtrial" data-c="${C}">🧪 Yeni planlayıcıyla dene (mevcut rehber değişmez)</button>
       <button type="button" class="link" data-g="kml" data-c="${C}">🗺 Google Haritalar'a (My Maps) aktar</button>
       <span class="gbh">📱 My Maps'e yüklenen harita telefonda Google Haritalar → Kaydedilenler → Haritalar'da açılır. Tek günü tarif olarak açmak için gün başlığındaki 🧭 Rota.</span>
       <button type="button" class="link" data-g="pdf" data-c="${C}">📄 Rehber raporu (PDF)</button>
@@ -2545,6 +2890,7 @@ function guideBody(){
         h += gBarHtml(c, g, f, can, must);
         if (can && f.gedit === c) h += gEditHtml(c, g, f, R, must);
         if (g.chg && g.chg.log && g.chg.log.length) h += gChgHtml(g);
+        h += gTrialHtml(c);
         h += g.days.map((x, i) => gDayHtml(c, g, x, i, f, can)).join('');
         if (g.unplaced && g.unplaced.length) h += `<div class="pmiss gun"><b>Elenen istekler · neden?</b>${g.unplaced.map(u => `<div class="gunrow"><span>✖ <b>${esc(u.name)}</b>: ${esc(u.why)}</span><button type="button" class="chip" data-g="must" data-c="${esc(c)}" data-n="${esc(u.name)}" aria-pressed="${must.has(u.name)}">${must.has(u.name) ? '✓ Eklenecek' : '➕ Mutlaka ekle'}</button></div>`).join('')}</div>`;
         const PR = {wc:'🚻', emanet:'🧳', ulasim:'🚇', eczane:'💊', diger:'ℹ️'};
@@ -4202,10 +4548,10 @@ function gNotReady(c){
   if (g && g.todo && g.todo.length && !gFinishing.has(c)){ gResumed.delete(c); gResume(c); }
   return true;
 }
-function guideKml(c){
-  if (gNotReady(c)) return;
-  const g = gNorm((S.trip.guide || {})[c]); if (!g) return;
-  if (gDedupe(g)){ gRouteAll(c); save(); }
+function guideKml(c, G){
+  if (!G && gNotReady(c)) return;
+  const g = gNorm(G || (S.trip.guide || {})[c]); if (!g) return;
+  if (!G && gDedupe(g)){ gRouteAll(c); save(); }
   // SADE HARİTA (kullanıcı: "birkaç günlük şehirde her şey üst üste, çok karışık"): rota GÜN GÜN ayrı katman (o günü aç,
   // gerisini kapat; numaralar şehir boyunca kesintisiz), yanında üç katman: 🍽 Yemek (hepsi; restoran turuncu, yemek pazarı
   // kiremit, tatlı pembe, fırın-kahvaltı-kafe kahverengi, adın başında simgesi), 🛍 Alışveriş (caddelerin gerçek çizgisi; ayrı
@@ -4223,7 +4569,7 @@ function guideKml(c){
   const styles = new Map(), ico = (code, rgb, lab) => { const id = `icon-${code}-${rgb}${lab ? '-labelson' : ''}`;
     if (!styles.has(id)) styles.set(id, `<Style id="${id}"><IconStyle><color>${K(rgb)}</color><scale>1</scale><Icon><href>${ICON}</href></Icon></IconStyle><LabelStyle><scale>${lab ? 1 : 0}</scale></LabelStyle></Style>`); return id; };
   const fCode = fd => fd.tur === 'tatli' ? (/dondurma|gelat|helad|ice ?cream/i.test(fd.name + ' ' + (fd.not || '')) ? 1607 : 1762) : fd.tur === 'kafe' ? 1534 : fd.tur === 'firin' || fd.tur === 'kahvalti' ? 1810 : /pizz/i.test(fd.name + ' ' + (fd.not || '').slice(0, 20)) ? 1651 : 1577;
-  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(c)}</name>`, '', `<Style id="cadde-hat"><LineStyle><color>${'b3' + K('212121').slice(2)}</color><width>3</width></LineStyle></Style>`];
+  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>', `<name>${X(G ? c + ' · deneme' : c)}</name>`, '', `<Style id="cadde-hat"><LineStyle><color>${'b3' + K('212121').slice(2)}</color><width>3</width></LineStyle></Style>`];
   // Gün durakları: şehir boyunca kesintisiz numaralı yuvarlak simge (sitemizdeki resimler, web/numara-simgeleri.py; 1–80).
   // My Maps'in "Sayı sırası" her katmanı 1'den başlattığı için numarayı simgenin kendisi taşır.
   const NUMS = 'https://ifayetorbay.github.io/icons/n/', num = (col, n) => { if (n > 80) return ico(503, col, true); const id = `heybe-${col}-${n}-labelson`;
@@ -4273,8 +4619,120 @@ function guideKml(c){
   if (prat.length) out.push(`<Folder><name>ℹ️ Pratik</name>${prat.join('')}</Folder>`);
   out.push('</Document></kml>'); out[3] = [...styles.values()].join('\n');
   // Dosya adında tarih-saat: Drive'da aynı adlı eski dosyalar birikince My Maps'te yanlışlıkla eskisi seçiliyordu.
-  const ts = (d => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`)(new Date()), fn = `${c}-rehber-${ts}.kml`;
+  const ts = (d => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`)(new Date()), fn = `${c}-${G ? 'deneme' : 'rehber'}-${ts}.kml`;
   saveFile(fn, new Blob([out.join('\n')], {type:'application/vnd.google-earth.kml+xml'})).then(ok => { if (ok) toast(`🗺 ${fn} hazır. My Maps'te İçe aktar ile bu (en yeni saatli) dosyayı yükle.${miss.length ? ` ⚠ Haritaya konamayan: ${miss.join(', ')}` : ''}`); });
+}
+// 🧪 Yeni planlayıcıyla deneme (2026-11-17, kullanıcı: "bağla"; mevcut rehbere dokunulmaz): koridor planlayıcı (HP.plan) uygulamadaki
+// veriyle çalışır, model ve Google'a istek atmaz. Girdi: seyahat planının gün pencereleri, mevcut rehberin biletli satırları ve
+// konumları, araştırma havuzu (Google'da doğrulanmış), rehberdeki ve önceki taslaktaki yerler, Elenenler, istek listesi. Sonuç ayrı
+// kayıtta (S.trip.gtrial[şehir]); haritası ayrı KML ("…-deneme-….kml"). Yemek, cadde, mağaza, bavul, konsolosluk ve pratik noktalar
+// mevcut rehberdeki (Google verili) kayıtlardan, yeni rotanın yakınında olanlar alınır (yeni Google araması yok).
+// Semt/tepe adı durak değildir (araştırma "Montjuïc", "Barri Gòtic" gibi bölge adlarını da veriyor).
+const G_AREA = /^(barri |el |la )?(g[oò]tic|raval|born|eixample|gr[aà]cia|montju[iï]c|barceloneta|poble[- ]sec|sants|trastevere|monti|testaccio|centro|centro hist[oó]rico|casco antiguo|malasa[ñn]a|chueca|lavapi[eé]s|la latina|salamanca|triana|santa cruz|oltrarno|tibidabo)( \(.*\))?$/i;
+// Şehrin saat farkı (dakika; gün batımı için): ülkenin standart saati + Avrupa yaz saati (Mart'ın ve Ekim'in son pazarı).
+function gTz(d){
+  const cc = (themeCountry() || [])[0] || 'ES', base = {PT:0, GB:0, IE:0, IS:0, GR:120, FI:120, RO:120, BG:120, CY:120, TR:180}[cc] ?? 60;
+  if (cc === 'TR' || cc === 'IS') return base;
+  const y = +d.slice(0, 4), last = m => { const t = new Date(Date.UTC(y, m + 1, 0)); return t.getUTCDate() - t.getUTCDay(); }, md = d.slice(5);
+  return base + (md >= `03-${String(last(2)).padStart(2, '0')}` && md < `10-${String(last(9)).padStart(2, '0')}` ? 60 : 0);
+}
+function gPlanInput(c, walkOnly){
+  const g = gNorm((S.trip.guide || {})[c]); if (!g || !g.home || !g.home.lat) return null;
+  const P = tripPlan(), pr = guidePrefs(), kah = /^Evde/.test(pr.kahvalti || '') ? 0 : 40, gd = new Map(g.days.map(x => [x.d, x])), days = [];
+  const pts = g.days.flatMap(x => x.items).filter(it => it.lat && it.src !== 'bilet'), med = a => a.sort((p, q) => p - q)[a.length >> 1];
+  const center = pts.length ? {lat:med(pts.map(i => +i.lat)), lon:med(pts.map(i => +i.lon))} : {lat:+g.home.lat, lon:+g.home.lon};
+  const short = n => String(n).replace(/\s*\(.*?\)\s*/g, ' ').trim().slice(0, 28);
+  for (const x0 of cityDays(c)){
+    const w = gWindow(c, x0, P), x = gd.get(x0.d); if (!w || !x) continue;
+    let start = w.a + (w.a < 720 ? kah : 0), end = {p:'home', t:Math.min(1230, w.z)}; const ev = [], not = [];
+    for (const it of x.items.filter(it => it.src === 'bilet')){
+      const t = hm(it.t);
+      if (/giriş|check-?in/i.test(it.name)){ if (t != null){ start = Math.max(start, t + 15); not.push(`ev girişi ${mh(t)}`); } continue; }
+      // Ayrılış günü ev sabah boşaltılır, bavul emanetçiye (evin ya da garın yakını): çıkış günün ortasında durak olmaz.
+      if (/çıkış|check-?out/i.test(it.name)){ not.push('ev çıkışı sabah, bavul emanete'); continue; }
+      if (gOutlet(it)){
+        const sp = g.outletStop && g.outletStop.lat ? g.outletStop : null, du = +it.sure || 480;
+        ev.push({name:it.name, lat:+it.lat, lon:+it.lon, t:t ?? 600, dur:du, via:{name:sp ? sp.name : 'Outlet servisi', lat:sp ? +sp.lat : center.lat, lon:sp ? +sp.lon : center.lon, min:45}, last:du >= 240});
+        not.push(`🛍 ${short(it.name)} ${mh(t ?? 600)}`); continue;
+      }
+      if (G_TRAVEL.test(it.name) && !gVisit(c, x.d, it)){
+        if (it.lat && t != null && t >= start + 60){ const air = /havaliman|airport|aeropuerto|aeroporto/i.test(it.name); end = {name:it.name, lat:+it.lat, lon:+it.lon, t:t - (air ? 120 : 30)}; not.push(`${air ? '✈️' : '🚆'} ${short(it.name)} ${mh(t)}`); }
+        continue;
+      }
+      if (t != null && it.lat){ ev.push({name:it.name, lat:+it.lat, lon:+it.lon, t, dur:+it.sure || 90, pre:15}); not.push(`🎟 ${short(it.name)} ${mh(t)}`); }
+    }
+    days.push({d:x0.d, not:`${mh(start)}'ten${not.length ? ' · ' + not.join(' · ') : ''}`, start, end, ev});
+  }
+  // Adaylar: aynı yer (aynı ad ya da 80 m içinde ortak sözcük) bir kez; Google puanı en çok yorumlu kayıttan, kaynak bilgisi araştırmadan.
+  const C = [], tk = n => gKey(n).split(' ').filter(w => w.length >= 4), same = (a, b) => gKey(a.name) === gKey(b.name) || (gKm(a, b) < 0.08 && tk(a.name).some(w => tk(b.name).includes(w)));
+  const add = (o, it) => {
+    if (o.lat == null || !o.name || !isFinite(o.lat)) return;
+    const q = C.find(z => same(z, o));
+    if (!q){ C.push({...o, src:it}); return; }
+    if ((o.n || 0) > (q.n || 0)){ q.r = o.r; q.n = o.n; }
+    for (const k of ['aile', 'kk', 'dur', 'hrs', 'cl']) if (o[k] != null && q[k] == null) q[k] = o[k];
+    if (o.wish) q.wish = true; if (!q.src && it) q.src = it;
+  };
+  const closedOf = it => { const v = it.open; if (!v || !Array.isArray(v.gun) || !v.gun.length || g247(v)) return undefined; return [0, 1, 2, 3, 4, 5, 6].filter(n => !v.gun.includes(n)); };
+  const fromItem = it => ({name:it.name, lat:+it.lat, lon:+it.lon, r:it.g && it.g.r, n:it.g && it.g.n, wish:it.src === 'liste', dur:+it.sure || undefined, hrs:it.hrs || undefined, cl:closedOf(it), area:G_AREA.test(String(it.name).trim())});
+  for (const x of [...g.days, ...((g.prev && g.prev.days) || [])]) for (const it of x.items)
+    if (it.src !== 'bilet' && (it.kind === 'gez' || it.kind === 'alis' || it.kind === 'aksam') && it.lat && !gOutlet(it)) add(fromItem(it), it);
+  for (const u of g.unplaced || []) if (u.lat) add({name:u.name, lat:+u.lat, lon:+u.lon, wish:!!u.istek, area:G_AREA.test(String(u.name).trim())});
+  const I = (S.trip.ilham || {})[c] || {};
+  for (const y of I.yerler || []) if (y.lat && (!I.dogrulama || y.ok)) add({name:y.ad, lat:+y.lat, lon:+y.lon, r:y.g && y.g.r, n:y.g && y.g.n, aile:(y.aile || []).length, kk:+y.kac_kaynak || 0, area:G_AREA.test(String(y.ad).trim())});
+  const W = new Set(gWish().filter(w => w.city === c).map(w => gKey(w.name)));
+  C.forEach(q => { if (W.has(gKey(q.name))) q.wish = true; });
+  return {g, src:new Map(C.map(q => [q.name, q.src])), input:{home:{lat:+g.home.lat, lon:+g.home.lon}, tz:gTz(days.length ? days[0].d : isoDay(Date.now())), tempo:pr.tempo || 'Yoğun', walkOnly, days, cands:C.map(({src, ...o}) => o)}};
+}
+// Planlayıcının sonucunu rehber biçimine çevirir (My Maps, adım, mesafe aynı kodla); kayıtlı rehbere dokunmaz.
+function gTrialGuide(c, A, R){
+  const g = A.g, cl = o => JSON.parse(JSON.stringify(o)), cand = new Map(A.input.cands.map(o => [o.name, o]));
+  const allFood = g.days.flatMap(x => x.food || []), allShop = g.days.flatMap(x => x.items.filter(it => it.kind === 'gecis' || it.kind === 'dukkan'));
+  const T = {trial:true, home:cl(g.home), at:Date.now(), by:S.me, ok:false, dd:1, pratik:cl(g.pratik || []), bavul:cl(g.bavul || []), ...(g.elci ? {elci:cl(g.elci)} : {}),
+    ...(g.outletStop ? {outletStop:cl(g.outletStop)} : {}), tips:[], unplaced:R.out.map(o => ({name:o.name, why:o.why, istek:true}))};
+  const uf = new Set(), us = new Set();
+  T.days = g.days.map(x => {
+    const r = R.days.find(d => d.d === x.d), B = x.items.filter(it => it.src === 'bilet').map(cl);
+    if (!r) return {d:x.d, back:x.back, yol:x.yol, items:B, food:[], rain:'', turler:[]};
+    const items = [];
+    for (const s of r.segs){
+      for (const st of s.stops){ if (!st.name) continue;
+        const src = A.src.get(st.name), o = cand.get(st.name) || {};
+        const it = src ? cl(src) : {name:st.name, kind:'gez', desc:'', addr:'', lat:o.lat, lon:o.lon, ...(o.n ? {g:{r:o.r, n:o.n}} : {})};
+        it.src = st.wish ? 'liste' : 'oneri'; it.t = ''; delete it.lock; delete it.hw; items.push(it); }
+      const b = s.ev && B.find(it => it.name === s.ev); if (b && !items.includes(b)) items.push(b);
+    }
+    for (const b of B) if (!items.includes(b)) items.push(b);   // ev giriş/çıkışı, uçak, tren: rota saatine göre yerleştirir
+    const P = items.filter(it => it.lat && it.src !== 'bilet'), near = (o, m) => o.lat && P.some(p => gKm(p, {lat:+o.lat, lon:+o.lon}) <= m);
+    const food = allFood.filter(fd => !uf.has(gKey(fd.name)) && near(fd, 0.45)).slice(0, 12); food.forEach(fd => uf.add(gKey(fd.name)));
+    const shop = allShop.filter(it => !us.has(gKey(it.name)) && (it.kind === 'gecis' ? (it.geom || []).flat().some(q => near({lat:q[0], lon:q[1]}, 0.25)) || near(it, 0.3) : near(it, 0.2)));
+    shop.forEach(it => us.add(gKey(it.name)));
+    return {d:x.d, back:x.back, yol:x.yol, items:[...items, ...shop.map(cl)], food:food.map(cl), rain:x.rain || '', turler:x.turler || []};
+  });
+  T.days.forEach((_, i) => gRoute(c, T, i, true));
+  return T;
+}
+function guideTrial(c, walkOnly){
+  const T0 = (S.trip.gtrial || {})[c], A = gPlanInput(c, walkOnly ?? (T0 ? T0.walkOnly : true));
+  if (!A) return toast('Deneme için önce bu şehrin rehberi gerekli (ev ve biletlerin konumu oradan alınır).');
+  const t0 = performance.now(), R = HP.plan(A.input), ms = Math.round(performance.now() - t0);
+  const res = R.days.map(d => ({d:d.d, not:d.not, km:d.walkKm, adim:d.adim, metro:d.metro, n:d.n, ok:d.ok,
+    segs:d.segs.map(s => ({ev:s.ev, st:s.stops.map(x => x.mola ? {m:1, at:Math.round(x.at)} : {n:x.name, at:x.at, w:x.wish ? 1 : 0, mt:x.leg.metro ? 1 : 0})}))}));
+  (S.trip.gtrial || (S.trip.gtrial = {}))[c] = {at:Date.now(), by:S.me, walkOnly:A.input.walkOnly, ms, aday:R.aday, out:R.out, res, guide:gTrialGuide(c, A, R)};
+  save(); if (form && form.mode === 'guide'){ form.gmore = null; drawSheetKeep(); }
+  toast(`🧪 ${c}: yeni planlayıcıyla deneme hazır (${ms} ms, ${R.aday} aday). Mevcut rehber değişmedi.`, {ms:6000});
+}
+function gTrialHtml(c){
+  const T = (S.trip.gtrial || {})[c]; if (!T) return ''; const C = esc(c); let no = 0;
+  const day = (r, i) => `<div class="gtd"><div class="gtdh"><b>${i + 1}. gün · ${planDay(r.d)}</b><span>${esc(r.not)}</span></div>
+    <div class="gtl">${r.segs.map(s => s.st.map(x => x.m ? `<p class="gtm">${mh(x.at)} 🍽 öğle molası</p>` : `<p><b class="gtn">${++no}</b><span class="gtt">${mh(x.at)}</span>${x.w ? '⭐ ' : ''}${esc(x.n)}${x.mt ? ' 🚇' : ''}</p>`).join('') + (s.ev ? `<p class="gte"><b class="gtn">${++no}</b>🎟 ${esc(s.ev)}</p>` : '')).join('')}</div>
+    <span class="gtx">${r.n} durak · 🚶 ${String(r.km).replace('.', ',')} km ≈ ${r.adim.toLocaleString('tr-TR')} adım${r.metro ? ` · 🚇 ${r.metro} kez` : ''}${r.ok ? '' : ' · ⚠ süreye sığmıyor'}</span></div>`;
+  return `<div class="gask gtrial"><div class="gedh"><b>🧪 Yeni planlayıcı · deneme</b><button type="button" class="x" data-g="gtrialx" data-c="${C}" aria-label="Denemeyi kapat">×</button></div>
+    <p class="note">Mevcut rehber değişmedi. ${esc(nm(T.by))}, ${dayLabel(T.at)} · ${T.aday} aday · ${T.ms} ms. Kayıtlı araştırma ve Google verisiyle hesaplandı; model ve Google'a istek atılmadı.</p>
+    <label class="gopus"><input type="checkbox" data-g="gtrialwalk" data-c="${C}" ${T.walkOnly ? 'checked' : ''}> 🚶 Yalnız yürüyüş (metro yalnız çok uzak yerlere; işaret kalkınca uzak aralarda metro; günde en çok 2)</label>
+    ${T.res.map(day).join('')}
+    ${T.out.length ? `<p class="note">Sığmayan istekler: ${T.out.map(o => esc(o.name)).join(', ')}</p>` : ''}
+    <div class="ptools"><button type="button" class="btn sm pri" data-g="gtrialkml" data-c="${C}">🗺 Deneme haritası (My Maps)</button><button type="button" class="btn sm" data-g="gtrial" data-c="${C}">🔄 Yeniden hesapla</button></div></div>`;
 }
 // O günün rehber durakları (şehir değiştirilen gün iki şehrin rehberinde de olabilir; aynı ad bir kez).
 function guideOf(d){
@@ -4465,6 +4923,9 @@ function guideAct(d){
   if (d.g === 'improve'){ f.gmore = null; guideImprove(d.c); return; }
   if (d.g === 'gedit'){ f.gedit = f.gedit === d.c ? null : d.c; f.gmore = null; drawSheetKeep(); return; }
   if (d.g === 'gmore'){ f.gmore = f.gmore === d.c ? null : d.c; drawSheetKeep(); return; }
+  if (d.g === 'gtrial'){ guideTrial(d.c); return; }
+  if (d.g === 'gtrialx'){ if (S.trip.gtrial) delete S.trip.gtrial[d.c]; save(); drawSheetKeep(); return; }
+  if (d.g === 'gtrialkml'){ const T = (S.trip.gtrial || {})[d.c]; if (T) guideKml(d.c, T.guide); return; }
   if (d.g === 'gremake'){ f.gremake = d.c || null; drawSheetKeep(); return; }
   if (d.g === 'gfood'){ f.gmore = null; guideFoodRefresh(d.c); return; }
   if (d.g === 'gundo'){ if (gPrevBack(d.c)){ drawSheetKeep(); if (tab === 'gezi') render(); toast('↩ Önceki taslağa dönüldü (yeniden dokunursan yenisi gelir).'); } return; }
@@ -7701,6 +8162,7 @@ document.addEventListener('change', async ev => {
   const el = ev.target, b = el.dataset.bind;
   if (form && el.dataset.g === 'gopus'){ form.gopus = el.checked; return; }
   if (form && el.dataset.g === 'guyruk'){ S.trip.uyruk = el.value; const g = (S.trip.guide || {})[el.dataset.c]; save(); if (g){ delete g.elci; await gPrep(el.dataset.c, g); } drawSheetKeep(); return; }
+  if (form && el.dataset.g === 'gtrialwalk'){ guideTrial(el.dataset.c, el.checked); return; }
   if (form && el.dataset.g === 'gmetro'){ const G = S.trip.greq || (S.trip.greq = {}); (G[el.dataset.c] || (G[el.dataset.c] = {})).metro = el.checked; save(); drawSheetKeep(); return; }
   if (form && el.classList.contains('gkml') && el.files && el.files[0]){
     const c = el.dataset.gkc;
