@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261119181722';</script>
-<script src="heybe-web.js?v=20261119181722"></script>
+<script>window.HEYBE_VER = '20261119234440';</script>
+<script src="heybe-web.js?v=20261119234440"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -364,6 +364,10 @@ html.sheetopen,html.sheetopen body{overflow:hidden}
 .gask>.btn{align-self:flex-start}
 .gtrial{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
 .gflow{display:flex;flex-direction:column;margin:4px 0 8px}
+.lvlist{display:flex;flex-direction:column;max-height:46vh;overflow:auto}
+.lvr{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-top:1px solid var(--line)}
+.lvr>div:first-child{display:flex;flex-direction:column}
+.lvr .chip{padding:5px 10px;font-size:.8rem}
 .gfs{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
 .gfs:first-child{border-top:0}
 .gfs>div{min-width:0;display:flex;flex-direction:column}
@@ -1004,18 +1008,23 @@ const HP = (() => {
     const days = I.days.map((d, di) => {
       const segs = [], ss = sunset(H.lat, H.lon, d.d, tz), wd = new Date(d.d + 'T12:00').getDay();
       let t = d.start, p = 0;
+      let aft = null;
       for (const ev of [...(d.ev || [])].sort((a, b) => a.t - b.t)){
         const ep = ev.p === 'home' ? 0 : pid({lat:+ev.lat, lon:+ev.lon, name:ev.name}), tp = ev.via ? pid({lat:+ev.via.lat, lon:+ev.via.lon, name:ev.via.name}) : ep;
-        segs.push({s:p, e:tp, t0:t, t1:ev.t - (ev.pre || 0) - (ev.via ? ev.via.min : 0), ev, ord:[]});
+        segs.push({s:p, e:tp, t0:t, t1:ev.t - (ev.pre || 0) - (ev.via ? ev.via.min : 0), ev, ord:[], ...(aft ? {aft} : {})}); aft = null;
         if (ev.last){ p = -1; break; }
-        t = ev.t + ev.dur; p = ep;
+        // Servisle gidilen outletten dönüş (2026-11-19): gün servisin indiği yerden, dönüş yolu kadar sonra devam eder.
+        if (ev.via){ t = ev.t + ev.dur + ev.via.min; p = tp; } else { t = ev.t + ev.dur; p = ep; }
+        if (ev.after) aft = ev.after;
       }
-      if (p >= 0 && d.end) segs.push({s:p, e:d.end.p === 'home' ? 0 : pid({lat:+d.end.lat, lon:+d.end.lon, name:d.end.name}), t0:t, t1:d.end.t, ord:[]});
+      if (p >= 0 && d.end) segs.push({s:p, e:d.end.p === 'home' ? 0 : pid({lat:+d.end.lat, lon:+d.end.lon, name:d.end.name}), t0:t, t1:d.end.t, ord:[], ...(aft ? {aft} : {})});
       // Gün türü (kullanıcının kuralları ve İDEAL harita): öğleden sonra başlayan varış günü hafif (durak tavanı pencereyle orantılı ×0,6);
       // outlet sabahında en çok 3 durak, ev → servis hattının 1 km yakınında (servisi kaçırmamak için).
       // "Günü doldur" seçilen günde bu hafiflik yok.
       if (d.start >= 780 && segs.length){ const h = ((d.end ? d.end.t : segs[segs.length - 1].t1) - d.start) / 60; segs.forEach(s => { s.maxN = Math.max(2, Math.round(capN * h / 12 * (d.fill ? 1 : 0.6))); if (s.t1 - s.t0 >= 180) s.minN = Math.min(2, s.maxN); }); }
-      segs.forEach(s => { if (s.ev && s.ev.last && s.ev.dur >= 240){ s.maxN = Math.min(s.maxN ?? 3, 3); s.line = 1.0; } });
+      segs.forEach(s => { if (s.ev && (s.ev.outlet || (s.ev.last && s.ev.dur >= 240))){ s.maxN = Math.min(s.maxN ?? 3, 3); s.line = 1.0; } });
+      // Outletten sonra (2026-11-19, kullanıcı kuralı; ev.after): 14:00–16:00 arası çıkışta en çok 2 rahat yer, evin yakınında.
+      segs.forEach(s => { if (s.aft){ s.maxN = Math.min(s.maxN ?? s.aft.n, s.aft.n); s.homeKm = s.aft.km; } });
       // 3 saatten uzun her boş aralıkta mümkünse en az 2 durak (yumuşak; 2026-11-18 Sevilla: derli toplu merkez tek güne toplanıp
       // varış günü 3 + 4,5 saatlik boşluklarla boş kalıyordu).
       segs.forEach(s => { if (s.minN == null && s.t1 - s.t0 >= 180 && !(s.ev && s.ev.last)) s.minN = Math.min(2, s.maxN ?? 2); });
@@ -1106,6 +1115,7 @@ const HP = (() => {
         if (s.maxN != null && ord.length > s.maxN && ord.some(k => C[k].lock == null)) ok = false;
         if (s.minN && ord.length < s.minN) pen += W.thin * (s.minN - ord.length);
         if (s.line) for (const k of ord) if (toLine(P[C[k].i], P[s.s], P[s.e]) > s.line){ if (C[k].lock == null) ok = false; else pen += W.warn; }
+        if (s.homeKm) for (const k of ord) if (C[k].lock == null && km(P[C[k].i], H) > s.homeKm) ok = false;
         for (const k of ord){
           if (lunch && t >= 765){ t += mola; lunch = false; if (out) rows.push({mola:'öğle', at:Math.round(t - mola), dk:mola}); }
           const c = C[k], L = leg(prev, c.i, MAX_HOPS - hops); t += L[0]; walk += L[1]; hops += L[2]; if (c.lock != null) nl++;
@@ -1495,7 +1505,8 @@ const perEur = c => c === 'EUR' ? 1 : c === 'TRY' ? S.trip.rate : ((S.trip.rates
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const person = id => S.people.find(p => p.id === id) || {name:'?'};
 const rawName = id => id === 'kasa' ? 'Ortak kasa' : person(id).name;
-const nm = id => esc(rawName(id));
+const nm = id => esc(rawName(id)) + (id !== 'kasa' && (S.people.find(p => p.id === id) || {}).left ? ' 🚪' : '');
+let relAsk = null, relAskT = null;   // 🔓 telefon bağını kaldırma onayı (ilk dokunuş)
 // Her kişinin bir emojisi var (Seyahat sekmesinden değiştirilir); seçilmemişse sırasına göre verilir.
 const EMOJI_SETS = [
   ['Hayvanlar', '🦊 🐢 🦉 🐙 🦁 🐼 🐧 🦄 🐝 🐬 🦋 🐨 🐯 🐸 🦜 🐳 🐶 🐱 🐻 🐰 🦒 🐘 🦩 🦔 🐿️ 🦭 🐞 🦀'],
@@ -2163,11 +2174,12 @@ function viewTrip(){
   <p class="hint">${mg ? `Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}${isTripAdmin() && myUid ? ' ☆ işaretine dokunarak birini yardımcı kurucu (⭐) yapabilirsin; ☆ kişi Heybe\'ye katılıp adını seçince çıkar.' : ''}` : 'Kendi emojine dokunarak değiştirebilirsin.'}</p>
   <div class="list">${S.people.map(p => `<div class="swr"><button class="swdel l" data-delp="${p.id}" tabindex="-1">Sil</button><button class="swdel r" data-delp="${p.id}" tabindex="-1">Sil</button><div class="row pcard prow">
     <button type="button" class="emo" data-emo="${p.id}" aria-label="${esc(p.name)} emojisini değiştir">${emojiOf(p.id)}</button>
-    <input class="inp" id="pn-${p.id}" data-pname="${p.id}" value="${esc(p.name)}" aria-label="İsim" ${dis}>
+    <input class="inp" id="pn-${p.id}" data-pname="${p.id}" value="${esc(p.name)}" aria-label="İsim" ${dis}>${p.left ? '<span class="lockmark" title="Geziden ayrıldı; hesabı kapanınca silinebilir">🚪</span>' : ''}
     ${isTripAdmin() && myUid ? (p.uid === myUid ? `<span class="lockmark" title="Kurucu">👑</span>` : p.uid ? `<button type="button" class="fbtn" data-admin="${p.id}" aria-pressed="${admins.has(p.uid)}" title="Yardımcı kurucu">${admins.has(p.uid) ? '⭐' : '☆'}</button>` : '')
       : p.uid && p.uid === myUid && admins.has(myUid) ? `<span class="lockmark" title="Yardımcı kurucusun">⭐</span>` : ''}
     ${isFamilies() ? `<span class="famctl"><button type="button" class="fbtn" data-fam="${p.id}" data-fk="size">👤 ${p.size || 1}</button><button type="button" class="fbtn" data-fam="${p.id}" data-fk="kids">🧒 ${p.kids || 0}</button></span>` : ''}
-    ${p.uid ? (isManager() && myUid ? `<button type="button" class="btn sm" data-release="${p.id}" title="Bu kişinin telefon bağını kaldır">🔓</button>` : `<span class="lockmark" title="Bir telefona bağlı">🔒</span>`) : ''}
+    ${p.uid ? (isManager() && myUid ? (relAsk === p.id ? `<button type="button" class="btn sm danger" data-releaseok="${p.id}">Bağı kaldır?</button>` : `<button type="button" class="btn sm" data-release="${p.id}" title="Bu kişinin telefon bağını kaldır">🔓</button>`) : `<span class="lockmark" title="Bir telefona bağlı">🔒</span>`)
+      : p.freed && isManager() && myUid && !S.people.some(q => q.uid === p.freed) ? `<button type="button" class="btn sm" data-relock="${p.id}" title="Eski telefona yeniden bağla">🔒 Yeniden kilitle</button>` : ''}
   </div></div>`).join('')}</div>
   ${isFamilies() ? `<p class="hint">👤 yetişkin, 🧒 çocuk sayısı: dokundukça artar (en fazla 9, sonra başa döner). Yeni harcamalar bu sayılara göre bölünür.</p>` : ''}
   ${mg ? `<button class="btn block" data-act="addperson">${isFamilies() ? '+ Aile ekle' : '+ Kişi ekle'}</button>` : ''}
@@ -2317,7 +2329,7 @@ function drawSheet(){
     ? `<div class="seg wide kinds" role="group" aria-label="Kayıt türü">${kinds.map(([k, l, m]) => `<button type="button" data-kind="${k}" aria-pressed="${f.mode === m}">${l}</button>`).join('')}</div>` : '';
   if (f.mode === 'expense'){
     // Sade form: varsayılanlar hazır gelir, sadece değiştirmek istenene dokunulur.
-    const n = f.among.length, everyone = n === S.people.length, cat = catById(f.cat);
+    const n = f.among.length, act = S.people.filter(p => !p.left), everyone = n === act.length && act.every(p => f.among.includes(p.id)), cat = catById(f.cat);
     const wOf = id => (f.weights && f.weights[id] > 1 ? f.weights[id] : 1), heavy = f.among.filter(id => wOf(id) > 1);
     const amongText = (everyone ? `Herkes (${n} kişi)` : (n ? f.among.map(nm).join(', ') : 'Kimse seçilmedi'))
       + (heavy.length ? ' · ' + heavy.map(id => `${nm(id)} ×${wOf(id)}`).join(', ') : '');
@@ -2331,9 +2343,9 @@ function drawSheet(){
     <div class="rows">
       ${dateBlock(f)}
       ${isFamily() ? '' : `<button type="button" class="srow" data-act="togglepayer"><span>Ödeyen</span><b>${nmE(f.paidBy)} ›</b></button>`}
-      ${f.showPayer ? `<div class="chips pad">${S.people.map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.paidBy===p.id, `data-payer="${p.id}"`)).join('')}${S.trip.kasaOn ? chip('💰 Ortak kasa', f.paidBy==='kasa', 'data-payer="kasa"', 'kasa-c') : ''}</div>` : ''}
+      ${f.showPayer ? `<div class="chips pad">${S.people.filter(p => !p.left || f.paidBy === p.id).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.paidBy===p.id, `data-payer="${p.id}"`)).join('')}${S.trip.kasaOn ? chip('💰 Ortak kasa', f.paidBy==='kasa', 'data-payer="kasa"', 'kasa-c') : ''}</div>` : ''}
       ${isFamily() ? '' : `<button type="button" class="srow" data-act="toggleamong"><span>Bölüşülen</span><b>${amongText} ›</b></button>`}
-      ${f.showAmong ? `<div class="chips pad">${chip('Herkes', everyone, 'data-all="1"')}${S.people.map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.among.includes(p.id), `data-among="${p.id}"`)).join('')}</div>${weightsHtml()}` : ''}
+      ${f.showAmong ? `<div class="chips pad">${chip('Herkes', everyone, 'data-all="1"')}${S.people.filter(p => !p.left || f.among.includes(p.id)).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.among.includes(p.id), `data-among="${p.id}"`)).join('')}</div>${weightsHtml()}` : ''}
       ${isFamily() ? '' : `<span class="note num" id="fEach">${eachNote()}</span>`}
     </div>
     <div class="photo">
@@ -2441,9 +2453,14 @@ function drawSheet(){
     body = `<p class="note">Bu telefonu kim kullanıyor? ${myUid ? 'Bir kez seç; bundan sonra bu hesap hep bu kişi olarak açılır. Başkasının seçtiği kişi seçilemez.' : 'Bir kez seç: harcama eklerken “ödeyen” sen olursun, hesabın sana göre gösterilir.'}</p>
       <div class="whochips">${S.people.map(p => { const taken = myUid && p.uid && p.uid !== myUid;
         return `<button type="button" class="btn" data-who="${p.id}" ${taken ? 'disabled' : ''}>${emojiOf(p.id)}  ${esc(p.name)}${taken ? ' · 🔒 başka bir telefonda' : ''}</button>`; }).join('')}</div>`;
+  } else if (f.mode === 'addpeople'){
+    body = addPeopleBody(f);
+  } else if (f.mode === 'delperson' && (f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left){
+    body = `<div class="seg wide">${[['ayril', '🚪 Geziden ayrıldı'], ['aktar', '🔁 Kayıtlarını birine aktar']].map(([k, t]) => `<button type="button" data-delhow="${k}" aria-pressed="${(f.how || 'ayril') === k}">${t}</button>`).join('')}</div>` + leaveBody(f);
   } else if (f.mode === 'delperson'){
     const n = personUses(f.pid);
-    body = `<p class="note"><b>${nmE(f.pid)}</b> adına ${n} kayıt var (ödediği, payı olduğu ya da gönderdiği/aldığı). Silmeden önce bu kayıtları kime aktaralım?</p>
+    body = `${person(f.pid).left ? `<p class="note">🚪 ${nm(f.pid)} geziden ayrılmıştı. Hesabı kapandıysa (bakiyesi 0) kayıtlarını birine aktararak tamamen silebilirsin; kimsenin bakiyesi değişmez.</p>` : `<div class="seg wide">${[['ayril', '🚪 Geziden ayrıldı'], ['aktar', '🔁 Kayıtlarını birine aktar']].map(([k, t]) => `<button type="button" data-delhow="${k}" aria-pressed="${(f.how || 'ayril') === k}">${t}</button>`).join('')}</div>`}
+      <p class="note"><b>${nmE(f.pid)}</b> adına ${n} kayıt var (ödediği, payı olduğu ya da gönderdiği/aldığı). Silmeden önce bu kayıtları kime aktaralım?</p>
       <div class="chips">${S.people.filter(p => p.id !== f.pid).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.target === p.id, `data-ptarget="${p.id}"`)).join('')}</div>
       <p class="note">Ödediği harcamalar ve ödemeler seçtiğin kişiye geçer, payı onun payına eklenir. Toplamlar değişmez.</p>`;
   } else if (f.mode === 'emoji'){
@@ -2465,8 +2482,8 @@ function drawSheet(){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
-  const saveLbl = {expense:'Kaydet', delperson:'Aktar ve sil', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', addpeople: isFamilies() ? 'Aile ekle' : 'Kişi ekle', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const saveLbl = {expense:'Kaydet', delperson:f.mode === 'delperson' && (f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left ? '🚪 Ayrıldı olarak kaydet' : 'Aktar ve sil', addpeople:'Ekle', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
   // Açık pencere yeniden çizilirken pencerenin kendisi korunur, yalnız içi yenilenir: telefonda kaydırma ve ivme kesilmez
@@ -2546,7 +2563,7 @@ function startExpense(e){
   else {
     // Seyahat öncesinde varsayılan: TL ve "şimdi ödeşiyoruz"; seyahatte: son kullanılan para birimi, sonda hesap.
     const phase = defaultPhase(), pre = phase === 'pre';
-    openSheet({mode:'expense', newId:uid(), phase, date:isoDay(Date.now()), amount:'', cur:pre ? 'TRY' : (S.lastCur || 'EUR'), desc:'', cat:'diger', catManual:false, paidBy:S.me, among:S.people.map(p => p.id), weights:defaultWeights(),
+    openSheet({mode:'expense', newId:uid(), phase, date:isoDay(Date.now()), amount:'', cur:pre ? 'TRY' : (S.lastCur || 'EUR'), desc:'', cat:'diger', catManual:false, paidBy:S.me, among:S.people.filter(p => !p.left).map(p => p.id), weights:defaultWeights(),
       settleTL:pre, photo:null, photoChanged:false, place:null, placeState:'loading'});
     locate(form);
   }
@@ -3005,7 +3022,7 @@ function gDayHtml(c, g, x, i, f, can){
     + (x.back !== false && g.home && g.home.lat ? (last => last ? gLegHtml(last, g.home).replace('class="gleg">', 'class="gleg">🏠 Eve dönüş · ') || (Lg.get('ev') ? `<div class="gleg">🏠 Eve dönüş · ${gLegTxt(Lg.get('ev'), 0, 1)}</div>` : '') : '')([...x.items].reverse().find(p => p.lat && !gFar(g, p))) : '')
     + (food.length ? `<details class="gfood" open><summary>🍽 Bu rotada yemek · tatlı · fırın <span class="m">(${food.length}; saatsiz, acıkınca en yakını)</span></summary>${food.map(fd => gFoodRow(c, fd)).join('')}</details>` : '')
     + (sw ? `<div class="gswap"><span>✖ ${esc(sw.it.name)} çıkarıldı</span>${can ? `<button type="button" class="btn sm pri" data-g="swap" ${f.gbusy ? 'disabled' : ''}>${f.gbusy === 'swap' ? 'Aranıyor…' : '✨ Yerine öner'}</button>` : ''}<button type="button" class="link" data-g="unswap">Geri al</button></div>` : '')
-    + (x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : '') + `</div>`;
+    + (x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : '') + gAirHtml(g, x.d) + `</div>`;
 }
 function guideBody(){
   const f = form, st = f.gstep || 0, cities = guideCities();
@@ -3237,7 +3254,7 @@ function guidePayload(c){
   // Şehir değiştirilen günde öbür şehrin ev giriş/çıkışı bu şehrin rehberine girmez.
   const mine = it => !it.e.priv && !((it.kind === 'in' || it.kind === 'out') && stayCity(it.e) !== c);
   const trip = {
-    sehir:c, ulke:tc ? tc[1] : '', kisi:S.people.length,
+    sehir:c, ulke:tc ? tc[1] : '', kisi:S.people.filter(p => !p.left).length,
     gunler:days.map((x, i) => ({
       d:x.d, gun:planDay(x.d), not:[x.d === P.a ? 'seyahatin ilk günü, varış' : i === 0 && x.city.includes('→') ? 'bu şehre varış günü' : '', x.d === P.z ? 'seyahatin son günü, dönüş' : i === days.length - 1 && x.city.includes('→') ? 'bu şehirden ayrılış günü' : ''].filter(Boolean).join(', '),
       gezi_penceresi:(w => w ? `${mh(w.a)}–${mh(w.z)} (durakları yalnız bu saatler arasına koy)` : 'YOK: bu gün bu şehirde gezi ya da yemek durağı koyma; yalnız bilet/yolculuk/ev giriş-çıkışı (src=bilet)')(gWindow(c, x, P)),
@@ -4881,6 +4898,10 @@ const gWdTop = (c, minN = 0) => { const Y = (((S.trip.wd || {})[c] || {}).yerler
   const top = Y.filter(y => y.links >= th); return top.length >= minN ? top : [...Y].sort((a, b) => b.links - a.links).slice(0, minN); };
 const gPlanCenter = g => { const pts = (g.days || []).flatMap(x => x.items).filter(it => it.lat && it.src !== 'bilet'), med = a => a.sort((p, q) => p - q)[a.length >> 1];
   return pts.length ? {lat:med(pts.map(i => +i.lat)), lon:med(pts.map(i => +i.lon))} : g.home && g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null; };
+// Outlet günü kuralı (2026-11-19, kullanıcı): outletten çıkış 16:00 ya da sonrası → o gün gezi yok; 14:00–16:00 → en çok 2 rahat
+// yer, evin ~1,2 km çevresinde; 14:00'ten önce → öğleden sonra olağan gezi. Outletten önce yol üstünde en çok 3 kısa durak.
+const G_OUTRE = /outlet|village|designer|\bavm\b|\bmall\b|alışveriş merkezi|centro comercial/i;
+const gOutRule = end => end >= 960 ? {last:true} : end >= 840 ? {after:{n:2, km:1.2}} : {};
 // Deneme düzenlemeleri E (2026-11-18): kilit {ad: gün} (kullanıcının taşıdığı ya da eklediği yer o günde kalır), cikar [ad]
 // (bir daha önerilmez), gun {gün: {bas, mola, doldur, cap}} (başlangıç saati dk, öğle molası dk, "günü doldur", elle çıkarmadan
 // sonraki durak tavanı), pref {ad: gün} (şimdiki plandaki günü: yeniden hesapta yerler yerinde kalır; yumuşak tercih).
@@ -4904,10 +4925,11 @@ function gPlanInput(c, walkOnly, g0, E = {}){
       if (/giriş|check-?in/i.test(it.name)){ if (t != null){ if (t - start <= 120) start = Math.max(start, t + 15); not.push(t - start > 120 ? `bavul emanete, ev girişi ${mh(t)}` : `ev girişi ${mh(t)}`); } continue; }
       // Ayrılış günü ev sabah boşaltılır, bavul emanetçiye (evin ya da garın yakını): çıkış günün ortasında durak olmaz.
       if (/çıkış|check-?out/i.test(it.name)){ not.push('ev çıkışı sabah, bavul emanete'); continue; }
-      if (gOutlet(it)){
-        const sp = g.outletStop && g.outletStop.lat ? g.outletStop : null, du = +it.sure || 480;
-        ev.push({name:it.name, lat:+it.lat, lon:+it.lon, t:t ?? 600, dur:du, via:{name:sp ? sp.name : 'Outlet servisi', lat:sp ? +sp.lat : center.lat, lon:sp ? +sp.lon : center.lon, min:45}, last:du >= 240});
-        not.push(`🛍 ${short(it.name)} ${mh(t ?? 600)}`); continue;
+      // Outlet: rehberde "alis" türü ya da seyahat planında adında outlet / village / AVM / mall geçen saatli kayıt (2026-11-19).
+      if (gOutlet(it) || G_OUTRE.test(it.name)){
+        const sp = g.outletStop && g.outletStop.lat ? g.outletStop : null, t0 = t ?? 600, du = +it.sure || 480;
+        ev.push({name:it.name, lat:+it.lat || center.lat, lon:+it.lon || center.lon, t:t0, dur:du, via:{name:sp ? sp.name : 'Outlet servisi', lat:sp ? +sp.lat : center.lat, lon:sp ? +sp.lon : center.lon, min:45}, outlet:1, ...gOutRule(t0 + du)});
+        not.push(`🛍 ${short(it.name)} ${mh(t0)}–${mh(t0 + du)}`); continue;
       }
       // Yolculuk (tren, uçak, gar): adından tanınır (eski eşleştirme şehir adı yüzünden treni ziyaret sanabiliyordu).
       if (G_TRAVEL.test(it.name) && !/m[üu]ze|museum|museo|museu|stad|tour\b|\btur\b/i.test(it.name)){
@@ -4920,6 +4942,13 @@ function gPlanInput(c, walkOnly, g0, E = {}){
       }
       if (t != null && it.lat){ ev.push({name:it.name, lat:+it.lat, lon:+it.lon, t, dur:+it.sure || 90, pre:15}); not.push(`🎟 ${short(it.name)} ${mh(t)}`); }
     }
+    // Kullanıcının yazdığı outlet (tercihte outlet seçili şehirde; ad, gün, gidiş ve dönüş saati; konum OpenStreetMap'ten).
+    const UO = (S.trip.outlet || {})[c];
+    if (UO && !UO.none && UO.d === x0.d && UO.lat && !ev.some(e => e.outlet)){
+      ev.push({name:UO.name, lat:+UO.lat, lon:+UO.lon, t:UO.t0, dur:UO.t1 - UO.t0, outlet:1, ...gOutRule(UO.t1)}); not.push(`🛍 ${short(UO.name)} ${mh(UO.t0)}–${mh(UO.t1)}`); }
+    // Erken saatli outlette gün yola çıkışla başlar (outletten 1 saat önce): 09:00 outletinde gün 08:40'ta başlayınca yol sığmıyor,
+    // gün tamamen boş kalıyordu (2026-11-19).
+    { const oe = ev.find(e => e.outlet); if (oe && oe.t - 60 < start) start = Math.max(floor, oe.t - 60); }
     const U = (E.gun || {})[x0.d] || {};
     if (U.bas != null) start = Math.max(+U.bas, floor);
     // Gezi yok (2026-11-19): ⚙ Gün → "Bu gün gezi yok" (bos 1) ya da uçakla ayrılış günü (tercih; bos 0 ile o gün açılır).
@@ -4946,8 +4975,16 @@ function gPlanInput(c, walkOnly, g0, E = {}){
     if (it.src !== 'bilet' && (it.kind === 'gez' || it.kind === 'alis' || it.kind === 'aksam') && it.lat && !gOutlet(it)) add(fromItem(it), it);
   for (const u of g.unplaced || []) if (u.lat) add({name:u.name, lat:+u.lat, lon:+u.lon, wish:!!u.istek, area:G_AREA.test(String(u.name).trim())});
   const I = (S.trip.ilham || {})[c] || {};
-  for (const y of I.yerler || []) if (y.lat && (!I.dogrulama || y.ok)) add({name:y.ad, ...(y.alt ? {alt:y.alt} : {}), lat:+y.lat, lon:+y.lon, r:y.g && y.g.r, n:y.g && y.g.n, aile:(y.aile || []).length, kk:+y.kac_kaynak || 0, area:G_AREA.test(String(y.ad).trim())});
-  const wdC = y => ({name:y.ad, alt:y.adlar.filter(a => a !== y.ad), lat:y.lat, lon:y.lon, links:y.links, weak:!(g.skeleton || g.wdOnly)}), top = gWdTop(c, Math.max(0, 8 * days.length - C.length));
+  // Araştırmadaki bar, restoran, kafe gezi durağı olmaz; yemekler ③'te Google'dan (2026-11-19 Sevilla: "Bar Garlochí" durak olmuştu).
+  const FOODRE = /^(bar|taberna|bodega|cervecer[ií]a|restaurante?|caf[eé]|cafeter[ií]a|pizzer[ií]a|helader[ií]a|confiter[ií]a|pasteler[ií]a|trattoria|osteria|bistro)\b|\b(bar|pub|tapas)$/i;
+  for (const y of I.yerler || []) if (y.lat && (!I.dogrulama || y.ok) && !FOODRE.test(String(y.ad).trim())) add({name:y.ad, ...(y.alt ? {alt:y.alt} : {}), lat:+y.lat, lon:+y.lon, r:y.g && y.g.r, n:y.g && y.g.n, aile:(y.aile || []).length, kk:+y.kac_kaynak || 0, area:G_AREA.test(String(y.ad).trim())});
+  const sk = g.skeleton || g.wdOnly, wdC = y => ({name:y.ad, alt:y.adlar.filter(a => a !== y.ad), lat:y.lat, lon:y.lon, links:y.links, weak:!sk});
+  let top = gWdTop(c, sk ? 0 : Math.max(0, 8 * days.length - C.length));
+  // Rehbersiz şehirde gün başına ~12 aday olacak kadar Wikidata yeri (araştırmada zaten olan yer sayılmaz; 2026-11-19 Sevilla: aday
+  // havuzu tükenip 6 Aralık 2 durakta kalmıştı).
+  if (sk){ const used = new Set(C.flatMap(q => [q.name, ...(q.alt || [])]).map(gKey)), fresh = y => !y.adlar.some(a => used.has(gKey(a)));
+    const need = 12 * days.filter(x => !x.bos).length - C.length - top.filter(fresh).length;
+    if (need > 0) top = [...top, ...((((S.trip.wd || {})[c] || {}).yerler || []).filter(y => !top.includes(y) && fresh(y) && !G_WD_DROP.test(y.tur || '') && !G_AREA.test(y.ad)).sort((a, b) => b.links - a.links).slice(0, need))]; }
   for (const y of top) C.push(wdC(y));
   // Kullanıcının seçtiği (benzeriyle değiştir, A–B arası) ama en ünlüler listesinde olmayan Wikidata yeri de aday olur.
   const KN = new Set(Object.keys(E.kilit || {}).map(gKey));
@@ -4968,7 +5005,7 @@ function gPlanInput(c, walkOnly, g0, E = {}){
 function gTrialGuide(c, A, Tr){
   const g = A.g, cl = o => JSON.parse(JSON.stringify(o)), cand = new Map(A.input.cands.map(o => [o.name, o]));
   const allFood = g.days.flatMap(x => x.food || []), allShop = g.days.flatMap(x => x.items.filter(it => it.kind === 'gecis' || it.kind === 'dukkan'));
-  const T = {trial:true, home:cl(g.home), at:Date.now(), by:S.me, ok:false, dd:1, pratik:cl(g.pratik || []), bavul:cl(g.bavul || []), ...(g.elci ? {elci:cl(g.elci)} : {}),
+  const E0 = (S.trip.elci || {})[c], T = {trial:true, home:cl(g.home), at:Date.now(), by:S.me, ok:false, dd:1, pratik:cl(g.pratik || []), bavul:cl(g.bavul || []), ...(g.elci ? {elci:cl(g.elci)} : E0 && E0.lat ? {elci:cl(E0)} : {}),
     ...(g.outletStop ? {outletStop:cl(g.outletStop)} : {}), tips:[], unplaced:(Tr.out || []).map(o => ({name:o.name, why:o.why, istek:true}))};
   const uf = new Set(), us = new Set();
   T.days = g.days.map(x => {
@@ -5010,7 +5047,7 @@ function gTrialRun(c, o = {}){
   const A = gPlanInput(c, o.walkOnly ?? (T0 ? T0.walkOnly : gWalkPref()), skel, {...E, pref}); if (!A) return null;
   const t0 = performance.now(), R = HP.plan(A.input), ms = Math.round(performance.now() - t0);
   const res = R.days.map(d => ({d:d.d, not:d.not, km:d.walkKm, adim:d.adim, metro:d.metro, n:d.n, ok:d.ok,
-    segs:d.segs.map(s => ({ev:s.ev, st:s.stops.map(x => x.mola ? {m:1, at:Math.round(x.at), dk:x.dk || 60}
+    segs:d.segs.map(s => ({ev:s.ev, ...(s.to && s.to !== 'Ev' && !s.ev ? {to:s.to, t1:s.t1} : {}), st:s.stops.map(x => x.mola ? {m:1, at:Math.round(x.at), dk:x.dk || 60}
       : {n:x.name, at:x.at, w:x.wish ? 1 : 0, mt:x.leg.metro ? 1 : 0, ...(x.lock ? {l:1} : {}), ...(x.uyari ? {u:x.uyari} : {})})}))}));
   if (T0) gTrialUndo[c] = cp(T0);
   const T = {at:Date.now(), by:S.me, walkOnly:A.input.walkOnly, ms, aday:R.aday, wd:A.input.cands.filter(q => q.links).length, skel:!!skel,
@@ -5040,6 +5077,7 @@ async function gCollect(c, step, g){
       else toast('🔎 Araştırma şu an yapılamadı; rota Wikidata ve isteklerinle kuruluyor. Sonra 🔄 ile yeniden dene.', {ms:7000});
     } catch(_) {} finally { gAwake(false); }
   }
+  { const H0 = g && g.home && g.home.lat ? g.home : null; if (H0){ step('🛂 En yakın temsilcilik OpenStreetMap\'te aranıyor…'); await gEmbassy(c, H0); } }
   const I = IL[c], H = g && g.home && g.home.lat ? g.home : null, Y = ((I && I.yerler) || []).filter(y => y.lat == null && !y.yok);
   if (!I || !Y.length || !H) return;
   const W = ((S.trip.wd || {})[c] || {}).yerler || [], k6 = (a, b) => Math.min(a.length, b.length) >= 6 && (a.includes(b) || b.includes(a));
@@ -5148,6 +5186,76 @@ function gTrialAct(c, kind, d){
   if (form){ form.gtsel = null; form.gtab = null; drawSheetKeep(); }
   toast(`${msg} · ${gTrialDiff(r.T0, r.T, want.map(w => w[0]))}${miss.length ? ` · ⚠ ${miss.join(', ')} o güne sığmadı (süre ya da adım sınırı)` : ''} (${r.ms} ms)`, {ms:8000});
 }
+// ✈️ Dönüş günü havalimanına ulaşım (2026-11-19, kullanıcı: "dönüş gününde havalimanını gösterelim; en son Google'dan ulaşım; nasıl
+// gidersiniz önerisi, yapay zekâyla"): ③'te bir kez. Google evin yakınındaki havalimanı otobüsü durağını bulur (aylık sınır doluysa
+// atlanır); öneriyi sunucunun "duzelt" kipi yazar (yalnız not: seçenekler, nereden kalkar, süre, yaklaşık fiyat, kaç saat önce
+// çıkılmalı). Google Haritalar'da toplu taşıma yol tarifi bağlantısı. Kayıt g.ulasim; dönüş gününün sonunda görünür.
+const G_AIR = /havaliman|airport|aeropuerto|aeroporto|a[ée]roport|u[çc]ak|flight|✈/i;
+const gAirHtml = (g, d) => { const U = g && g.ulasim; if (!U || U.d !== d || !U.text) return '';
+  return `<div class="gtrav"><b>🚌 Havalimanına ulaşım</b><span class="m">${esc(U.text)}</span>${U.stop ? `<span class="m">📍 En yakın havalimanı otobüsü durağı: ${esc(U.stop.name)} (evden ~${Math.round(U.stop.km * 1000)} m)</span>` : ''}${U.url ? `<a class="btn sm" href="${esc(U.url)}" target="_blank" rel="noopener">🧭 Yol tarifi (Google Haritalar)</a>` : ''}</div>`; };
+async function gAirInfo(c, g){
+  const H = g.home && g.home.lat ? g.home : null; if (!H) return false;
+  const x = [...g.days].reverse().find(x => x.items.some(it => it.src === 'bilet' && G_AIR.test(it.name) && hm(it.t) != null)); if (!x) return false;
+  const fl = x.items.find(it => it.src === 'bilet' && G_AIR.test(it.name) && hm(it.t) != null), A = fl.lat ? {lat:+fl.lat, lon:+fl.lon} : null;
+  if (g.ulasim && g.ulasim.d === x.d && g.ulasim.text) return true;
+  let stop = null;
+  try { const r = await window.claude.guide({mode:'yakin', city:c, lat:+H.lat, lon:+H.lon, items:[{q:'airport bus stop', lat:+H.lat, lon:+H.lon, r:1500, min:1, n:5}]});
+    if (r && r.src === 'google'){ const L = (((r.items || [])[0] || {}).list || []).filter(p => p.lat).map(p => ({name:p.name, lat:p.lat, lon:p.lon, km:gKm(H, p)})).sort((a, b) => a.km - b.km); stop = L[0] || null; } } catch(_) {}
+  const ask = `Yalnız "not" alanını yaz; ekle, cikar ve tasi boş kalsın. ${c} şehrinde konaklama: ${H.addr || 'şehir merkezi'}. ${planDay(x.d)} günü ${fl.t} uçuşu için havalimanına en iyi ulaşım önerisi: seçenekler (havalimanı otobüsü, metro ya da tren, taksi), nereden kalkar, sıklık, süre, yaklaşık fiyat ve evden kaçta çıkılmalı (uluslararası uçuşta havalimanında 2 saat önce olmak için).${stop ? ` Google'a göre evin en yakınındaki havalimanı otobüsü durağı: ${stop.name}, evden ~${Math.round(stop.km * 1000)} m.` : ''} En çok 4 kısa cümle, Türkçe.`;
+  let text = '';
+  try { const r = await gAsk({mode:'duzelt', city:c, prefs:guidePrefs(), ask, plan:{gunler:[]}}); text = String((r && r.not) || '').trim(); } catch(_) {}
+  if (!text && !stop) return false;
+  g.ulasim = {d:x.d, text:text || 'Ulaşım önerisi alınamadı; yol tarifine bak.', stop, at:Date.now(), ...(A ? {url:`https://www.google.com/maps/dir/?api=1&origin=${(+H.lat).toFixed(6)},${(+H.lon).toFixed(6)}&destination=${A.lat.toFixed(6)},${A.lon.toFixed(6)}&travelmode=transit`} : {})};
+  save(); return true;
+}
+// 🛂 En yakın temsilcilik (2026-11-19, kullanıcı: "kişinin ülkesinin büyükelçiliği de planda olsun"): ① adımında OpenStreetMap'ten
+// (Overpass; ücretsiz): şehrin 20 km çevresindeki büyükelçilik / konsolosluk, yoksa ülkedeki en yakını (çoğu kez başkentteki
+// büyükelçilik). Uyruk Seyahat ayarındaki (varsayılan Türkiye). Bulunamazsa ③'te Google arar (gPrep). Kayıt S.trip.elci[şehir].
+async function gEmbassy(c, H){
+  const U = gUyruk(); if (!U || !H) return null;
+  const E = S.trip.elci || (S.trip.elci = {}); if (E[c] && E[c].cc === U && (E[c].lat || Date.now() - (E[c].at || 0) < 864e5)) return E[c];
+  const ask = async q => { try { const r = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(`[out:json][timeout:25];(${q});out center 30;`)); return r.ok ? ((await r.json()).elements || []) : null; } catch(_) { return null; } };
+  const sel = `nwr["office"="diplomatic"]["country"="${U}"]AREA;nwr["amenity"="embassy"]["country"="${U}"]AREA;`;
+  let L = await ask(sel.replaceAll('AREA', `(around:20000,${(+H.lat).toFixed(5)},${(+H.lon).toFixed(5)})`));
+  if (L && !L.length){ const cc = ((await gGeo(c)) || {}).cc; if (cc) L = await ask(`area["ISO3166-1"="${cc}"][admin_level=2]->.a;` + sel.replaceAll('AREA', '(area.a)')); }
+  if (L == null) return null;
+  const P = L.map(e => ({t:e.tags || {}, lat:e.lat ?? (e.center || {}).lat, lon:e.lon ?? (e.center || {}).lon})).filter(e => e.lat != null)
+    .map(e => ({...e, km:gKm(H, e), emb:/embassy/.test(e.t.diplomatic || e.t.amenity || '')})).sort((a, b) => a.km - b.km);
+  const b = P[0];
+  E[c] = b ? {cc:U, src:'osm', at:Date.now(), name:b.t['name:tr'] || b.t.name || (b.emb ? 'Büyükelçilik' : 'Konsolosluk'), addr:[b.t['addr:street'], b.t['addr:housenumber'], b.t['addr:city']].filter(Boolean).join(' '), lat:+b.lat.toFixed(6), lon:+b.lon.toFixed(6), km:Math.round(b.km * 10) / 10}
+    : {cc:U, none:1, at:Date.now()};
+  save(); return E[c];
+}
+// 🛍 Outlet (2026-11-19, kullanıcı: "outlet seçiliyse adını, gününü ve saatini kendisi yazsın; seçili değilse kimse önermesin; Sonnet
+// kullanma"): tercihte o şehir için outlet seçili ve seyahat planında outlet kaydı yoksa rotada uyarı ve alanlar (ad, gün, gidiş, dönüş).
+// Konum OpenStreetMap'ten; kayıt S.trip.outlet[şehir] (herkes görür); "Outlet'e gitmeyeceğiz" {none:1}.
+function gOutletHtml(c, T, f){
+  const want = (guidePrefs().outlet || []).includes(c), UO = (S.trip.outlet || {})[c], has = UO && !UO.none, C = esc(c), edit = f.gtout === c;
+  if (!want && !has) return '';
+  if (has && !edit) return `<p class="note">🛍 <b>${esc(UO.name)}</b> · ${planDay(UO.d)} ${mh(UO.t0)}–${mh(UO.t1)} · <button type="button" class="link" data-g="gtoutedit" data-c="${C}">değiştir</button> · <button type="button" class="link" data-g="gtoutno" data-c="${C}">kaldır</button></p>`;
+  if (!edit && (UO && UO.none || T.res.some(r => /🛍/.test(r.not || '')))) return '';
+  const o = has ? UO : {};
+  return `<div class="callout"><b>🛍 Tercihlerde ${C} için outlet seçili</b><span>Gitmek istediğiniz outlet'in adını, gününü, gidiş ve dönüş saatini yazın. Dönüş 16:00 ya da sonrasıysa o gün başka gezi konmaz; 14:00–16:00 arasıysa evin yakınında 1–2 yer.</span>
+    <input class="inp" id="gtoN" maxlength="80" placeholder="Outlet adı (ör. Lagoh Sevilla)" value="${esc(o.name || '')}">
+    <div class="gadd"><select class="inp gsel" id="gtoD">${T.res.map(r => `<option value="${r.d}" ${o.d === r.d ? 'selected' : ''}>${planDay(r.d)}</option>`).join('')}</select>
+      <label class="gtk">Gidiş <input type="time" class="inp" id="gtoT0" value="${o.t0 != null ? mh(o.t0) : '10:00'}" style="width:auto"></label><label class="gtk">Dönüş <input type="time" class="inp" id="gtoT1" value="${o.t1 != null ? mh(o.t1) : '15:00'}" style="width:auto"></label></div>
+    <div class="ptools" style="margin-top:0"><button type="button" class="btn sm pri" data-g="gtout" data-c="${C}">Kaydet</button><button type="button" class="link" data-g="gtoutno" data-c="${C}">Outlet'e gitmeyeceğiz</button></div></div>`;
+}
+async function gOutletSave(c){
+  const v = id => (document.getElementById(id) || {}).value || '', name = v('gtoN').trim(), d = v('gtoD'), t0 = hm(v('gtoT0')), t1 = hm(v('gtoT1'));
+  if (!name) return toast('Outlet adını yaz.');
+  if (t0 == null || t1 == null || t1 <= t0) return toast('Gidiş ve dönüş saatini yaz (dönüş gidişten sonra).');
+  const T = (S.trip.gtrial || {})[c], g = (S.trip.guide || {})[c] || (T && T.skelG), H = g && g.home && g.home.lat ? g.home : null;
+  toast('📍 Outlet OpenStreetMap\'te aranıyor…', {ms:3000});
+  let p = await gGeo(gKey(name).includes(gKey(c)) ? name : `${name}, ${c}`);
+  if (!(p && (!H || gKm(H, p) < 60))) p = await gGeo(name);
+  if (!(p && (!H || gKm(H, p) < 60))) return toast('Outlet\'in konumu bulunamadı; adını daha açık ya da adresiyle yaz (ör. "Lagoh Sevilla").', {ms:7000});
+  (S.trip.outlet || (S.trip.outlet = {}))[c] = {name, d, t0, t1, lat:p.lat, lon:p.lon, by:S.me, at:Date.now()}; save();
+  if (form) form.gtout = null;
+  if (T) gTrialRun(c, {});
+  if (form && form.mode === 'guide') drawSheetKeep(); else if (tab === 'gezi') render();
+  toast(`🛍 ${name} · ${planDay(d)} ${mh(t0)}–${mh(t1)} rotaya girdi${t1 >= 960 ? '; o gün başka gezi yok' : t1 >= 840 ? '; dönüşte evin yakınında 1–2 yer' : ''}.`, {ms:7000});
+}
 // 💬 Plana söyle (2026-11-19, tek akış; kullanıcı: "uçak gününe gezi koyma dedim, işlemedi"): yazılan istek planın günleriyle
 // sunucunun "duzelt" kipine gider (model yalnız ekle / çıkar / taşı yazar, planı kurmaz); dönen işlemler düğme eylemleri gibi
 // uygulanır: taşı = o güne kilit, çıkar = bir daha önerilmez (bir günün bütün durakları çıkarsa o gün "gezi yok"), ekle = bilinen
@@ -5228,6 +5336,7 @@ async function guideComplete(c){
     const todo = g.days.filter(x => !x.yol && !(x.food || []).length && x.items.some(it => it.lat && it.src !== 'bilet'));
     if (todo.length){ step('🍽 Yemekler Google\'dan seçiliyor (puan, yorum, açık saat)…'); if (await gFoodGoogle(c, g, todo, g.model || undefined) === false) google = false; else L.push('🍽 yemekler'); }
     if (google){ step('🧳 Bavul emanetçisi, konsolosluk ve caddelerin mağazaları…'); await gPrep(c, g); gNearDone.delete(c); await gNearby(c); await gStreetShops(c, g); L.push('🧳 bavul, konsolosluk, mağazalar'); }
+    step('✈️ Havalimanına ulaşım önerisi hazırlanıyor…'); if (await gAirInfo(c, g)) L.push('✈️ havalimanına ulaşım');
     gShopTidy(g, []); gNearFilter(g); gRouteAll(c);
     g.tamam = {...(g.tamam || {}), at:Date.now(), ...(google ? {google:Date.now()} : {})};
     g.chg = {at:Date.now(), by:S.me, log:[`③ Google'la tamamlandı: ${L.join(', ') || 'eksik yoktu'}${google ? '' : '; Google\'ın aylık sınırı dolu, yemek ve bavul ayın 1\'inde'}.`]}; save();
@@ -5298,7 +5407,7 @@ function gFlowHtml(c){
   const row = (n, st, t, x) => `<div class="gfs ${st === 'done' ? 'gfok' : st === 'now' ? 'gfnow' : ''}"><b class="gfn">${st === 'done' ? '✓' : n}</b><div><b>${t}</b><span>${x}</span></div></div>`;
   return `<div class="gflow">
     ${row(1, ny || wd || T ? 'done' : 'now', 'Yerleri topla', ny ? `${ny} yer araştırmadan${wd ? ' + Wikidata' : ''}${wish} · Google kullanılmaz` : wd ? `Wikidata'dan ${wd} yer${wish}${T && window.claude && window.claude.guide ? ' · araştırma için ② Rota → 🔄 Baştan hesapla' : ''}` : 'Şehrin öne çıkan yerleri araştırılır, isteklerinizle birleşir. Ücretsiz.')}
-    ${row(2, T ? 'done' : ny || wd ? 'now' : '', 'Rotayı kur', T ? `${T.res.length} gün · ${ns} durak · durağa dokunarak ya da 💬 Plana söyle ile düzelt` : 'Yerler günlere dağıtılır; anında ve ücretsiz, istediğin kadar düzeltirsin.')}
+    ${row(2, T ? 'done' : ny || wd ? 'now' : '', 'Rotayı kur', T ? `${T.res.length} gün · ${ns} durak · durağa dokunarak ya da 💬 Plana söyle ile düzelt${(guidePrefs().outlet || []).includes(c) && !(S.trip.outlet || {})[c] && !T.res.some(r => /🛍/.test(r.not || '')) ? ' · 🛍 outlet bilgisi bekleniyor' : ''}` : 'Yerler günlere dağıtılır; anında ve ücretsiz, istediğin kadar düzeltirsin.')}
     ${row(3, comp ? 'done' : T ? 'now' : '', 'Google\'la tamamla', stale ? 'Rota değişti: yeniden bas, rehber yeni rotayla kurulur (yalnız eksikler aranır).' : g && g.tamam ? (g.tamam.google ? `${dayLabel(g.tamam.google)} · yemek, alışveriş, bavul, konsolosluk` : 'Google\'ın aylık sınırı doluydu: ayın 1\'inde yeniden bas.') : 'Rotanın çevresindeki yemek, alışveriş caddeleri ve mağazalar, bavul emanetçisi, konsolosluk. Bir kez.')}
     ${row(4, g && g.ok ? 'done' : g && g.tamam ? 'now' : '', 'Onayla', g && g.ok ? `✅ ${esc(nm(g.okBy || g.by))} onayladı` : 'Açıklamalar yazılır; PDF, harita ve "Bugün" şeridi hazır olur.')}
     ${gRunning.has(c) && gCompMsg ? `<p class="note">⏳ ${esc(gCompMsg)}</p>` : ''}
@@ -5319,14 +5428,17 @@ function gTrialHtml(c){
       <label>🍽 Öğle molası <select class="inp gsel" data-g="gtmola" data-c="${C}" data-d="${r.d}">${[['', 'Olağan (60 dk)'], ['0', 'Yok'], ['30', '30 dk'], ['45', '45 dk'], ['60', '60 dk'], ['90', '90 dk']].map(([v, t]) => `<option value="${v}" ${String(U(r).mola ?? '') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <button type="button" class="chip${U(r).doldur ? ' on' : ''}" data-g="gtfill" data-c="${C}" data-d="${r.d}">${U(r).doldur ? '✓ Dolu gün (geri al)' : '➕ Günü doldur'}</button>
       <button type="button" class="chip${/🚫/.test(r.not) ? ' on' : ''}" data-g="gtbos" data-c="${C}" data-d="${r.d}" data-v="${/🚫/.test(r.not) ? 1 : 0}">${/🚫/.test(r.not) ? '✓ Bu gün gezi yok (aç)' : '🚫 Bu gün gezi yok'}</button></div>` : ''}
-    <div class="gtl">${r.segs.map(s => s.st.map(x => x.m ? `<p class="gtm">${mh(x.at)} 🍽 öğle molası${x.dk && x.dk !== 60 ? ` (${x.dk} dk)` : ''}</p>` : stop(r, x)).join('') + (s.ev ? `<p class="gte"><b class="gtn">${++no}</b>🎟 ${esc(s.ev)}</p>` : '')).join('')}</div>
+    <div class="gtl">${r.segs.map(s => s.st.map(x => x.m ? `<p class="gtm">${mh(x.at)} 🍽 öğle molası${x.dk && x.dk !== 60 ? ` (${x.dk} dk)` : ''}</p>` : stop(r, x)).join('') + (s.ev ? `<p class="gte"><b class="gtn">${++no}</b>🎟 ${esc(s.ev)}</p>` : '')
+      + (s.to ? `<p class="gte">${G_AIR.test(s.to) ? '✈️' : '🚆'} ${esc(s.to)} · ${mh(s.t1)}'de ${G_AIR.test(s.to) ? 'havalimanında' : 'garda'} ol</p>${gAirHtml((S.trip.guide || {})[c], r.d)}` : '')).join('')}</div>
     <span class="gtx">${r.n} durak · 🚶 ${String(r.km).replace('.', ',')} km ≈ ${r.adim.toLocaleString('tr-TR')} adım${r.metro ? ` · 🚇 ${r.metro} kez` : ''}${U(r).doldur ? ' · ➕ dolu gün' : ''}${r.ok ? '' : ' · ⚠ süreye sığmıyor'}</span></div>`;
   const nf = gNewFlow(c);
   return `<div class="gask gtrial"><div class="gedh"><b>${nf ? '② Rota' : '🧪 Yeni planlayıcı · deneme'}</b>${nf ? '' : `<button type="button" class="x" data-g="gtrialx" data-c="${C}" aria-label="Denemeyi kapat">×</button>`}</div>
     <p class="note">${T.skel ? `Ev, bilet ve tren konumları OpenStreetMap'ten; yerler ${((S.trip.ilham || {})[c] || {}).yerler ? 'araştırmadan, ' : ''}Wikidata'dan${gWish().some(w => w.city === c) ? ' ve isteklerinizden' : ''}.` : `${T.adopted ? 'Rehberdeki' : 'Mevcut rehber değişmedi;'} kayıtlı araştırma, Google verisi ve Wikidata'yla hesaplandı.`} ${esc(nm(T.by))}, ${dayLabel(T.at)} · ${T.aday} aday${T.wd ? ` · Wikidata'dan ${T.wd} kayıt (aynı yerler birleşir)` : ''} · ${T.ms} ms. ${nf ? 'Rotayı planlayıcı kurdu; Google kullanılmadı.' : 'Model ve Google\'a istek atılmadı.'}</p>
+    ${(() => { const E = (S.trip.elci || {})[c] || ((S.trip.guide || {})[c] || {}).elci; return E && E.lat && E.cc === gUyruk() ? `<p class="note">${gFlag(E.cc)} En yakın temsilcilik: <b>${esc(E.name)}</b>${E.addr ? ' · ' + esc(E.addr) : ''}${E.km > 20 ? ` · ${Math.round(E.km)} km (başka şehirde)` : ''} · <a href="https://www.google.com/maps/search/?api=1&query=${E.lat},${E.lon}" target="_blank" rel="noopener">haritada aç</a></p>` : ''; })()}
     <p class="gbh">Bir durağa dokun: başka güne taşı, benzeriyle değiştir, çıkar ya da iki durağın arasını doldur. Her değişiklikte plan yeniden hesaplanır, öteki yerler gününde kalır; taşıdığın yer 📌 kilitli. ⚙ Gün: başlangıç saati, öğle molası, günü doldur, gezi yok.</p>
     <div class="gadd"><input class="inp" id="gtSay" maxlength="400" placeholder="💬 Plana söyle: ör. son gün gezi olmasın · Metropol Parasol 2. güne" value="${esc(f.gtsayTxt || '')}"><button type="button" class="btn sm pri" data-g="gtsay" data-c="${C}" ${f.gtsay ? 'disabled' : ''}>${f.gtsay === c ? 'Uygulanıyor…' : 'Uygula'}</button></div>
     ${(T.chat || []).length ? `<div class="gchat">${T.chat.slice(-3).map(m => `<p class="gq">🗣 ${esc(m.q)}</p>${m.a ? `<p class="ga">🧭 ${esc(m.a)}</p>` : ''}`).join('')}</div>` : ''}
+    ${gOutletHtml(c, T, f)}
     ${ab ? `<div class="callout"><b>↔ A: ${esc(ab.a)}</b><span>Şimdi aynı günde B durağına dokun; aradaki yolu en az uzatan en çok 2 yer eklenir.</span><button type="button" class="link" data-g="gtabx" data-c="${C}">Vazgeç</button></div>` : ''}
     <label class="gopus"><input type="checkbox" data-g="gtrialwalk" data-c="${C}" ${T.walkOnly ? 'checked' : ''}> 🚶 Yalnız yürüyüş (metro yalnız çok uzak yerlere; işaret kalkınca uzak aralarda metro; günde en çok 2)</label>
     ${T.res.map(day).join('')}
@@ -5551,6 +5663,9 @@ function guideAct(d){
   if (d.g === 'gtunlock'){ gTrialAct(d.c, 'unlock', {n:d.n}); return; }
   if (d.g === 'gtfill'){ gTrialAct(d.c, 'fill', {d:d.d}); return; }
   if (d.g === 'gtedit'){ f.gtedit = f.gtedit === d.c ? null : d.c; drawSheetKeep(); return; }
+  if (d.g === 'gtout'){ gOutletSave(d.c); return; }
+  if (d.g === 'gtoutedit'){ f.gtout = d.c; drawSheetKeep(); return; }
+  if (d.g === 'gtoutno'){ (S.trip.outlet || (S.trip.outlet = {}))[d.c] = {none:1}; f.gtout = null; save(); if ((S.trip.gtrial || {})[d.c]) gTrialRun(d.c, {}); drawSheetKeep(); toast('🛍 Outlet rotadan çıktı.'); return; }
   if (d.g === 'gtbos'){ gTrialAct(d.c, 'bos', {d:d.d, on:d.v === '1'}); return; }
   if (d.g === 'gtsay'){ gTrialSay(d.c, (document.getElementById('gtSay') || {}).value); return; }
   if (d.g === 'gtab'){ form.gtab = {c:d.c, a:d.n, d:d.d}; form.gtsel = null; drawSheetKeep(); toast('Şimdi aynı günde B durağına dokun.'); return; }
@@ -5759,7 +5874,14 @@ function submit(){
     catch(_) { ta.select(); fail('Otomatik kopyalanamadı; metin seçildi, elle kopyalayabilirsin.'); }
     return;
   }
+  if (f.mode === 'addpeople'){
+    const names = apNames(f); if (!names.length) return fail('En az bir ad yaz.');
+    const dup = names.find((n, i) => names.findIndex(m => m.toLocaleLowerCase('tr') === n.toLocaleLowerCase('tr')) !== i || S.people.some(q => q.name.toLocaleLowerCase('tr') === n.toLocaleLowerCase('tr')));
+    if (dup) return fail(`${dup} iki kez geçiyor; soyadının baş harfini ekle.`);
+    return addPeople(names, f.jch || {});
+  }
   if (f.mode === 'delperson'){
+    if ((f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left) return leavePerson(f.pid, f.lch || {});
     if (!f.target) return fail('Kayıtların aktarılacağı kişiyi seç.');
     return removePerson(f.pid, f.target);
   }
@@ -7634,7 +7756,7 @@ const KIND = () => (S.trip && S.trip.kind) || 'friends';
 const isFamily = () => KIND() === 'family', isFamilies = () => KIND() === 'families';
 const famWeight = p => (p.size || 1) + (p.kids || 0) * (S.trip.kidHalf ? .5 : 1);
 const headcount = () => S.people.reduce((a, p) => a + (isFamilies() ? (p.size || 1) + (p.kids || 0) : 1), 0) || 1;
-const defaultWeights = () => { if (!isFamilies()) return null; const w = Object.fromEntries(S.people.filter(p => famWeight(p) !== 1).map(p => [p.id, famWeight(p)])); return Object.keys(w).length ? w : null; };
+const defaultWeights = () => { if (!isFamilies()) return null; const w = Object.fromEntries(S.people.filter(p => !p.left && famWeight(p) !== 1).map(p => [p.id, famWeight(p)])); return Object.keys(w).length ? w : null; };
 const peopleLabel = () => isFamilies() ? `${S.people.length} aile · ${headcount()} kişi` : isFamily() ? `aile · ${S.people.length} kişi` : `${S.people.length} kişi`;
 
 // ---- katılımcı silme ----
@@ -7682,6 +7804,101 @@ function mergePerson(from, to){
     if (e.tlPaid) e.tlPaid = [...new Set(e.tlPaid.map(x => x === from ? to : x))].filter(x => x !== e.paidBy);
   }
   S.entries = S.entries.filter(e => !((e.kind === 'transfer' || e.kind === 'kasaout') && e.from === e.to));
+}
+// 🚪 Geziden ayrıldı (2026-11-19, kullanıcı: "bir arkadaş geziye katılmayacak; payına düşenleri harmanlayalım; her ödemede
+// bölüştürülsün ya da kalsın seçeneği"): ayrılanın bölüştüğü her harcama için seçim: "bol" = payı kalanlara bölünür, "kalsin" = payını
+// yine o öder. Varsayılan: ortak harcamada bölünsün, yalnız onun için yapılmış harcamada (bölüşen yalnız o) yine o ödesin; orada
+// "bölünsün" seçilirse kalan herkese bölünür. Ödediği harcamalar ve ödemeler aynen kalır: kalanlar ona borçlanır. Kaydı kalmazsa
+// tamamen silinir; kalırsa "ayrıldı" (p.left) olur: yeni harcamalarda ve kişi seçimlerinde çıkmaz, Hesaplaşma'da 🚪 ile görünür.
+const leaveRows = id => S.entries.filter(e => e.kind === 'expense' && (e.among || []).includes(id)).sort((a, b) => a.at - b.at);
+const leaveDef = (e, id) => e.among.length === 1 && e.among[0] === id ? 'kalsin' : 'bol';
+function leaveApply(st, id, ch, R){
+  const active = st.people.filter(p => p.id !== id && !p.left).map(p => p.id); let k = 0;
+  for (const e of st.entries){
+    if (e.kind !== 'expense' || !(e.among || []).includes(id) || (ch[e.id] || leaveDef(e, id)) !== 'bol') continue;
+    // TL'yle hemen ödeşilen harcamada "payını gönderdi" işaretleri önce ödeme kaydına çevrilir (paylar değişince işaret anlamsızlaşır).
+    if (e.settleTL && (e.tlPaid || []).length){ const sh = splitShares(Math.round(e.amount * 100), e.among, e.weights);
+      for (const pid of e.tlPaid) if (pid !== e.paidBy && sh[pid]) st.entries.push({id:uid(), kind:'transfer', total:true, from:pid, to:e.paidBy, amount:sh[pid] / 100, cur:'TRY', rate:R, at:e.at, by:S.me, note:`Önceden gönderilen pay: ${e.desc}`});
+      e.tlPaid = []; }
+    const rest = e.among.filter(x => x !== id);
+    e.among = rest.length ? rest : active.slice();
+    if (e.weights){ const w = {...e.weights}; delete w[id]; e.weights = Object.keys(w).length ? w : null; }
+    k++;
+  }
+  return k;
+}
+function leaveBody(f){
+  const id = f.pid, ch = f.lch || (f.lch = {}), R = totalPlan().R, rows = leaveRows(id);
+  const st = {people:S.people.map(p => ({...p})), entries:JSON.parse(JSON.stringify(S.entries)), trip:S.trip};
+  const before = totalParts(S, R).net; leaveApply(st, id, ch, R); const after = totalParts(st, R).net;
+  const dif = S.people.filter(p => p.id !== id).map(p => [p, (after[p.id] || 0) - (before[p.id] || 0)]).filter(([, d]) => Math.abs(d) >= 100);
+  const xNet = after[id] || 0, tlx = k => nf.format(Math.abs(k) / 100) + ' ₺';
+  const row = e => { const c = ch[e.id] || leaveDef(e, id), sh = splitShares(Math.round(e.amount * 100), e.among, e.weights)[id] || 0;
+    return `<div class="lvr"><div><b>${iconOf(e)} ${esc(e.desc)}</b><span class="note">${money(e.amount, e.cur)} · ödeyen ${nm(e.paidBy)} · ${nm(id)}'in payı ${money(sh / 100, e.cur)}</span></div>
+      <div class="chips">${chip('Kalanlara bölünsün', c === 'bol', `data-lch="${e.id}" data-v="bol"`)}${chip('Payını yine o ödesin', c === 'kalsin', `data-lch="${e.id}" data-v="kalsin"`)}</div></div>`; };
+  return `<p class="note"><b>${nmE(id)}</b> geziden ayrılıyor. Bölüştüğü ${rows.length} harcamanın her biri için seç: payı kalanlara mı bölünsün, yoksa payını yine o mu ödesin (ör. iadesiz kaparo, onun adına alınmış bilet)?</p>
+    ${rows.length ? `<div class="lvlist">${rows.map(row).join('')}</div>` : '<p class="note">Bölüştüğü harcama yok.</p>'}
+    <div class="callout"><b>Sonuç</b>${dif.length ? dif.map(([p, d]) => `<span>${emojiOf(p.id)} ${esc(p.name)}: ${d < 0 ? 'payı ' + tlx(d) + ' arttı' : tlx(d) + ' daha az ödeyecek'}</span>`).join('') : '<span>Kimsenin payı değişmiyor.</span>'}
+      <span>${Math.abs(xNet) < 100 ? `${nm(id)} ile hesap kapanıyor; tamamen silinecek.` : xNet > 0 ? `${nm(id)} ${tlx(xNet)} alacaklı kalıyor (ödediği harcamalardan); Hesaplaşma'da 🚪 ile görünür.` : `${nm(id)} ${tlx(xNet)} borçlu kalıyor; Hesaplaşma'da 🚪 ile görünür.`}</span></div>
+    <p class="note">Ödediği harcamalar ve yaptığı ödemeler aynen kalır. Tercihleri rehberden çıkar, istekleri kalır. Toplam harcama değişmez; 10 saniye içinde geri alabilirsin.</p>`;
+}
+function leavePerson(id, ch){
+  const p = person(id), name = p.name, R = totalPlan().R, snap = JSON.stringify({people:S.people, entries:S.entries, holder:S.trip.holder, prefs:S.trip.prefs || null, me:S.me});
+  const k = leaveApply(S, id, ch, R);
+  if (S.trip.prefs) delete S.trip.prefs[id];
+  if (S.trip.holder === id) S.trip.holder = (S.people.find(q => q.id !== id && !q.left) || {}).id;
+  const used = S.entries.some(e => e.paidBy === id || e.from === id || e.to === id || (e.among || []).includes(id));
+  if (!used){ S.entries.forEach(e => { if (e.by === id) e.by = S.me !== id ? S.me : (S.people.find(q => q.id !== id) || {}).id; });
+    S.people = S.people.filter(q => q.id !== id);
+    if (S.me === id){ S.me = S.people[0].id; try { localStorage.setItem(meKey(S.tid), S.me); } catch(_) {} } }
+  else p.left = Date.now();
+  logEvent(`katılımcı geziden ayrıldı: ${name} (${k} harcamadaki payı kalanlara bölündü${used ? '; hesabı kapanana kadar listede' : '; silindi'})`);
+  save(); closeSheet(); render();
+  finishGUndo();
+  gUndo = {tid:S.tid, timer:setTimeout(finishGUndo, 10000), restore:() => { const o = JSON.parse(snap);
+    S.people = o.people; S.entries = o.entries; S.trip.holder = o.holder; if (o.prefs) S.trip.prefs = o.prefs;
+    if (S.me !== o.me){ S.me = o.me; try { localStorage.setItem(meKey(S.tid), o.me); } catch(_) {} }
+    logEvent(`ayrılmayı geri aldı: ${name}`); save(); }};
+  toast(`🚪 ${name} geziden ayrıldı; ${k} harcamadaki payı kalanlara bölündü.${used ? ' Hesabı kapanana kadar Hesaplaşma\'da görünür.' : ''}`, {act:'gundo', label:'Geri al', ms:10000});
+}
+// ➕ Kişi ekle (2026-11-19, kullanıcı: "sonradan 3-4 kişi de katılabilir; benzer yöntemle"): birden çok ad (her satıra bir) ve eski
+// harcamaların her biri için "katılsın mı". Varsayılan: yalnız herkesin bölüştüğü harcamalar işaretli. Seçilen harcamada pay yeni
+// kişilerle yeniden bölünür, yeni kişi ödeyene borçlanır; toplam harcama değişmez. 10 sn geri alınabilir.
+const apNames = f => String(f.apText || '').split(/\n|,/).map(x => x.trim()).filter(Boolean).slice(0, 12);
+const apRows = () => S.entries.filter(e => e.kind === 'expense').sort((a, b) => a.at - b.at);
+const apDef = e => S.people.filter(p => !p.left).every(p => e.among.includes(p.id));
+const apPick = ch => new Set(apRows().filter(e => ch[e.id] != null ? ch[e.id] : apDef(e)).map(e => e.id));
+function joinApply(st, np, pick, R){
+  for (const e of st.entries){ if (e.kind !== 'expense' || !pick.has(e.id)) continue;
+    if (e.settleTL && (e.tlPaid || []).length){ const sh = splitShares(Math.round(e.amount * 100), e.among, e.weights);
+      for (const pid of e.tlPaid) if (pid !== e.paidBy && sh[pid]) st.entries.push({id:uid(), kind:'transfer', total:true, from:pid, to:e.paidBy, amount:sh[pid] / 100, cur:'TRY', rate:R, at:e.at, by:S.me, note:`Önceden gönderilen pay: ${e.desc}`});
+      e.tlPaid = []; }
+    e.among = [...e.among, ...np.map(p => p.id).filter(id => !e.among.includes(id))];
+    if (isFamilies()){ const w = {...(e.weights || {})}; np.forEach(p => { if (famWeight(p) !== 1) w[p.id] = famWeight(p); }); e.weights = Object.keys(w).length ? w : null; }
+  }
+}
+const apNew = names => names.map(n => isFamilies() ? {id:uid(), name:n, size:2, kids:0} : {id:uid(), name:n});
+function addPeopleBody(f){
+  const names = apNames(f), fam = isFamilies(), ch = f.jch || (f.jch = {}), rows = apRows(), pick = apPick(ch), tlx = k => nf.format(Math.abs(k) / 100) + ' ₺';
+  let prev = '';
+  if (names.length && pick.size){ const R = totalPlan().R, np = apNew(names), st = {people:[...S.people.map(p => ({...p})), ...np], entries:JSON.parse(JSON.stringify(S.entries)), trip:S.trip};
+    const before = totalParts(S, R).net; joinApply(st, np, pick, R); const after = totalParts(st, R).net;
+    const old = S.people.map(p => [p, (after[p.id] || 0) - (before[p.id] || 0)]).filter(([, d]) => Math.abs(d) >= 100);
+    prev = `<div class="callout"><b>Sonuç</b>${np.map(p => `<span>➕ ${esc(p.name)}: ${tlx(after[p.id] || 0)} borçlanacak</span>`).join('')}${old.map(([p, d]) => `<span>${emojiOf(p.id)} ${esc(p.name)}: ${d > 0 ? tlx(d) + ' daha az ödeyecek' : 'payı ' + tlx(d) + ' arttı'}</span>`).join('')}</div>`; }
+  return `<p class="note">Her satıra bir ${fam ? 'aile' : 'kişi'} yaz; birkaç ${fam ? 'aile' : 'kişi'} birden eklenebilir.${fam ? ' Kişi sayılarını sonra Seyahat sekmesinden değiştirirsin.' : ''}</p>
+    <textarea class="inp" id="apText" rows="3" placeholder="${fam ? 'Yılmaz ailesi' : 'Ali&#10;Ayşe'}">${esc(f.apText || '')}</textarea>
+    ${rows.length ? `<p class="note">Eski harcamalardan hangilerine katılsınlar? Seçilenlerde pay yeniden bölünür; katılanlar ödeyene borçlanır. Herkesin bölüştüğü harcamalar işaretli gelir.</p>
+      <div class="lvlist">${rows.map(e => `<div class="lvr"><div><b>${iconOf(e)} ${esc(e.desc)}</b><span class="note">${money(e.amount, e.cur)} · ödeyen ${nm(e.paidBy)} · ${e.among.length} kişi bölüşüyor</span></div><div class="chips">${chip('Katılsın', pick.has(e.id), `data-jch="${e.id}" data-v="1"`)}${chip('Katılmasın', !pick.has(e.id), `data-jch="${e.id}" data-v="0"`)}</div></div>`).join('')}</div>` : ''}
+    ${prev}${names.length && rows.length ? '<p class="note">Sonuç, adları yazıp bir seçime dokununca güncellenir.</p>' : ''}`;
+}
+function addPeople(names, ch){
+  const R = totalPlan().R, pick = apPick(ch), np = apNew(names), snap = JSON.stringify({people:S.people, entries:S.entries});
+  joinApply(S, np, pick, R); S.people.push(...np);
+  logEvent(`katılımcı ekledi: ${names.join(', ')}${pick.size ? ` (${pick.size} eski harcamaya katıldı)` : ''}`);
+  save(); closeSheet(); render();
+  finishGUndo();
+  gUndo = {tid:S.tid, timer:setTimeout(finishGUndo, 10000), restore:() => { const o = JSON.parse(snap); S.people = o.people; S.entries = o.entries; logEvent(`katılımcı eklemeyi geri aldı: ${names.join(', ')}`); save(); }};
+  toast(`➕ ${names.join(', ')} eklendi${pick.size ? `; ${pick.size} eski harcamada pay yeniden bölündü` : ''}.`, {act:'gundo', label:'Geri al', ms:10000});
 }
 function removePerson(id, target){
   const p = person(id), name = p.name, t = target && person(target);
@@ -8551,7 +8768,17 @@ document.addEventListener('click', ev => {
     if (myUid){ claimPerson(d.who); save(); } else { S.me = d.who; try { localStorage.setItem(meKey(S.tid), S.me); } catch(_) {} }
     closeSheet(); render(); toast(myUid && !isTripAdmin() ? `Merhaba ${rawName(S.me)}! 👋 Yanlışsa 10 dk içinde Seyahat sekmesinden değiştirebilirsin.` : `Merhaba ${rawName(S.me)}! 👋`); return;
   }
-  if (d.release){
+  // 🔓 Telefon bağını kaldırma iki dokunuşla (2026-11-19, kullanıcı: "yanlışlıkla kilidini açtım, kapatma yok"): ilk dokunuş sorar.
+  // Kendi kimliğini düzeltme ("Değiştir") hemen çalışır.
+  if (d.release && person(d.release).uid !== myUid && relAsk !== d.release){ relAsk = d.release; clearTimeout(relAskT); relAskT = setTimeout(() => { relAsk = null; render(); }, 6000); render(); return; }
+  if (d.relock){
+    // 🔒 Yeniden kilitle: bağı kaldırılan kişi başka bir telefonda seçilmediyse eski telefona geri bağlanır; o telefon soru sormadan devam eder.
+    if (!isManager()){ toast('Bu ayarı değiştirme yetkin yok.'); return; }
+    const p = person(d.relock); if (!p || p.uid || !p.freed || S.people.some(q => q.uid === p.freed)) return;
+    p.uid = p.freed; delete p.freed; p.boundAt = Date.now(); logEvent(`telefon bağını geri taktı: ${p.name}`); save(); render(); toast(`🔒 ${p.name} yeniden eski telefonuna bağlandı.`); return;
+  }
+  if (d.release || d.releaseok){
+    d.release = d.release || d.releaseok; relAsk = null; clearTimeout(relAskT);
     const self = person(d.release).uid === myUid && selfFixLeft() > 0;
     if (!isManager() && !self){ toast('Bu ayarı değiştirme yetkin yok.'); return; }
     if (self && !isTripAdmin()) try { localStorage.setItem(FIX_KEY(S.tid), '1'); } catch(_) {}
@@ -8578,13 +8805,16 @@ document.addEventListener('click', ev => {
     if (d.settle){ form.settleTL = d.settle === '1'; if (form.settleTL && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
     if (d.cat){ form.cat = d.cat; form.catManual = true; form.showCat = false; drawSheetKeep(); return; }
     if (d.payer){ form.paidBy = d.payer; form.showPayer = false; drawSheetKeep(); return; }
-    if (d.all){ form.among = S.people.map(p => p.id); form.weights = defaultWeights(); drawSheetKeep(); return; }
+    if (d.all){ form.among = S.people.filter(p => !p.left).map(p => p.id); form.weights = defaultWeights(); drawSheetKeep(); return; }
     if (d.among){ const i = form.among.indexOf(d.among); if (i >= 0) form.among.splice(i,1); else form.among.push(d.among); form.among.sort((a,b) => S.people.findIndex(p=>p.id===a) - S.people.findIndex(p=>p.id===b)); drawSheetKeep(); return; }
     if (d.every){ form.everyone = true; drawSheetKeep(); return; }
     if (d.from){ form.everyone = false; form.from = d.from; drawSheetKeep(); return; }
     if (d.rm){ form.names.splice(+d.rm, 1); if (form.extra) form.extra.splice(+d.rm, 1); drawSheetKeep(); return; }
     if (d.nkind){ form.kind = d.nkind; drawSheetKeep(); return; }
     if (d.ptarget){ form.target = d.ptarget; drawSheetKeep(); return; }
+    if (d.delhow){ form.how = d.delhow; drawSheetKeep(); return; }
+    if (d.lch){ (form.lch || (form.lch = {}))[d.lch] = d.v; drawSheetKeep(); return; }
+    if (d.jch){ (form.jch || (form.jch = {}))[d.jch] = d.v === '1'; drawSheetKeep(); return; }
     if (d.nfam !== undefined){
       const x = ((form.extra = form.extra || [])[+d.nfam] = form.extra[+d.nfam] || {}), k = d.fk, min = k === 'size' ? 1 : 0;
       x[k] = (x[k] || min) >= 9 ? min : (x[k] || min) + 1; drawSheetKeep(); return;
@@ -8704,7 +8934,7 @@ document.addEventListener('click', ev => {
     }
     case 'copyamt': { const p = planAt(d.i); copyText((p.amt/100).toFixed(2).replace('.', ','), `Tutar kopyalandı: ${tlk(p.amt)}`); break; }
     case 'share': openSheet({mode:'share', text:shareText()}); break;
-    case 'addperson': S.people.push(isFamilies() ? {id:uid(), name:'Yeni aile', size:2, kids:0} : {id:uid(), name:'Yeni kişi'}); render(); toast(isFamilies() ? 'Aile eklendi; adını ve kişi sayısını yaz.' : 'Kişi eklendi; adını yaz.'); break;
+    case 'addperson': openSheet({mode:'addpeople', apText:'', jch:{}}); break;
     case 'archive':
       if (!confirmArc){ confirmArc = true; render(); break; }
       confirmArc = false; S.trip.closed = true; S.trip.closedAt = Date.now(); logEvent('seyahati arşivledi');
@@ -8741,6 +8971,7 @@ document.addEventListener('input', ev => {
   if (el.id === 'planInp' && planDraft){ planDraft.v = el.value; return; }
   if (el.id === 'fDest' && form){ form.destDraft = el.value; return; }
   if (el.id === 'gwText' && form){ form.gwText = el.value; return; }
+  if (el.id === 'apText' && form){ form.apText = el.value; return; }
   if (el.classList && el.classList.contains('gatext') && form){ (form.gaT || (form.gaT = {}))[el.dataset.gac] = el.value; return; }
   if (el.dataset && el.dataset.gask && form){ const G = S.trip.greq || (S.trip.greq = {}); (G[el.dataset.gask] || (G[el.dataset.gask] = {})).ask = el.value.trim(); save(); return; }
   if (el.id === 'gNote' && form){ const P = S.trip.prefs || (S.trip.prefs = {}); (P[S.me] || (P[S.me] = {})).not = el.value.trim(); save(); return; }
