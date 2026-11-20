@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261120171631';</script>
-<script src="heybe-web.js?v=20261120171631"></script>
+<script>window.HEYBE_VER = '20261120220830';</script>
+<script src="heybe-web.js?v=20261120220830"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -657,6 +657,67 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
 .confetti i{position:absolute;top:-14px;width:8px;height:13px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translate(var(--dx),108vh) rotate(var(--r))}}
+/* 🐦 Leyo: Heybe'nin maskotu (SVG + SMIL; "hareketi azalt" ya da ayardan kapalıysa durgun) */
+.leyo{display:inline-block;flex:none;line-height:0;vertical-align:middle}
+.leyo svg{width:100%;height:auto;display:block;overflow:visible}
+.leyo-xs{width:30px}.leyo-s{width:46px}.leyo-m{width:88px}.leyo-l{width:120px}.leyo-xl{width:168px}
+.leyo-row{display:flex;align-items:center;gap:10px;margin:4px 0}
+.leyo-row>span:last-child,.leyo-row>p{font-size:.86rem;color:var(--muted);margin:0}
+.leyo-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.btn .leyo{margin:-8px 2px -8px -6px}
+.toast{display:flex;align-items:center;gap:8px}
+.toast>.leyo{margin:-6px 0}
+.st-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tstrip>.leyo{margin:-6px -4px -6px -8px}
+/* 🐦 Leyo'yla planla: tercih sihirbazı (tek soru, büyük kartlar, ilerleme çubuğu) */
+.wz-prog{height:10px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.wz-prog i{display:block;height:100%;background:var(--pos);border-radius:99px;transition:width .35s ease}
+.wz-step{margin:-8px 0 0;font-size:.78rem;color:var(--muted);text-align:right}
+.wz-say{display:flex;align-items:flex-end;gap:8px}
+.wz-say .leyo{width:112px;margin-left:-8px}
+.wz-bub{position:relative;flex:1;min-width:0;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;margin-bottom:22px}
+.wz-bub::before{content:"";position:absolute;left:-10px;bottom:18px;border:9px solid transparent;border-right-color:var(--line);border-left:0}
+.wz-bub b{font-family:var(--display);font-weight:800;font-size:1.15rem;line-height:1.25}
+.wz-bub span{font-size:.86rem;color:var(--muted)}
+.wz-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.wz-opts.many{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wz-opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:92px;padding:12px 6px;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 4px 0 var(--line);text-align:center;transition:transform .12s ease}
+.wz-opt:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.wz-opt i{font-style:normal;font-size:1.8rem;line-height:1}
+.wz-opt b{font-weight:700;font-size:.86rem;line-height:1.25;overflow-wrap:anywhere}
+.wz-opt span{font-size:.74rem;color:var(--muted)}
+.wz-opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 4px 0 var(--accent)}
+.wz-nav{display:flex;justify-content:space-between;gap:10px}
+.wz-nav .btn{min-width:112px}
+.wz-grp{display:flex;flex-direction:column;align-items:flex-start;gap:6px;background:var(--bg);border-radius:14px;padding:10px 12px;font-size:.88rem}
+.wz-grp span{color:var(--muted);font-size:.82rem}
+.wz-grp a.btn{text-decoration:none;color:inherit}
+.wz-sum{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.wz-row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;border:0;border-bottom:1px solid var(--line);background:none;padding:10px 2px;text-align:left;width:100%;color:inherit}
+.wz-row span{font-size:.78rem;color:var(--muted)}
+.wz-row b{grid-column:1;font-weight:600;font-size:.92rem}
+.wz-row b i{color:var(--muted);font-weight:400;font-style:normal}
+.wz-row em{grid-column:2;grid-row:1 / span 2;font-style:normal;font-weight:700;font-size:.82rem;color:var(--accent-text)}
+.wz-cta{display:flex;gap:10px;align-items:center;background:var(--surface);border-radius:var(--r);padding:10px 14px 10px 8px;border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+.wz-cta>div{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0}
+.wz-cta b{font-family:var(--display);font-weight:800;font-size:1.05rem}
+.wz-cta span{font-size:.84rem;color:var(--muted)}
+/* 🐦 Yol ekranı: rehber adımları yuvarlak düğümler (biten ✓, sıradaki parlar, Leyo yanında, sonda 🏆) */
+.gpath{display:flex;flex-direction:column;align-items:center;gap:16px;margin:10px 0 14px}
+.gp-n{display:flex;align-items:center;gap:10px;width:calc(100% - 60px);max-width:330px;transform:translateX(var(--x,0))}
+.gp-b{flex:none;width:58px;height:58px;border-radius:50%;border:0;display:grid;place-items:center;font-size:1.45rem;font-weight:800;background:var(--sunk);color:var(--muted);box-shadow:0 5px 0 color-mix(in srgb,var(--ink) 16%,transparent)}
+.gp-n.done .gp-b{background:var(--accent);color:var(--accent-ink);box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,#000)}
+.gp-n.now .gp-b{background:var(--sun);color:var(--sun-ink);box-shadow:0 5px 0 color-mix(in srgb,var(--sun) 55%,#000);animation:gpPulse 1.8s ease-in-out infinite}
+.gp-n.gp-tr .gp-b{font-size:1.7rem}
+.gp-n.gp-tr.done .gp-b{background:var(--sun-soft);color:var(--sun-text);box-shadow:0 5px 0 color-mix(in srgb,var(--sun) 45%,transparent)}
+button.gp-b:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srgb,var(--ink) 16%,transparent)}
+.gp-t{display:flex;flex-direction:column;min-width:0;flex:1;text-align:left}
+.gp-t b{font-size:.92rem}
+.gp-t span{font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}
+.gp-n:not(.done):not(.now) .gp-t b{color:var(--muted)}
+.gp-n>.leyo{margin:-10px -6px -10px 0}
+@keyframes gpPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){.wz-prog i,.wz-opt{transition:none}.gp-n.now .gp-b{animation:none}}
 .toast button{border:0;background:none;color:inherit;font-weight:800;text-decoration:underline;margin-left:12px;padding:2px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:50;font-size:.9rem;max-width:calc(100% - 32px);text-align:center}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -1952,7 +2013,7 @@ function viewList(C){
   }
   // "Sadece bana" kayıtları bu kişinin özel alanından gelir; yalnız onun listesinde görünür, toplamlara girmez.
   const es = [...S.entries, ...(SH.solo || []).map(x => ({...x, kind:'solo'}))].sort((a,b) => b.at - a.at);
-  if (!es.length) return h + `<div class="card done">Henüz harcama yok. İlk kahveyi kim ısmarlıyor? ☕<br>Sağ alttaki <b>+ Harcama</b> ile başla.</div>`;
+  if (!es.length) return h + `<div class="card done leyo-empty">${leyo('uyku', 'm')}<span>Henüz harcama yok. İlk kahveyi kim ısmarlıyor? ☕<br>Sağ alttaki <b>+ Harcama</b> ile başla.</span></div>`;
   // Önce seyahat günleri (en yeni üstte), en altta "Seyahat öncesi" bölümü.
   const isPre = e => e.kind === 'expense' && phaseOf(e, S) === 'pre';
   let last = null, open = false;
@@ -2031,8 +2092,8 @@ function viewSettle(C){
     // Daha az ödeme açıkken en üstte uyarı: ödemeler harcamayı yapana değil, birleştirilmiş kişiye gidiyor.
     + (mode === 'min' ? `<div class="callout warn"><b>⚠️ “Daha az ödeme” açık</b><span>Borçlar birleştirildi: bazı ödemeler harcamayı yapan kişiye değil, başka birine gidiyor. Herkesin göndereceği ve alacağı <b>toplam tutar aynı</b>.</span>
         ${canSetMode() ? `<button class="btn sm" data-act="setmode" data-m="direct">Doğrudan ödemeye dön (${nDirect} ödeme)</button>${modeNote()}` : '<span class="note">Seyahat başladı; hesaplaşma şekli artık sabit.</span>'}</div>` : '');
-  if (!plan.length) h += `<div class="done">Hesaplar tertemiz ✨<br>Kimsenin kimseye borcu yok.</div>`;
-  else if (!mine.length) h += `<div class="done">Senin hesabın denk 👌<br>Göndereceğin ya da alacağın bir şey yok.</div>`;
+  if (!plan.length) h += `<div class="done leyo-empty">${leyo('sevinc', 'm')}<span>Hesaplar tertemiz ✨<br>Kimsenin kimseye borcu yok.</span></div>`;
+  else if (!mine.length) h += `<div class="done leyo-empty">${leyo('hesap', 'm')}<span>Senin hesabın denk 👌<br>Göndereceğin ya da alacağın bir şey yok.</span></div>`;
   else h += mine.map(([p, i]) => payHtml(p, i, R)).join('');
   // Doğrudan yöntemdeyken, ödeme sayısı gerçekten azalıyorsa açıklamalı öneri kutusu.
   if (mode !== 'min' && nShort < nDirect && canSetMode()) h += `<div class="callout"><b>💡 ${nDirect} yerine ${nShort} ödemeyle de kapanabilir</b>
@@ -2086,7 +2147,7 @@ function storyFacts(){
 }
 function storyHtml(){
   const st = storyFacts(); if (!st) return '';
-  return `<section class="story"><div class="st-h">${st.ended ? 'Seyahat hikâyesi' : 'Şimdiye kadar'} ✨</div>
+  return `<section class="story"><div class="st-top"><div class="st-h">${st.ended ? 'Seyahat hikâyesi' : 'Şimdiye kadar'} ✨</div>${leyo(st.ended ? 'foto' : 'ucma', 's', 'Leyo')}</div>
     <div class="st-big num">${fromTL(st.perHead, planCurOf(), 0)}<small>kişi başı · ${st.count} harcama</small></div>
     ${st.facts.map(([i, l, v]) => `<div class="st-f"><span class="st-i">${i}</span><span><small>${esc(l)}</small><b>${esc(v)}</b></span></div>`).join('')}
     <button class="btn sm st-btn" data-act="sharestory">📤 Görsel olarak paylaş</button></section>`;
@@ -2178,6 +2239,7 @@ function viewTrip(){
     <div class="f"><span class="lab">Büyük harcama sınırı${help('big')}</span>
       <div class="two"><input class="inp num" id="tBigE" inputmode="decimal" value="${nf0.format(bigLimits().eur)}" data-bind="bigEur" aria-label="Euro sınırı"><input class="inp num" id="tBigT" inputmode="decimal" value="${nf0.format(bigLimits().tr)}" data-bind="bigTry" aria-label="TL sınırı"></div>
       <span class="note">Solda € (diğer para birimleri euro karşılığıyla), sağda ₺. Bu tutarın üstündeki harcamalar kırmızı tonla vurgulanır. Bu sınır sadece senin telefonunda geçerli.</span></div>
+    <div class="toggle"><div><b>🐦 Leyo animasyonları</b><div class="note">Maskot Leyo hareket etsin. Kapalıyken durgun durur; telefonda “hareketi azalt” açıksa zaten durur. Yalnız bu telefonda.</div></div><input type="checkbox" class="sw" id="tLeyo" ${leyoAnimPref() ? 'checked' : ''} aria-label="Leyo animasyonları"></div>
     <div class="f"><label for="tPlan">Bütçe (kişi başı)${help('plan')}</label>
       <div style="display:flex;gap:8px"><input class="inp num" id="tPlan" inputmode="decimal" placeholder="ör. 60.000" value="${S.trip.plan ? nf0.format(S.trip.plan) : ''}" data-bind="plan" style="flex:1;min-width:0">
       <select class="inp" id="tPlanCur" data-bind="planCur" aria-label="Bütçe para birimi" style="width:auto">${PLAN_CURS.map(k => `<option value="${k}" ${planCurOf() === k ? 'selected' : ''}>${symOf(k)} ${k}</option>`).join('')}</select></div>
@@ -2368,7 +2430,7 @@ function drawSheet(){
       <input type="file" id="fPhoto" accept="image/*">
       <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>${help('foto')}
       ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
-      ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Okunuyor…' : '✨ Fotoğraftan doldur'}</button>` : ''}
+      ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? `${leyo('fis', 'xs')} Okunuyor…` : '✨ Fotoğraftan doldur'}</button>` : ''}
     </div>
     <div class="bk" id="fBk">${bkHtml()}</div>
     <div class="place" id="fPlace">${placeHtml()}</div>
@@ -2395,7 +2457,7 @@ function drawSheet(){
       + `<div class="photo">${f.photo ? `<img src="${f.photo}" alt="Fiş fotoğrafı" data-act="viewphoto">` : ''}<input type="file" id="fPhoto" accept="image/*">
         <label class="btn sm" for="fPhoto">${f.photo ? 'Fişi değiştir' : '📷 Fiş ekle'}</label>${help('fis')}
         ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
-        ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Fiş okunuyor…' : '✨ Fişten doldur'}</button>` : ''}</div>
+        ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? `${leyo('fis', 'xs')} Fiş okunuyor…` : '✨ Fişten doldur'}</button>` : ''}</div>
       <div class="f"><label for="fOutlet">📍 Nerede?</label><input class="inp" id="fOutlet" list="shOutlets2" placeholder="Outlet ya da AVM" value="${esc(f.outlet)}" autocomplete="off">
         <datalist id="shOutlets2">${[...new Set([...SH.items.map(i => i.outlet).filter(Boolean), ...((taxInfo() && OUTLETS[taxInfo().code]) || [])])].map(o => `<option value="${esc(o)}">`).join('')}</datalist></div>
       <div class="toggle"><div><b>Tax-free yapılacak</b><div class="note">Kapatırsan iade hesabına girmez.</div></div><input type="checkbox" class="sw" id="fTF" ${f.noTF ? '' : 'checked'} aria-label="Tax-free"></div>
@@ -2413,7 +2475,7 @@ function drawSheet(){
       <div class="photo">${f.photo ? `<img src="${f.photo}" alt="Fotoğraf" data-act="viewphoto">` : ''}<input type="file" id="fPhoto" accept="image/*">
         <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>${help('foto')}
         ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
-        ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Okunuyor…' : '✨ Fotoğraftan doldur'}</button>` : ''}</div>
+        ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? `${leyo('fis', 'xs')} Okunuyor…` : '✨ Fotoğraftan doldur'}</button>` : ''}</div>
       <div class="bk" id="fBk">${bkHtml()}</div>
       <div class="place" id="fPlace">${placeHtml()}</div>
       <p class="note">🔒 Bunu kimse görmez, hesaplaşmaya ve ortak bütçeye girmez. Harcamalar listesinde yalnız sende 🔒 ile görünür; Kişisel → Özetim'e eklenir.</p>`;
@@ -2452,7 +2514,7 @@ function drawSheet(){
       return `<button class="row" data-trip="${t.tid}"><span class="ic">${c ? flagOf(c[0]) : '🧳'}</span>
         <span class="mid"><span class="d">${esc(t.trip.name || 'Seyahat')}</span><span class="m">${dates(t.trip)} · ${t.people.length} kişi</span></span>
         ${here ? `<span class="here">Açık</span>` : t.trip.closed ? `<span class="here muted">🗄️ Arşiv</span>` : ''}</button>`;
-    }).join('') + `</div>` : `<p class="note">Henüz kayıtlı bir seyahatin yok. İlkini başlatalım mı? 🧳</p>`)
+    }).join('') + `</div>` : `<div class="leyo-empty">${leyo('merhaba', 'm')}<p class="note">Henüz kayıtlı bir seyahatin yok. İlkini başlatalım mı? 🧳</p></div>`)
     + (ts.length && !S.sample ? `<button class="btn block" data-act="sameteam">🔁 Bu seyahatin ekibiyle yeni seyahat</button>` : '')
     + (S.sample ? '' : joinBox);
   } else if (f.mode === 'ios'){
@@ -2465,7 +2527,7 @@ function drawSheet(){
       </ol>
       <button class="btn block" data-act="iosgo">Ana ekrana eklemeden Safari'de devam et</button>`;
   } else if (f.mode === 'who'){
-    body = `<p class="note">Bu telefonu kim kullanıyor? ${myUid ? 'Bir kez seç; bundan sonra bu hesap hep bu kişi olarak açılır. Başkasının seçtiği kişi seçilemez.' : 'Bir kez seç: harcama eklerken “ödeyen” sen olursun, hesabın sana göre gösterilir.'}</p>
+    body = `<div class="leyo-empty">${leyo('merhaba', 'm', 'Leyo')}</div><p class="note">Bu telefonu kim kullanıyor? ${myUid ? 'Bir kez seç; bundan sonra bu hesap hep bu kişi olarak açılır. Başkasının seçtiği kişi seçilemez.' : 'Bir kez seç: harcama eklerken “ödeyen” sen olursun, hesabın sana göre gösterilir.'}</p>
       <div class="whochips">${S.people.map(p => { const taken = myUid && p.uid && p.uid !== myUid;
         return `<button type="button" class="btn" data-who="${p.id}" ${taken ? 'disabled' : ''}>${emojiOf(p.id)}  ${esc(p.name)}${taken ? ' · 🔒 başka bir telefonda' : ''}</button>`; }).join('')}</div>`;
   } else if (f.mode === 'addpeople'){
@@ -2491,13 +2553,15 @@ function drawSheet(){
       <div class="f"><span class="lab">Durum</span><div class="steps">${TF_STEPS.map(([t, h], k) => `<button type="button" class="tstep${k < sp ? ' done' : ''}" data-tfst="${k}" aria-pressed="${k === sp}"><span class="dot">${k < sp ? '✓' : k + 1}</span><span class="mid"><b>${t}</b><span class="m">${h}</span></span></button>`).join('')}</div></div>`;
   } else if (f.mode === 'guide'){
     body = guideBody();
+  } else if (f.mode === 'wiz'){
+    body = wizBody();
 } else if (f.mode === 'plan'){
     body = planBody();
   } else if (f.mode === 'share'){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', addpeople: isFamilies() ? 'Aile ekle' : 'Kişi ekle', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', addpeople: isFamilies() ? 'Aile ekle' : 'Kişi ekle', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', wiz: '🐦 Leyo\'yla planla', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
   const saveLbl = {expense:'Kaydet', delperson:f.mode === 'delperson' && (f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left ? '🚪 Ayrıldı olarak kaydet' : 'Aktar ve sil', addpeople:'Ekle', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
@@ -2780,7 +2844,7 @@ function todayStrip(){
   const e = n.it.e, t = n.it.kind === 'in' ? 'giriş ' + planT(n.it).t : bkTime(e.when), d = destOf(e);
   const rest = n.x.items.filter(it => it.kind !== 'out').length - 1 - n.x.items.filter(it => it.kind !== 'out').indexOf(n.it);
   const what = n.it.kind === 'trip' && e.from && e.to ? `${e.from} → ${e.to}` : e.desc;
-  return `<div class="tstrip"><button class="ts-main" data-act="plan"><span class="ts-l">${lbl}${t ? ' · ' + t : ''}</span><span class="ts-d">${iconOf(e)} ${e.priv ? '🔒 ' : ''}${esc(what)}${rest > 0 ? ` <small>+${rest} daha</small>` : ''}</span></button>`
+  return `<div class="tstrip">${n.it.kind === 'trip' && lbl === 'Bugün' ? leyo('ucma', 's') : ''}<button class="ts-main" data-act="plan"><span class="ts-l">${lbl}${t ? ' · ' + t : ''}</span><span class="ts-d">${iconOf(e)} ${e.priv ? '🔒 ' : ''}${esc(what)}${rest > 0 ? ` <small>+${rest} daha</small>` : ''}</span></button>`
     + (d ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`;
 }
 function programHtml(){
@@ -3071,6 +3135,7 @@ function guideBody(){
     h += `<button type="button" class="btn block" data-g="step" data-v="1">Sonraki: Tercihler ›</button>`;
   } else if (st === 1){
     const me = (S.trip.prefs || {})[S.me] || {}, who = Object.keys(S.trip.prefs || {}).filter(id => person(id));
+    h += `<div class="wz-cta">${leyo('anlatma', 's')}<div><b>Leyo'yla tek tek cevapla</b><span>Her ekranda bir soru, büyük kartlar; sonunda özet.</span><button type="button" class="btn sm pri" data-wz="open" data-i="2">🐦 Başlayalım</button></div></div>`;
     h += `<p class="note"><b>${nm(S.me)}</b> olarak cevaplıyorsun; hepsi isteğe bağlı. Yemek kısıtları kesin kuraldır, diğerlerinde grubun çoğunluğu geçerli olur.${who.length ? ` Cevaplayanlar: ${who.map(nm).join(', ')}.` : ''}</p>`;
     for (const [k, l, n, opts] of GQ){
       if (n === 'country'){ const cur = me[k] ?? gUyruk();
@@ -3251,7 +3316,7 @@ function gLugFirst(l){
   return '';
 }
 const gLugHtml = L => L.map(l => { const first = gLugFirst(l), stName = l.st ? l.st.split(/[,(]/)[0].trim() : '';
-  return `<details class="glug"><summary><span class="glh">⚠️ Bavul</span><span class="gls">${esc(l.city)}, ${planDay(l.d)} · ~${String(Math.round(l.h / 30) / 2).replace('.', ',')} saat</span></summary>
+  return `<details class="glug"><summary><span class="glh">${leyo('bavul', 'xs')} Bavul</span><span class="gls">${esc(l.city)}, ${planDay(l.d)} · ~${String(Math.round(l.h / 30) / 2).replace('.', ',')} saat</span></summary>
   <div class="glt">Bavul için yer bulmanız gerekiyor.</div>
   <div class="glt"><b>${esc(l.a)}</b> → <b>${esc(l.b)}</b> · yaklaşık <b>${String(Math.round(l.h / 30) / 2).replace('.', ',')} saat</b> bavullarla</div>
   <div class="glq">Bavulu nereye bırakalım?</div>${(((S.trip.guide || {})[l.city] || {}).bavul || []).map(b => `<div class="glt">🧳 <a href="${b.g && b.g.url ? b.g.url : mapsDir(`${b.lat},${b.lon}`)}" target="_blank" rel="noopener"><b>${esc(b.name)}</b></a> · ${esc(gBavulTxt(b))}</div>`).join('')}
@@ -5389,7 +5454,7 @@ function gFameHtml(c, T){
   const M = (S.trip.gfame || {})[c] || {}, C = esc(c), low = [...new Set(gFameStops(T))].filter(n => gFameLow(M[gKey(n)]));
   if (!low.length) return '';
   const why = v => v.kapali ? 'Google\'da kapalı görünüyor' : `${String(v.r).replace('.', ',')}★ · ${v.n ? v.n.toLocaleString('tr-TR') + ' yorum' : 'yorum sayısı yok'}${v.tahmin ? ' (tahmini)' : ''}`;
-  return `<div class="callout warn"><b>⭐ Google'da az bilinen ${low.length} yer</b><span>4,3★'ın ya da 1.000 yorumun altında. Çıkarırsan yerine aynı bölgeden daha bilinen bir yer gelebilir; kararından sonra ③'e yeniden bas.</span>
+  return `<div class="callout warn"><div class="leyo-row">${leyo('saskin', 's')}<b>⭐ Google'da az bilinen ${low.length} yer</b></div><span>4,3★'ın ya da 1.000 yorumun altında. Çıkarırsan yerine aynı bölgeden daha bilinen bir yer gelebilir; kararından sonra ③'e yeniden bas.</span>
     ${low.map(n => { const v = M[gKey(n)], d = gTrDesc(c, n); return `<div class="gfam"><span class="mid"><b>${esc(n)}</b>${d ? `<span class="gtr"> · ${esc(d)}</span>` : ''}<span class="gtk">${esc(why(v))}${v.url ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">Google'da gör</a>` : ''}</span></span>
       <span class="gfamb"><button type="button" class="chip" data-g="gfout" data-c="${C}" data-n="${esc(n)}">✖ Çıkar</button><button type="button" class="chip" data-g="gfkeep" data-c="${C}" data-n="${esc(n)}">✓ Kalsın</button></span></div>`; }).join('')}
     ${low.length > 1 ? `<div class="ptools" style="margin-top:2px"><button type="button" class="btn sm" data-g="gfall" data-c="${C}">✖ Hepsini çıkar</button></div>` : ''}</div>`;
@@ -5675,21 +5740,218 @@ function gBackupBack(c, i){
 // dokunarak ya da 💬 Plana söyle ile düzelt) → ③ Google'la tamamla (yemek, alışveriş, bavul, konsolosluk; bir kez) → ④ Onayla.
 // Eski rehberler (planlayıcıdan gelmeyen: Barselona, Madrid) eskisi gibi; eski yöntem (Opus) "Eski yöntem" altında.
 const gNewFlow = c => { const g = (S.trip.guide || {})[c]; return !g || !!g.planner; };
+// 🐦 Leyo (2026-11-20, kullanıcı onayı: "Leyo ismi çok güzel; yuvarlak karakter, biraz daha leyleğe benzesin"): Heybe'nin maskotu,
+// özgün çizim (ak leylek: uzun kırmızı gaga, siyah kanat uçları, ince kırmızı bacaklar, kilim desenli heybe). 15 hâl: merhaba,
+// bekleme, anlatma, dusunme, sevinc, uzgun, saskin, kosma, ucma, uyku, hesap, harita, fis, bavul, foto. SVG + SMIL (tek dosyada,
+// internetsiz); telefonda "hareketi azalt" açıksa ya da Seyahat → "Leyo animasyonları" kapalıysa durgun (bu telefona özel).
+// Yerleri: ilk açılış ve boş ekranlar, sihirbaz, hazırlanma, uyarı/hata/başarı bildirimleri, yol ekranı, bavul, anı kartı.
+function leyoAnimPref(){ try { return localStorage.getItem('heybe-leyo-anim') !== '0'; } catch(_) { return true; } }
+function leyoAnimOn(){ return leyoAnimPref() && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+function leyo(state, size, label){
+  const on = leyoAnimOn(), M = leyoSvg.c || (leyoSvg.c = {}), key = state + (on ? '1' : '0');
+  const svg = M[key] || (M[key] = leyoSvg(state, !on));
+  return `<span class="leyo leyo-${size || 'm'}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}>${svg}</span>`;
+}
+function leyoSvg(state, RM){
+  const C = {ink:'#2B3442', w:'#FFFFFF', belly:'#EEF2F8', blk:'#1E2733', bk:'#F26A3D', bkd:'#C9452A', leg:'#E4573D', blush:'#F6A9A0', bag:'#B83A32', gold:'#E7B53E',
+    teal:'#1F8A8A', strap:'#7A4A2A', coin:'#F2C14E', mouth:'#8E2B22', paper:'#F7F1E3', blue:'#2F6FD6', soft:'#D9DEE6'};
+  const an = x => RM ? '' : x;
+  const rotA = (v, cx, cy, d, b = 0) => an(`<animateTransform attributeName="transform" type="rotate" values="${v.map(x => x + ' ' + cx + ' ' + cy).join(';')}" dur="${d}s" begin="${b}s" repeatCount="indefinite"/>`);
+  const trA = (v, d, b = 0) => an(`<animateTransform attributeName="transform" type="translate" values="${v.join(';')}" dur="${d}s" begin="${b}s" repeatCount="indefinite"/>`);
+  const opA = (v, d, b = 0) => an(`<animate attributeName="opacity" values="${v.join(';')}" dur="${d}s" begin="${b}s" repeatCount="indefinite"/>`);
+  const WP = `<path d="M66 134 C50 142 44 166 56 185 C66 177 72 157 70 136 Z" fill="${C.w}" stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"/><path d="M47 163 C46 173 50 181 56 185 C59 180 61 173 61 167 C56 169 51 167 47 163 Z" fill="${C.blk}"/>`;
+  const wing = (q, a = '') => `<g transform="rotate(${q} 66 136)"><g>${a}${WP}</g></g>`;
+  const wingR = (q, a = '') => `<g transform="translate(200 0) scale(-1 1)">${wing(q, a)}</g>`;
+  const foot = (x, y, d = 1) => `<path d="M${x} ${y} L${x - 9 * d} ${y + 4} M${x} ${y} L${x + 6 * d} ${y + 5} M${x} ${y} L${x - 2 * d} ${y + 6}" stroke="${C.leg}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  const leg1 = (x, a, d, t) => `<g>${rotA([-a, a, -a].map(v => v * d), x, 186, t)}<path d="M${x} 186 L${x} 224" stroke="${C.leg}" stroke-width="5" stroke-linecap="round"/>${foot(x, 224, -1)}</g>`;
+  const legs = m => m === 'run' ? leg1(90, 35, 1, .5) + leg1(110, 35, -1, .5) : m === 'walk' ? leg1(90, 18, 1, .9) + leg1(110, 18, -1, .9)
+    : m === 'fly' ? `<path d="M92 186 L68 212 M108 186 L86 216" stroke="${C.leg}" stroke-width="5" fill="none" stroke-linecap="round"/>`
+    : `<path d="M90 186 Q86 205 88 224 M110 186 Q114 205 112 224" stroke="${C.leg}" stroke-width="5" fill="none" stroke-linecap="round"/>${foot(88, 224)}${foot(112, 224, -1)}`;
+  function eyes(o){
+    const E = [[86, 82], [116, 82]], L = o.look || [0, 0]; let x2 = '';
+    if (o.eyes === 'happy') return E.map(([x, y]) => `<path d="M${x - 9} ${y + 3} Q${x} ${y - 8} ${x + 9} ${y + 3}" stroke="${C.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`).join('');
+    if (o.eyes === 'closed') return E.map(([x, y]) => `<path d="M${x - 9} ${y} Q${x} ${y + 7} ${x + 9} ${y}" stroke="${C.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`).join('');
+    const R = o.eyes === 'wide' ? 13.5 : 11.5, pr = o.eyes === 'wide' ? 5 : 7.5;
+    for (const [x, y] of E){
+      x2 += `<circle cx="${x}" cy="${y}" r="${R}" fill="${C.w}" stroke="${C.ink}" stroke-width="2.5"/><circle cx="${x + L[0]}" cy="${y + L[1]}" r="${pr}" fill="${C.blk}"/><circle cx="${x + L[0] + 2.6}" cy="${y + L[1] - 3}" r="2.8" fill="#fff"/><circle cx="${x + L[0] - 2.2}" cy="${y + L[1] + 2.6}" r="1.3" fill="#fff"/>`;
+      if (o.eyes === 'sad') x2 += `<path d="M${x - R - 1} ${y - 1} Q${x} ${y - 8} ${x + R + 1} ${y - 1} L${x + R + 1} ${y - R - 4} L${x - R - 1} ${y - R - 4} Z" fill="${C.w}"/><path d="M${x - R + 1} ${y - 1} Q${x} ${y - 7} ${x + R - 1} ${y - 1}" stroke="${C.ink}" stroke-width="2.2" fill="none"/>`;
+      else if (!RM) x2 += `<ellipse cx="${x}" cy="${y}" rx="${R + 1.5}" ry="0" fill="${C.w}"><animate attributeName="ry" values="0;0;${R + 1.5};0" keyTimes="0;0.92;0.96;1" dur="4.6s" repeatCount="indefinite"/></ellipse>`;
+    }
+    if (o.brows === 'sad') x2 += `<path d="M76 67 L94 62 M106 62 L124 67" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`;
+    if (o.brows === 'up') x2 += `<path d="M75 62 Q85 54 95 60 M105 60 Q115 54 125 62" stroke="${C.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    return x2 + `<path d="M74 78 L69 75 M126 78 L131 75" stroke="${C.ink}" stroke-width="2.2" stroke-linecap="round"/>`;
+  }
+  const beak = o => `${o.beak === 'open' || o.beak === 'talk' ? `<path d="M97 95 L152 120 L104 104 Z" fill="${C.mouth}"/>` : ''}<g transform="rotate(${o.beak === 'open' ? 13 : 0} 98 95)">${o.beak === 'talk' ? rotA([0, 13, 0], 98, 95, .55) : ''}<path d="M95 95 C101 99 110 101 119 106 L155 121 C147 125 132 122 120 117 C109 112 100 104 95 95 Z" fill="${C.bkd}" stroke="${C.ink}" stroke-width="2" stroke-linejoin="round"/></g><path d="M91 91 C97 85 107 85 113 91 L162 117 C155 120 142 119 131 114 Z" fill="${C.bk}" stroke="${C.ink}" stroke-width="2.2" stroke-linejoin="round"/><circle cx="104" cy="90" r="1.6" fill="${C.ink}"/>`;
+  const head = o => `<g transform="rotate(${o.tilt || 0} 100 118)"><path d="M95 50 C91 41 98 37 101 46 C102 37 110 39 106 51" fill="${C.w}" stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="100" cy="82" r="36" fill="${C.w}" stroke="${C.ink}" stroke-width="2.5"/><ellipse cx="78" cy="97" rx="6.5" ry="3.8" fill="${C.blush}"/><ellipse cx="124" cy="97" rx="6.5" ry="3.8" fill="${C.blush}"/>${eyes(o)}${beak(o)}</g>`;
+  const body = o => `<ellipse cx="100" cy="119" rx="21" ry="15" fill="${C.w}" stroke="${C.ink}" stroke-width="2.5"/><ellipse cx="100" cy="156" rx="45" ry="41" fill="${C.w}" stroke="${C.ink}" stroke-width="2.5"/><ellipse cx="100" cy="166" rx="29" ry="24" fill="${C.belly}"/><ellipse cx="100" cy="121" rx="18.5" ry="12" fill="${C.w}"/><path d="M68 128 L128 176" stroke="${C.strap}" stroke-width="4" stroke-linecap="round"/><g>${o.bagSwing ? rotA([5, -5, 5], 135, 166, 2.6) : ''}<rect x="117" y="166" width="36" height="26" rx="7" fill="${C.bag}" stroke="${C.ink}" stroke-width="2.5"/><path d="M117 174 H153" stroke="${C.ink}" stroke-width="2"/><path d="M128 178 L133 183 L128 188 L123 183 Z M143 178 L148 183 L143 188 L138 183 Z" fill="${C.gold}"/><path d="M119 170 H151" stroke="${C.teal}" stroke-width="3"/></g>`;
+  const ROOT = {bob:[['0 0', '0 -4', '0 0'], 2.6], jump:[['0 0', '0 -18', '0 0', '0 0'], 1.1], hop:[['0 0', '0 -8', '0 0', '0 0'], .8], walk:[['0 0', '0 -3', '0 0'], .45], float:[['0 0', '0 -8', '0 0'], 1.4], breathe:[['0 0', '0 -2', '0 0'], 3.6]};
+  const draw = o => { const r = ROOT[o.root || 'bob'];
+    return `<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg"><ellipse cx="100" cy="233" rx="34" ry="5" fill="#000" opacity=".1"/><g>${r ? trA(r[0], r[1]) : ''}<g transform="rotate(${o.lean || 0} 100 200)">${o.back || ''}${legs(o.legs)}${body(o)}${wing(o.wl ?? 0, o.wla || '')}${wingR(o.wr ?? 0, o.wra || '')}${head(o)}${o.front || ''}</g></g></svg>`; };
+  const ex = {
+    speech:() => `<rect x="126" y="8" width="68" height="40" rx="14" fill="#fff" stroke="${C.ink}" stroke-width="2"/><path d="M146 46 L138 62 L156 47" fill="#fff" stroke="${C.ink}" stroke-width="2" stroke-linejoin="round"/><path d="M146 47 H156" stroke="#fff" stroke-width="3"/><rect x="136" y="17" width="46" height="5" rx="2.5" fill="${C.teal}"/><rect x="136" y="26" width="36" height="5" rx="2.5" fill="#C9D2DE"/><rect x="136" y="35" width="40" height="5" rx="2.5" fill="#C9D2DE"/>`,
+    think:() => `<circle cx="124" cy="48" r="3.5" fill="#fff" stroke="${C.ink}" stroke-width="2"/><circle cx="138" cy="38" r="6" fill="#fff" stroke="${C.ink}" stroke-width="2"/><circle cx="166" cy="24" r="20" fill="#fff" stroke="${C.ink}" stroke-width="2"/>` + [155, 166, 177].map((x, i) => `<circle cx="${x}" cy="24" r="3.2" fill="${C.ink}">${opA([.2, 1, .2], 1.2, i * .3)}</circle>`).join(''),
+    conf:() => { let x = ''; const cs = [C.gold, C.teal, C.bag, C.blue, C.bk]; for (let i = 0; i < 9; i++){ const d = (1.3 + (i % 3) * .3).toFixed(1), b = (i * .15).toFixed(2);
+      x += `<rect x="${22 + i * 19}" y="6" width="6" height="10" rx="1.5" fill="${cs[i % 5]}">${an(`<animateTransform attributeName="transform" type="translate" values="0 0;${i % 2 ? 9 : -9} 70" dur="${d}s" begin="${b}s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;1;0" dur="${d}s" begin="${b}s" repeatCount="indefinite"/>`)}</rect>`; } return x; },
+    tear:() => `<path d="M86 95 C83 100 82 104 86 107 C90 104 89 100 86 95 Z" fill="${C.blue}">${trA(['0 0', '0 22'], 1.6)}${opA([1, 1, 0], 1.6)}</path>`,
+    bang:() => `<g>${opA([1, .3, 1], .8)}<rect x="160" y="8" width="9" height="26" rx="4.5" fill="${C.bk}"/><circle cx="164.5" cy="43" r="5" fill="${C.bk}"/></g>`,
+    dust:() => [[48, 224, 7], [34, 219, 9], [22, 213, 5]].map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${C.soft}">${opA([.9, .15, .9], .6, i * .2)}</circle>`).join('') + `<path d="M18 140 H44 M10 156 H38 M20 172 H44" stroke="#C9D2DE" stroke-width="3" stroke-linecap="round">${opA([1, .3, 1], .5)}</path>`,
+    clouds:() => `<g>${trA(['0 0', '-26 0', '0 0'], 3.2)}<ellipse cx="166" cy="212" rx="16" ry="8" fill="#E6EBF2"/><ellipse cx="156" cy="207" rx="9" ry="8" fill="#E6EBF2"/><ellipse cx="172" cy="204" rx="10" ry="9" fill="#E6EBF2"/></g><g>${trA(['0 0', '-18 0', '0 0'], 4)}<ellipse cx="36" cy="40" rx="14" ry="7" fill="#E6EBF2"/><ellipse cx="44" cy="35" rx="9" ry="7" fill="#E6EBF2"/></g>`,
+    zzz:() => [[146, 64, 12], [164, 44, 9], [180, 28, 7]].map(([x, y, z], i) => `<path d="M${x} ${y} h${z} l-${z} ${z} h${z}" stroke="${C.ink}" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">${opA([0, 1, 0], 2.4, i * .6)}</path>`).join(''),
+    coin:() => `<ellipse cx="100" cy="150" rx="14" ry="14" fill="${C.coin}" stroke="${C.ink}" stroke-width="2.2">${an('<animate attributeName="rx" values="14;2;14" dur="1.3s" repeatCount="indefinite"/>')}</ellipse><ellipse cx="100" cy="150" rx="8" ry="8" fill="none" stroke="#C9952A" stroke-width="2">${an('<animate attributeName="rx" values="8;1;8" dur="1.3s" repeatCount="indefinite"/>')}</ellipse>` + [[74, 132], [128, 130]].map(([x, y], i) => `<path d="M${x} ${y - 6} L${x + 2} ${y - 2} L${x + 6} ${y} L${x + 2} ${y + 2} L${x} ${y + 6} L${x - 2} ${y + 2} L${x - 6} ${y} L${x - 2} ${y - 2} Z" fill="${C.gold}">${opA([1, .2, 1], 1, i * .5)}</path>`).join(''),
+    map:() => `<path d="M68 136 L88 130 L110 136 L132 130 L132 168 L110 174 L88 168 L68 174 Z" fill="${C.paper}" stroke="${C.ink}" stroke-width="2" stroke-linejoin="round"/><path d="M88 130 V168 M110 136 V174" stroke="#D8CBA8" stroke-width="1.5"/><path d="M76 162 C86 150 94 162 104 152 S118 148 124 142" stroke="${C.blue}" stroke-width="2.6" fill="none" stroke-dasharray="4 3">${an('<animate attributeName="stroke-dashoffset" values="14;0" dur="1s" repeatCount="indefinite"/>')}</path><circle cx="124" cy="141" r="4.2" fill="${C.bag}"/>`,
+    receipt:() => `<path d="M70 130 H98 V170 L94 175 L90 170 L86 175 L82 170 L78 175 L74 170 L70 175 Z" fill="#fff" stroke="${C.ink}" stroke-width="2" stroke-linejoin="round"/><rect x="75" y="137" width="18" height="3.5" rx="1.7" fill="#C9D2DE"/><rect x="75" y="145" width="14" height="3.5" rx="1.7" fill="#C9D2DE"/><rect x="75" y="153" width="16" height="3.5" rx="1.7" fill="#C9D2DE"/><rect x="75" y="161" width="18" height="4" rx="2" fill="${C.ink}"/><g>${trA(['0 0', '-9 8', '0 0'], 2.2)}<path d="M108 156 L120 168" stroke="${C.strap}" stroke-width="5" stroke-linecap="round"/><circle cx="102" cy="150" r="10" fill="#DDEBFA" fill-opacity=".85" stroke="${C.ink}" stroke-width="2.5"/></g>`,
+    suitcase:() => `<g>${trA(['0 0', '0 -2', '0 0'], .45)}<path d="M30 168 L29 160 M22 160 H36" stroke="${C.ink}" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="8" y="168" width="40" height="46" rx="7" fill="${C.teal}" stroke="${C.ink}" stroke-width="2.5"/><path d="M8 186 H48 M8 198 H48" stroke="#167070" stroke-width="2"/><rect x="18" y="174" width="6" height="34" rx="3" fill="${C.gold}"/><circle cx="16" cy="218" r="4.5" fill="${C.ink}"/><circle cx="40" cy="218" r="4.5" fill="${C.ink}"/></g>`,
+    camera:() => `<g>${trA(['0 0', '0 0', '0 12', '0 12', '0 0'], 2.4)}<rect x="88" y="158" width="24" height="22" rx="2" fill="#fff" stroke="${C.ink}" stroke-width="1.5"/><rect x="91" y="161" width="18" height="12" fill="#9FD3F0"/><path d="M91 173 L97 166 L102 170 L106 165 L109 173 Z" fill="#6DBF7B"/></g><rect x="84" y="131" width="14" height="7" rx="2" fill="${C.ink}"/><rect x="76" y="136" width="48" height="30" rx="7" fill="${C.ink}"/><circle cx="100" cy="151" r="11" fill="#5B6A7C" stroke="#fff" stroke-width="2.5"/><circle cx="100" cy="151" r="5" fill="#2F3B4C"/><circle cx="97" cy="148" r="2" fill="#fff"/><circle cx="116" cy="141" r="2.5" fill="${C.gold}"/><g opacity="0">${an('<animate attributeName="opacity" values="0;0;1;0" keyTimes="0;0.8;0.85;1" dur="2.4s" repeatCount="indefinite"/>')}<path d="M118 118 L120 110 L122 118 L130 120 L122 122 L120 130 L118 122 L110 120 Z" fill="#FFF3B0" stroke="${C.gold}" stroke-width="1"/></g>`
+  };
+  const H = -70;
+  const ST = {
+    merhaba:{wr:150, wra:rotA([0, -28, 0], 66, 136, .8), beak:'open', tilt:-4},
+    bekleme:{bagSwing:true},
+    anlatma:{wr:85, beak:'talk', tilt:4, back:ex.speech()},
+    konusma:{wr:85, beak:'talk', tilt:4},
+    dusunme:{wr:-120, look:[-3, -4], tilt:-7, root:'breathe', back:ex.think()},
+    sevinc:{eyes:'happy', beak:'open', wl:150, wr:150, wla:rotA([0, -15, 0], 66, 136, .55), wra:rotA([0, -15, 0], 66, 136, .55), root:'jump', front:ex.conf()},
+    uzgun:{eyes:'sad', look:[0, 3], brows:'sad', tilt:9, wl:-15, wr:-15, root:'breathe', front:ex.tear()},
+    saskin:{eyes:'wide', brows:'up', beak:'open', wl:60, wr:60, root:'hop', front:ex.bang()},
+    kosma:{legs:'run', lean:9, wla:rotA([25, -25, 25], 66, 136, .5), wra:rotA([-25, 25, -25], 66, 136, .5), root:'hop', back:ex.dust(), bagSwing:true},
+    ucma:{legs:'fly', lean:-8, wl:95, wr:95, wla:rotA([0, 40, 0], 66, 136, .5), wra:rotA([0, 40, 0], 66, 136, .5), root:'float', back:ex.clouds()},
+    uyku:{eyes:'closed', tilt:12, root:'breathe', front:ex.zzz()},
+    hesap:{wl:H, wr:H, look:[0, 4], beak:'open', front:ex.coin()},
+    harita:{wl:H, wr:H, look:[0, 4], tilt:4, front:ex.map()},
+    fis:{wl:H, wr:H, look:[-2, 4], front:ex.receipt()},
+    bavul:{legs:'walk', lean:4, wl:45, wra:rotA([15, -15, 15], 66, 136, .9), root:'walk', back:ex.suitcase(), bagSwing:true},
+    foto:{eyes:'happy', beak:'open', wl:H, wr:H, front:ex.camera()}
+  };
+  return draw(ST[state] || ST.bekleme);
+}
+// 🐦 Leyo'yla planla (2026-11-20, kullanıcı: "sorular tek tek, görsel öğelerle, kolay seçim; sonunda onaylat, revize edilebilsin"):
+// tercih sihirbazı. Her ekranda tek soru, büyük kartlar, ilerleme çubuğu; cevap anında kaydedilir (S.trip.prefs[kişi], Tercihler'le
+// aynı yer). Sıra: tanışma (grubun durumu, WhatsApp'la hatırlat) → istekler (isteğe bağlı) → 14 soru → özet (her satırda Değiştir)
+// → Onayla: S.trip.wizOk[kişi], Rehber adımına geçilir ve rehberi olmayan ilk şehirde ① başlar.
+function wzSteps(){ return ['hi', 'wish', ...GQ.map(q => q[0]), 'sum']; }
+function wzMe(){ const P = S.trip.prefs || (S.trip.prefs = {}); return P[S.me] || (P[S.me] = {}); }
+function wzMeta(k){
+  const T = {tempo:{q:'Günde ne kadar gezelim?', s:'Tempo', ic:{'Sakin':'🐢', 'Dengeli':'🚶', 'Yoğun':'🏃', 'Çok yoğun':'⚡'}, sub:{'Sakin':'~10 bin adım', 'Dengeli':'~15 bin adım', 'Yoğun':'~19 bin adım', 'Çok yoğun':'~24 bin adım'}},
+    bas:{q:'Sabah kaçta yola çıkalım?', s:'Güne başlama', ic:{'Erken (08:00)':'🌅', '09:00':'☀️', 'Normal (10:00)':'☕', 'Geç (11:00+)':'😴'}},
+    ucus:{q:'Uçakla döndüğümüz gün gezelim mi?', s:'Uçakla ayrılış günü', ic:{'Gezi yok, doğrudan havalimanı':'✈️', 'Vakit varsa kısa gezi':'🚶'}},
+    uyruk:{q:'Hangi ülkenin vatandaşısın?', a:'Konsolosluğun haritada bayrağıyla görünür.', s:'Uyruk'},
+    kisit:{q:'Yemekte kesin kuralların var mı?', a:'Bunlar kesin kuraldır; seçmezsen hepsi serbest.', s:'Yemek kısıtı', ic:{'Domuz eti yok':'🐖', 'Alkolsüz yer':'🧃', 'Vejetaryen':'🥗', 'Deniz ürünü yok':'🦐'}},
+    kahvalti:{q:'Kahvaltı nasıl olsun?', s:'Kahvaltı', ic:{'Kafede kahvaltıyla başla':'☕', 'Brunch (geç kahvaltı)':'🥞', 'Evde / otelde':'🏠'}},
+    zevk:{q:'Hangi lezzetleri seversin?', s:'Yemek zevki', ic:{'Yerel mutfak':'🥘', 'Tapas':'🍢', 'Deniz ürünleri':'🦐', 'Ev yemekleri (lokanta)':'🍲', 'Et-ızgara':'🥩', 'Pizza':'🍕', 'Makarna':'🍝', 'Hamburger / fast food':'🍔', 'Asya mutfağı':'🍜', 'Sokak lezzeti':'🌮', 'Şık restoran':'🍷', 'Ara sıra Türk mutfağı':'🥙', 'Kahve-tatlı molası':'🍰'}},
+    ilgi:{q:'Seni en çok ne heyecanlandırır?', s:'İlgi', ic:{'Tarih':'🏛️', 'Mimari':'🏰', 'Sanat-müze':'🖼️', 'Manzara':'🌄', 'Pazar-çarşı':'🧺', 'Futbol':'⚽', 'Park-doğa':'🌳'}},
+    alis:{q:'Alışverişte neler olsun?', s:'Alışveriş', ic:{'Cadde mağazaları':'🛍️', 'Hediyelik':'🎁', 'Yerel pazarlar':'🧺'}},
+    outlet:{q:'Hangi şehirde outlete gidelim?', a:'Gideceksen günü ve saati sonra rotada yazarsın.', s:'Outlet'},
+    aksam:{q:'Akşamları ne yapalım?', s:'Akşamlar', ic:{'Erken dinlenme':'😴', 'Akşam yürüyüşü':'🌙', 'Gösteri (flamenko vb.)':'💃', 'Gece hayatı':'🎶'}},
+    ulasim:{q:'Şehirde nasıl dolaşalım?', s:'Ulaşım', ic:{'Bol yürüyüş':'🚶', 'Metro-otobüs':'🚇', 'Taksi':'🚕'}},
+    butce:{q:'Yemekte kişi başı ne kadar harcayalım?', s:'Yemek bütçesi', ic:{'€ ~10–20 €':'💶', '€€ ~20–30 €':'💶💶', '€€€ 30 €+':'💶💶💶'}},
+    butceUst:{q:'Çok iyi bir yer biraz pahalıysa?', s:'Bütçe esnekliği', ic:{'Çok iyiyse bir üst seviye de olur':'⭐', 'Yalnız seçtiğim seviye':'✋'}}};
+  return T[k] || {};
+}
+function wzHas(v){ return v != null && v !== '' && (!Array.isArray(v) || v.length > 0); }
+function wzShow(k){
+  const v = wzMe()[k], q = GQ.find(x => x[0] === k); if (!q) return '';
+  if (q[2] === 'country'){ const c = v ?? gUyruk(); return c ? `${gFlag(c)} ${(COUNTRIES.find(x => x[0] === c) || [0, c])[1]}` : ''; }
+  if (Array.isArray(v)) return q[2] === 'city' && !v.length ? 'Outlet yok' : v.join(', ');
+  // Cevapsız uçak günü sorusunun varsayılanı "gezi yok" (gNoFlightTour).
+  return v || (k === 'ucus' ? 'Gezi yok (varsayılan)' : '');
+}
+function wizBody(){
+  const f = form, st = wzSteps(), i = Math.max(0, Math.min(+f.wi || 0, st.length - 1)), k = st[i], me = wzMe(), cities = guideCities(), last = st.length - 1;
+  const pct = Math.round(i * 100 / last);
+  const say = (state, q, a) => `<div class="wz-say">${leyo(state, 'l', 'Leyo')}<div class="wz-bub"><b>${q}</b>${a ? `<span>${a}</span>` : ''}</div></div>`;
+  const nav = (lbl, pri) => `<div class="wz-nav">${i > 0 ? '<button type="button" class="btn" data-wz="prev">‹ Geri</button>' : '<span></span>'}<button type="button" class="btn${pri || f.wret ? ' pri' : ''}" data-wz="${f.wret ? 'sum' : 'next'}">${f.wret ? 'Özete dön ›' : lbl}</button></div>`;
+  let h = `<div class="wz-prog" role="progressbar" aria-label="İlerleme" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="wz-step">${k === 'hi' ? 'Tanışma' : k === 'sum' ? 'Özet' : `${i} / ${last - 1}`}</p>`;
+  if (k === 'hi'){
+    const P = S.trip.prefs || {}, live = S.people.filter(p => !p.left), done = live.filter(p => P[p.id] && GQ.some(([q]) => wzHas(P[p.id][q]))), miss = live.filter(p => !done.includes(p));
+    const msg = `Heybe'de gezi tercihlerini doldurur musun? Leyo ${GQ.length} kısa soru soruyor, iki dakika sürüyor.${IN_WEB ? ' https://ifayetorbay.github.io/' : ''}`;
+    h += say('merhaba', `Merhaba ${esc(nm(S.me))}, ben Leyo!`, `Gezini birlikte planlayalım. ${GQ.length} kısa soru soracağım; her cevabın hemen kaydedilir, yarıda bırakırsan kaldığın yerden sürer. Sonunda hepsine birlikte bakacağız.`)
+      + `<div class="wz-grp"><b>🙋 ${done.length}/${live.length} kişi cevapladı</b>${done.length ? `<span>Cevaplayanlar: ${done.map(p => esc(nm(p.id))).join(', ')}</span>` : ''}${miss.length ? `<span>Bekleyenler: ${miss.map(p => esc(nm(p.id))).join(', ')}</span><a class="btn sm" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp'la hatırlat</a>` : ''}</div>`
+      + `<button type="button" class="btn block pri" data-wz="next">${(S.trip.wizOk || {})[S.me] ? 'Tercihlerime bak ›' : 'Başlayalım ›'}</button>`;
+  } else if (k === 'wish'){
+    const W = gWish();
+    h += say('konusma', 'Mutlaka görmek istediğin yerler var mı?', 'Her satıra bir yer yaz ya da bir mesajı olduğu gibi yapıştır. Yoksa atla; ben senin için seçerim.')
+      + `<textarea class="inp" id="gwText" rows="3" placeholder="Ör. Alcázar, Plaza de España, Triana">${esc(f.gwText || '')}</textarea>
+      <div class="ptools" style="margin-top:0"><button type="button" class="btn sm pri" data-wz="wadd" ${f.gbusy ? 'disabled' : ''}>${f.gbusy === 'liste' ? `${leyo('fis', 'xs')} Okunuyor…` : 'Ekle'}</button>${W.length ? `<span class="note">⭐ ${W.length} istek: ${W.slice(0, 6).map(w => esc(w.name)).join(', ')}${W.length > 6 ? '…' : ''}</span>` : ''}</div>`
+      + nav(W.length ? 'Devam ›' : 'Atla ›', W.length > 0);
+  } else if (k === 'sum'){
+    h += say('sevinc', 'Harika! İşte tercihlerin.', 'Bir satıra dokunup değiştirebilirsin. Onaylayınca rotanı kurmaya başlarım.')
+      + `<div class="wz-sum">${GQ.map(([q, l], j) => `<button type="button" class="wz-row" data-wz="go" data-i="${j + 2}"><span>${esc(wzMeta(q).s || l)}</span><b>${esc(wzShow(q)) || '<i>Fark etmez</i>'}</b><em>Değiştir</em></button>`).join('')}</div>
+      <button type="button" class="btn block pri" data-wz="done">✅ Onayla ve rotayı kur</button><p class="note">Tercihlerini sonra da değiştirebilirsin; rota yeniden hesaplanır.</p>`;
+  } else {
+    const q = GQ.find(x => x[0] === k), [, l, n, opts] = q, m = wzMeta(k), cur = me[k];
+    if (n === 'country'){
+      const v = cur ?? gUyruk(), top = ['TR', 'IT', 'ES', 'FR', 'DE', 'GB', 'NL', 'US'], cn = cc => (COUNTRIES.find(x => x[0] === cc) || [0, cc])[1];
+      h += say('konusma', m.q, m.a) + `<div class="wz-opts many">${top.map(cc => `<button type="button" class="wz-opt" data-wz="pick" data-k="${k}" data-v="${cc}" aria-pressed="${v === cc}"><i>${gFlag(cc)}</i><b>${esc(cn(cc))}</b></button>`).join('')}</div>
+        <select class="inp" data-wz-sel="${k}" aria-label="Başka bir ülke"><option value="">Başka bir ülke…</option>${COUNTRIES.map(([cc, nmc]) => `<option value="${cc}" ${v === cc && !top.includes(cc) ? 'selected' : ''}>${gFlag(cc)} ${esc(nmc)}</option>`).join('')}</select>` + nav('Devam ›', true);
+    } else if (n === 'city'){
+      const a = cur || [];
+      h += say('konusma', m.q, m.a) + `<div class="wz-opts">${cities.map(c => `<button type="button" class="wz-opt" data-wz="pick" data-k="${k}" data-v="${esc(c)}" aria-pressed="${a.includes(c)}"><i>🛍️</i><b>${esc(c)}</b></button>`).join('')}<button type="button" class="wz-opt" data-wz="none" data-k="${k}" aria-pressed="${Array.isArray(cur) && !cur.length}"><i>🚫</i><b>Outlet yok</b></button></div>` + nav('Devam ›', wzHas(cur) || Array.isArray(cur));
+    } else {
+      const multi = n !== 1, a = multi ? (cur || []) : null;
+      const on = v => multi ? a.includes(v) : cur === v || (k === 'butce' && !!cur && gLevel(cur) === gLevel(v));
+      h += say('konusma', m.q || l, m.a || (multi ? (n === 5 ? 'En çok 5 tane seç.' : 'İstediğin kadar seç.') : 'Birini seç; seçince sıradaki soruya geçerim.'))
+        + `<div class="wz-opts${opts.length > 6 ? ' many' : ''}">${opts.map(v => `<button type="button" class="wz-opt" data-wz="pick" data-k="${k}" data-v="${esc(v)}" aria-pressed="${on(v)}"><i>${(m.ic || {})[v] || '•'}</i><b>${esc(v)}</b>${(m.sub || {})[v] ? `<span>${esc(m.sub[v])}</span>` : ''}</button>`).join('')}</div>`
+        + nav(wzHas(cur) ? 'Devam ›' : 'Atla ›', wzHas(cur));
+    }
+  }
+  return h;
+}
+function wizAct(d){
+  if (d.wz === 'open'){ openSheet({mode:'wiz', wi:d.i ? +d.i : 0}); return; }
+  const f = form; if (!f || f.mode !== 'wiz') return;
+  const st = wzSteps(), last = st.length - 1, go = i => { f.wi = Math.max(0, Math.min(i, last)); drawSheet(); document.querySelector('#sheetHost .sheet')?.scrollTo(0, 0); };
+  if (d.wz === 'next') return go((+f.wi || 0) + 1);
+  if (d.wz === 'prev'){ f.wret = false; return go((+f.wi || 0) - 1); }
+  if (d.wz === 'sum'){ f.wret = false; return go(last); }
+  if (d.wz === 'go'){ f.wret = true; return go(+d.i); }
+  if (d.wz === 'wadd'){ const t = (f.gwText || '').trim(); if (!t) return toast('Önce yer adlarını yaz ya da yapıştır.'); f.gwText = ''; guideAddWish(t); return; }
+  if (d.wz === 'pick' || d.wz === 'none'){
+    const me = wzMe(), q = GQ.find(x => x[0] === d.k); if (!q) return;
+    if (d.wz === 'none') me[d.k] = [];
+    else if (q[2] === 1 || q[2] === 'country') me[d.k] = q[2] === 1 && me[d.k] === d.v ? undefined : d.v;
+    else { const a = new Set(me[d.k] || []); if (a.has(d.v)) a.delete(d.v); else { if (q[2] === 5 && a.size >= 5) return toast('En çok 5 tane seçebilirsin.'); a.add(d.v); } me[d.k] = [...a]; }
+    save(); drawSheetKeep();
+    // Tek seçimlik soruda seçince kısa bir an sonra sıradaki soruya geçilir (özetten gelindiyse özete dönülür).
+    if ((q[2] === 1 || q[2] === 'country') && me[d.k] !== undefined) setTimeout(() => { if (form === f && st[f.wi] === d.k){ if (f.wret){ f.wret = false; go(last); } else go((+f.wi || 0) + 1); } }, 320);
+    return;
+  }
+  if (d.wz === 'done'){
+    (S.trip.wizOk || (S.trip.wizOk = {}))[S.me] = Date.now(); save();
+    const cs = guideCities(), c = cs.find(x => !(S.trip.guide || {})[x] && !(S.trip.gtrial || {})[x]);
+    toast('✅ Tercihlerin kaydedildi. Leyo rotanı kurmaya başlıyor.');
+    if (!cs.length){ closeSheet(); return; }
+    openSheet({mode:'guide', gcity:c || cs[0], gstep:2});
+    if (c) setTimeout(() => guideTrial(c), 0);
+  }
+}
 function gFlowHtml(c){
   const g = (S.trip.guide || {})[c], T = (S.trip.gtrial || {})[c], I = (S.trip.ilham || {})[c], wd = (((S.trip.wd || {})[c] || {}).yerler || []).length;
   const ny = I && I.yerler ? I.yerler.filter(y => y.lat).length : 0, ns = T ? T.res.reduce((a, r) => a + r.n, 0) : 0, stale = !!(g && T && !(T.adopted >= T.at));
   const wish = gWish().some(w => w.city === c) ? ' + istekleriniz' : '', comp = g && g.tamam && g.tamam.google && !stale;
-  const row = (n, st, t, x) => `<div class="gfs ${st === 'done' ? 'gfok' : st === 'now' ? 'gfnow' : ''}"><b class="gfn">${st === 'done' ? '✓' : n}</b><div><b>${t}</b><span>${x}</span></div></div>`;
-  return `<div class="gflow">
+  const N = [], row = (n, st, t, x) => { N.push({st, x}); return ''; };
+  void `<div class="gflow">
     ${row(1, ny || wd || T ? 'done' : 'now', 'Yerleri topla', ny ? `${ny} yer araştırmadan${wd ? ' + Wikidata' : ''}${wish} · Google kullanılmaz` : wd ? `Wikidata'dan ${wd} yer${wish}${T && window.claude && window.claude.guide ? ' · araştırma için ② Rota → 🔄 Baştan hesapla' : ''}` : 'Şehrin öne çıkan yerleri araştırılır, isteklerinizle birleşir. Ücretsiz.')}
     ${row(2, T ? 'done' : ny || wd ? 'now' : '', 'Rotayı kur', T ? `${T.res.length} gün · ${ns} durak · durağa dokunarak ya da 💬 Plana söyle ile düzelt${(guidePrefs().outlet || []).includes(c) && !(S.trip.outlet || {})[c] && !T.res.some(r => /🛍/.test(r.not || '')) ? ' · 🛍 outlet bilgisi bekleniyor' : (() => { const q = gOutQ(c, T); return q && q.ask && !q.tur ? ' · 🛍 outlet dönüşü için cevabın bekleniyor' : ''; })()}` : 'Yerler günlere dağıtılır; anında ve ücretsiz, istediğin kadar düzeltirsin.')}
     ${row(3, comp ? 'done' : T ? 'now' : '', 'Google\'la tamamla', stale ? 'Rota değişti: yeniden bas, rehber yeni rotayla kurulur (yalnız eksikler aranır).' : g && g.tamam ? (g.tamam.google ? `${dayLabel(g.tamam.google)} · yemek, alışveriş, bavul, konsolosluk` : 'Google\'ın aylık sınırı doluydu: ayın 1\'inde yeniden bas.') : 'Rotanın çevresindeki yemek, alışveriş caddeleri ve mağazalar, bavul emanetçisi, konsolosluk. Bir kez.')}
     ${row(4, g && g.ok ? 'done' : g && g.tamam ? 'now' : '', 'Onayla', g && g.ok ? `✅ ${esc(nm(g.okBy || g.by))} onayladı` : 'Açıklamalar yazılır; PDF, harita ve "Bugün" şeridi hazır olur.')}
-    ${gRunning.has(c) && gCompMsg ? `<p class="note">⏳ ${esc(gCompMsg)}</p>` : ''}
   </div>`;
+  // 🐦 Yol ekranı (2026-11-20, kullanıcı: Duolingo'daki gibi): adımlar yol üstünde yuvarlak düğümler; biten ✓, sıradaki parlar ve
+  // Leyo onun yanında durur (hâli adıma göre: tercih anlatma, ① düşünme, ② harita, ③ koşma, ④ merhaba), sonda 🏆. Düğüme dokununca
+  // o adım çalışır; bitmiş adımlar yeniden çalıştırılmaz (yalnız Tercihler ve ② rota düzenleme).
+  const C = esc(c), P0 = S.trip.prefs || {}, me = P0[S.me] || {}, live = S.people.filter(p => !p.left), inSheet = !!(form && form.mode === 'guide');
+  const prefOk = !!(S.trip.wizOk || {})[S.me] || GQ.filter(([k]) => wzHas(me[k])).length >= 3, nA = live.filter(p => P0[p.id] && GQ.some(([k]) => wzHas(P0[p.id][k]))).length;
+  const ST = [{st:prefOk ? 'done' : 'now', ic:'🎯', t:'Tercihler', x:`${nA}/${live.length} kişi cevapladı${prefOk ? ' · değiştirmek için dokun' : ' · Leyo soruları tek tek sorar'}`, act:'data-wz="open"', ly:'anlatma', any:1},
+    ...N.map((r, i) => ({...r, ic:['🔎', '🗺️', '✨', '👀'][i], t:['① Yerleri topla', '② Rotayı kur', '③ Google\'la tamamla', '④ Onayla'][i], ly:['dusunme', 'harita', 'kosma', 'merhaba'][i],
+      act:[`data-g="gflow" data-c="${C}"`, T ? (g && g.planner ? (inSheet ? `data-g="gtedit" data-c="${C}"` : `data-g="view" data-c="${C}"`) : '') : `data-g="gflow" data-c="${C}"`,
+        `data-g="gcomplete" data-c="${C}"`, g && g.tamam && !g.ok ? (inSheet ? `data-g="approve" data-c="${C}"` : `data-g="view" data-c="${C}"`) : ''][i], any:i === 1 && T && g && g.planner})),
+    {st:g && g.ok ? 'done' : '', ic:'🏆', t:'Rehber hazır', x:g && g.ok ? 'PDF, harita ve "Bugün" şeridi hazır.' : 'Onaydan sonra PDF, harita ve "Bugün" şeridi açılır.', act:'', ly:'sevinc', tr:1}];
+  const cur = ST.findIndex(s => s.st === 'now'), busy = gRunning.has(c) ? (gCompMsg || 'Hazırlanıyor…') : gTrialBusy === c ? (gTrialMsg || 'Hazırlanıyor…') : '';
+  const at = cur >= 0 ? cur : g && g.ok ? ST.length - 1 : -1, X = [-24, 0, 24, 0, -24, 0];
+  return `<div class="gpath">${ST.map((s, i) => { const ly = i === at ? (busy ? (gTrialBusy === c ? 'dusunme' : 'kosma') : s.ly) : '', tap = s.act && (s.st === 'now' || s.any);
+    return `<div class="gp-n ${s.st}${s.tr ? ' gp-tr' : ''}" style="--x:${X[i % X.length]}px">${tap ? `<button type="button" class="gp-b" ${s.act} aria-label="${esc(s.t)}">${s.st === 'done' ? '✓' : s.ic}</button>` : `<span class="gp-b" aria-hidden="true">${s.st === 'done' ? '✓' : s.ic}</span>`}<div class="gp-t"><b>${s.t}</b><span>${i === at && busy ? '⏳ ' + esc(busy) : s.x}</span></div>${ly ? leyo(ly, 's', 'Leyo') : ''}</div>`; }).join('')}</div>`;
 }
 function gTrialHtml(c){
-  if (gTrialBusy === c) return `<div class="gask gtrial"><p class="note">${esc(gTrialMsg || '🧪 Hazırlanıyor…')} Bitince yeni planlayıcı hesaplayacak.</p></div>`;
+  if (gTrialBusy === c) return `<div class="gask gtrial"><div class="leyo-row">${leyo('dusunme', 's')}<span>${esc(gTrialMsg || 'Hazırlanıyor…')} Bitince rota hesaplanacak.</span></div></div>`;
   const T = (S.trip.gtrial || {})[c]; if (!T) return ''; const C = esc(c), f = form || {}, sel = f.gtsel && f.gtsel.c === c ? f.gtsel : null, ab = f.gtab && f.gtab.c === c ? f.gtab : null; let no = 0;
   const ed = Object.keys(T.kilit || {}).length + (T.cikar || []).length + Object.keys(T.gun || {}).length;
   const act = (r, x) => `<div class="gtact">${T.res.length > 1 ? `<span class="gtk">📅 Taşı:</span>${T.res.map((q, j) => q.d === r.d ? '' : `<button type="button" class="chip" data-g="gtmove" data-c="${C}" data-n="${esc(x.n)}" data-d="${q.d}">${j + 1}. gün</button>`).join('')}` : ''}
@@ -5703,7 +5965,7 @@ function gTrialHtml(c){
       <label>🍽 Öğle molası <select class="inp gsel" data-g="gtmola" data-c="${C}" data-d="${r.d}">${[['', 'Olağan (60 dk)'], ['0', 'Yok'], ['30', '30 dk'], ['45', '45 dk'], ['60', '60 dk'], ['90', '90 dk']].map(([v, t]) => `<option value="${v}" ${String(U(r).mola ?? '') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <button type="button" class="chip${U(r).doldur ? ' on' : ''}" data-g="gtfill" data-c="${C}" data-d="${r.d}">${U(r).doldur ? '✓ Dolu gün (geri al)' : '➕ Günü doldur'}</button>
       <button type="button" class="chip${/🚫/.test(r.not) ? ' on' : ''}" data-g="gtbos" data-c="${C}" data-d="${r.d}" data-v="${/🚫/.test(r.not) ? 1 : 0}">${/🚫/.test(r.not) ? '✓ Bu gün gezi yok (aç)' : '🚫 Bu gün gezi yok'}</button></div>` : ''}
-    <div class="gtl">${r.segs.map(s => (s.from ? `<p class="gte gtev"><span class="gtt">${mh(s.t0)}</span>${esc(s.from)}</p>` : '')
+    <div class="gtl">${r.segs.map(s => (s.from ? `<p class="gte gtev"><span class="gtt">${mh(s.t0)}</span>${leyo('bavul', 'xs')} ${esc(s.from.replace(/^🧳\s*/, ''))}</p>` : '')
       + s.st.map(x => x.m ? `<p class="gtm">${mh(x.at)} 🍽 öğle molası${x.dk && x.dk !== 60 ? ` (${x.dk} dk)` : ''}</p>` : stop(r, x)).join('')
       + (s.ev ? s.evk ? `<p class="gte gtev"><span class="gtt">${mh(s.evt)}</span>🏠 ${s.evk === 'in' ? 'Eve giriş' : 'Evden çıkış'}</p>` : `<p class="gte"><b class="gtn">${++no}</b>🎟 ${esc(s.ev)}</p>` : '')
       + (s.to ? `<p class="gte">${G_AIR.test(s.to) ? '✈️' : '🚆'} ${esc(s.to)} · ${mhDe(s.t1)} ${G_AIR.test(s.to) ? 'havalimanında' : 'garda'} ol</p>${gAirHtml((S.trip.guide || {})[c], r.d)}` : '')).join('')}</div>
@@ -5867,11 +6129,13 @@ function gMiniMap(g, c){
 }
 function viewGezi(){
   const cities = guideCities(), W = gWish(), P0 = S.trip.prefs || {}, ans = Object.keys(P0).filter(id => person(id)).length;
-  let h = gTodayHtml() + (programHtml() || `<div class="card"><p class="tip">📅 Plan, bilet ve rezervasyonlara tarih girilince gün gün oluşur. Önce konaklamaları (ev, otel) giriş–çıkış tarihleriyle ekle.</p></div>`);
+  let h = gTodayHtml() + (programHtml() || `<div class="card leyo-row">${leyo('harita', 's')}<p class="tip">📅 Plan, bilet ve rezervasyonlara tarih girilince gün gün oluşur. Önce konaklamaları (ev, otel) giriş–çıkış tarihleriyle ekle.</p></div>`);
   if (!cities.length) return h;
   const L = gLuggage().filter(l => l.d >= isoDay(Date.now()));
   if (L.length) h += `<section class="glugs">${gLugHtml(L)}</section>`;
-  h += `<h2>🧭 Gezi rehberi</h2>
+  { const ok = !!(S.trip.wizOk || {})[S.me], live = S.people.filter(p => !p.left), nA = live.filter(p => P0[p.id] && GQ.some(([k]) => wzHas(P0[p.id][k]))).length;
+    h += `<h2>🧭 Gezi rehberi</h2><section class="wz-cta">${leyo(ok ? 'harita' : 'merhaba', 'm', 'Leyo')}<div><b>${ok ? 'Tercihlerin hazır' : 'Leyo\'yla planla'}</b><span>${ok ? `${nA}/${live.length} kişi cevapladı. Değiştirmek istersen Leyo'ya dokun.` : `Leyo ${GQ.length} kısa soru sorar, sonra rotanı kurar. ${nA}/${live.length} kişi cevapladı.`}</span><button type="button" class="btn sm${ok ? '' : ' pri'}" data-wz="open">${ok ? 'Tercihlerimi değiştir' : '🐦 Başlayalım'}</button></div></section>`; }
+  h += `
     <div class="gsteps"><button class="gstep" data-g="open" data-v="0"><b>⭐ ${W.length}</b><span>istek</span></button><button class="gstep" data-g="open" data-v="1"><b>🙋 ${ans}/${S.people.length}</b><span>tercih</span></button><button class="gstep" data-g="open" data-v="2"><b>🗺 ${cities.filter(c => (S.trip.guide || {})[c] && S.trip.guide[c].ok).length}/${cities.length}</b><span>onaylı şehir</span></button></div>`;
   for (const c of cities){
     const g = (S.trip.guide || {})[c], days = cityDays(c), nw = W.filter(w => w.city === c).length;
@@ -7575,6 +7839,9 @@ function animateEnter(v){
 function toast(m, btn){
   document.querySelectorAll('.toast').forEach(x => x.remove());
   const d = document.createElement('div'); d.className = 'toast'; d.textContent = m;
+  // 🐦 Leyo bildirimin türüne göre: uyarı şaşkın, hata üzgün, başarı sevinçli, okuma sırasında fişle.
+  const ly = /^(⚠|⭐ \d)/.test(m) ? 'saskin' : /^(❌|🚫)|tamamlanamadı|okunamadı|yapılamadı|kaydedilemedi|bağlantı koptu|internet yok/i.test(m) ? 'uzgun' : /^(✅|🎉)/.test(m) ? 'sevinc' : /okunuyor/i.test(m) ? 'fis' : '';
+  if (ly){ const sp = document.createElement('span'); sp.innerHTML = leyo(ly, 'xs'); d.prepend(sp.firstElementChild); }
   if (btn && btn.act){ const b = document.createElement('button'); b.dataset.act = btn.act; b.textContent = btn.label; d.appendChild(b); }
   document.body.appendChild(d);
   clearTimeout(toastTimer); toastTimer = setTimeout(() => d.remove(), btn && btn.ms ? btn.ms : 3200);
@@ -8996,6 +9263,7 @@ document.addEventListener('click', ev => {
   if (d.act === 'gshare'){ if (gShareFile) navigator.share({files:[gShareFile], title:gShareFile.name}).catch(() => {}); t.closest('.toast')?.remove(); return; }
   if (d.act === 'gundo2'){ if (gzUndo){ gzUndo(); gzUndo = null; } t.closest('.toast')?.remove(); return; }
   if (d.g === 'more'){ (t.closest('.swr') || t.closest('.pli')).classList.toggle('open'); return; }
+  if (d.wz){ wizAct(d); return; }
   if (d.g){ guideAct(d); return; }
   if (d.emo && !isManager() && d.emo !== S.me){ toast('Sadece kendi emojini değiştirebilirsin.'); return; }
   if (d.admin){
@@ -9318,6 +9586,8 @@ document.addEventListener('input', ev => {
 document.addEventListener('change', async ev => {
   const el = ev.target, b = el.dataset.bind;
   if (form && el.dataset.g === 'gopus'){ form.gopus = el.checked; return; }
+  if (form && el.dataset.wzSel){ const me = wzMe(); me[el.dataset.wzSel] = el.value || undefined; save(); drawSheetKeep(); return; }
+  if (el.id === 'tLeyo'){ try { localStorage.setItem('heybe-leyo-anim', el.checked ? '1' : '0'); } catch(_) {} render(); return; }
   if (form && el.dataset.g === 'prefsel'){ const P = S.trip.prefs || (S.trip.prefs = {}); (P[S.me] || (P[S.me] = {}))[el.dataset.k] = el.value; save(); return; }
   if (form && el.dataset.g === 'guyruk'){ S.trip.uyruk = el.value; const g = (S.trip.guide || {})[el.dataset.c]; save(); if (g){ delete g.elci; await gPrep(el.dataset.c, g); } drawSheetKeep(); return; }
   if (form && el.dataset.g === 'gtrialwalk'){ guideTrial(el.dataset.c, el.checked); return; }
