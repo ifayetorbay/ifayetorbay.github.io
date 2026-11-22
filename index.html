@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261120221232';</script>
-<script src="heybe-web.js?v=20261120221232"></script>
+<script>window.HEYBE_VER = '20261122204419';</script>
+<script src="heybe-web.js?v=20261122204419"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -19,22 +19,28 @@
 <style>
 /* Layout: tek sütunlu telefon uygulaması; üstte seyahat başlığı ve kur, altta sabit sekme çubuğu, sağ altta "+ Harcama" düğmesi */
 :root{
-  --bg:#EDF1F3; --surface:#FFFFFF; --sunk:#E2E8EB; --ink:#13232C; --muted:#5B6A74; --line:#D5DDE2;
-  --accent:#0B6B6B; --accent-soft:#D5EAE8; --accent-ink:#FFFFFF; --sun:#C97A12; --sun-soft:#FBEBD3;
+  --bg:#F6F4EF; --surface:#FFFFFF; --sunk:#ECE8DF; --ink:#14242D; --muted:#5C6B73; --line:#E0DBD0;
+  --accent:#0B6B6B; --accent-soft:#DCF0EE; --accent-ink:#FFFFFF; --sun:#C97A12; --sun-soft:#FBEBD3;
+  --coral:#F45B32; --coral-soft:#FEEAE3; --coral-ink:#FFFFFF;
   --pos:#1B7A4F; --neg:#B23A26; --neg-soft:#F8DED8; --sun-ink:#FFFFFF; --warn:#C97A12;
   --accent-text:var(--accent); --sun-text:var(--sun);
+  --card-shadow:0 2px 10px rgba(20,36,45,.05);
   --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
   --body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --r:16px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0D161B; --surface:#152229; --sunk:#1C2C35; --ink:#E6EEF1; --muted:#93A4AE; --line:#263843;
+  --bg:#0E1519; --surface:#162229; --sunk:#1E2E37; --ink:#E8F0F3; --muted:#93A4AE; --line:#273A45;
   --accent:#43B7AE; --accent-soft:#183A3B; --accent-ink:#06201F; --sun:#F0AE55; --sun-soft:#3A2C16;
-  --pos:#55C893; --neg:#F07B66; --neg-soft:#3E1F1A; --sun-ink:#2A1A05; --warn:#F0AE55; color-scheme:dark }}
+  --coral:#FF7852; --coral-soft:#3D221B; --coral-ink:#1B0B06;
+  --pos:#55C893; --neg:#F07B66; --neg-soft:#3E1F1A; --sun-ink:#2A1A05; --warn:#F0AE55;
+  --card-shadow:0 2px 12px rgba(0,0,0,.24); color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#0D161B; --surface:#152229; --sunk:#1C2C35; --ink:#E6EEF1; --muted:#93A4AE; --line:#263843;
+  --bg:#0E1519; --surface:#162229; --sunk:#1E2E37; --ink:#E8F0F3; --muted:#93A4AE; --line:#273A45;
   --accent:#43B7AE; --accent-soft:#183A3B; --accent-ink:#06201F; --sun:#F0AE55; --sun-soft:#3A2C16;
-  --pos:#55C893; --neg:#F07B66; --neg-soft:#3E1F1A; --sun-ink:#2A1A05; --warn:#F0AE55; color-scheme:dark }
+  --coral:#FF7852; --coral-soft:#3D221B; --coral-ink:#1B0B06;
+  --pos:#55C893; --neg:#F07B66; --neg-soft:#3E1F1A; --sun-ink:#2A1A05; --warn:#F0AE55;
+  --card-shadow:0 2px 12px rgba(0,0,0,.24); color-scheme:dark }
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
@@ -68,8 +74,8 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .dot.live{background:var(--pos)}
 
 main{display:flex;flex-direction:column;gap:14px}
-.card{background:var(--surface);border-radius:var(--r);padding:16px}
-.hero{background:var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:18px 18px 16px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--card-shadow)}
+.hero{background:linear-gradient(150deg,var(--accent),color-mix(in srgb,var(--accent) 82%,#062E2E));color:var(--accent-ink);border-radius:var(--r);padding:18px 18px 16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 20px color-mix(in srgb,var(--accent) 22%,transparent)}
 .hero .lbl{font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;opacity:.8;font-weight:600}
 .hero .big{font-family:var(--display);font-weight:800;font-size:2.1rem;line-height:1}
 .hero .eur{opacity:.85;font-size:.95rem}
@@ -249,15 +255,15 @@ th{text-align:left;color:var(--muted);font-weight:600;font-size:.75rem;letter-sp
 td{padding:8px 0;border-top:1px solid var(--line)}
 td.r,th.r{text-align:right}
 
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
-nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
-nav.tabs button{border:0;background:none;padding:8px 1px;font-size:.7rem;letter-spacing:-.01em;white-space:nowrap;min-width:0;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+nav.tabs button{border:0;background:none;padding:8px 2px;font-size:.73rem;letter-spacing:-.01em;white-space:nowrap;min-width:0;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
 nav.tabs button[aria-current="page"]{color:var(--accent-text)}
 nav.tabs button{position:relative}
-nav.tabs button::after{content:"";position:absolute;bottom:2px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:currentColor;opacity:0;transform:scale(0);transition:transform .25s ease,opacity .25s ease}
+nav.tabs button::after{content:"";position:absolute;bottom:2px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--coral);opacity:0;transform:scale(0);transition:transform .25s ease,opacity .25s ease}
 nav.tabs button[aria-current="page"]::after{opacity:1;transform:scale(1)}
 nav.tabs svg{width:22px;height:22px}
-.fab{position:fixed;z-index:7;right:max(16px,calc(50% - 224px),env(safe-area-inset-right,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));border:0;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:1rem;padding:15px 20px;box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 40%,transparent)}
+.fab{position:fixed;z-index:7;right:max(16px,calc(50% - 224px),env(safe-area-inset-right,0px));bottom:calc(80px + env(safe-area-inset-bottom,0px));border:0;border-radius:99px;background:linear-gradient(135deg,#FF7A4D,var(--coral));color:var(--coral-ink);font-weight:700;font-size:1rem;padding:15px 22px;box-shadow:0 8px 24px color-mix(in srgb,var(--coral) 42%,transparent)}
 
 /* alt sayfa (form) */
 .scrim{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,#000 45%,transparent);display:flex;align-items:flex-end;justify-content:center}
@@ -657,10 +663,24 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
 .confetti i{position:absolute;top:-14px;width:8px;height:13px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translate(var(--dx),108vh) rotate(var(--r))}}
-/* 🐦 Leyo: Heybe'nin maskotu (SVG + SMIL; "hareketi azalt" ya da ayardan kapalıysa durgun) */
+/* 🐦 Leyo 2.0: Heybe'nin 3D maskotu (PNG + CSS mikro-animasyon; çevrimdışı/Artifact'ta SVG yedek; "hareketi azalt" ya da ayardan kapalıysa durgun) */
 .leyo{display:inline-block;flex:none;line-height:0;vertical-align:middle}
-.leyo svg{width:100%;height:auto;display:block;overflow:visible}
-.leyo-xs{width:30px}.leyo-s{width:46px}.leyo-m{width:88px}.leyo-l{width:120px}.leyo-xl{width:168px}
+.leyo svg,.leyo img.leyo-img{width:100%;height:auto;display:block;overflow:visible}
+.leyo img.leyo-img{object-fit:contain;filter:drop-shadow(0 4px 8px rgba(20,36,45,.12));transform-origin:50% 90%}
+.leyo-xs{width:34px}.leyo-s{width:56px}.leyo-m{width:104px}.leyo-l{width:136px}.leyo-xl{width:184px}
+@keyframes leyoBob{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-3px) scaleY(1.015)}}
+@keyframes leyoJump{0%,100%{transform:translateY(0) scale(1)}35%{transform:translateY(-10px) scale(1.03)}65%{transform:translateY(0) scale(.98,1.02)}}
+@keyframes leyoFloat{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-7px) rotate(1.5deg)}}
+@keyframes leyoStride{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+@keyframes leyoBreathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.02)}}
+@keyframes leyoPop{0%,100%{transform:scale(1)}45%{transform:scale(1.04) translateY(-2px)}}
+.leyo-anim .leyo-img{animation:leyoBob 3.2s ease-in-out infinite}
+.leyo-anim .leyo-st-sevinc{animation:leyoJump 1.6s ease-in-out infinite}
+.leyo-anim .leyo-st-ucma{animation:leyoFloat 2.3s ease-in-out infinite}
+.leyo-anim .leyo-st-kosma,.leyo-anim .leyo-st-bavul{animation:leyoStride .95s ease-in-out infinite}
+.leyo-anim .leyo-st-uyku,.leyo-anim .leyo-st-uzgun,.leyo-anim .leyo-st-dusunme{animation:leyoBreathe 4.2s ease-in-out infinite}
+.leyo-anim .leyo-st-saskin{animation:leyoPop 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.leyo-anim .leyo-img{animation:none!important}}
 .leyo-row{display:flex;align-items:center;gap:10px;margin:4px 0}
 .leyo-row>span:last-child,.leyo-row>p{font-size:.86rem;color:var(--muted);margin:0}
 .leyo-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
@@ -700,7 +720,7 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .wz-row b{grid-column:1;font-weight:600;font-size:.92rem}
 .wz-row b i{color:var(--muted);font-weight:400;font-style:normal}
 .wz-row em{grid-column:2;grid-row:1 / span 2;font-style:normal;font-weight:700;font-size:.82rem;color:var(--accent-text)}
-.wz-cta{display:flex;gap:10px;align-items:center;background:var(--surface);border-radius:var(--r);padding:10px 14px 10px 8px;border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+.wz-cta{display:flex;gap:10px;align-items:center;background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--coral-soft) 45%,var(--surface)));border-radius:var(--r);padding:12px 14px 12px 8px;border:1.5px solid color-mix(in srgb,var(--coral) 35%,transparent);box-shadow:var(--card-shadow)}
 .wz-cta>div{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0}
 .wz-cta b{font-family:var(--display);font-weight:800;font-size:1.05rem}
 .wz-cta span{font-size:.84rem;color:var(--muted)}
@@ -709,7 +729,7 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .gp-n{display:flex;align-items:center;gap:10px;width:calc(100% - 60px);max-width:330px;transform:translateX(var(--x,0))}
 .gp-b{flex:none;width:58px;height:58px;border-radius:50%;border:0;display:grid;place-items:center;font-size:1.45rem;font-weight:800;background:var(--sunk);color:var(--muted);box-shadow:0 5px 0 color-mix(in srgb,var(--ink) 16%,transparent)}
 .gp-n.done .gp-b{background:var(--accent);color:var(--accent-ink);box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,#000)}
-.gp-n.now .gp-b{background:var(--sun);color:var(--sun-ink);box-shadow:0 5px 0 color-mix(in srgb,var(--sun) 55%,#000);animation:gpPulse 1.8s ease-in-out infinite}
+.gp-n.now .gp-b{background:var(--coral);color:var(--coral-ink);box-shadow:0 5px 0 color-mix(in srgb,var(--coral) 55%,#000);animation:gpPulse 1.8s ease-in-out infinite}
 .gp-n.gp-tr .gp-b{font-size:1.7rem}
 .gp-n.gp-tr.done .gp-b{background:var(--sun-soft);color:var(--sun-text);box-shadow:0 5px 0 color-mix(in srgb,var(--sun) 45%,transparent)}
 button.gp-b:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srgb,var(--ink) 16%,transparent)}
@@ -791,8 +811,7 @@ button.gp-b:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srg
 
 <nav class="tabs" aria-label="Sekmeler"><div class="in">
   <button data-tab="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Harcamalar</button>
-  <button data-tab="settle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-4-4M17 17H4l4 4"/></svg>Hesaplaşma</button>
-  <button data-tab="sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Özet</button>
+  <button data-tab="settle" aria-label="Hesap (hesaplaşma ve özet)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-4-4M17 17H4l4 4"/></svg>Hesap</button>
   <button data-tab="gezi" aria-label="Gezi (plan ve rehber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Gezi</button>
   <button data-tab="shop" aria-label="Kişisel (sadece sen görürsün)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-.8 12H4.8L4 8z"/><path d="M7.5 8V6a3 3 0 0 1 6 0v2"/><rect x="14.2" y="15" width="8.6" height="7" rx="1.6" fill="currentColor" style="stroke:var(--surface)" stroke-width="1.6"/><path d="M16.3 15v-1.4a2.2 2.2 0 0 1 4.4 0V15" stroke-width="1.7"/></svg>Kişisel</button>
   <button data-tab="trip" aria-label="Seyahat (kişiler ve ayarlar)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M22.17 17.42L23.74 18.40L22.80 20.67L21.00 20.26L20.26 21.00L20.67 22.80L18.40 23.74L17.42 22.17L16.38 22.17L15.40 23.74L13.13 22.80L13.54 21.00L12.80 20.26L11.00 20.67L10.06 18.40L11.63 17.42L11.63 16.38L10.06 15.40L11.00 13.13L12.80 13.54L13.54 12.80L13.13 11.00L15.40 10.06L16.38 11.63L17.42 11.63L18.40 10.06L20.67 11.00L20.26 12.80L21.00 13.54L22.80 13.13L23.74 15.40L22.17 16.38Z" fill="currentColor" style="stroke:var(--surface)" stroke-width="1.4"/><circle cx="16.9" cy="16.9" r="2.3" style="fill:var(--surface);stroke:none"/></svg>Seyahat</button>
@@ -1821,12 +1840,11 @@ function render(){
     save(); return;
   }
   document.getElementById('rateBox').innerHTML = `1 € = <b class="num">${nf4.format(S.trip.rate)} ₺</b><br>${rateLabel()}`;
-  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
+  if (isFamily() && tab === 'settle') tab = 'sum';
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-current', (b.dataset.tab === tab || (b.dataset.tab === 'settle' && tab === 'sum')) ? 'page' : 'false'));
   const fab = document.getElementById('fab');
   document.body.classList.toggle('ro', isRO());
   document.body.classList.toggle('nomgr', !isManager());
-  { const sb = document.querySelector('nav.tabs [data-tab=settle]'); sb.hidden = isFamily(); if (isFamily() && tab === 'settle') tab = 'list';
-    document.querySelector('nav.tabs .in').style.gridTemplateColumns = `repeat(${isFamily() ? 5 : 6},1fr)`; }
   // Her görünümde tek ekleme yolu: Kişisel'de düğme yalnız Alışveriş'te (Hediye'nin kendi formu var, "Sadece bana" + Harcama'da).
   fab.hidden = tab === 'trip' || tab === 'gezi' || isRO() || (tab === 'shop' && shopView !== 'list');
   fab.textContent = tab === 'settle' ? '+ Ödeme' : tab === 'shop' ? '+ Alışveriş' : '+ Harcama';
@@ -2078,6 +2096,9 @@ function payHtml(p, i, R){
       <span class="tl num">${tlk(p.amt)}<small>${eu(Math.round(p.amt / R))}</small></span></div>${whyHtml(p)}
     <div class="acts"><button class="btn sm" data-act="copyamt" data-i="${i}">Tutarı kopyala</button><button class="btn sm pri" data-act="paid" data-i="${i}">Ödendi</button></div></div>`;
 }
+function hesapSeg(active){
+  return isFamily() ? '' : `<div class="seg wide" role="tablist" aria-label="Hesap görünümü"><button type="button" data-tab="settle" aria-pressed="${active === 'settle'}">🤝 Hesaplaşma</button><button type="button" data-tab="sum" aria-pressed="${active === 'sum'}">📊 Özet & Hikâye</button></div>`;
+}
 // Hesaplaşma: en üstte kişinin toplamı, altında kendi ödemeleri (gerekçesiyle); diğerlerininki kapalı bölümde.
 function viewSettle(C){
   const {R, T, net, plan, mode, nDirect, nShort, locked} = totalPlan();
@@ -2085,7 +2106,7 @@ function viewSettle(C){
   plan.forEach((p, i) => (p.from === S.me || p.to === S.me ? mine : others).push([p, i]));
   // Her sekme aynı yapıda renkli bir özet kartıyla açılır: burada kişinin göndereceği ya da alacağı.
   const b = net[S.me] || 0, z = Math.abs(b) < 100, math = meText(T, R, net, false);
-  let h = `<section class="hero"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
+  let h = hesapSeg('settle') + `<section class="hero"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
     <div class="big num">${z ? 'Denk ✓' : tlk(Math.abs(b))}</div>
     <div class="eur num">${z ? 'Göndereceğin ya da alacağın bir şey yok' : `${b < 0 ? 'göndereceksin' : 'alacaksın'} · ≈ ${eu(Math.round(Math.abs(b) / R))}`}</div></div>
     ${math ? `<div class="me">${math}</div>` : ''}</section>`;
@@ -2186,7 +2207,7 @@ function viewSum(C){
   const rows = CATS.map(c => [c, C.cats[c.id] || 0]).filter(x => x[1] > 0).sort((a,b) => b[1]-a[1]);
   const max = rows.length ? rows[0][1] : 1, n = headcount();
   const story = storyHtml(), cnt = S.entries.filter(e => e.kind === 'expense').length;
-  let h = (story || `<section class="hero"><div><div class="lbl">Toplam harcama</div><div class="big num">${eu(C.total)}</div>
+  let h = hesapSeg('sum') + (story || `<section class="hero"><div><div class="lbl">Toplam harcama</div><div class="big num">${eu(C.total)}</div>
       <div class="eur num">kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama</div></div></section>`) + `<h2>Kategoriler</h2><div class="card bars">` + (rows.length ? rows.map(([c,v]) => `<div class="bar">
       <div class="top2"><span>${c.icon} ${c.name}</span><span class="num"><b>${eu(v)}</b> · ${Math.round(v*100/C.total)}%</span></div>
       <div class="track"><div class="fill" style="width:${(v*100/max).toFixed(1)}%"></div></div></div>`).join('') : `<div class="done">Harcamalar geldikçe kategoriler burada belirecek 📊</div>`) + `</div>`;
@@ -5749,10 +5770,16 @@ const gNewFlow = c => { const g = (S.trip.guide || {})[c]; return !g || !!g.plan
 // Yerleri: ilk açılış ve boş ekranlar, sihirbaz, hazırlanma, uyarı/hata/başarı bildirimleri, yol ekranı, bavul, anı kartı.
 function leyoAnimPref(){ try { return localStorage.getItem('heybe-leyo-anim') !== '0'; } catch(_) { return true; } }
 function leyoAnimOn(){ return leyoAnimPref() && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+const LEYO_IMG = {merhaba:'merhaba', bekleme:'bekleme', anlatma:'anlatma', konusma:'anlatma', dusunme:'dusunme', sevinc:'sevinc', uzgun:'uzgun', saskin:'saskin', kosma:'kosma', ucma:'ucma', uyku:'uyku', hesap:'hesap', harita:'harita', fis:'fis', bavul:'bavul', foto:'foto', alisveris:'alisveris', hediye:'hediye'};
 function leyo(state, size, label){
-  const on = leyoAnimOn(), M = leyoSvg.c || (leyoSvg.c = {}), key = state + (on ? '1' : '0');
-  const svg = M[key] || (M[key] = leyoSvg(state, !on));
-  return `<span class="leyo leyo-${size || 'm'}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}>${svg}</span>`;
+  const on = leyoAnimOn(), st = LEYO_IMG[state] ? state : 'bekleme', cls = `leyo leyo-${size || 'm'}${on ? ' leyo-anim' : ''}`;
+  if (IN_WEB){
+    const img = LEYO_IMG[st];
+    return `<span class="${cls}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}><img class="leyo-img leyo-st-${st}" src="icons/leyo/${img}.png" alt="${label ? esc(label) : ''}" loading="lazy" decoding="async" onerror="this.outerHTML=leyoSvg('${st}',${!on})"></span>`;
+  }
+  const M = leyoSvg.c || (leyoSvg.c = {}), key = st + (on ? '1' : '0');
+  const svg = M[key] || (M[key] = leyoSvg(st, !on));
+  return `<span class="${cls}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}>${svg}</span>`;
 }
 function leyoSvg(state, RM){
   const C = {ink:'#2B3442', w:'#FFFFFF', belly:'#EEF2F8', blk:'#1E2733', bk:'#F26A3D', bkd:'#C9452A', leg:'#E4573D', blush:'#F6A9A0', bag:'#B83A32', gold:'#E7B53E',
