@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261122204419';</script>
-<script src="heybe-web.js?v=20261122204419"></script>
+<script>window.HEYBE_VER = '20261122212919';</script>
+<script src="heybe-web.js?v=20261122212919"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -100,9 +100,22 @@ body.ro .wbtn.tbtn{pointer-events:auto}
 .budget{background:var(--surface);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:12px}
 .prog .l{display:flex;justify-content:space-between;gap:8px;font-size:.88rem}
 .prog .l span:first-child{color:var(--muted);font-weight:600}
-.prog .track{height:8px;border-radius:99px;background:var(--sunk);margin-top:6px;overflow:hidden}
-.prog .fill{height:100%;border-radius:99px;background:var(--accent)}
-.prog.near .fill{background:var(--warn)} .prog.over .fill{background:var(--neg)}
+.prog .track{height:10px;border-radius:99px;background:var(--sunk);margin-top:6px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.07)}
+.prog .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 72%,#36C9BE));position:relative;overflow:hidden}
+.prog .fill::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.32),transparent 65%)}
+.prog.near .fill{background:linear-gradient(90deg,#E59423,var(--warn))} .prog.over .fill{background:linear-gradient(90deg,#D94A32,var(--neg))}
+.bud-leyo{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:12px;background:var(--sunk);font-size:.82rem;font-weight:600;color:var(--ink)}
+.bud-leyo.near{background:var(--sun-soft);color:var(--sun-text)}
+.bud-leyo.over{background:var(--neg-soft);color:var(--neg)}
+.bud-leyo.ok{background:var(--accent-soft);color:var(--accent-text)}
+/* 🏆 Pasaport damgaları & rozetler (Duolingo / Polarsteps esintisi) */
+.badges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bdg{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:14px;background:var(--bg);border:1.5px solid var(--line);text-align:center;transition:transform .18s ease}
+.bdg i{font-style:normal;font-size:1.5rem;line-height:1}
+.bdg b{font-size:.76rem;line-height:1.2}
+.bdg span{font-size:.66rem;color:var(--muted);line-height:1.2}
+.bdg.on{background:linear-gradient(155deg,var(--surface),color-mix(in srgb,var(--coral-soft) 55%,var(--surface)));border-color:color-mix(in srgb,var(--coral) 45%,transparent);box-shadow:0 3px 10px color-mix(in srgb,var(--coral) 12%,transparent)}
+.bdg:not(.on){opacity:.48;filter:grayscale(.85)}
 .prog .sub{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--muted);margin-top:5px}
 .prog.near .l b{color:var(--warn)} .prog.over .l b{color:var(--neg)}
 .bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted)}
@@ -663,23 +676,53 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
 .confetti i{position:absolute;top:-14px;width:8px;height:13px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translate(var(--dx),108vh) rotate(var(--r))}}
-/* 🐦 Leyo 2.0: Heybe'nin 3D maskotu (PNG + CSS mikro-animasyon; çevrimdışı/Artifact'ta SVG yedek; "hareketi azalt" ya da ayardan kapalıysa durgun) */
-.leyo{display:inline-block;flex:none;line-height:0;vertical-align:middle}
+/* 🐦 Leyo 2.0: Heybe'nin 3D maskotu (PNG + 17 hâle özel fiziksel animasyon + dokununca büyüme & konuşma tepkisi) */
+.leyo{position:relative;display:inline-block;flex:none;line-height:0;vertical-align:middle;cursor:pointer;-webkit-user-select:none;user-select:none;transition:transform .22s cubic-bezier(.34,1.56,.64,1)}
 .leyo svg,.leyo img.leyo-img{width:100%;height:auto;display:block;overflow:visible}
-.leyo img.leyo-img{object-fit:contain;filter:drop-shadow(0 4px 8px rgba(20,36,45,.12));transform-origin:50% 90%}
+.leyo img.leyo-img{object-fit:contain;filter:drop-shadow(0 4px 8px rgba(20,36,45,.13));transform-origin:50% 90%;will-change:transform}
 .leyo-xs{width:34px}.leyo-s{width:56px}.leyo-m{width:104px}.leyo-l{width:136px}.leyo-xl{width:184px}
+/* Dokununca / olay tepkisinde yaylı büyüme */
+.leyo.leyo-pop{transform:scale(1.26) translateY(-5px)!important;z-index:12}
+.leyo.leyo-pop img.leyo-img{animation:leyoTapWiggle .5s cubic-bezier(.34,1.56,.64,1)!important}
+@keyframes leyoTapWiggle{0%{transform:scale(1) rotate(0)}30%{transform:scale(1.06,.94) rotate(-7deg)}65%{transform:scale(.97,1.05) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+.leyo-tip{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);background:var(--ink);color:var(--bg);font-family:var(--body);font-size:.76rem;font-weight:700;line-height:1.25;padding:6px 10px;border-radius:12px;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.22);pointer-events:none;z-index:30;animation:leyoTipIn .22s cubic-bezier(.34,1.56,.64,1) both}
+.leyo-tip::after{content:"";position:absolute;top:100%;left:50%;margin-left:-5px;border:5px solid transparent;border-top-color:var(--ink)}
+@keyframes leyoTipIn{from{opacity:0;transform:translate(-50%,6px) scale(.85)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+/* 17 hâle özel karaktere özgü hareketler */
 @keyframes leyoBob{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-3px) scaleY(1.015)}}
-@keyframes leyoJump{0%,100%{transform:translateY(0) scale(1)}35%{transform:translateY(-10px) scale(1.03)}65%{transform:translateY(0) scale(.98,1.02)}}
-@keyframes leyoFloat{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-7px) rotate(1.5deg)}}
-@keyframes leyoStride{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-4px) rotate(2deg)}}
-@keyframes leyoBreathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.02)}}
-@keyframes leyoPop{0%,100%{transform:scale(1)}45%{transform:scale(1.04) translateY(-2px)}}
+@keyframes leyoBavul{0%{transform:translateX(-8px) translateY(0) rotate(-2.5deg)}25%{transform:translateX(0) translateY(-4px) rotate(1deg)}50%{transform:translateX(8px) translateY(0) rotate(2.5deg)}75%{transform:translateX(0) translateY(-3px) rotate(-1deg)}100%{transform:translateX(-8px) translateY(0) rotate(-2.5deg)}}
+@keyframes leyoKosma{0%,100%{transform:translateX(-6px) translateY(0) skewX(-4deg)}50%{transform:translateX(8px) translateY(-6px) skewX(3deg) rotate(3deg)}}
+@keyframes leyoUcma{0%{transform:translate(-7px,-3px) rotate(-5deg)}25%{transform:translate(0,-10px) rotate(0)}50%{transform:translate(7px,-3px) rotate(5deg)}75%{transform:translate(0,1px) rotate(-1deg)}100%{transform:translate(-7px,-3px) rotate(-5deg)}}
+@keyframes leyoSevinc{0%,100%{transform:translateY(0) scale(1)}18%{transform:translateY(2px) scale(1.06,.93)}42%{transform:translateY(-13px) rotate(-4deg) scale(.97,1.05)}62%{transform:translateY(-10px) rotate(4deg) scale(1.02)}82%{transform:translateY(1px) scale(1.03,.97)}}
+@keyframes leyoMerhaba{0%,100%{transform:rotate(-2deg) translateY(0)}45%{transform:rotate(4deg) translateY(-4px) scale(1.03)}75%{transform:rotate(-3deg) translateY(-2px)}}
+@keyframes leyoAnlatma{0%,100%{transform:rotate(0) translateY(0)}30%{transform:rotate(3deg) translateY(-3px)}65%{transform:rotate(-2.5deg) translateY(-1px)}}
+@keyframes leyoDusunme{0%,100%{transform:rotate(-5deg) scale(1)}50%{transform:rotate(4deg) translateY(-2px) scale(1.02)}}
+@keyframes leyoSaskin{0%,60%,100%{transform:translateY(0) rotate(0) scale(1)}12%{transform:translateY(-7px) scale(1.06) rotate(-3deg)}22%{transform:translateY(-5px) scale(1.05) rotate(3deg)}34%{transform:translateY(-3px) rotate(-1.5deg)}}
+@keyframes leyoUzgun{0%,100%{transform:translateY(0) scaleY(1) rotate(0)}55%{transform:translateY(2.5px) scaleY(.95) rotate(-2.5deg)}}
+@keyframes leyoUyku{0%,100%{transform:scale(1,1)}50%{transform:scale(1.045,.955) translateY(1px)}}
+@keyframes leyoFis{0%,100%{transform:translateX(-5px) rotate(-2deg) scale(1.02)}50%{transform:translateX(6px) rotate(3deg) scale(1.07)}}
+@keyframes leyoHarita{0%,100%{transform:rotate(-4deg) translateY(0)}50%{transform:rotate(4deg) translateY(-3px) scale(1.03)}}
+@keyframes leyoAlisveris{0%,100%{transform:translateX(-4px) rotate(-4deg) translateY(0)}25%{transform:translateX(0) rotate(0) translateY(-3px)}50%{transform:translateX(4px) rotate(4deg) translateY(0)}75%{transform:translateX(0) rotate(0) translateY(-3px)}}
+@keyframes leyoHediye{0%,100%{transform:translateY(0) rotate(0) scale(1)}35%{transform:translateY(-4px) rotate(-3deg) scale(1.05)}70%{transform:translateY(-3px) rotate(3deg) scale(1.04)}}
+@keyframes leyoFoto{0%,72%,100%{transform:rotate(0) scale(1);filter:drop-shadow(0 4px 8px rgba(20,36,45,.13)) brightness(1)}80%{transform:rotate(-2deg) scale(1.05);filter:drop-shadow(0 4px 12px rgba(255,220,120,.55)) brightness(1.22)}90%{transform:rotate(0) scale(1);filter:drop-shadow(0 4px 8px rgba(20,36,45,.13)) brightness(1)}}
+@keyframes leyoHesap{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-6px) rotate(-3deg) scale(1.04)}70%{transform:translateY(-2px) rotate(2deg)}}
 .leyo-anim .leyo-img{animation:leyoBob 3.2s ease-in-out infinite}
-.leyo-anim .leyo-st-sevinc{animation:leyoJump 1.6s ease-in-out infinite}
-.leyo-anim .leyo-st-ucma{animation:leyoFloat 2.3s ease-in-out infinite}
-.leyo-anim .leyo-st-kosma,.leyo-anim .leyo-st-bavul{animation:leyoStride .95s ease-in-out infinite}
-.leyo-anim .leyo-st-uyku,.leyo-anim .leyo-st-uzgun,.leyo-anim .leyo-st-dusunme{animation:leyoBreathe 4.2s ease-in-out infinite}
-.leyo-anim .leyo-st-saskin{animation:leyoPop 2.4s ease-in-out infinite}
+.leyo-anim .leyo-st-bavul{animation:leyoBavul 2.4s ease-in-out infinite}
+.leyo-anim .leyo-st-kosma{animation:leyoKosma .9s ease-in-out infinite}
+.leyo-anim .leyo-st-ucma{animation:leyoUcma 2.6s ease-in-out infinite}
+.leyo-anim .leyo-st-sevinc{animation:leyoSevinc 1.7s ease-in-out infinite}
+.leyo-anim .leyo-st-merhaba{animation:leyoMerhaba 2.4s ease-in-out infinite}
+.leyo-anim .leyo-st-anlatma,.leyo-anim .leyo-st-konusma{animation:leyoAnlatma 2.2s ease-in-out infinite}
+.leyo-anim .leyo-st-dusunme{animation:leyoDusunme 3.8s ease-in-out infinite}
+.leyo-anim .leyo-st-saskin{animation:leyoSaskin 2.8s ease-in-out infinite}
+.leyo-anim .leyo-st-uzgun{animation:leyoUzgun 3.8s ease-in-out infinite}
+.leyo-anim .leyo-st-uyku{animation:leyoUyku 4s ease-in-out infinite}
+.leyo-anim .leyo-st-fis{animation:leyoFis 2.6s ease-in-out infinite}
+.leyo-anim .leyo-st-harita{animation:leyoHarita 3s ease-in-out infinite}
+.leyo-anim .leyo-st-alisveris{animation:leyoAlisveris 2.2s ease-in-out infinite}
+.leyo-anim .leyo-st-hediye{animation:leyoHediye 2.4s ease-in-out infinite}
+.leyo-anim .leyo-st-foto{animation:leyoFoto 3.2s ease-in-out infinite}
+.leyo-anim .leyo-st-hesap{animation:leyoHesap 2.4s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.leyo-anim .leyo-img{animation:none!important}}
 .leyo-row{display:flex;align-items:center;gap:10px;margin:4px 0}
 .leyo-row>span:last-child,.leyo-row>p{font-size:.86rem;color:var(--muted);margin:0}
@@ -2007,7 +2050,14 @@ function budgetHtml(){
     }
     body += editPlan ? editor : planLine;
   }
-  return `<section class="budget"><div class="bhead" data-hhost>${head}</div>${body}</section>`;
+  let budMood = '';
+  if (P.plan){
+    const pct = P.spent / P.plan;
+    if (pct >= 1) budMood = `<div class="bud-leyo over">${leyo('uzgun', 'xs')}<span>Bütçeyi biraz aştık, sakin toparlarız!</span></div>`;
+    else if (pct >= .8) budMood = `<div class="bud-leyo near">${leyo('saskin', 'xs')}<span>Bütçenin %${Math.round(pct * 100)}'ine geldik, dikkat!</span></div>`;
+    else if (P.ended) budMood = `<div class="bud-leyo ok">${leyo('sevinc', 'xs')}<span>Harika! Bütçe içinde bitirdiniz 🎉</span></div>`;
+  }
+  return `<section class="budget"><div class="bhead" data-hhost>${head}</div>${budMood}${body}</section>`;
 }
 
 // Web: örnek seyahat görünüyorsa kişi henüz kendi seyahatine bağlanmamıştır; nasıl bağlanacağı en üstte söylenir.
@@ -2203,12 +2253,31 @@ async function shareStory(){
   showPhoto(url); toast('Görsele basılı tutup kaydedebilir ya da paylaşabilirsin.');
 }
 
+function rozetHtml(C){
+  const exps = S.entries.filter(e => e.kind === 'expense');
+  const hasPhoto = exps.some(e => e.photo) || (SH.items || []).some(i => i.photo);
+  const hasGuide = Object.values(S.trip.guide || {}).some(g => g && (g.ok || (g.days && g.days.length)));
+  const P = planState(), budOk = !!(P.plan && P.spent > 0 && P.spent <= P.plan);
+  const hasShop = (SH.items || []).length > 0 || (SH.gifts || []).length > 0;
+  const settled = exps.length > 0 && (isFamily() || totalPlan().plan.length === 0);
+  const B = [
+    {ic:'✈️', t:'İlk Adım', s:'İlk harcama girildi', on:exps.length > 0},
+    {ic:'🔍', t:'Fiş Avcısı', s:'Fiş fotoğrafı eklendi', on:hasPhoto},
+    {ic:'🧭', t:'Rota Kâşifi', s:'Gezi rehberi kuruldu', on:hasGuide},
+    {ic:'💶', t:'Bütçe Dostu', s:'Bütçe sınırı içinde', on:budOk},
+    {ic:'🛍️', t:'Alışverişçi', s:'Kişisel liste kullanıldı', on:hasShop},
+    {ic:'🤝', t:'Temiz Hesap', s:'Tüm hesaplar denk', on:settled}
+  ];
+  const n = B.filter(b => b.on).length;
+  return `<h2>🏅 Pasaport Damgaları <span class="note">(${n}/${B.length})</span></h2><div class="card badges">`
+    + B.map(b => `<div class="bdg${b.on ? ' on' : ''}"><i>${b.ic}</i><b>${b.t}</b><span>${b.s}</span></div>`).join('') + `</div>`;
+}
 function viewSum(C){
   const rows = CATS.map(c => [c, C.cats[c.id] || 0]).filter(x => x[1] > 0).sort((a,b) => b[1]-a[1]);
   const max = rows.length ? rows[0][1] : 1, n = headcount();
   const story = storyHtml(), cnt = S.entries.filter(e => e.kind === 'expense').length;
   let h = hesapSeg('sum') + (story || `<section class="hero"><div><div class="lbl">Toplam harcama</div><div class="big num">${eu(C.total)}</div>
-      <div class="eur num">kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama</div></div></section>`) + `<h2>Kategoriler</h2><div class="card bars">` + (rows.length ? rows.map(([c,v]) => `<div class="bar">
+      <div class="eur num">kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama</div></div></section>`) + rozetHtml(C) + `<h2>Kategoriler</h2><div class="card bars">` + (rows.length ? rows.map(([c,v]) => `<div class="bar">
       <div class="top2"><span>${c.icon} ${c.name}</span><span class="num"><b>${eu(v)}</b> · ${Math.round(v*100/C.total)}%</span></div>
       <div class="track"><div class="fill" style="width:${(v*100/max).toFixed(1)}%"></div></div></div>`).join('') : `<div class="done">Harcamalar geldikçe kategoriler burada belirecek 📊</div>`) + `</div>`;
   h += `<h2>Kişi başı</h2><div class="card" style="overflow-x:auto"><table class="num"><thead><tr><th>Kişi</th><th class="r">Payına düşen</th><th class="r">Cebinden çıkan</th></tr></thead><tbody>` +
@@ -5771,15 +5840,49 @@ const gNewFlow = c => { const g = (S.trip.guide || {})[c]; return !g || !!g.plan
 function leyoAnimPref(){ try { return localStorage.getItem('heybe-leyo-anim') !== '0'; } catch(_) { return true; } }
 function leyoAnimOn(){ return leyoAnimPref() && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
 const LEYO_IMG = {merhaba:'merhaba', bekleme:'bekleme', anlatma:'anlatma', konusma:'anlatma', dusunme:'dusunme', sevinc:'sevinc', uzgun:'uzgun', saskin:'saskin', kosma:'kosma', ucma:'ucma', uyku:'uyku', hesap:'hesap', harita:'harita', fis:'fis', bavul:'bavul', foto:'foto', alisveris:'alisveris', hediye:'hediye'};
+const LEYO_LINES = {
+  merhaba:['Merhaba! Nereye gidiyoruz? ✈️', 'Heybe hazır, yola çıkalım!'],
+  bekleme:['Hazırım, seni bekliyorum! 🐦', 'Yeni bir plan yapalım mı?'],
+  anlatma:['Adım adım hallederiz! ✨', 'Sana en iyi rotayı bulacağım.'],
+  konusma:['Harika seçim! 👍', 'Bunu da not aldım!'],
+  dusunme:['Hmm, en akıllı rotayı kuruyorum… 🧭', 'Bir saniye, hesaplıyorum…'],
+  sevinc:['Süper gidiyoruz! 🎉', 'Her şey tıkırında! ✨'],
+  uzgun:['Üzülme, hemen toparlarız! 💛', 'Bir gözden geçirelim.'],
+  saskin:['Vay! Buna bir bakalım! 👀', 'Dikkat, önemli bir detay var!'],
+  kosma:['Yetişiyoruz, haydi! 🏃', 'Tempo harika!'],
+  ucma:['Uçuşa hazırız! ✈️', 'İyi yolculuklar! 🌍'],
+  uyku:['Zzz… İlk harcamada uyanırım ☕', 'Dinleniyorum, başlayınca çağır!'],
+  hesap:['Hesaplar kuruşu kuruşuna denk! 💶', 'Bütçe kontrol altında!'],
+  harita:['Rota harika görünüyor! 🗺️', 'Adım adım keşfedelim!'],
+  fis:['Fişi kuruşuna kadar okuyorum! 🔍', 'Gözümden kaçmaz!'],
+  bavul:['Bavullar hazır mı? 🧳', 'Yolculuk başlıyor!'],
+  foto:['Gülümse, harika anı! 📸', 'Albüme eklendi!'],
+  alisveris:['İyi alışverişler! 🛍️', 'Tax-free fişini unutma!'],
+  hediye:['Ne düşünceli bir hediye! 🎁', 'Çok sevinecekler!']
+};
+function leyoReact(el, customMsg){
+  if (!el) return;
+  const st = el.dataset.leyo || 'merhaba';
+  el.classList.remove('leyo-pop'); void el.offsetWidth; el.classList.add('leyo-pop');
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch(_) {}
+  clearTimeout(el.__pt); el.__pt = setTimeout(() => el.classList.remove('leyo-pop'), 560);
+  if (el.classList.contains('leyo-xs')) return;
+  const pool = LEYO_LINES[st] || LEYO_LINES.merhaba;
+  const txt = customMsg || pool[Math.floor(Math.random() * pool.length)];
+  el.querySelector('.leyo-tip')?.remove();
+  const tip = document.createElement('span'); tip.className = 'leyo-tip'; tip.textContent = txt;
+  el.appendChild(tip);
+  clearTimeout(el.__tt); el.__tt = setTimeout(() => tip.remove(), 2300);
+}
 function leyo(state, size, label){
   const on = leyoAnimOn(), st = LEYO_IMG[state] ? state : 'bekleme', cls = `leyo leyo-${size || 'm'}${on ? ' leyo-anim' : ''}`;
   if (IN_WEB){
     const img = LEYO_IMG[st];
-    return `<span class="${cls}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}><img class="leyo-img leyo-st-${st}" src="icons/leyo/${img}.png" alt="${label ? esc(label) : ''}" loading="lazy" decoding="async" onerror="this.outerHTML=leyoSvg('${st}',${!on})"></span>`;
+    return `<span class="${cls}" data-leyo="${st}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}><img class="leyo-img leyo-st-${st}" src="icons/leyo/${img}.png" alt="${label ? esc(label) : ''}" loading="lazy" decoding="async" onerror="this.outerHTML=leyoSvg('${st}',${!on})"></span>`;
   }
   const M = leyoSvg.c || (leyoSvg.c = {}), key = st + (on ? '1' : '0');
   const svg = M[key] || (M[key] = leyoSvg(st, !on));
-  return `<span class="${cls}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}>${svg}</span>`;
+  return `<span class="${cls}" data-leyo="${st}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}>${svg}</span>`;
 }
 function leyoSvg(state, RM){
   const C = {ink:'#2B3442', w:'#FFFFFF', belly:'#EEF2F8', blk:'#1E2733', bk:'#F26A3D', bkd:'#C9452A', leg:'#E4573D', blush:'#F6A9A0', bag:'#B83A32', gold:'#E7B53E',
@@ -5949,6 +6052,7 @@ function wizAct(d){
     else if (q[2] === 1 || q[2] === 'country') me[d.k] = q[2] === 1 && me[d.k] === d.v ? undefined : d.v;
     else { const a = new Set(me[d.k] || []); if (a.has(d.v)) a.delete(d.v); else { if (q[2] === 5 && a.size >= 5) return toast('En çok 5 tane seçebilirsin.'); a.add(d.v); } me[d.k] = [...a]; }
     save(); drawSheetKeep();
+    leyoReact(document.querySelector('#sheetHost .wz-say .leyo'), 'Harika seçim! 👍');
     // Tek seçimlik soruda seçince kısa bir an sonra sıradaki soruya geçilir (özetten gelindiyse özete dönülür).
     if ((q[2] === 1 || q[2] === 'country') && me[d.k] !== undefined) setTimeout(() => { if (form === f && st[f.wi] === d.k){ if (f.wret){ f.wret = false; go(last); } else go((+f.wi || 0) + 1); } }, 320);
     return;
@@ -9291,6 +9395,8 @@ function showPhoto(src){
 document.addEventListener('click', ev => {
   if (swEat){ swEat = false; if (ev.target.closest(SWROW)) return; }
   if (swOpen && ev.target.closest(SWROW) === swOpen && !ev.target.closest('.swdel')){ swClose(); return; }
+  const ly = ev.target.closest('.leyo');
+  if (ly && !ev.target.closest('button')){ leyoReact(ly); return; }
   const t = ev.target.closest('button, .scrim, img[data-act]'); if (!t) return;
   if (t.classList.contains('scrim') && ev.target !== t) return;
   const d = t.dataset;
