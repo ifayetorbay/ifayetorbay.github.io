@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261122214852';</script>
-<script src="heybe-web.js?v=20261122214852"></script>
+<script>window.HEYBE_VER = '20261122220641';</script>
+<script src="heybe-web.js?v=20261122220641"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -703,11 +703,37 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 @media (prefers-reduced-motion:reduce){.leyo-anim .leyo-img{animation:none!important}}
 .leyo-row{display:flex;align-items:center;gap:10px;margin:4px 0}
 .leyo-row>span:last-child,.leyo-row>p{font-size:.86rem;color:var(--muted);margin:0}
-.leyo-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.leyo-empty{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.leyo-empty>.leyo{width:156px}
 .btn .leyo{margin:-8px 2px -8px -6px}
 .toast{display:flex;align-items:center;gap:8px}
 .toast>.leyo{margin:-6px 0}
 .st-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+/* 🌟 Sahne Hâkimiyeti: Seyahat Hikâyesi gökyüzü/uçuş sahnesi, 3D Pop-Out kart, tam ekran kutlama ve fiş tarama odak kartı */
+.story{overflow:visible;margin-top:16px}
+.st-stage{position:relative;margin:-18px -18px 8px;padding:18px 18px 8px;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(165deg,rgba(255,255,255,.16),rgba(255,255,255,.02));overflow:visible;min-height:142px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.st-sky{position:absolute;inset:0;overflow:hidden;border-radius:var(--r) var(--r) 0 0;pointer-events:none}
+.st-sky svg{position:absolute;inset:0;width:100%;height:100%;opacity:.45}
+.st-cloud{position:absolute;background:rgba(255,255,255,.18);border-radius:99px;filter:blur(.5px);animation:stCloud 14s linear infinite}
+.st-cloud.c1{width:76px;height:20px;top:22px;left:-15%}
+.st-cloud.c2{width:54px;height:14px;top:62px;left:40%;animation-duration:19s;animation-delay:-6s}
+@keyframes stCloud{from{transform:translateX(-20%)}to{transform:translateX(560%)}}
+.st-stage>.leyo{width:196px;margin:-46px -8px -14px 0;z-index:2}
+.st-stage>.leyo::before{display:none}
+.st-stage-txt{position:relative;z-index:2;display:flex;flex-direction:column;gap:4px;padding-bottom:6px}
+.leyo-cel{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:24px;background:rgba(14,21,25,.58);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fadeIn .22s ease both}
+.leyo-cel-card{background:var(--surface);color:var(--ink);border-radius:26px;padding:20px 24px 24px;max-width:320px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 20px 60px rgba(0,0,0,.32);animation:leyoCelPop .42s cubic-bezier(.34,1.56,.64,1) both}
+.leyo-cel-card>.leyo{width:220px;margin:-44px 0 -8px}
+.leyo-cel-card b{font-family:var(--display);font-weight:800;font-size:1.35rem;line-height:1.2}
+.leyo-cel-card span{font-size:.9rem;color:var(--muted)}
+@keyframes leyoCelPop{from{opacity:0;transform:scale(.82) translateY(20px)}to{opacity:1;transform:none}}
+.scan-stage{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,var(--accent-soft),color-mix(in srgb,var(--coral-soft) 50%,var(--surface)));border:1.5px solid color-mix(in srgb,var(--accent) 35%,transparent);overflow:hidden}
+.scan-stage>.leyo{width:128px;margin:-10px 0 -10px -8px}
+.scan-stage::after{content:"";position:absolute;left:0;right:0;height:3px;top:0;background:linear-gradient(90deg,transparent,var(--coral),var(--accent),transparent);box-shadow:0 0 12px var(--coral);animation:scanBeam 1.8s ease-in-out infinite}
+@keyframes scanBeam{0%,100%{top:8%;opacity:.35}50%{top:88%;opacity:.95}}
+.scan-stage b{display:block;font-family:var(--display);font-weight:800;font-size:1rem}
+.scan-stage span{display:block;font-size:.82rem;color:var(--muted);margin-top:2px}
+@media (prefers-reduced-motion:reduce){.st-cloud,.scan-stage::after{animation:none!important}}
 .privrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .privrow>.leyo{margin:-12px -4px -8px 0}
 .tstrip>.leyo{margin:-6px -4px -6px -8px}
@@ -740,7 +766,8 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .wz-row b{grid-column:1;font-weight:600;font-size:.92rem}
 .wz-row b i{color:var(--muted);font-weight:400;font-style:normal}
 .wz-row em{grid-column:2;grid-row:1 / span 2;font-style:normal;font-weight:700;font-size:.82rem;color:var(--accent-text)}
-.wz-cta{display:flex;gap:10px;align-items:center;background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--coral-soft) 45%,var(--surface)));border-radius:var(--r);padding:12px 14px 12px 8px;border:1.5px solid color-mix(in srgb,var(--coral) 35%,transparent);box-shadow:var(--card-shadow)}
+.wz-cta{display:flex;gap:10px;align-items:center;margin-top:14px;background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--coral-soft) 45%,var(--surface)));border-radius:var(--r);padding:14px 14px 14px 6px;border:1.5px solid color-mix(in srgb,var(--coral) 35%,transparent);box-shadow:var(--card-shadow);overflow:visible}
+.wz-cta>.leyo{width:156px;margin:-30px -6px -12px -10px}
 .wz-cta>div{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0}
 .wz-cta b{font-family:var(--display);font-weight:800;font-size:1.05rem}
 .wz-cta span{font-size:.84rem;color:var(--muted)}
@@ -2197,8 +2224,8 @@ function storyFacts(){
 }
 function storyHtml(){
   const st = storyFacts(); if (!st) return '';
-  return `<section class="story"><div class="st-top"><div class="st-h">${st.ended ? 'Seyahat hikâyesi' : 'Şimdiye kadar'} ✨</div>${leyo(st.ended ? 'foto' : 'ucma', 's', 'Leyo')}</div>
-    <div class="st-big num">${fromTL(st.perHead, planCurOf(), 0)}<small>kişi başı · ${st.count} harcama</small></div>
+  const sky = `<div class="st-sky" aria-hidden="true"><span class="st-cloud c1"></span><span class="st-cloud c2"></span><svg viewBox="0 0 360 140" preserveAspectRatio="none"><path d="M-10 112 Q95 42 195 78 T370 36" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="6 7" stroke-linecap="round"/></svg></div>`;
+  return `<section class="story"><div class="st-stage">${sky}<div class="st-stage-txt"><div class="st-h">${st.ended ? 'Seyahat hikâyesi' : 'Şimdiye kadar'} ✨</div><div class="st-big num">${fromTL(st.perHead, planCurOf(), 0)}<small>kişi başı · ${st.count} harcama</small></div></div>${leyo(st.ended ? 'foto' : 'ucma', 'xl', 'Leyo')}</div>
     ${st.facts.map(([i, l, v]) => `<div class="st-f"><span class="st-i">${i}</span><span><small>${esc(l)}</small><b>${esc(v)}</b></span></div>`).join('')}
     <button class="btn sm st-btn" data-act="sharestory">📤 Görsel olarak paylaş</button></section>`;
 }
@@ -2222,6 +2249,12 @@ async function shareStory(){
     x.font = F(700, 44); x.fillText(v.length > 34 ? v.slice(0, 33) + '…' : v, 180, y + 38); y += 120;
   }
   x.globalAlpha = .7; x.font = F(700, 32); x.fillText('Heybe', 80, 1290); x.globalAlpha = 1;
+  if (IN_WEB){
+    try {
+      const im = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = `icons/leyo/${st.ended ? 'foto' : 'ucma'}.png`; });
+      x.drawImage(im, 710, 960, 320, 320);
+    } catch(_) {}
+  }
   const url = cv.toDataURL('image/png');
   try {
     const file = new File([dataUrlToBlob(url)], 'seyahat-hikayesi.png', {type:'image/png'});
@@ -2499,8 +2532,9 @@ function drawSheet(){
       <input type="file" id="fPhoto" accept="image/*">
       <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>${help('foto')}
       ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
-      ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? `${leyo('fis', 'xs')} Okunuyor…` : '✨ Fotoğraftan doldur'}</button>` : ''}
+      ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? 'Okunuyor…' : '✨ Fotoğraftan doldur'}</button>` : ''}
     </div>
+    ${f.scanning ? `<div class="scan-stage">${leyo('fis', 'l', 'Leyo')}<div><b>Leyo fişi inceliyor…</b><span>Tutar, mağaza ve tarih otomatik okunuyor.</span></div></div>` : ''}
     <div class="bk" id="fBk">${bkHtml()}</div>
     <div class="place" id="fPlace">${placeHtml()}</div>
     ${f.id ? (() => { const o = S.entries.find(x => x.id === f.id); return o && o.by && S.people.some(p => p.id === o.by) ? `<p class="note">✍️ ${nmE(o.by)} girdi · ${hhmm(o.at)}</p>` : ''; })() : ''}`;
@@ -9212,9 +9246,16 @@ async function exportShopXlsx(){
 
 // ---- konfeti ----
 // Hesap kapanınca kısa bir kutlama; hareket azaltma ayarı açıksa gösterilmez.
-function confetti(){
+function celebrateLeyo(title, sub){
+  const el = document.createElement('div'); el.className = 'leyo-cel';
+  el.innerHTML = `<div class="leyo-cel-card">${leyo('sevinc', 'xl', 'Leyo')}<b>${esc(title || 'Harika! 🎉')}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
+  const kill = () => el.remove();
+  el.addEventListener('click', kill);
+  document.body.appendChild(el); setTimeout(kill, 2700);
+}
+function confetti(title, sub){
   try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch(_) {}
-  const cs = getComputedStyle(document.documentElement), cols = ['--accent', '--sun', '--pos', '--neg'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+  const cs = getComputedStyle(document.documentElement), cols = ['--coral', '--accent', '--sun', '--pos'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
   const box = document.createElement('div'); box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
   for (let i = 0; i < 90; i++){
     const b = document.createElement('i');
@@ -9224,6 +9265,7 @@ function confetti(){
     box.appendChild(b);
   }
   document.body.appendChild(box); setTimeout(() => box.remove(), 3600);
+  celebrateLeyo(title || 'Hesaplar tertemiz! 🎉', sub || 'Leyo seninle gurur duyuyor ✨');
 }
 
 // ---- yardım ----
