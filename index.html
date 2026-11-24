@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261122220641';</script>
-<script src="heybe-web.js?v=20261122220641"></script>
+<script>window.HEYBE_VER = '20261124211225';</script>
+<script src="heybe-web.js?v=20261124211225"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -700,7 +700,14 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .leyo-anim .leyo-st-ucma{animation:leyoFloat 3.2s ease-in-out infinite}
 .leyo-anim .leyo-st-uyku{animation:leyoSleep 4.6s ease-in-out infinite}
 .leyo-anim .leyo-st-foto{animation:leyoFlash 4.2s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.leyo-anim .leyo-img{animation:none!important}}
+/* 🎬 4-kare gerçek sprite-sheet oynatıcı (bavul yürüyüş, ucma kanat çırpma, merhaba el sallama + göz kırpma) */
+.leyo-spr{display:block;width:100%;aspect-ratio:1;overflow:hidden;position:relative;z-index:1}
+.leyo-spr img{display:block;width:400%;max-width:none;height:100%;object-fit:fill;filter:drop-shadow(0 3px 6px rgba(20,36,45,.08));will-change:transform}
+@keyframes leyoSpr4{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.leyo-anim .leyo-spr-bavul img{animation:leyoSpr4 .84s steps(4) infinite}
+.leyo-anim .leyo-spr-ucma img{animation:leyoSpr4 .68s steps(4) infinite}
+.leyo-anim .leyo-spr-merhaba img{animation:leyoSpr4 1.3s steps(4) infinite}
+@media (prefers-reduced-motion:reduce){.leyo-anim .leyo-img,.leyo-anim .leyo-spr img{animation:none!important}}
 .leyo-row{display:flex;align-items:center;gap:10px;margin:4px 0}
 .leyo-row>span:last-child,.leyo-row>p{font-size:.86rem;color:var(--muted);margin:0}
 .leyo-empty{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
@@ -5885,9 +5892,13 @@ function leyoReact(el, customMsg){
   el.appendChild(tip);
   clearTimeout(el.__tt); el.__tt = setTimeout(() => tip.remove(), 2300);
 }
+const LEYO_SPR = {bavul:'bavul-anim', ucma:'ucma-anim', merhaba:'merhaba-anim'};
 function leyo(state, size, label){
   const on = leyoAnimOn(), st = LEYO_IMG[state] ? state : 'bekleme', cls = `leyo leyo-${size || 'm'}${on ? ' leyo-anim' : ''}`;
   if (IN_WEB){
+    if (on && LEYO_SPR[st]){
+      return `<span class="${cls}" data-leyo="${st}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}><span class="leyo-spr leyo-spr-${st}"><img src="icons/leyo/${LEYO_SPR[st]}.png" alt="${label ? esc(label) : ''}" loading="lazy" decoding="async" onerror="this.parentElement.outerHTML=leyoSvg('${st}',${!on})"></span></span>`;
+    }
     const img = LEYO_IMG[st];
     return `<span class="${cls}" data-leyo="${st}"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}><img class="leyo-img leyo-st-${st}" src="icons/leyo/${img}.png" alt="${label ? esc(label) : ''}" loading="lazy" decoding="async" onerror="this.outerHTML=leyoSvg('${st}',${!on})"></span>`;
   }
