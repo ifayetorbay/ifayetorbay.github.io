@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261124211225';</script>
-<script src="heybe-web.js?v=20261124211225"></script>
+<script>window.HEYBE_VER = '20261125123501';</script>
+<script src="heybe-web.js?v=20261125123501"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -161,7 +161,25 @@ body.ro .wbtn.tbtn{pointer-events:auto}
 .list{background:var(--surface);border-radius:var(--r);overflow:hidden}
 .row{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;background:none;width:100%;text-align:left}
 .row+.row{border-top:1px solid var(--line)}
-.ic{width:38px;height:38px;border-radius:11px;background:var(--sunk);display:grid;place-items:center;font-size:1.1rem;flex:none}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--sunk);display:grid;place-items:center;font-size:1.1rem;flex:none}
+.ic svg,.bar-ic svg{width:20px;height:20px;display:block}
+.bar-ic{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;vertical-align:middle;margin-right:6px}
+.bar-ic svg{width:16px;height:16px}
+.cat-ucak{background:#E3F2FD;color:#1565C0} .cat-ulasim{background:#E8EAF6;color:#3949AB}
+.cat-yeme{background:#FFF0E5;color:#D84315} .cat-konaklama{background:#E0F2F1;color:#00695C}
+.cat-aktivite{background:#F3E5F5;color:#7B1FA2} .cat-market{background:#E8F5E9;color:#2E7D32}
+.cat-alisveris{background:#FCE4EC;color:#C2185B} .cat-diger{background:var(--sunk);color:var(--muted)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cat-ucak{background:#122A3D;color:#64B5F6}:root:not([data-theme="light"]) .cat-ulasim{background:#1A203C;color:#9FA8DA}:root:not([data-theme="light"]) .cat-yeme{background:#3A2016;color:#FF8A65}:root:not([data-theme="light"]) .cat-konaklama{background:#123230;color:#4DB6AC}:root:not([data-theme="light"]) .cat-aktivite{background:#2D1A36;color:#CE93D8}:root:not([data-theme="light"]) .cat-market{background:#142E1D;color:#81C784}:root:not([data-theme="light"]) .cat-alisveris{background:#381826;color:#F48FB1}}
+:root[data-theme="dark"] .cat-ucak{background:#122A3D;color:#64B5F6} :root[data-theme="dark"] .cat-ulasim{background:#1A203C;color:#9FA8DA}
+:root[data-theme="dark"] .cat-yeme{background:#3A2016;color:#FF8A65} :root[data-theme="dark"] .cat-konaklama{background:#123230;color:#4DB6AC}
+:root[data-theme="dark"] .cat-aktivite{background:#2D1A36;color:#CE93D8} :root[data-theme="dark"] .cat-market{background:#142E1D;color:#81C784}
+:root[data-theme="dark"] .cat-alisveris{background:#381826;color:#F48FB1}
+/* 🗺️ Gezi günü görsel zaman çizelgesi (Wanderlog esintisi) */
+.g-tl{position:relative}
+.g-tl::before{content:"";position:absolute;left:22px;top:14px;bottom:14px;width:2.5px;border-radius:2px;background:color-mix(in srgb,var(--day-col,var(--accent)) 32%,transparent);pointer-events:none;z-index:0}
+.g-tl>.swr,.g-tl>.gleg{position:relative;z-index:1}
+.g-tl .gno{box-shadow:0 0 0 3px var(--surface)}
+.g-tl .gleg{margin-left:38px;display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;background:var(--bg);font-size:.76rem;font-weight:600;color:var(--muted);margin-block:4px}
 .row .mid{flex:1;min-width:0}
 .row .d{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .m{display:block;color:var(--muted);font-size:.8rem}
@@ -889,6 +907,17 @@ const CATS = [
   {id:'diger', name:'Diğer', icon:'📦', words:[]}
 ];
 const catById = id => CATS.find(c => c.id === id) || CATS[CATS.length-1];
+const CAT_SVG = {
+  ucak:'<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
+  ulasim:'<rect x="4" y="3" width="16" height="14" rx="3"/><path d="M4 11h16M8 17l-2 4M16 17l2 4M8.5 14h.01M15.5 14h.01"/>',
+  yeme:'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  konaklama:'<path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4M2 16h20"/>',
+  aktivite:'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2M13 17v2M13 11v2"/>',
+  market:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+  alisveris:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>',
+  diger:'<path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>'
+};
+const catSvg = id => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CAT_SVG[id] || CAT_SVG.diger}</svg>`;
 // Satırdaki simge açıklamaya göre inceltilir: Ulaşım'da "tren" 🚆, Yeme-İçme'de "kahve" ☕ gibi. Sadece kaydın kendi
 // kategorisindeki kelimelere bakılır (simge kategoriyle çelişmesin); eşleşme yoksa kategorinin simgesi. Önce gelen kazanır.
 const SUBICONS = {
@@ -2114,9 +2143,9 @@ function viewList(C){
 
 // Her satır sağa ya da sola kaydırılınca arkasındaki "Sil" düğmesi görünür.
 function rowHtml(e){
-  if (e.kind === 'solo') return `<button class="row solo" data-solo="${e.id}"><span class="ic">${iconOf(e)}</span>
+  if (e.kind === 'solo'){ const sc = catById(e.cat); return `<button class="row solo" data-solo="${e.id}"><span class="ic cat-${sc.id}" title="${sc.name}">${catSvg(sc.id)}</span>
     <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">🔒 Sadece sende · bölüşülmez</span>${e.when ? `<span class="m">${esc(bkLine(e))}</span>` : ''}</span>
-    <span class="amt num"><b>${money(e.amount, e.cur)}</b>${e.cur === 'EUR' ? '' : `<small>${eu(Math.round(e.amount / e.rate * 100))}</small>`}</span></button>`;
+    <span class="amt num"><b>${money(e.amount, e.cur)}</b>${e.cur === 'EUR' ? '' : `<small>${eu(Math.round(e.amount / e.rate * 100))}</small>`}</span></button>`; }
   return `<div class="swr"><button class="swdel l" data-del="${e.id}" tabindex="-1">Sil</button><button class="swdel r" data-del="${e.id}" tabindex="-1">Sil</button>${rowInner(e)}</div>`;
 }
 function rowInner(e){
@@ -2137,7 +2166,7 @@ function rowInner(e){
   const who = isFamily() ? `✍️ ${nmE(by || e.paidBy)} girdi` : (e.paidBy === 'kasa' ? '💰 Kasadan' : `${nmE(e.paidBy)} ödedi`) + (by && by !== e.paidBy ? ` · ✍️ ${nm(by)} girdi` : '');
   const wk = id => e.weights && e.weights[id] > 1 ? ` ×${e.weights[id]}` : '';
   const among = e.among.length === S.people.length && !e.weights ? `${e.among.length} kişi` : e.among.map(id => nm(id) + wk(id)).join(', ');
-  return `<button class="row${isBig(e) ? ' big' : ''}" data-edit="${e.id}"><span class="ic" title="${cat.name}">${iconOf(e)}</span>
+  return `<button class="row${isBig(e) ? ' big' : ''}" data-edit="${e.id}"><span class="ic cat-${cat.id}" title="${cat.name}">${catSvg(cat.id)}</span>
     <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">${phaseOf(e, S) === 'pre' ? new Date(e.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' · ' : ''}${who} · ${among}${e.hasPhoto ? ' · 🧾 fiş' : ''}</span>${e.when ? `<span class="m">${esc(bkLine(e))}</span>` : ''}${e.place ? `<span class="m">📍 ${esc(e.place)}</span>` : ''}</span>
     <span class="amt num"><b>${money(e.amount, e.cur)}</b>${other}</span></button>`;
 }
@@ -2295,7 +2324,7 @@ function viewSum(C){
   const story = storyHtml(), cnt = S.entries.filter(e => e.kind === 'expense').length;
   let h = hesapSeg('sum') + (story || `<section class="hero"><div><div class="lbl">Toplam harcama</div><div class="big num">${eu(C.total)}</div>
       <div class="eur num">kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama</div></div></section>`) + rozetHtml(C) + `<h2>Kategoriler</h2><div class="card bars">` + (rows.length ? rows.map(([c,v]) => `<div class="bar">
-      <div class="top2"><span>${c.icon} ${c.name}</span><span class="num"><b>${eu(v)}</b> · ${Math.round(v*100/C.total)}%</span></div>
+      <div class="top2"><span><span class="bar-ic cat-${c.id}">${catSvg(c.id)}</span>${c.name}</span><span class="num"><b>${eu(v)}</b> · ${Math.round(v*100/C.total)}%</span></div>
       <div class="track"><div class="fill" style="width:${(v*100/max).toFixed(1)}%"></div></div></div>`).join('') : `<div class="done">Harcamalar geldikçe kategoriler burada belirecek 📊</div>`) + `</div>`;
   h += `<h2>Kişi başı</h2><div class="card" style="overflow-x:auto"><table class="num"><thead><tr><th>Kişi</th><th class="r">Payına düşen</th><th class="r">Cebinden çıkan</th></tr></thead><tbody>` +
     S.people.map(p => `<tr><td>${esc(p.name)}</td><td class="r">${eu(C.share[p.id])}<br><small class="hint">${tl(C.share[p.id])}</small></td><td class="r">${eu(C.paid[p.id])}<br><small class="hint">${tl(C.paid[p.id])}</small></td></tr>`).join('') +
@@ -2531,7 +2560,7 @@ function drawSheet(){
       ${isFamily() ? '' : `<button type="button" class="srow" data-act="togglepayer"><span>Ödeyen</span><b>${nmE(f.paidBy)} ›</b></button>`}
       ${f.showPayer ? `<div class="chips pad">${S.people.filter(p => !p.left || f.paidBy === p.id).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.paidBy===p.id, `data-payer="${p.id}"`)).join('')}${S.trip.kasaOn ? chip('💰 Ortak kasa', f.paidBy==='kasa', 'data-payer="kasa"', 'kasa-c') : ''}</div>` : ''}
       ${isFamily() ? '' : `<button type="button" class="srow" data-act="toggleamong"><span>Bölüşülen</span><b>${amongText} ›</b></button>`}
-      ${f.showAmong ? `<div class="chips pad">${chip('Herkes', everyone, 'data-all="1"')}${S.people.filter(p => !p.left || f.among.includes(p.id)).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.among.includes(p.id), `data-among="${p.id}"`)).join('')}</div>${weightsHtml()}` : ''}
+      ${f.showAmong ? `<div class="chips pad">${chip('Herkes', everyone, 'data-all="1"')}${act.length > 1 ? chip('Ben hariç', n === act.length - 1 && !f.among.includes(S.me), 'data-all="notme"') : ''}${chip('Sadece ben', n === 1 && f.among[0] === S.me, 'data-all="onlyme"')}${S.people.filter(p => !p.left || f.among.includes(p.id)).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.among.includes(p.id), `data-among="${p.id}"`)).join('')}</div>${weightsHtml()}` : ''}
       ${isFamily() ? '' : `<span class="note num" id="fEach">${eachNote()}</span>`}
     </div>
     <div class="photo">
@@ -3214,6 +3243,7 @@ function gDayHtml(c, g, x, i, f, can){
     + (x.theme ? `<p class="gtheme"><b>${esc(x.theme)}</b>${x.intro ? ` · ${esc(x.intro)}` : ''}</p>` : '')
     + (x.yol ? gTravelHtml(c, x.d) : '') + gLugHtml(gLuggage().filter(l => l.d === x.d && l.city === c))
     + (BK => BK.length ? `<div class="gbrk"><b>☕ Güne başla</b>${BK.map(o => `<span>${(G_FT[o.fd.tur] || G_FT.kahvalti)[0]} <a href="${o.fd.g && o.fd.g.url ? o.fd.g.url : mapsDir(`${o.fd.lat},${o.fd.lon}`)}" target="_blank" rel="noopener">${esc(o.fd.name)}</a> · ilk durağa ${gKmTxt(o.d)}${gStars(o.fd) ? ' · ' + gStars(o.fd) : ''}</span>`).join('')}</div>` : '')(gBreakfast(c, g, x))
+    + `<div class="g-tl" style="--day-col:${col}">`
     + x.items.map((it, k) => {
       const prevP = k ? x.items.slice(0, k).reverse().find(p => p.lat && !gFar(g, p)) : (g.home && g.home.lat ? g.home : null);
       const lg = Lg.get(it), leg = it.lat && !gFar(g, it) ? gLegHtml(prevP, it) || (lg ? `<div class="gleg">🚶 ${gLegTxt(lg, 0, 1)}</div>` : '') : '';
@@ -3226,6 +3256,7 @@ function gDayHtml(c, g, x, i, f, can){
         + (mv ? `<div class="gmvrow"><span>📅 Hangi güne?</span>${g.days.map((y, j) => j === i ? '' : `<button type="button" class="chip" data-g="gmvto" data-j="${j}">${j + 1}. gün · ${planDay(y.d)}</button>`).join('')}<button type="button" class="link" data-g="gmvx">Vazgeç</button></div>` : '');
     }).join('')
     + (x.back !== false && g.home && g.home.lat ? (last => last ? gLegHtml(last, g.home).replace('class="gleg">', 'class="gleg">🏠 Eve dönüş · ') || (Lg.get('ev') ? `<div class="gleg">🏠 Eve dönüş · ${gLegTxt(Lg.get('ev'), 0, 1)}</div>` : '') : '')([...x.items].reverse().find(p => p.lat && !gFar(g, p))) : '')
+    + `</div>`
     + (food.length ? `<details class="gfood" open><summary>🍽 Bu rotada yemek · tatlı · fırın <span class="m">(${food.length}; saatsiz, acıkınca en yakını)</span></summary>${food.map(fd => gFoodRow(c, fd)).join('')}</details>` : '')
     + (sw ? `<div class="gswap"><span>✖ ${esc(sw.it.name)} çıkarıldı</span>${can ? `<button type="button" class="btn sm pri" data-g="swap" ${f.gbusy ? 'disabled' : ''}>${f.gbusy === 'swap' ? 'Aranıyor…' : '✨ Yerine öner'}</button>` : ''}<button type="button" class="link" data-g="unswap">Geri al</button></div>` : '')
     + (x.rain ? `<p class="pfree">☔ ${esc(x.rain)}</p>` : '') + gAirHtml(g, x.d) + `</div>`;
@@ -9534,7 +9565,11 @@ document.addEventListener('click', ev => {
     if (d.settle){ form.settleTL = d.settle === '1'; if (form.settleTL && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
     if (d.cat){ form.cat = d.cat; form.catManual = true; form.showCat = false; drawSheetKeep(); return; }
     if (d.payer){ form.paidBy = d.payer; form.showPayer = false; drawSheetKeep(); return; }
-    if (d.all){ form.among = S.people.filter(p => !p.left).map(p => p.id); form.weights = defaultWeights(); drawSheetKeep(); return; }
+    if (d.all){
+      const live = S.people.filter(p => !p.left).map(p => p.id);
+      form.among = d.all === 'notme' ? live.filter(id => id !== S.me) : d.all === 'onlyme' ? [S.me] : live;
+      form.weights = defaultWeights(); drawSheetKeep(); return;
+    }
     if (d.among){ const i = form.among.indexOf(d.among); if (i >= 0) form.among.splice(i,1); else form.among.push(d.among); form.among.sort((a,b) => S.people.findIndex(p=>p.id===a) - S.people.findIndex(p=>p.id===b)); drawSheetKeep(); return; }
     if (d.every){ form.everyone = true; drawSheetKeep(); return; }
     if (d.from){ form.everyone = false; form.from = d.from; drawSheetKeep(); return; }
