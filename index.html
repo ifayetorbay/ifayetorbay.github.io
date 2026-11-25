@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261125130150';</script>
-<script src="heybe-web.js?v=20261125130150"></script>
+<script>window.HEYBE_VER = '20261125132132';</script>
+<script src="heybe-web.js?v=20261125132132"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -735,6 +735,7 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 .leyo-anim .leyo-spr-bavul{--d:1.05s;animation:leyoWalkCadence 1.05s ease-in-out infinite}
 .leyo-anim .leyo-spr-ucma{--d:.82s;animation:leyoFloat 3s ease-in-out infinite}
 .leyo-anim .leyo-spr-merhaba{--d:1.75s}
+.leyo-anim .leyo-spr-cuzdan{--d:1.55s}
 @media (prefers-reduced-motion:reduce){.leyo-anim .leyo-img,.leyo-anim .leyo-spr,.leyo-anim .leyo-spr i{animation:none!important}.leyo-anim .leyo-spr i:nth-child(1){opacity:1!important}}
 .leyo-row{display:flex;align-items:center;gap:10px;margin:4px 0}
 .leyo-row>span:last-child,.leyo-row>p{font-size:.86rem;color:var(--muted);margin:0}
@@ -2153,11 +2154,10 @@ function listLeyoMood(C){
   if (P.plan && pct >= .8) return {st:'saskin', msg:`Bütçenin <b>%${Math.round(pct * 100)}</b>'ine geldik — bugün dikkatli gidelim!`};
   if (!P.started){
     const toGo = P.day !== null ? 1 - P.day : null;
-    return {st:'bavul', msg:toGo !== null ? (toGo === 0 ? 'Yola çıkış <b>bugün</b>! Bavullar hazır mı? 🧳' : `Gidişe <b>${toGo} gün</b> kaldı — hazırlıklar tam gaz!`) : 'Bavullar hazır, ilk harcamaları eklemeye başlayalım!'};
+    return {st:'cuzdan', msg:toGo !== null ? (toGo === 0 ? 'Yola çıkış <b>bugün</b>! Harcamalar kontrol altında 💶' : `Gidişe <b>${toGo} gün</b> kaldı — cüzdan ve bütçe hazır!`) : 'Cüzdan hazır, ilk harcamaları eklemeye başlayalım 💶'};
   }
-  const exps = S.entries.filter(e => e.kind === 'expense');
-  if (P.plan && P.dayLimit && P.today <= P.dayLimit) return {st:'merhaba', msg:`Bugünkü sınırın altındasın, harika gidiyorsun 👌`};
-  return {st:exps.length ? 'merhaba' : 'bavul', msg:P.len ? `${Math.min(P.day, P.len)}. güne hoş geldin! Keyifli geziler ☀️` : 'Her şey kontrol altında — iyi yolculuklar!'};
+  if (P.plan && P.dayLimit && P.today <= P.dayLimit) return {st:'cuzdan', msg:`Bugünkü sınırın altındasın, bütçe kontrol altında 👌`};
+  return {st:'cuzdan', msg:P.len ? `${Math.min(P.day, P.len)}. güne hoş geldin! Harcamalar güvende 💶` : 'Cüzdan kontrol altında — keyifli geziler!'};
 }
 function viewList(C){
   const lm = listLeyoMood(C);
@@ -5949,8 +5949,9 @@ const gNewFlow = c => { const g = (S.trip.guide || {})[c]; return !g || !!g.plan
 // Yerleri: ilk açılış ve boş ekranlar, sihirbaz, hazırlanma, uyarı/hata/başarı bildirimleri, yol ekranı, bavul, anı kartı.
 function leyoAnimPref(){ try { return localStorage.getItem('heybe-leyo-anim') !== '0'; } catch(_) { return true; } }
 function leyoAnimOn(){ return leyoAnimPref() && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
-const LEYO_IMG = {merhaba:'merhaba', bekleme:'bekleme', anlatma:'anlatma', konusma:'anlatma', dusunme:'dusunme', sevinc:'sevinc', uzgun:'uzgun', saskin:'saskin', kosma:'kosma', ucma:'ucma', uyku:'uyku', hesap:'hesap', harita:'harita', fis:'fis', bavul:'bavul', foto:'foto', alisveris:'alisveris', hediye:'hediye'};
+const LEYO_IMG = {merhaba:'merhaba', bekleme:'bekleme', anlatma:'anlatma', konusma:'anlatma', dusunme:'dusunme', sevinc:'sevinc', uzgun:'uzgun', saskin:'saskin', kosma:'kosma', ucma:'ucma', uyku:'uyku', hesap:'hesap', harita:'harita', fis:'fis', bavul:'bavul', foto:'foto', alisveris:'alisveris', hediye:'hediye', cuzdan:'cuzdan'};
 const LEYO_LINES = {
+  cuzdan:['Cüzdan kontrol altında! 💶', 'Harcamalar kuruşu kuruşuna kayıtlı! ✨'],
   merhaba:['Merhaba! Nereye gidiyoruz? ✈️', 'Heybe hazır, yola çıkalım!'],
   bekleme:['Hazırım, seni bekliyorum! 🐦', 'Yeni bir plan yapalım mı?'],
   anlatma:['Adım adım hallederiz! ✨', 'Sana en iyi rotayı bulacağım.'],
@@ -5984,7 +5985,7 @@ function leyoReact(el, customMsg){
   el.appendChild(tip);
   clearTimeout(el.__tt); el.__tt = setTimeout(() => tip.remove(), 2300);
 }
-const LEYO_SPR = {bavul:'bavul-anim', ucma:'ucma-anim', merhaba:'merhaba-anim'};
+const LEYO_SPR = {bavul:'bavul-anim', ucma:'ucma-anim', merhaba:'merhaba-anim', cuzdan:'cuzdan-anim'};
 function leyo(state, size, label){
   const on = leyoAnimOn(), st = LEYO_IMG[state] ? state : 'bekleme', cls = `leyo leyo-${size || 'm'}${on ? ' leyo-anim' : ''}`;
   if (IN_WEB){
