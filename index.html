@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261125123501';</script>
-<script src="heybe-web.js?v=20261125123501"></script>
+<script>window.HEYBE_VER = '20261125125329';</script>
+<script src="heybe-web.js?v=20261125125329"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -758,6 +758,35 @@ body.ro #view .card :is(input, select):not(#tMe), body.ro .pcard input, body.ro 
 @keyframes scanBeam{0%,100%{top:8%;opacity:.35}50%{top:88%;opacity:.95}}
 .scan-stage b{display:block;font-family:var(--display);font-weight:800;font-size:1rem}
 .scan-stage span{display:block;font-size:.82rem;color:var(--muted);margin-top:2px}
+/* 🌟 Leyo Vitrin Tasarımı: 3D Pop-Out Hero kartları, Leyo Fısıltısı, Giriş Karşılama ve Akıllı Fiş Asistanı */
+.hero-ly{position:relative;overflow:visible;margin-top:24px}
+.hero-row{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.hero-row>div:first-child{min-width:0;flex:1}
+.hero-mascot{flex:none;width:146px;margin:-48px -10px -16px 0;z-index:2;align-self:flex-end}
+.hero-mascot>.leyo{width:100%}
+.hero-mascot>.leyo::before{opacity:.32}
+.leyo-bar{display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin-top:-6px;padding:10px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--card-shadow);font-size:.84rem;color:var(--ink);cursor:pointer}
+.leyo-bar::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--coral);flex:none;box-shadow:0 0 0 3px var(--coral-soft)}
+.leyo-bar b{color:var(--accent-text)}
+.leyo-pill{border:0;border-radius:99px;padding:3px 9px;background:var(--coral-soft);color:var(--coral);font-family:var(--body);font-weight:700;font-size:.73rem;letter-spacing:0;display:inline-flex;align-items:center;gap:3px}
+.fis-cta{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:14px;background:linear-gradient(135deg,var(--accent-soft),color-mix(in srgb,var(--coral-soft) 45%,var(--surface)));border:1.5px dashed color-mix(in srgb,var(--accent) 45%,transparent);cursor:pointer}
+.fis-cta>.leyo{width:64px;margin:-6px 0 -6px -4px}
+.fis-cta b{display:block;font-size:.88rem;color:var(--ink)}
+.fis-cta span{display:block;font-size:.76rem;color:var(--muted)}
+.leyo-splash{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px;text-align:center;background:linear-gradient(175deg,#B8EEE6 0%,#E8FAF6 48%,#F6F4EF 100%);color:#14242D;transition:opacity .35s ease,transform .35s ease}
+.leyo-splash.out{opacity:0;transform:scale(1.03);pointer-events:none}
+.leyo-splash .sp-logo{font-family:var(--display);font-weight:800;font-size:2rem;letter-spacing:-.02em;color:#0B6B6B}
+.leyo-splash>.leyo{width:236px;margin:4px 0}
+.leyo-splash h2{font-family:var(--display);font-weight:800;font-size:1.35rem;margin:0;color:#14242D;text-wrap:balance}
+.leyo-splash p{margin:0;font-size:.94rem;color:#475A63;max-width:300px}
+.leyo-splash .sp-go{margin-top:8px;border:0;border-radius:99px;padding:13px 34px;font-weight:700;font-size:1rem;background:linear-gradient(135deg,#FF7A4D,#F45B32);color:#fff;box-shadow:0 8px 24px rgba(244,91,50,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .leyo-splash{background:linear-gradient(175deg,#0D2F31 0%,#12232A 52%,#0E1519 100%);color:#E8F0F3}:root:not([data-theme="light"]) .leyo-splash .sp-logo{color:#5CD3C9}:root:not([data-theme="light"]) .leyo-splash h2{color:#E8F0F3}:root:not([data-theme="light"]) .leyo-splash p{color:#9BB0BA}}
+:root[data-theme="dark"] .leyo-splash{background:linear-gradient(175deg,#0D2F31 0%,#12232A 52%,#0E1519 100%);color:#E8F0F3}
+:root[data-theme="dark"] .leyo-splash .sp-logo{color:#5CD3C9} :root[data-theme="dark"] .leyo-splash h2{color:#E8F0F3} :root[data-theme="dark"] .leyo-splash p{color:#9BB0BA}
+.brief-list{width:100%;display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:6px}
+.brief-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:.86rem}
+.brief-row b{display:block;font-size:.9rem;color:var(--ink)}
+.brief-row span{display:block;font-size:.76rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.st-cloud,.scan-stage::after{animation:none!important}}
 .privrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .privrow>.leyo{margin:-12px -4px -8px 0}
@@ -870,7 +899,7 @@ button.gp-b:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srg
 <div class="app">
   <header class="top">
     <div>
-      <div class="brand"><svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="hb-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9FBF8"/><stop offset="1" stop-color="#9FE0D8"/></linearGradient><radialGradient id="hb-glow" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><linearGradient id="hb-bag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A5A"/><stop offset=".55" stop-color="#F45B32"/><stop offset="1" stop-color="#D93A22"/></linearGradient><linearGradient id="hb-flap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C83A20"/><stop offset="1" stop-color="#A82A16"/></linearGradient><linearGradient id="hb-strap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8582F"/><stop offset="1" stop-color="#A82A16"/></linearGradient><linearGradient id="hb-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="hb-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE08A"/><stop offset="1" stop-color="#F2A81D"/></linearGradient><filter id="hb-shadow" x="-20%" y="-20%" width="140%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dy="16"/><feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="512" height="512" rx="112" fill="url(#hb-bg)"/><circle cx="256" cy="230" r="230" fill="url(#hb-glow)"/><g filter="url(#hb-shadow)" transform="translate(0,-10)"><path d="M176 210Q176 108 256 108Q336 108 336 210" fill="none" stroke="url(#hb-strap)" stroke-width="32" stroke-linecap="round"/><path d="M190 160Q204 124 256 122" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="7" stroke-linecap="round"/><path d="M138 196H246L254 350Q254 404 202 404H176Q124 404 126 350Z" fill="url(#hb-bag)"/><path d="M266 196H374L386 350Q388 404 336 404H310Q258 404 258 350Z" fill="url(#hb-bag)"/><path d="M131 300H250L252 342H128Z" fill="#fff"/><path d="M262 300H381L384 342H260Z" fill="#fff"/><g fill="#13A89A"><path d="M160 307L173 321L160 335L147 321Z"/><path d="M190 307L203 321L190 335L177 321Z"/><path d="M220 307L233 321L220 335L207 321Z"/><path d="M292 307L305 321L292 335L279 321Z"/><path d="M322 307L335 321L322 335L309 321Z"/><path d="M352 307L365 321L352 335L339 321Z"/></g><path d="M138 196H246V240Q192 284 138 240Z" fill="url(#hb-flap)"/><path d="M266 196H374V240Q320 284 266 240Z" fill="url(#hb-flap)"/><circle cx="192" cy="258" r="12" fill="url(#hb-gold)"/><circle cx="320" cy="258" r="12" fill="url(#hb-gold)"/><path d="M150 208H178Q170 250 160 380Q146 372 144 350Z" fill="url(#hb-shine)"/><path d="M278 208H306Q298 250 288 380Q274 372 272 350Z" fill="url(#hb-shine)"/><g stroke="#D93A22" stroke-width="6" stroke-linecap="round"><path d="M189 404V422"/><path d="M323 404V422"/></g><circle cx="189" cy="432" r="12" fill="url(#hb-gold)"/><circle cx="323" cy="432" r="12" fill="url(#hb-gold)"/></g></svg>Heybe <span id="cloud" class="cloud"></span><button class="tripsbtn" data-act="trips" aria-label="Seyahatlerim: değiştir ya da yeni seyahat">🧳 Seyahatlerim</button></div>
+      <div class="brand"><svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="hb-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9FBF8"/><stop offset="1" stop-color="#9FE0D8"/></linearGradient><radialGradient id="hb-glow" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><linearGradient id="hb-bag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A5A"/><stop offset=".55" stop-color="#F45B32"/><stop offset="1" stop-color="#D93A22"/></linearGradient><linearGradient id="hb-flap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C83A20"/><stop offset="1" stop-color="#A82A16"/></linearGradient><linearGradient id="hb-strap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8582F"/><stop offset="1" stop-color="#A82A16"/></linearGradient><linearGradient id="hb-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="hb-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE08A"/><stop offset="1" stop-color="#F2A81D"/></linearGradient><filter id="hb-shadow" x="-20%" y="-20%" width="140%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dy="16"/><feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="512" height="512" rx="112" fill="url(#hb-bg)"/><circle cx="256" cy="230" r="230" fill="url(#hb-glow)"/><g filter="url(#hb-shadow)" transform="translate(0,-10)"><path d="M176 210Q176 108 256 108Q336 108 336 210" fill="none" stroke="url(#hb-strap)" stroke-width="32" stroke-linecap="round"/><path d="M190 160Q204 124 256 122" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="7" stroke-linecap="round"/><path d="M138 196H246L254 350Q254 404 202 404H176Q124 404 126 350Z" fill="url(#hb-bag)"/><path d="M266 196H374L386 350Q388 404 336 404H310Q258 404 258 350Z" fill="url(#hb-bag)"/><path d="M131 300H250L252 342H128Z" fill="#fff"/><path d="M262 300H381L384 342H260Z" fill="#fff"/><g fill="#13A89A"><path d="M160 307L173 321L160 335L147 321Z"/><path d="M190 307L203 321L190 335L177 321Z"/><path d="M220 307L233 321L220 335L207 321Z"/><path d="M292 307L305 321L292 335L279 321Z"/><path d="M322 307L335 321L322 335L309 321Z"/><path d="M352 307L365 321L352 335L339 321Z"/></g><path d="M138 196H246V240Q192 284 138 240Z" fill="url(#hb-flap)"/><path d="M266 196H374V240Q320 284 266 240Z" fill="url(#hb-flap)"/><circle cx="192" cy="258" r="12" fill="url(#hb-gold)"/><circle cx="320" cy="258" r="12" fill="url(#hb-gold)"/><path d="M150 208H178Q170 250 160 380Q146 372 144 350Z" fill="url(#hb-shine)"/><path d="M278 208H306Q298 250 288 380Q274 372 272 350Z" fill="url(#hb-shine)"/><g stroke="#D93A22" stroke-width="6" stroke-linecap="round"><path d="M189 404V422"/><path d="M323 404V422"/></g><circle cx="189" cy="432" r="12" fill="url(#hb-gold)"/><circle cx="323" cy="432" r="12" fill="url(#hb-gold)"/></g></svg>Heybe <span id="cloud" class="cloud"></span><button class="tripsbtn" data-act="trips" aria-label="Seyahatlerim: değiştir ya da yeni seyahat">🧳 Seyahatlerim</button><button class="leyo-pill" data-act="leyobrief" aria-label="Leyo günün özeti">🐦 Özet</button></div>
       <h1><button class="tname" data-act="trips" aria-label="Seyahat değiştir"><span id="tripName"></span><span class="chev" aria-hidden="true">▾</span></button></h1>
       <div class="sub" id="tripSub"></div>
     </div>
@@ -2107,12 +2136,28 @@ function webSampleNote(){
     <span>Kendi seyahatini görmek için sana gelen davet bağlantısını (ya da kurucu bağlantını) kopyala ve buraya yapıştır.${IOS_SAFARI ? ' iPhone\'da önce Paylaş → Ana Ekrana Ekle de; yapıştırmayı ana ekrandaki Heybe\'de yap.' : ''}</span>
     <button class="btn sm" data-act="trips">🔗 Bağlantıyı yapıştır</button></div>`;
 }
+function listLeyoMood(C){
+  const P = planState(), pct = P.plan ? P.spent / P.plan : 0;
+  if (P.ended) return {st:'foto', msg:'Harika bir geziydi! Anılarını <b>Hesap → Özet</b>\'te paylaşabilirsin 📸'};
+  if (P.plan && pct >= 1) return {st:'uzgun', msg:'Bütçeyi biraz aştık; harcamalara göz atıp sakin toparlarız!'};
+  if (P.plan && pct >= .8) return {st:'saskin', msg:`Bütçenin <b>%${Math.round(pct * 100)}</b>'ine geldik — bugün dikkatli gidelim!`};
+  if (!P.started){
+    const toGo = P.day !== null ? 1 - P.day : null;
+    return {st:'bavul', msg:toGo !== null ? (toGo === 0 ? 'Yola çıkış <b>bugün</b>! Bavullar hazır mı? 🧳' : `Gidişe <b>${toGo} gün</b> kaldı — hazırlıklar tam gaz!`) : 'Bavullar hazır, ilk harcamaları eklemeye başlayalım!'};
+  }
+  const exps = S.entries.filter(e => e.kind === 'expense');
+  if (P.plan && P.dayLimit && P.today <= P.dayLimit) return {st:'merhaba', msg:`Bugünkü sınırın altındasın, harika gidiyorsun 👌`};
+  return {st:exps.length ? 'merhaba' : 'bavul', msg:P.len ? `${Math.min(P.day, P.len)}. güne hoş geldin! Keyifli geziler ☀️` : 'Her şey kontrol altında — iyi yolculuklar!'};
+}
 function viewList(C){
-  let h = webSampleNote() + todayStrip() + `<section class="hero">
+  const lm = listLeyoMood(C);
+  let h = webSampleNote() + todayStrip() + `<section class="hero hero-ly"><div class="hero-row">
     <div><div class="lbl">Toplam harcama</div>
     <div class="big num">${eu(C.total)}</div><div class="eur num">bugünkü kurla ${tl(C.total)}</div>
-    ${C.preTotal ? `<div class="eur num">Seyahat öncesi ${eu(C.preTotal)} · Seyahatte ${eu(C.total - C.preTotal)}</div>` : ''}</div>
-    <div class="me">${meLine(C)}</div></section>`;
+    ${C.preTotal ? `<div class="eur num">Öncesi ${eu(C.preTotal)} · Gezi ${eu(C.total - C.preTotal)}</div>` : ''}</div>
+    <div class="hero-mascot">${leyo(lm.st, 'l', 'Leyo')}</div></div>
+    <div class="me">${meLine(C)}</div></section>
+    <button type="button" class="leyo-bar" data-act="leyobrief"><span>${lm.msg}</span></button>`;
   h += airportHtml() + budgetHtml();
   if (S.trip.kasaOn && !isFamily()){
     const hasKasa = S.entries.some(e => e.kind === 'kasa' || e.kind === 'kasaout' || (e.kind === 'expense' && e.paidBy === 'kasa'));
@@ -2196,9 +2241,11 @@ function viewSettle(C){
   plan.forEach((p, i) => (p.from === S.me || p.to === S.me ? mine : others).push([p, i]));
   // Her sekme aynı yapıda renkli bir özet kartıyla açılır: burada kişinin göndereceği ya da alacağı.
   const b = net[S.me] || 0, z = Math.abs(b) < 100, math = meText(T, R, net, false);
-  let h = hesapSeg('settle') + `<section class="hero"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
+  const sLy = z ? 'sevinc' : b > 0 ? 'hesap' : 'dusunme';
+  let h = hesapSeg('settle') + `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
     <div class="big num">${z ? 'Denk ✓' : tlk(Math.abs(b))}</div>
     <div class="eur num">${z ? 'Göndereceğin ya da alacağın bir şey yok' : `${b < 0 ? 'göndereceksin' : 'alacaksın'} · ≈ ${eu(Math.round(Math.abs(b) / R))}`}</div></div>
+    <div class="hero-mascot">${leyo(sLy, 'l', 'Leyo')}</div></div>
     ${math ? `<div class="me">${math}</div>` : ''}</section>`;
   h += `<section class="bigcard"><div class="head" data-hhost><h2>Senin ödemelerin${help('settle')}</h2><span class="note num">1 € = ${nf4.format(R)} ₺</span></div>
     <span class="note">${mode === 'min' ? 'Seyahat öncesi + seyahatte, her şey dahil.' : 'Seyahat öncesi + seyahatte, her şey dahil. Her ödeme, kimin harcamasına ortak olduğuna göre.'}${locked ? ' Kur ilk ödemeyle sabitlendi.' : ''}</span>`
@@ -2345,9 +2392,11 @@ function viewTrip(){
   const tc = themeCountry(), range = tripRange(S.trip), day = tripDayText().replace(/^ · /, '');
   const mg = isManager(), dis = mg ? '' : 'disabled', admins = new Set(S.trip.admins || []);
   // Diğer sekmelerdeki gibi renkli özet kartı: seyahatin adı, hangi gününde olunduğu, tarih ve kişiler.
-  return `<section class="hero"><div><div class="lbl">${tc ? flagOf(tc[0]) + ' ' : ''}${esc(S.trip.name)}</div>
+  const tP = planState(), tLy = isRO() || tP.ended ? 'foto' : tP.started ? 'ucma' : 'bavul';
+  return `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${tc ? flagOf(tc[0]) + ' ' : ''}${esc(S.trip.name)}</div>
       <div class="big num">${isRO() ? '🗄️ Arşivde' : day ? day.replace(/^./, c => c.toLocaleUpperCase('tr')) : peopleLabel()}</div>
       <div class="eur num">${[range ? '📅 ' + range : '', day || isRO() ? peopleLabel() : 'Tarihleri aşağıdan ekle'].filter(Boolean).join(' · ')}</div></div>
+      <div class="hero-mascot">${leyo(tLy, 'l', 'Leyo')}</div></div>
     <div class="me who2"><button class="wbtn tbtn tchip" data-act="trips">🧳 Değiştir</button>${IN_WEB && !S.sample && merged ? `<button class="wbtn tbtn tchip" data-act="invite">📨 Davet et</button>` : ''}<button class="wbtn tbtn tchip" data-act="newtrip">＋ Yeni</button>
       <button class="wbtn tbtn tchip more" data-act="tripmore" aria-expanded="${tripMore}" aria-label="Diğer seyahat işlemleri"><span>•••</span></button></div>
     ${tripMore ? `<div class="tmore">${S.sample ? '' : `<button class="tbtn" data-act="sameteam">🔁 Aynı ekiple yeni seyahat</button>`}
@@ -2563,6 +2612,7 @@ function drawSheet(){
       ${f.showAmong ? `<div class="chips pad">${chip('Herkes', everyone, 'data-all="1"')}${act.length > 1 ? chip('Ben hariç', n === act.length - 1 && !f.among.includes(S.me), 'data-all="notme"') : ''}${chip('Sadece ben', n === 1 && f.among[0] === S.me, 'data-all="onlyme"')}${S.people.filter(p => !p.left || f.among.includes(p.id)).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.among.includes(p.id), `data-among="${p.id}"`)).join('')}</div>${weightsHtml()}` : ''}
       ${isFamily() ? '' : `<span class="note num" id="fEach">${eachNote()}</span>`}
     </div>
+    ${!f.photo && !f.scanning ? `<label class="fis-cta" for="fPhoto">${leyo('fis', 's', 'Leyo')}<div><b>Fişin fotoğrafını ekle, ben okuyayım ✨</b><span>Tutar, mağaza ve tarih otomatik dolsun.</span></div></label>` : ''}
     <div class="photo">
       ${f.photo ? `<img src="${f.photo}" alt="Fiş fotoğrafı" data-act="viewphoto">` : ''}
       <input type="file" id="fPhoto" accept="image/*">
@@ -2611,7 +2661,8 @@ function drawSheet(){
     const c = catById(guessCat(f.desc, S.learned));
     body = `<div class="f"><label for="fSolo">Ne için?</label><input class="inp" id="fSolo" placeholder="ör. kendi kahvem, taksi" value="${esc(f.desc)}" autocomplete="off">
         <span class="note" id="fSoloCat">${c.icon} ${c.name}</span></div>` + amountBlock + rateBlock() + `<div class="rows">${dateBlock(f)}</div>
-      <div class="photo">${f.photo ? `<img src="${f.photo}" alt="Fotoğraf" data-act="viewphoto">` : ''}<input type="file" id="fPhoto" accept="image/*">
+      ${!f.photo && !f.scanning ? `<label class="fis-cta" for="fPhoto">${leyo('fis', 's', 'Leyo')}<div><b>Fişin fotoğrafını ekle, ben okuyayım ✨</b><span>Tutar, mağaza ve tarih otomatik dolsun.</span></div></label>` : ''}
+    <div class="photo">${f.photo ? `<img src="${f.photo}" alt="Fotoğraf" data-act="viewphoto">` : ''}<input type="file" id="fPhoto" accept="image/*">
         <label class="btn sm" for="fPhoto" id="fPhotoLbl">${f.photo ? 'Fotoğrafı değiştir' : docLabel(f)}</label>${help('foto')}
         ${f.photo ? `<button type="button" class="btn sm" data-act="rmphoto">Kaldır</button>` : ''}
         ${f.photo && String(f.photo).startsWith('data:') ? `<button type="button" class="btn sm pri" data-act="scan" ${f.scanning ? 'disabled' : ''}>${f.scanning ? `${leyo('fis', 'xs')} Okunuyor…` : '✨ Fotoğraftan doldur'}</button>` : ''}</div>
@@ -9288,6 +9339,42 @@ async function exportShopXlsx(){
 
 // ---- konfeti ----
 // Hesap kapanınca kısa bir kutlama; hareket azaltma ayarı açıksa gösterilmez.
+function showLeyoSplash(){
+  if (!IN_WEB || !leyoAnimPref()) return;
+  try { if (sessionStorage.getItem('heybe-splash')) return; sessionStorage.setItem('heybe-splash', '1'); } catch(_) {}
+  const P = planState(), me = person(S.me) ? rawName(S.me) : '', tn = S.trip && S.trip.name ? S.trip.name : 'Seyahatin';
+  const toGo = !P.started && P.day !== null ? 1 - P.day : null;
+  let title = me ? `Merhaba ${me}!` : 'Merhaba!', sub = 'Seyahatte bölüşelim, birlikte gezelim ✈️', st = 'merhaba';
+  if (P.ended){ sub = `${tn} harika bir geziydi! Anılarına bakalım 📸`; st = 'foto'; }
+  else if (P.started){ sub = P.len ? `${tn} · ${Math.min(P.day, P.len)}. güne hazır mısın? ☀️` : `${tn} devam ediyor — keyifli geziler! ☀️`; st = 'merhaba'; }
+  else if (toGo !== null){ sub = toGo === 0 ? `${tn} bugün başlıyor! Bavullar hazır mı? 🧳` : `${tn}'a ${toGo} gün kaldı 🧳`; st = 'merhaba'; }
+  const el = document.createElement('div'); el.className = 'leyo-splash';
+  el.innerHTML = `<div class="sp-logo">heybe</div>${leyo(st, 'xl', 'Leyo')}<h2>${esc(title)}</h2><p>${esc(sub)}</p><button type="button" class="sp-go">Başlayalım</button>`;
+  let gone = false;
+  const close = () => { if (gone) return; gone = true; el.classList.add('out'); setTimeout(() => el.remove(), 360); };
+  el.addEventListener('click', close);
+  document.body.appendChild(el);
+  setTimeout(close, 2400);
+}
+function openLeyoBrief(){
+  const C = compute(S, startOfToday()), P = planState(), lm = listLeyoMood(C);
+  const exps = S.entries.filter(e => e.kind === 'expense');
+  const hasGuide = Object.values(S.trip.guide || {}).some(g => g && (g.ok || (g.days && g.days.length)));
+  const settled = exps.length > 0 && (isFamily() || totalPlan().plan.length === 0);
+  const bCnt = [exps.length > 0, exps.some(e => e.photo) || (SH.items || []).some(i => i.photo), hasGuide, !!(P.plan && P.spent > 0 && P.spent <= P.plan), (SH.items || []).length > 0 || (SH.gifts || []).length > 0, settled].filter(Boolean).length;
+  const rows = [];
+  if (P.ended) rows.push(['🏁', 'Seyahat tamamlandı', `${exps.length} harcama · kişi başı ${fromTL(P.spent, planCurOf(), 0)}`]);
+  else if (!P.started && P.day !== null) rows.push(['🧳', `Gidişe ${Math.max(0, 1 - P.day)} gün`, `${esc(S.trip.name)} · ${tripRange(S.trip) || 'tarih bekliyor'}`]);
+  else if (P.started) rows.push(['☀️', P.len ? `${Math.min(P.day, P.len)}. gün / ${P.len}` : 'Seyahatte', `${esc(S.trip.name)}`]);
+  if (P.plan) rows.push(['💶', P.left >= 0 ? `Bütçede ${fromTL(P.left, planCurOf(), 0)} kaldı` : `Bütçe ${fromTL(-P.left, planCurOf(), 0)} aşıldı`, `Toplam %${Math.round(P.spent * 100 / P.plan)} kullanıldı`]);
+  else rows.push(['💶', `Toplam ${eu(C.total)}`, `${exps.length} harcama kaydedildi`]);
+  rows.push(['🏅', `Pasaport Damgaları: ${bCnt} / 6`, bCnt < 6 ? 'Özet sekmesinden rozetlerini gör' : 'Tüm damgaları topladın! 🎉']);
+  const el = document.createElement('div'); el.className = 'leyo-cel';
+  el.innerHTML = `<div class="leyo-cel-card">${leyo(lm.st, 'xl', 'Leyo')}<b>Leyo'nun Günün Özeti</b><div class="brief-list">${rows.map(([ic, t, s]) => `<div class="brief-row"><span style="font-size:1.3rem">${ic}</span><div><b>${t}</b><span>${s}</span></div></div>`).join('')}</div><button type="button" class="btn pri block" style="margin-top:8px">Harika, devam edelim</button></div>`;
+  const kill = () => el.remove();
+  el.addEventListener('click', ev => { if (ev.target === el || ev.target.closest('button')) kill(); });
+  document.body.appendChild(el);
+}
 function celebrateLeyo(title, sub){
   const el = document.createElement('div'); el.className = 'leyo-cel';
   el.innerHTML = `<div class="leyo-cel-card">${leyo('sevinc', 'xl', 'Leyo')}<b>${esc(title || 'Harika! 🎉')}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>`;
@@ -9457,7 +9544,7 @@ document.addEventListener('click', ev => {
   if (swEat){ swEat = false; if (ev.target.closest(SWROW)) return; }
   if (swOpen && ev.target.closest(SWROW) === swOpen && !ev.target.closest('.swdel')){ swClose(); return; }
   const ly = ev.target.closest('.leyo');
-  if (ly && !ev.target.closest('button')){ leyoReact(ly); return; }
+  if (ly && !ev.target.closest('button, label, .leyo-splash')){ leyoReact(ly); return; }
   const t = ev.target.closest('button, .scrim, img[data-act]'); if (!t) return;
   if (t.classList.contains('scrim') && ev.target !== t) return;
   const d = t.dataset;
@@ -9466,6 +9553,7 @@ document.addEventListener('click', ev => {
     toast('🗄️ Bu seyahat arşivde, sadece görüntülenebilir. Değiştirmek için Seyahat sekmesinden arşivden çıkar.'); return;
   }
   if (!isManager() && (d.delp || d.fam || d.admin || MGR_ACTS.has(d.act))){ mgrOnly(); return; }
+  if (d.act === 'leyobrief'){ openLeyoBrief(); return; }
   if (d.act === 'gshare'){ if (gShareFile) navigator.share({files:[gShareFile], title:gShareFile.name}).catch(() => {}); t.closest('.toast')?.remove(); return; }
   if (d.act === 'gundo2'){ if (gzUndo){ gzUndo(); gzUndo = null; } t.closest('.toast')?.remove(); return; }
   if (d.g === 'more'){ (t.closest('.swr') || t.closest('.pli')).classList.toggle('open'); return; }
@@ -9897,6 +9985,7 @@ document.addEventListener('input', () => { if (form) saveDraft(); });
 
 loadLogs(); loadShop();
 render();
+showLeyoSplash();
 renderCloud();
 restoreDraft();
 maybeAskWho();
