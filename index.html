@@ -8,14 +8,14 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127235906';</script>
-<script src="heybe-web.js?v=20261127235906"></script>
+<script>window.HEYBE_VER = '20261128003049';</script>
+<script src="heybe-web.js?v=20261128003049"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap">
 <style>
 /* Layout: tek sütunlu telefon uygulaması; üstte seyahat başlığı ve kur, altta sabit sekme çubuğu, sağ altta "+ Harcama" düğmesi */
 :root{
@@ -416,6 +416,18 @@ button.mrow{border-left:0;border-right:0;border-bottom:0;background:none;width:1
 .alb-day[open] .tgc{transform:rotate(90deg)}
 .alb-db{display:flex;flex-direction:column;gap:10px;padding:0 12px 12px}
 textarea.inp{resize:vertical;line-height:1.45;font-family:inherit}
+.alb-cut{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:var(--surface)}
+.alb-cuth{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.86rem;font-weight:600}
+.alb-cuth .chip{flex:none;padding:5px 11px;font-size:.8rem}
+.alb-cutp{width:100%;aspect-ratio:4.15/1;border-radius:8px;background-size:100% auto;background-repeat:no-repeat;background-color:var(--sunk)}
+.alb-cut input[type=range]{width:100%}
+.alb-tks{display:flex;flex-direction:column;gap:8px}
+.alb-tks .lab{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.alb-tk{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:var(--surface);border:1.5px dashed var(--line)}
+.alb-tkh{display:flex;align-items:center;gap:10px}
+.alb-tkn{display:flex;flex-direction:column;min-width:0}
+.alb-tkn small{color:var(--muted);font-size:.78rem}
+.alb-tk .alb-th,.alb-add.sq.sm{width:52px;height:52px}
 @media (prefers-reduced-motion:reduce){.oz-dots i{transition:none}}
 /* Özet panosu (2026-11-27): gezi kartı, 2×2 göstergeler, widget'lar, kutucuklar; dönem ne olursa olsun aynı görünüm */
 .ozks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -816,6 +828,7 @@ textarea.copy{width:100%;min-height:180px;border:1.5px solid var(--line);border-
 .st-f small{display:block;font-size:.75rem;opacity:.8}
 .st-f b{font-weight:700}
 .st-btn{align-self:flex-start;background:rgba(255,255,255,.18);color:#fff}
+.st-acts{display:flex;flex-wrap:wrap;gap:8px}
 .ic.brand{background:hsl(var(--h) 45% 92%);color:hsl(var(--h) 45% 28%);font-weight:800;font-size:.85rem;letter-spacing:.02em}
 .ic.brand.logo{background:#fff;border:1px solid var(--line)}
 .ic.brand svg{width:24px;height:24px;fill:#111}
@@ -9141,7 +9154,7 @@ function ozHero(ph, P, C){
   const st = storyFacts();
   return `<section class="story oz-hero"><div class="st-stage">${sky}<div class="st-stage-txt"><div class="st-h">${esc(S.trip.name)} · ${h} ✨</div><div class="st-big num">${big}<small>${sub}</small></div></div>${leyo(ly, 'xl', 'Leyo')}</div>`
     + (ph === 'post' && st ? st.facts.map(([i, l, v]) => `<div class="st-f"><span class="st-i">${i}</span><span><small>${esc(l)}</small><b>${esc(v)}</b></span></div>`).join('') : '')
-    + (st && ph !== 'pre' ? `<button class="btn sm st-btn" data-act="sharestory">📤 Görsel olarak paylaş</button>` : '') + `</section>`;
+    + (ph !== 'pre' ? `<div class="st-acts">${st ? `<button class="btn sm st-btn" data-act="sharestory">📤 Görsel olarak paylaş</button>` : ''}<button class="btn sm st-btn" data-act="album">📖 Albüm</button></div>` : '') + `</section>`;
 }
 // Dört gösterge (2×2): bu seyahat sana ve hesap durumun her dönemde; diğer ikisi döneme göre. Dokununca alttan ayrıntı açılır.
 function ozKpis(ph, P, C, M, t){
@@ -10828,7 +10841,8 @@ function alb(){
   if (ALB && ALB.tid === S.tid) return ALB.m;
   let m = null; try { m = JSON.parse(localStorage.getItem(ALB_KEY(S.tid)) || 'null'); } catch(_) {}
   m = m && typeof m === 'object' ? m : {};
-  m.story = m.story || {}; m.story.days = m.story.days || {}; m.notes = m.notes || {}; m.ph = m.ph || {}; m.ph.days = m.ph.days || {};
+  m.story = m.story || {}; m.story.days = m.story.days || {}; m.story.title = m.story.title || {}; m.story.tk = m.story.tk || {}; m.notes = m.notes || {};
+  m.ph = m.ph || {}; m.ph.days = m.ph.days || {}; m.ph.tk = m.ph.tk || {}; m.cut = m.cut || {}; m.wx = m.wx || {};
   ALB = {tid:S.tid, m}; return m;
 }
 function albStore(){ clearTimeout(albTimer); try { localStorage.setItem(ALB_KEY(S.tid), JSON.stringify(alb())); } catch(_) {} }
@@ -10852,12 +10866,12 @@ function albScale(img, max, q){
 }
 async function albPrep(file){ const u = URL.createObjectURL(file); try { const img = await loadImg(u); return {big:await albScale(img, 1600, .85), small:await albScale(img, 240, .8)}; } finally { URL.revokeObjectURL(u); } }
 async function albThumbs(){
-  const m = alb(), ids = [m.ph.cover, ...Object.values(m.ph.days).flat()].filter(id => id && !albUrl.has(id)); if (!ids.length) return;
+  const m = alb(), ids = [m.ph.cover, ...Object.values(m.ph.days).flat(), ...Object.values(m.ph.tk)].filter(id => id && !albUrl.has(id)); if (!ids.length) return;
   let n = 0; for (const id of ids){ const b = await albGet(`${S.tid}|${id}|t`); if (b && !albUrl.has(id)){ albUrl.set(id, URL.createObjectURL(b)); n++; } }
   if (n && form && form.mode === 'album') drawSheetKeep();
 }
 async function albAdd(slot, files){
-  const m = alb(), f = form, room = slot === 'cover' ? 1 : 4 - (m.ph.days[slot] || []).length, list = files.slice(0, Math.max(0, room));
+  const m = alb(), f = form, tk = slot.startsWith('tk:'), room = slot === 'cover' || tk ? 1 : 4 - (m.ph.days[slot] || []).length, list = files.slice(0, Math.max(0, room));
   if (!list.length) return toast('Bir güne en çok 4 fotoğraf eklenir.');
   if (files.length > list.length) toast(`Bu güne ${list.length} fotoğraf daha sığıyor; ilk ${list.length} eklendi.`);
   if (f){ f.busy = 'foto'; drawSheetKeep(); }
@@ -10865,38 +10879,56 @@ async function albAdd(slot, files){
   for (const file of list){
     try { const p = await albPrep(file), id = uid();
       await albPut(`${S.tid}|${id}`, p.big); await albPut(`${S.tid}|${id}|t`, p.small); albUrl.set(id, URL.createObjectURL(p.small));
-      if (slot === 'cover'){ const old = m.ph.cover; m.ph.cover = id; if (old) await albDrop(old); } else (m.ph.days[slot] = m.ph.days[slot] || []).push(id);
+      if (slot === 'cover'){ const old = m.ph.cover; m.ph.cover = id; if (old) await albDrop(old); }
+      else if (tk){ const k = slot.slice(3), old = m.ph.tk[k]; m.ph.tk[k] = id; if (old) await albDrop(old); }
+      else (m.ph.days[slot] = m.ph.days[slot] || []).push(id);
       ok++; albStore(); } catch(_) {}
   }
   if (ok < list.length) toast(`${list.length - ok} fotoğraf açılamadı; başka bir fotoğraf dene.`);
   if (f && form === f){ f.busy = ''; drawSheetKeep(); }
 }
 async function albDrop(id){ await albPut(`${S.tid}|${id}`, null); await albPut(`${S.tid}|${id}|t`, null); const u = albUrl.get(id); if (u){ URL.revokeObjectURL(u); albUrl.delete(id); } }
-async function albRemove(slot, id){ const m = alb(); if (slot === 'cover'){ if (m.ph.cover === id) m.ph.cover = null; } else m.ph.days[slot] = (m.ph.days[slot] || []).filter(x => x !== id); albStore(); await albDrop(id); drawSheetKeep(); }
+async function albRemove(slot, id){ const m = alb(); if (slot === 'cover'){ if (m.ph.cover === id) m.ph.cover = null; } else if (slot.startsWith('tk:')){ const k = slot.slice(3); if (m.ph.tk[k] === id) delete m.ph.tk[k]; } else m.ph.days[slot] = (m.ph.days[slot] || []).filter(x => x !== id); albStore(); await albDrop(id); drawSheetKeep(); }
 function albText(k, v){
   const m = alb();
   if (k === 'title') m.title = v; else if (k === 'intro') m.story.intro = v; else if (k === 'closing') m.story.closing = v;
-  else { const j = k.indexOf('|'), kind = k.slice(0, j), d = k.slice(j + 1); if (kind === 'story') m.story.days[d] = v; else if (kind === 'note') m.notes[d] = v; }
+  else { const j = k.indexOf('|'), kind = k.slice(0, j), d = k.slice(j + 1);
+    if (kind === 'story') m.story.days[d] = v; else if (kind === 'note') m.notes[d] = v; else if (kind === 'title') m.story.title[d] = v; else if (kind === 'tk') m.story.tk[d] = v; }
   albStoreSoon();
 }
 // Albümün günleri: seyahatin tarihleri (yoksa harcama ve rehber günleri). Her gün: şehir, onaylı rehberden gezilen yerler (numaralı),
-// yürüyüş, yolculuklar (yalnız ortak kayıtlar; kişisel biletler girmez), grubun o günkü harcaması ve öne çıkanları (yemek, etkinlik).
+// yürüyüş, yolculuklar (yalnız ortak kayıtlar; kişisel biletler girmez; fiş fotoğrafı varsa kesit için), bilet koçanları (rehberdeki
+// biletli yerler ve plandaki etkinlik biletleri, sonra Google'da en çok yorumlanan 1–2 durak; en çok 3), grubun o günkü harcaması,
+// yemekleri ve öne çıkanları.
 function albGuides(){ return Object.entries(S.trip.guide || {}).filter(([, g]) => g && g.ok && Array.isArray(g.days) && g.days.length).map(([c, g]) => [c, gNorm(g)]); }
+const albSlug = s => String(s || '').toLocaleLowerCase('tr').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '');
+const albTkName = s => String(s || '').replace(/\s*(giriş\s*)?(bileti?|biletleri|ticket[s]?|entrance|entry)\s*$/i, '').trim() || String(s || '');
 function albDays(){
   const P = tripPlan(), guides = albGuides(), exps = S.entries.filter(e => e.kind === 'expense' && phaseOf(e, S) !== 'pre');
   let ds = [];
   if (S.trip.start && S.trip.end && S.trip.end >= S.trip.start){ for (let d = S.trip.start, k = 0; d <= S.trip.end && k < 60; d = isoAdd(d, 1), k++) ds.push(d); }
   else ds = [...new Set([...exps.map(e => isoDay(e.at)), ...guides.flatMap(([, g]) => g.days.map(x => x.d))])].filter(Boolean).sort();
+  const seen = new Set();
   return ds.map((d, i) => {
-    const t = new Date(d + 'T12:00:00').getTime(), n = tripDay(t), pd = P && P.days.find(x => x.d === d), places = [], walk = {km:0, steps:0};
+    const t = new Date(d + 'T12:00:00').getTime(), n = tripDay(t), pd = P && P.days.find(x => x.d === d), places = [], walk = {km:0, steps:0}, tk = [], fam = [];
     let city = pd && pd.city || '';
     for (const [c, g] of guides){ const x = g.days.find(y => y.d === d); if (!x) continue; if (!city) city = c; const N = gNums(c, g);
-      x.items.forEach(it => { if (N.has(it)) places.push({no:N.get(it), name:gCleanName(it.name), lat:+it.lat || null, lon:+it.lon || null}); });
+      x.items.forEach(it => {
+        if (N.has(it)) places.push({no:N.get(it), name:gCleanName(it.name), lat:+it.lat || null, lon:+it.lon || null});
+        if (it.src === 'bilet' && !G_TRAVEL.test(it.name || '') && !gStayIt(it)) tk.push({name:albTkName(gCleanName(it.name)), t:it.t || '', info:String(it.desc || ''), bilet:true});
+        else if (N.has(it) && it.g && it.g.n >= 1000) fam.push({name:gCleanName(it.name), t:'', info:String(it.desc || ''), n:it.g.n}); });
       const st = gSteps(c, x); if (st){ walk.km += st.km; walk.steps += st.steps; } }
-    const trips = pd ? pd.items.filter(it => it.kind === 'trip' && it.e && !it.e.priv).map(it => ({ic:iconOf(it.e), from:it.e.from || '', to:it.e.to || '', desc:it.e.desc || '', t:bkTime(it.e.when || ''), t2:it.e.until ? bkTime(it.e.until) : ''})) : [];
+    if (pd) pd.items.filter(it => it.kind === 'event' && it.e && !it.e.priv).forEach(it => { const nm = albTkName(it.e.desc); if (!tk.some(s => albSlug(s.name).includes(albSlug(nm)) || albSlug(nm).includes(albSlug(s.name)))) tk.push({name:nm, t:bkTime(it.e.when || ''), info:'', bilet:true}); });
+    fam.sort((a, c) => c.n - a.n);
+    const stubs = [...tk, ...fam.filter(f => !tk.some(s => albSlug(s.name) === albSlug(f.name))).slice(0, 2)].slice(0, 3).map(s => ({...s, key:`${d}~${albSlug(s.name)}`}));
+    const trips = pd ? pd.items.filter(it => it.kind === 'trip' && it.e && !it.e.priv).map(it => { const e = it.e;
+      return {id:e.id, ic:iconOf(e), air:e.cat === 'ucak' || /uçak|uçuş|flight|havaliman|airport/i.test(e.desc || ''), from:e.from || '', to:e.to || '', desc:e.desc || '', t:bkTime(e.when || ''), t2:e.until ? bkTime(e.until) : '', src:photoSrc(e) || ''}; }) : [];
     const dx = exps.filter(e => isoDay(e.at) === d), fun = dx.filter(e => e.cat === 'yeme' || e.cat === 'aktivite').sort((a, c) => toCents(c) - toCents(a));
+    const food = [...new Set(dx.filter(e => e.cat === 'yeme').sort((a, c) => a.at - c.at).map(e => String(e.desc || '').trim()).filter(Boolean))].slice(0, 5);
+    if (!city && trips.length) city = trips[trips.length - 1].to;   // yolculuk günü: varılan şehir (hava ve damga için)
+    const c0 = String(city || '').split('→').pop().trim(), first = !!c0 && !seen.has(c0); if (c0) seen.add(c0);
     return {d, t, n, i, label:n >= 1 ? `${n}. gün` : new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}),
-      date:new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'long', weekday:'long'}), city, places, walk:walk.km ? walk : null, trips,
+      date:new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'long', weekday:'long'}), city, cityNow:c0, firstInCity:first, places, walk:walk.km ? walk : null, trips, stubs, food,
       spend:dx.reduce((a, e) => a + toCents(e), 0), nExp:dx.length, top:[...new Set(fun.map(e => String(e.desc || '').trim()).filter(Boolean))].slice(0, 3)};
   });
 }
@@ -10909,52 +10941,102 @@ function albAuto(D){
   if (D.top.length) s.push(`Günün tadı: ${albList(D.top)}.`);
   return s.join(' ');
 }
+// Koçanın hazır notu: rehberin açıklamasının ilk cümlesi (kısa); Leyo yazınca onunki gelir.
+const albTkAuto = s => { const t = String(s.info || '').replace(/\s+/g, ' ').trim(); if (!t) return ''; const c = (t.match(/^.+?[.!?](\s|$)/) || [t])[0].trim(); return c.length > 170 ? c.slice(0, 168).replace(/\s\S*$/, '') + '…' : c; };
 function albCities(Ds){ return [...new Set(Ds.flatMap(D => String(D.city || '').split('→')).map(s => s.trim()).filter(Boolean))]; }
 function albIntroAuto(Ds){ const c = albCities(Ds), nP = Ds.reduce((a, D) => a + D.places.length, 0);
   return `${Ds.length} gün${c.length ? `, ${albList(c)}` : ''}${nP ? `, ${nP} durak` : ''}. ${headcount()} kişi, bir heybe dolusu anı.`; }
 function albEndAuto(Ds){ const nP = Ds.reduce((a, D) => a + D.places.length, 0), km = Ds.reduce((a, D) => a + (D.walk ? D.walk.km : 0), 0);
   return `${nP ? `${nP} yer gezdik${km ? `, ${gKmTxt(km)} yürüdük` : ''}. ` : ''}Bir sonraki heybede görüşmek üzere 👋`; }
+// Günün gerçek havası (Open-Meteo, ücretsiz, anahtarsız; giden yalnız şehrin konumu ve tarihler). Bir kez alınır, albümde saklanır.
+const WX = [[0, '☀️', 'açık'], [3, '⛅', 'parçalı bulutlu'], [48, '🌫️', 'sisli'], [57, '🌦️', 'çisentili'], [67, '🌧️', 'yağmurlu'], [77, '❄️', 'karlı'], [82, '🌧️', 'sağanak'], [86, '🌨️', 'kar yağışlı'], [99, '⛈️', 'fırtınalı']];
+const wxOf = c => WX.find(([k]) => c <= k) || WX[WX.length - 1];
+const wxTxt = w => w ? `${wxOf(w.c)[1]} ${wxOf(w.c)[2]} ${w.hi}°` : '';
+let albWxTried = '';
+async function albWeather(Ds){
+  const m = alb(), today = isoDay(Date.now()), need = Ds.filter(D => !m.wx[D.d] && D.d <= today && D.cityNow); if (!need.length) return false;
+  const loc = {}; for (const [c, g] of albGuides()){ const p = gCenter(g); if (p) loc[c.toLocaleLowerCase('tr')] = p; }
+  const by = {}; need.forEach(D => (by[D.cityNow] = by[D.cityNow] || []).push(D.d));
+  let got = 0;
+  for (const [c, ds] of Object.entries(by)){
+    try {
+      let p = loc[c.toLocaleLowerCase('tr')];
+      if (!p){ const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=tr&name=${encodeURIComponent(c)}`).then(r => r.json()); const g = r && r.results && r.results[0]; if (g) p = {lat:g.latitude, lon:g.longitude}; }
+      if (!p) continue;
+      const s = ds.slice().sort(), a = s[0], z = s[s.length - 1], old = (Date.now() - new Date(z + 'T12:00:00').getTime()) / 864e5 > 85;
+      const r = await fetch(`https://${old ? 'archive-api' : 'api'}.open-meteo.com/v1/${old ? 'archive' : 'forecast'}?latitude=${(+p.lat).toFixed(3)}&longitude=${(+p.lon).toFixed(3)}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${a}&end_date=${z}`).then(r => r.json());
+      const dd = r && r.daily; if (!dd || !dd.time) continue;
+      dd.time.forEach((d, i) => { if (ds.includes(d) && dd.weather_code[i] != null && dd.temperature_2m_max[i] != null){ m.wx[d] = {c:dd.weather_code[i], hi:Math.round(dd.temperature_2m_max[i]), lo:Math.round(dd.temperature_2m_min[i])}; got++; } });
+    } catch(_) {}
+  }
+  if (got) albStore(); return got > 0;
+}
 // Hazırlama sayfası
 function albumBody(f){
   const m = alb(), Ds = albDays(), web = !!(IN_WEB && window.claude && window.claude.story);
   albThumbs();
-  const th = (id, slot) => `<span class="alb-th">${albUrl.get(id) ? `<img src="${albUrl.get(id)}" alt="">` : ''}<button type="button" class="alb-x" data-albdel="${slot}|${id}" aria-label="Fotoğrafı çıkar">×</button></span>`;
-  const add = (slot, multi, lbl, cls = '') => `<label class="alb-add${cls}">${lbl}<input type="file" accept="image/*" ${multi ? 'multiple' : ''} data-albf="${slot}" hidden></label>`;
-  const busy = f.busy === 'foto' ? '<p class="note">📷 Fotoğraflar hazırlanıyor…</p>' : f.busy === 'leyo' ? `<div class="ozal-say">${leyo('dusunme', 's', 'Leyo')}<span>Leyo hikâyeleri yazıyor…</span></div>` : f.busy === 'pdf' ? '<p class="note">📖 Albüm hazırlanıyor…</p>' : '';
-  return `<p class="note">Paylaşmalık anı defteri: kapak, bir bakışta, rota haritası, gün gün gezdiğiniz yerler, hikâyeler ve fotoğraflar. İçinde kimsenin kişisel harcaması yok. Fotoğrafların ve notların yalnız bu telefonda kalır.</p>
+  if (albWxTried !== S.tid){ albWxTried = S.tid; albWeather(Ds).then(ok => { if (ok && form && form.mode === 'album') drawSheetKeep(); }); }
+  const th = (id, slot) => `<span class="alb-th">${albUrl.get(id) ? `<img src="${albUrl.get(id)}" alt="">` : ''}<button type="button" class="alb-x" data-albdel="${esc(slot)}|${id}" aria-label="Fotoğrafı çıkar">×</button></span>`;
+  const add = (slot, multi, lbl, cls = '') => `<label class="alb-add${cls}">${lbl}<input type="file" accept="image/*" ${multi ? 'multiple' : ''} data-albf="${esc(slot)}" hidden></label>`;
+  const busy = f.busy === 'foto' ? '<p class="note">📷 Fotoğraflar hazırlanıyor…</p>' : f.busy === 'leyo' ? `<div class="ozal-say">${leyo('dusunme', 's', 'Leyo')}<span>Leyo yazıyor; uzun seyahatte bir dakika kadar sürer…</span></div>` : f.busy === 'pdf' ? '<p class="note">📖 Albüm hazırlanıyor…</p>' : '';
+  const dayCard = D => { const ids = m.ph.days[D.d] || [], wx = m.wx[D.d];
+    const cuts = D.trips.filter(t => t.src).map(t => { const c = m.cut[t.id] || {}, on = !!c.on, y = c.y ?? 0;
+      return `<div class="alb-cut"><div class="alb-cuth"><span>🎫 ${esc(t.from && t.to ? `${t.from} → ${t.to}` : t.desc)}: biletten kesit</span><button type="button" class="chip" data-albcut="${t.id}" aria-pressed="${on}">${on ? '✓ Var' : '+ Ekle'}</button></div>
+        ${on ? `<div class="alb-cutp" id="cutp_${t.id}" style="background-image:url(&quot;${esc(t.src)}&quot;);background-position:0 ${y}%"></div><input type="range" min="0" max="100" step="1" value="${y}" data-albcuty="${t.id}" aria-label="Kesitin yeri"><span class="note">Barkod, rezervasyon kodu ve adın görünmesin; kaydırarak bileti gösteren bölgeyi seç.</span>` : ''}</div>`; }).join('');
+    const stubs = D.stubs.length ? `<div class="alb-tks"><span class="lab">🎟️ Koçanlar</span>${D.stubs.map(s => { const pid = m.ph.tk[s.key];
+      return `<div class="alb-tk"><div class="alb-tkh">${pid ? th(pid, 'tk:' + s.key) : add('tk:' + s.key, false, '📷', ' sq sm')}<span class="alb-tkn"><b>${esc(s.name)}</b><small>${s.bilet ? '🎟️ biletli' : '📍 günün durağı'}${s.t ? ' · ' + esc(s.t) : ''}</small></span></div>
+        <textarea class="inp" rows="2" data-alb="tk|${esc(s.key)}" placeholder="Kısa tarih notu">${esc(m.story.tk[s.key] ?? albTkAuto(s))}</textarea></div>`; }).join('')}</div>` : '';
+    return `<details class="alb-day" id="ad_${D.d}" ${openDet['ad_' + D.d] ? 'open' : ''}><summary><span class="alb-dn" style="--c:#${G_COLORS[D.i % G_COLORS.length]}">${D.n >= 1 ? D.n : '•'}</span><span class="tgt"><b>${esc(D.label)} · ${esc(m.story.title[D.d] || D.date)}</b><small>${esc([m.story.title[D.d] ? D.date : '', D.city, wx ? wxTxt(wx) : '', D.trips.length ? D.trips.map(t => t.ic).join('') + ' yolculuk' : '', D.stubs.length ? D.stubs.length + ' koçan' : '', D.places.length ? D.places.length + ' yer' : '', ids.length ? ids.length + ' fotoğraf' : '', m.notes[D.d] ? 'notlu' : ''].filter(Boolean).join(' · ') || 'kayıt yok')}</small></span><span class="tgc" aria-hidden="true">›</span></summary>
+      <div class="alb-db">
+        <div class="f"><label>Günün başlığı</label><input class="inp" data-alb="title|${D.d}" maxlength="50" placeholder="ör. Antik Roma'nın kalbinde" value="${esc(m.story.title[D.d] || '')}" autocomplete="off"></div>
+        <div class="alb-ph">${ids.map(id => th(id, D.d)).join('')}${ids.length < 4 ? add(D.d, true, '📷<small>Ekle</small>', ' sq') : ''}</div>
+        ${cuts}${stubs}
+        ${D.places.length ? `<p class="hint">📍 ${D.places.map(p => esc(p.name)).join(' · ')}</p>` : ''}
+        ${D.food.length ? `<p class="hint">🍽️ Günün tadı: ${D.food.map(esc).join(' · ')}</p>` : ''}
+        <div class="f"><label>Hikâye</label><textarea class="inp" rows="4" data-alb="story|${D.d}" placeholder="O günün hikâyesi">${esc(m.story.days[D.d] ?? albAuto(D))}</textarea></div>
+        <div class="f"><label>Notun <span class="auto">isteğe bağlı · el yazısıyla basılır</span></label><textarea class="inp" rows="2" data-alb="note|${D.d}" placeholder="Aklında kalan bir an, bir söz, bir tat…">${esc(m.notes[D.d] || '')}</textarea></div>
+      </div></details>`; };
+  return `<p class="note">Paylaşmalık anı defteri: kapak, bir bakışta, rota haritası, gün gün biniş kartları, bilet koçanları, hikâyeler ve polaroid fotoğraflar, seyahat karnesi. İçinde kimsenin kişisel harcaması yok. Fotoğrafların ve notların yalnız bu telefonda kalır.</p>
     <div class="alb-cover">${m.ph.cover ? th(m.ph.cover, 'cover') : '<span class="alb-th empty" aria-hidden="true">🖼️</span>'}<span class="alb-ct"><b>Kapak fotoğrafı</b><small>${m.ph.cover ? 'Değiştirmek için yenisini seç' : 'Seyahatten en sevdiğin kare'}</small>${add('cover', false, m.ph.cover ? '📷 Değiştir' : '📷 Fotoğraf seç')}</span></div>
     <div class="f"><label for="albTitle">Albümün adı</label><input class="inp" id="albTitle" data-alb="title" maxlength="60" placeholder="${esc(S.trip.name)}" value="${esc(m.title || '')}" autocomplete="off"></div>
-    ${web ? `<button type="button" class="btn" data-albact="leyo" ${f.busy ? 'disabled' : ''}>✨ ${m.leyoAt ? 'Hikâyeleri Leyo yeniden yazsın' : 'Hikâyeleri Leyo yazsın'}</button><span class="note">Leyo gezdiğiniz yerlerden, yolculuklardan ve notlarından kısa anı metinleri yazar; beğenmediğini değiştirirsin.</span>` : ''}
+    ${web ? `<button type="button" class="btn" data-albact="leyo" ${f.busy ? 'disabled' : ''}>✨ ${m.leyoAt ? 'Leyo yeniden yazsın' : 'Hikâyeleri ve notları Leyo yazsın'}</button><span class="note">Leyo (Sonnet) her güne bir başlık ve hikâye, her koçana rehberdeki bilgiye dayanan kısa bir tarih notu yazar; beğenmediğini değiştirirsin.</span>` : ''}
     ${busy}
     <div class="f"><label for="albIntro">Giriş</label><textarea class="inp" id="albIntro" rows="2" data-alb="intro">${esc(m.story.intro ?? albIntroAuto(Ds))}</textarea></div>
-    ${Ds.length ? `<div class="alb-days">${Ds.map(D => { const ids = m.ph.days[D.d] || [];
-      return `<details class="alb-day" id="ad_${D.d}" ${openDet['ad_' + D.d] ? 'open' : ''}><summary><span class="alb-dn" style="--c:#${G_COLORS[D.i % G_COLORS.length]}">${D.n >= 1 ? D.n : '•'}</span><span class="tgt"><b>${esc(D.label)} · ${esc(D.date)}</b><small>${esc([D.city, D.trips.length ? D.trips.map(t => t.ic).join('') + ' yolculuk' : '', D.places.length ? D.places.length + ' yer' : '', ids.length ? ids.length + ' fotoğraf' : '', m.notes[D.d] ? 'notlu' : ''].filter(Boolean).join(' · ') || 'kayıt yok')}</small></span><span class="tgc" aria-hidden="true">›</span></summary>
-        <div class="alb-db"><div class="alb-ph">${ids.map(id => th(id, D.d)).join('')}${ids.length < 4 ? add(D.d, true, '📷<small>Ekle</small>', ' sq') : ''}</div>
-          ${D.places.length ? `<p class="hint">📍 ${D.places.map(p => esc(p.name)).join(' · ')}</p>` : ''}
-          <div class="f"><label>Hikâye</label><textarea class="inp" rows="4" data-alb="story|${D.d}" placeholder="O günün hikâyesi">${esc(m.story.days[D.d] ?? albAuto(D))}</textarea></div>
-          <div class="f"><label>Notun <span class="auto">isteğe bağlı</span></label><textarea class="inp" rows="2" data-alb="note|${D.d}" placeholder="Aklında kalan bir an, bir söz, bir tat…">${esc(m.notes[D.d] || '')}</textarea></div></div></details>`; }).join('')}</div>`
-      : '<p class="hint">Seyahat tarihlerini eklersen günler burada sıralanır (Seyahat › 🧳 Seyahat).</p>'}
+    ${Ds.length ? `<div class="alb-days">${Ds.map(dayCard).join('')}</div>` : '<p class="hint">Seyahat tarihlerini eklersen günler burada sıralanır (Seyahat › 🧳 Seyahat).</p>'}
     <div class="f"><label for="albEnd">Kapanış</label><textarea class="inp" id="albEnd" rows="2" data-alb="closing">${esc(m.story.closing ?? albEndAuto(Ds))}</textarea></div>
     <button type="button" class="btn pri block" data-albact="pdf" ${f.busy ? 'disabled' : ''}>📖 Albümü indir (PDF)</button>`;
 }
-// ✨ Leyo yazsın (web): yalnız paylaşılabilir bilgi gider (şehir, gezilen yerler, yolculuklar, öne çıkanlar, kullanıcının notları).
+// ✨ Leyo yazsın (web; Sonnet): yalnız paylaşılabilir bilgi gider (şehir, hava, gezilen yerler, yolculuklar, öne çıkanlar, koçanların adı,
+// saati ve rehberdeki açıklaması, kullanıcının notları). En çok 5 günlük parçalar aynı anda istenir (sunucunun 150 sn sınırı).
 async function albLeyo(){
   const f = form, m = alb(), Ds = albDays(); if (!(window.claude && window.claude.story) || !Ds.length) return;
   f.busy = 'leyo'; drawSheetKeep();
-  const tc = themeCountry(), trip = {ad:m.title || S.trip.name, ulke:tc ? tc[1] : '', kisi:headcount(), gunler:Ds.map(D => ({d:D.d, gun:D.label, tarih:D.date, sehir:D.city,
-    yerler:D.places.map(p => p.name).slice(0, 14), yolculuk:D.trips.map(t => `${t.from && t.to ? `${t.from} → ${t.to}` : t.desc}${t.t ? ' ' + t.t : ''}`), one_cikanlar:D.top, not:String(m.notes[D.d] || '').slice(0, 300)}))};
+  try { await albWeather(Ds); } catch(_) {}
+  const tc = themeCountry(), base = {ad:m.title || S.trip.name, ulke:tc ? tc[1] : '', kisi:headcount(), tum_gun:Ds.length, sehirler:albCities(Ds)};
+  const day = D => ({d:D.d, gun:D.label, tarih:D.date, sehir:D.city, hava:m.wx[D.d] ? `${wxOf(m.wx[D.d].c)[2]}, en yüksek ${m.wx[D.d].hi}°` : '', yerler:D.places.map(p => p.name).slice(0, 14),
+    yolculuk:D.trips.map(t => `${t.from && t.to ? `${t.from} → ${t.to}` : t.desc}${t.t ? ' ' + t.t : ''}`), one_cikanlar:D.top, yemekler:D.food,
+    kocanlar:D.stubs.map(s => ({ad:s.name, saat:s.t, bilgi:String(s.info || '').slice(0, 600)})), not:String(m.notes[D.d] || '').slice(0, 300)});
+  const parts = []; for (let k = 0; k < Ds.length; k += 5) parts.push(Ds.slice(k, k + 5));
   try {
-    const r = await window.claude.story({trip});
+    const res = await Promise.all(parts.map(p => window.claude.story({trip:{...base, gunler:p.map(day)}})));
     albPrev = {story:JSON.parse(JSON.stringify(m.story)), title:m.title};
-    if (r.baslik && !m.title) m.title = String(r.baslik).slice(0, 60);
-    if (r.giris) m.story.intro = r.giris; if (r.kapanis) m.story.closing = r.kapanis;
-    (r.gunler || []).forEach(g => { if (g && g.d && g.metin) m.story.days[g.d] = g.metin; });
+    const r0 = res[0], rz = res[res.length - 1];
+    if (r0.baslik && !m.title) m.title = String(r0.baslik).slice(0, 60);
+    if (r0.giris) m.story.intro = r0.giris; if (rz.kapanis) m.story.closing = rz.kapanis;
+    res.flatMap(r => r.gunler || []).forEach(g => { if (!g || !g.d) return; const D = Ds.find(x => x.d === g.d); if (!D) return;
+      if (g.metin) m.story.days[g.d] = g.metin; if (g.baslik) m.story.title[g.d] = String(g.baslik).slice(0, 50);
+      (g.kocanlar || []).forEach(k => { const s = D.stubs.find(x => albSlug(x.name) === albSlug(k.ad)) || D.stubs.find(x => albSlug(k.ad).includes(albSlug(x.name)) || albSlug(x.name).includes(albSlug(k.ad))); if (s && k.not) m.story.tk[s.key] = k.not; }); });
     m.leyoAt = Date.now(); albStore();
-    toast('✨ Leyo hikâyeleri yazdı; dilediğini değiştir.', {act:'albundo', label:'Geri al', ms:8000});
+    toast('✨ Leyo yazdı; dilediğini değiştir.', {act:'albundo', label:'Geri al', ms:8000});
   } catch(e){ toast(e && e.code === 'kredi' ? 'Leyo şu an yazamıyor; hazır metinler duruyor.' : 'Leyo yazamadı; bağlantını kontrol edip yeniden dene.'); }
   if (form === f){ f.busy = ''; drawSheetKeep(); }
 }
 function albUndo(){ if (!albPrev) return; const m = alb(); m.story = albPrev.story; m.title = albPrev.title; albPrev = null; albStore(); if (form && form.mode === 'album') drawSheetKeep(); toast('↩ Önceki metinler geri geldi.'); }
+// El yazısı (Caveat, Google Fonts; sayfada ilk kullanımda iner) PDF'ten önce yüklenir; gelmezse Bricolage'la yazılır.
+const HW = (w, px) => `${w} ${px}px "Caveat", "Bricolage Grotesque", cursive`;
+async function albFonts(){ try { await Promise.race([Promise.all([document.fonts.load(HW(600, 40), 'Ağış'), document.fonts.load(HW(700, 40), 'Ağış')]), new Promise(r => setTimeout(r, 4000))]); } catch(_) {} }
+// Bilet fotoğrafı (kesit için): buluttaki fetch ile alınır (tuval kirlenmesin), bu telefondaki doğrudan.
+async function albSrcImg(src){ let u = src, tmp = null; try { if (!/^data:/.test(u)){ const r = await fetch(u); if (!r.ok) return null; tmp = u = URL.createObjectURL(await r.blob()); } return await loadImg(u); } catch(_) { return null; } finally { if (tmp) URL.revokeObjectURL(tmp); } }
 async function exportAlbum(){
   const f = form, Ds = albDays();
   if (!Ds.length && !S.entries.some(e => e.kind === 'expense')) return toast('Albüm için seyahat tarihleri ya da birkaç harcama gerekiyor.');
@@ -10963,6 +11045,7 @@ async function exportAlbum(){
   toast('📖 Albüm hazırlanıyor…');
   try {
     let jsPDF; try { jsPDF = (await loadLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf')).jsPDF; } catch(_) { toast('PDF aracı indirilemedi; internet bağlantını kontrol et.'); return; }
+    await Promise.all([albFonts(), albWeather(Ds).catch(() => false)]);
     const logo = await svgImage(document.querySelector('.brand .logo')), N = await albumPages(null, true, Ds, logo);
     const doc = new jsPDF({unit:'pt', format:'a4', compress:true}); let i = 0;
     const emit = async cv => { albFoot(cv, ++i, N); if (i > 1) doc.addPage(); doc.addImage(cv.toDataURL('image/jpeg', .88), 'JPEG', 0, 0, 595.28, 841.89); cv.width = cv.height = 0; await new Promise(r => setTimeout(r, 0)); };
@@ -10973,9 +11056,32 @@ async function exportAlbum(){
   finally { if (f && form === f && f.mode === 'album'){ f.busy = ''; drawSheetKeep(); } }
 }
 const albFoot = (cv, i, N) => { if (i === 1) return; const g = cv.getContext('2d'); g.font = FONT(400, 17); g.fillStyle = '#93A4AE'; g.fillText(`Heybe · ${alb().title || S.trip.name} · ${i}/${N}`, 80, 1754 - 36); };
+// Pasaport damgası: çift halka, şehir adı ve tarih, iki yıldız; mürekkep rengi ve hafif eğik.
+function drawStamp(x, cx, cy, r, top, bottom, col, rot){
+  x.save(); x.translate(cx, cy); x.rotate(rot); x.globalAlpha = .82; x.strokeStyle = col; x.fillStyle = col; x.textAlign = 'center';
+  x.lineWidth = r * .07; x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.stroke();
+  x.lineWidth = r * .03; x.beginPath(); x.arc(0, 0, r * .78, 0, Math.PI * 2); x.stroke();
+  let px = r * .36; x.font = FONT(800, px); while (x.measureText(top).width > r * 1.3 && px > r * .16){ px -= 1; x.font = FONT(800, px); }
+  x.fillText(top, 0, px * .32);
+  x.font = FONT(700, r * .15); x.fillText(bottom, 0, r * .5); x.fillText('★  ★', 0, -r * .38);
+  x.restore(); x.textAlign = 'left';
+}
+// Biz: herkese kayıtlardan çıkan olumlu bir ünvan (her ünvan bir kişiye, en yüksek değere); kalanlar "Yol arkadaşımız".
+function albTitles(){
+  const ppl = S.people.filter(p => !p.left), ids = new Set(ppl.map(p => p.id)), ex = S.entries.filter(e => e.kind === 'expense');
+  const sum = f => { const o = {}; ex.filter(e => e.paidBy !== 'kasa' && f(e)).forEach(e => o[e.paidBy] = (o[e.paidBy] || 0) + toCents(e)); return o; };
+  const cnt = (f, k = 'paidBy') => { const o = {}; ex.filter(e => e[k] && e[k] !== 'kasa' && f(e)).forEach(e => o[e[k]] = (o[e[k]] || 0) + 1); return o; };
+  const T = [['☕', 'Kahveleri ısmarlayan', cnt(e => /kahve|coffee|caf[eé]|espresso|cappuccino|latte/i.test(e.desc || ''))], ['🍽️', 'Sofranın sahibi', sum(e => e.cat === 'yeme')],
+    ['🧭', 'Yolların kaptanı', sum(e => e.cat === 'ulasim' || e.cat === 'ucak')], ['🎟️', 'Biletlerin ustası', sum(e => e.cat === 'aktivite')], ['🏠', 'Ev sahibimiz', sum(e => e.cat === 'konaklama')],
+    ['🛒', 'Market şefi', sum(e => e.cat === 'market')], ['📸', 'Fiş avcısı', cnt(e => e.photoId || e.hasPhoto, 'by')], ['✍️', 'Defterin kalemi', cnt(() => true, 'by')]];
+  const out = {}, used = new Set();
+  for (const [ic, t, o] of T){ const b = Object.entries(o).filter(([id, v]) => ids.has(id) && !used.has(id) && v > 0).sort((a, c) => c[1] - a[1])[0]; if (b){ out[b[0]] = [ic, t]; used.add(b[0]); } }
+  return ppl.map(p => ({p, ic:(out[p.id] || ['🧳'])[0], t:(out[p.id] || [0, 'Yol arkadaşımız'])[1]}));
+}
 // Sayfalar. emit(tuval) her biten sayfada (async); dry: yalnız sayfa sayısı (tek tuval, fotoğraf açılmaz). Sayfa sayısını döndürür.
 async function albumPages(emit, dry, Ds, logo){
   const W = 1240, H = 1754, M = 80, m = alb(), C = compute(S), n = headcount(), tc = themeCountry(), A = tc ? tc[2] : '#0B6B6B', Q = tc ? tc[3] : '#F0AE55';
+  const INK = ['#1F4E9E', '#A23B2A', '#5B3A8C', '#2E6B3E'];
   let cv = null, cv0 = null, x, y, pages = 0;
   const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
   const page = async () => { if (cv && !dry) await emit(cv); cv = dry ? (cv0 = cv0 || mk()) : mk(); x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); y = M; pages++; };
@@ -10984,32 +11090,34 @@ async function albumPages(emit, dry, Ds, logo){
   // Fotoğraf kutuyu doldurur (kırpar), köşeler yuvarlak; fotoğraf yoksa açık zemin.
   const photo = (im, X, Y, w, h, r = 22) => { x.save(); rr(x, X, Y, w, h, r); x.clip(); x.fillStyle = RPT.soft; x.fillRect(X, Y, w, h);
     if (im){ const k = Math.max(w / im.naturalWidth, h / im.naturalHeight), iw = im.naturalWidth * k, ih = im.naturalHeight * k; x.drawImage(im, X + (w - iw) / 2, Y + (h - ih) / 2, iw, ih); } x.restore(); };
+  // Polaroid: beyaz çerçeve, altı kalın (el yazısıyla alt yazı), hafif eğik ve gölgeli.
+  const polaroid = (im, X, Y, w, h, rot = 0, cap = '') => { const b = Math.max(14, w * .045), bb = Math.max(56, h * .13);
+    x.save(); x.translate(X + w / 2, Y + h / 2); x.rotate(rot); x.translate(-w / 2, -h / 2);
+    x.fillStyle = 'rgba(19,35,44,.12)'; x.fillRect(6, 8, w, h); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.strokeStyle = '#E2E6E8'; x.lineWidth = 2; x.strokeRect(0, 0, w, h);
+    photo(im, b, b, w - 2 * b, h - b - bb, 2);
+    if (cap){ x.fillStyle = RPT.ink; x.font = HW(600, Math.min(40, bb * .55)); x.textAlign = 'center'; x.fillText(fit(cap, w - 2 * b, HW(600, Math.min(40, bb * .55))), w / 2, h - bb * .32); x.textAlign = 'left'; }
+    x.restore(); };
   const lines = (s0, w, font) => { x.font = font; const out = [];
     for (const para of String(s0 || '').split(/\n+/)){ let line = ''; for (const wd of para.split(/\s+/).filter(Boolean)){ const t = line ? line + ' ' + wd : wd; if (x.measureText(t).width > w && line){ out.push(line); line = wd; } else line = t; } if (line) out.push(line); }
     return out; };
   const text = (s0, X, Y, w, font, lh, maxL = 99, col = RPT.ink) => { const L = lines(s0, w, font); x.font = font; x.fillStyle = col;
     L.slice(0, maxL).forEach((l, k) => x.fillText(k === maxL - 1 && L.length > maxL ? fit(l + ' …', w, font) : l, X, Y + k * lh)); return Y + Math.min(L.length, maxL) * lh; };
   const band = (col, h) => { x.fillStyle = col; x.fillRect(0, 0, W, h); };
-  // Fotoğraf düzeni: 1 büyük; 2 yan yana (ikisi de yataysa alt alta); 3 solda büyük + sağda iki; 4 eşit 2 × 2.
-  const grid = (ims, X, Y, w, h) => { const g = 18, k = ims.length;
-    if (k === 1) photo(ims[0], X, Y, w, h);
-    else if (k === 2){ const land = ims.every(im => im && im.naturalWidth > im.naturalHeight);
-      if (land){ photo(ims[0], X, Y, w, (h - g) / 2); photo(ims[1], X, Y + (h + g) / 2, w, (h - g) / 2); } else { photo(ims[0], X, Y, (w - g) / 2, h); photo(ims[1], X + (w + g) / 2, Y, (w - g) / 2, h); } }
-    else if (k === 3){ const bw = (w - g) * .6; photo(ims[0], X, Y, bw, h); photo(ims[1], X + bw + g, Y, w - bw - g, (h - g) / 2); photo(ims[2], X + bw + g, Y + (h + g) / 2, w - bw - g, (h - g) / 2); }
-    else ims.slice(0, 4).forEach((im, i) => photo(im, X + (i % 2) * ((w + g) / 2), Y + Math.floor(i / 2) * ((h + g) / 2), (w - g) / 2, (h - g) / 2)); };
   const guides = albGuides(), exps = S.entries.filter(e => e.kind === 'expense');
   const nPl = Ds.reduce((a, D) => a + D.places.length, 0), km = Ds.reduce((a, D) => a + (D.walk ? D.walk.km : 0), 0), steps = Ds.reduce((a, D) => a + (D.walk ? D.walk.steps : 0), 0);
-  const allPh = Object.values(m.ph.days).flat(), nPh = allPh.length + (m.ph.cover ? 1 : 0), cities = albCities(Ds);
+  const allPh = Object.values(m.ph.days).flat(), nPh = allPh.length + Object.keys(m.ph.tk).length + (m.ph.cover ? 1 : 0), cities = albCities(Ds);
   const dayCol = (d, k = 0) => { const i = Ds.findIndex(D => D.d === d); return '#' + G_COLORS[(i < 0 ? k : i) % G_COLORS.length]; };
-  // Boş gün (hikâye, not, fotoğraf, yer, yolculuk yok) albüme girmez.
-  const full = D => !!(String(m.story.days[D.d] ?? albAuto(D)).trim() || String(m.notes[D.d] || '').trim() || (m.ph.days[D.d] || []).length || D.places.length || D.trips.length);
+  const stampOf = c => { const D = Ds.find(z => z.cityNow === c && z.firstInCity) || Ds.find(z => z.cityNow === c); return [c.toLocaleUpperCase('tr'), D ? new Date(D.t).toLocaleDateString('tr-TR', {day:'2-digit', month:'short', year:'numeric'}).toLocaleUpperCase('tr') : '', INK[Math.max(0, cities.indexOf(c)) % INK.length]]; };
+  // Boş gün (hikâye, not, fotoğraf, koçan, yer, yolculuk yok) albüme girmez.
+  const full = D => !!(String(m.story.days[D.d] ?? albAuto(D)).trim() || String(m.notes[D.d] || '').trim() || (m.ph.days[D.d] || []).length || D.places.length || D.trips.length || D.stubs.length);
 
-  // 1) Kapak: seçilen fotoğraf tam sayfa (altta koyu geçiş) ya da bayrak renklerinde degrade; ad, tarih, kişiler.
+  // 1) Kapak: seçilen fotoğraf tam sayfa (altta koyu geçiş) ya da bayrak renklerinde degrade; şehir damgaları, ad, tarih, kişiler.
   await page();
   const cover = await pic(m.ph.cover);
   if (m.ph.cover){ photo(cover, 0, 0, W, H, 0); const g = x.createLinearGradient(0, H * .3, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.8)'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
   else { const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, A); g.addColorStop(1, mixHex(A, '#0b0f12', .7)); x.fillStyle = g; x.fillRect(0, 0, W, H); if (logo) x.drawImage(logo, M, 230, 200, 200); }
   x.fillStyle = Q; x.fillRect(0, 0, W, 22);
+  cities.slice(0, 4).forEach((c, k) => { const [t1, t2] = stampOf(c); drawStamp(x, W - M - 120 - (k % 2) * 250, 230 + Math.floor(k / 2) * 250 + (k % 2) * 60, 105, t1, t2, '#ffffff', (k % 2 ? 1 : -1) * (.12 + k * .05)); });
   const ppl = S.people.filter(p => !p.left), rows = (() => { let r = 1, px = 0; x.font = FONT(600, 30); ppl.forEach(p => { const w = x.measureText(`${emojiOf(p.id)}  ${p.name}`).width + 64; if (px + w > W - 2 * M){ r++; px = 0; } px += w; }); return Math.min(r, 3); })();
   let cy = H - 330 - rows * 74;
   const tl0 = lines(m.title || S.trip.name, W - 2 * M, DF(800, 96)).slice(0, 2), ty0 = cy - 40 - (tl0.length - 1) * 100;
@@ -11021,7 +11129,7 @@ async function albumPages(emit, dry, Ds, logo){
       x.fillStyle = 'rgba(255,255,255,.18)'; rr(x, px, py, w, 60, 30); x.fill(); x.fillStyle = '#fff'; x.fillText(t, px + 25, py + 41); px += w + 14; } }
   x.globalAlpha = .75; x.fillStyle = '#fff'; x.font = FONT(700, 24); x.fillText('Heybe ile tutuldu', M, H - 70); x.globalAlpha = 1;
 
-  // 2) Bir bakışta: giriş, dokuz gösterge (para olarak yalnız grubun toplamı), kişiler.
+  // 2) Bir bakışta: giriş, dokuz gösterge (para olarak yalnız grubun toplamı), kişiler, gün gün liste.
   await page(); band(A, 14);
   x.fillStyle = RPT.ink; x.font = DF(800, 60); x.fillText('Bir bakışta', M, y + 60); y += 100;
   const intro = m.story.intro ?? albIntroAuto(Ds); if (intro) y = text(intro, M, y + 20, W - 2 * M, FONT(500, 32), 46, 6) + 30;
@@ -11041,22 +11149,23 @@ async function albumPages(emit, dry, Ds, logo){
   { const DL = Ds.filter(full), fitN = Math.floor((H - M - 60 - y - 60) / 50);
     if (DL.length && fitN >= 3){ x.fillStyle = RPT.ink; x.font = DF(800, 34); x.fillText('Gün gün', M, y + 34); y += 62;
       DL.slice(0, fitN).forEach(D => { x.fillStyle = dayCol(D.d); rr(x, M, y + 4, 24, 24, 7); x.fill();
-        x.fillStyle = RPT.ink; x.font = FONT(700, 24); x.fillText(fit(`${D.label} · ${D.date}`, 520, FONT(700, 24)), M + 40, y + 24);
+        x.fillStyle = RPT.ink; x.font = FONT(700, 24); x.fillText(fit(`${D.label} · ${m.story.title[D.d] || D.date}`, 560, FONT(700, 24)), M + 40, y + 24);
         x.fillStyle = RPT.muted; x.font = FONT(500, 22); x.textAlign = 'right';
-        x.fillText(fit([D.city, D.trips.length ? D.trips.map(t => t.ic).join('') : '', D.places.length ? D.places.length + ' yer' : '', (m.ph.days[D.d] || []).length ? (m.ph.days[D.d] || []).length + ' 📷' : ''].filter(Boolean).join(' · '), W - 2 * M - 600, FONT(500, 22)), W - M, y + 24);
+        x.fillText(fit([D.city, m.wx[D.d] ? `${wxOf(m.wx[D.d].c)[1]} ${m.wx[D.d].hi}°` : '', D.places.length ? D.places.length + ' yer' : '', (m.ph.days[D.d] || []).length ? (m.ph.days[D.d] || []).length + ' 📷' : ''].filter(Boolean).join(' · '), W - 2 * M - 640, FONT(500, 22)), W - M, y + 24);
         x.textAlign = 'left'; y += 50; });
       if (DL.length > fitN){ x.fillStyle = RPT.muted; x.font = FONT(500, 22); x.fillText(`+${DL.length - fitN} gün daha`, M + 40, y + 20); } } }
 
-  // 3) Şehir şehir rota haritası (onaylı rehber): her gün kendi renginde çizgi ve numaralı duraklar; ev 🏠.
+  // 3) Şehir şehir rota haritası (onaylı rehber): her gün kendi renginde çizgi ve numaralı duraklar; ev 🏠; köşede şehrin damgası.
   for (const [c, g] of guides){
     const N = gNums(c, g), dl = g.days.map((xd, k) => ({k, xd, pts:xd.items.filter(it => N.has(it) && +it.lat && +it.lon)})).filter(o => o.pts.length);
     if (!dl.length) continue;
     await page(); band(A, 14);
     const H0 = g.home && +g.home.lat ? {lat:+g.home.lat, lon:+g.home.lon} : null, all = dl.flatMap(o => o.pts).map(it => ({lat:+it.lat, lon:+it.lon})).concat(H0 ? [H0] : []);
     const dkm = dl.reduce((a, o) => { const s0 = gSteps(c, o.xd); return a + (s0 ? s0.km : 0); }, 0);
-    x.fillStyle = RPT.ink; x.font = DF(800, 54); x.fillText(fit(`🗺️  ${c} rotası`, W - 2 * M, DF(800, 54)), M, y + 54); y += 84;
-    x.fillStyle = RPT.muted; x.font = FONT(500, 24); x.fillText(`${dl.length} gün · ${dl.reduce((a, o) => a + o.pts.length, 0)} durak${dkm ? ' · ' + gKmTxt(dkm) + ' yürüyüş' : ''}`, M, y + 10); y += 40;
-    const MX = M, MY = y, MW = W - 2 * M, MH = Math.min(1280, H - M - 60 - y - Math.ceil(dl.length / 2) * 52 - 30);
+    x.fillStyle = RPT.ink; x.font = DF(800, 54); x.fillText(fit(`🗺️  ${c} rotası`, W - 2 * M - 260, DF(800, 54)), M, y + 54); y += 84;
+    { const [t1, t2, col] = stampOf(c); drawStamp(x, W - M - 110, M + 70, 92, t1, t2, col, .14); }
+    x.fillStyle = RPT.muted; x.font = FONT(500, 24); x.fillText(`${dl.length} gün · ${dl.reduce((a, o) => a + o.pts.length, 0)} durak${dkm ? ' · ' + gKmTxt(dkm) + ' yürüyüş' : ''}`, M, y + 10); y += 70;
+    const MX = M, MY = y, MW = W - 2 * M, MH = Math.min(1240, H - M - 60 - y - Math.ceil(dl.length / 2) * 52 - 30);
     x.fillStyle = RPT.soft; rr(x, MX, MY, MW, MH, 26); x.fill(); x.strokeStyle = RPT.line; x.lineWidth = 1;
     for (let i = 1; i < 6; i++){ x.beginPath(); x.moveTo(MX + MW * i / 6, MY); x.lineTo(MX + MW * i / 6, MY + MH); x.moveTo(MX, MY + MH * i / 6); x.lineTo(MX + MW, MY + MH * i / 6); x.stroke(); }
     const la = all.map(p => p.lat), lo = all.map(p => p.lon), la0 = Math.min(...la), la1 = Math.max(...la), lo0 = Math.min(...lo), lo1 = Math.max(...lo);
@@ -11075,33 +11184,80 @@ async function albumPages(emit, dry, Ds, logo){
       x.fillText(fit(`${dn >= 1 ? dn + '. gün' : new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'short'})} · ${o.pts.length} durak${s0 ? ' · ' + gKmTxt(s0.km) : ''}`, (W - 2 * M) / 2 - 50, FONT(600, 22)), lx + 38, ly + 21); });
   }
 
-  // 4) Gün sayfaları: renkli başlık, yolculuk kartları, hikâye, fotoğraflar, gezilen yerler, not. Sığmayan devam sayfasına.
+  // 4) Gün sayfaları: renkli başlık (günün adı, tarih, şehir, hava; şehrin ilk gününde damga), biniş kartları (+ biletten kesit), hikâye,
+  // polaroid fotoğraflar, bilet koçanları (tarih notu, fotoğraf), gezdiğimiz yerler, günün tadı, el yazısıyla not. Sığmayan devam sayfasına.
   for (const D of Ds.filter(full)){
-    const col = dayCol(D.d), ids = (m.ph.days[D.d] || []).slice(0, 4), note = String(m.notes[D.d] || '').trim(), story = String(m.story.days[D.d] ?? albAuto(D)).trim();
-    const head = cont => { band(col, cont ? 150 : 250); x.fillStyle = '#fff';
-      if (cont){ x.font = DF(800, 54); x.fillText(`${D.label} · devam`, M, 98); y = 200; return; }
-      x.font = DF(800, 90); x.fillText(D.label, M, 140); x.font = FONT(600, 32); x.globalAlpha = .92; x.fillText(fit([D.date, D.city].filter(Boolean).join('  ·  '), W - 2 * M, FONT(600, 32)), M, 198); x.globalAlpha = 1; y = 300; };
+    const col = dayCol(D.d), ids = (m.ph.days[D.d] || []).slice(0, 4), note = String(m.notes[D.d] || '').trim(), story = String(m.story.days[D.d] ?? albAuto(D)).trim(), ttl = String(m.story.title[D.d] || '').trim(), wx = m.wx[D.d];
+    const head = cont => { band(col, cont ? 150 : 290); x.fillStyle = '#fff';
+      if (cont){ x.font = DF(800, 54); x.fillText(fit(`${D.label}${ttl ? ' · ' + ttl : ''} · devam`, W - 2 * M, DF(800, 54)), M, 98); y = 200; return; }
+      const sw = D.firstInCity && D.cityNow ? 250 : 0;
+      x.font = DF(800, 90); x.fillText(D.label, M, 132);
+      if (ttl){ x.font = DF(800, 46); x.fillText(fit(ttl, W - 2 * M - sw, DF(800, 46)), M, 192); }
+      x.font = FONT(600, 30); x.globalAlpha = .92; x.fillText(fit([D.date, D.city, wx ? wxTxt(wx) : ''].filter(Boolean).join('  ·  '), W - 2 * M - sw, FONT(600, 30)), M, ttl ? 246 : 200); x.globalAlpha = 1;
+      if (sw){ const [t1, t2] = stampOf(D.cityNow); drawStamp(x, W - M - 105, 150, 96, t1, t2, '#ffffff', -.16); }
+      y = 340; };
+    const need = async h => { if (y + h > H - M - 40){ await page(); head(true); } };
     await page(); head(false);
     const stats = [D.places.length ? `📍 ${D.places.length} yer` : '', D.walk ? `🚶 ${gKmTxt(D.walk.km)} · ~${D.walk.steps.toLocaleString('tr-TR')} adım` : '', D.nExp ? `🧾 grubun harcaması ${eu(D.spend)}` : ''].filter(Boolean).join('     ');
     if (stats){ x.fillStyle = RPT.muted; x.font = FONT(600, 24); x.fillText(fit(stats, W - 2 * M, FONT(600, 24)), M, y); y += 46; }
-    // yolculuk kartları (biniş kartı görünümünde)
+    // Biniş kartı: sol ana bölüm, sağda delikli koçan; altta istenirse biletin fotoğrafından seçilen kesit.
     for (const t of D.trips.slice(0, 2)){
-      x.fillStyle = mixHex(col, '#ffffff', .88); rr(x, M, y, W - 2 * M, 112, 22); x.fill();
-      x.save(); x.setLineDash([8, 8]); x.strokeStyle = mixHex(col, '#ffffff', .5); x.lineWidth = 3; x.beginPath(); x.moveTo(W - M - 230, y + 14); x.lineTo(W - M - 230, y + 98); x.stroke(); x.restore();
-      x.font = FONT(500, 52); x.fillStyle = RPT.ink; x.fillText(t.ic, M + 26, y + 74);
-      x.font = DF(800, 36); x.fillText(fit(t.from && t.to ? `${t.from} → ${t.to}` : t.desc, W - 2 * M - 360, DF(800, 36)), M + 110, y + 58);
-      if (t.from && t.to && t.desc){ x.fillStyle = RPT.muted; x.font = FONT(500, 21); x.fillText(fit(t.desc, W - 2 * M - 360, FONT(500, 21)), M + 110, y + 90); }
-      x.textAlign = 'center'; x.fillStyle = RPT.ink; x.font = DF(800, 40); x.fillText(t.t || '—', W - M - 115, y + 62);
-      if (t.t2){ x.fillStyle = RPT.muted; x.font = FONT(500, 20); x.fillText(`varış ${t.t2}`, W - M - 115, y + 92); } x.textAlign = 'left';
-      y += 132; }
-    if (story){ y = text(story, M, y + 36, W - 2 * M, FONT(500, 31), 46, 9) + 18; }
-    const pr = Math.ceil(Math.min(D.places.length, 20) / 2), placesH = D.places.length ? 76 + pr * 46 + (D.places.length > 20 ? 30 : 0) : 0;
-    const noteL = note ? lines(note, W - 2 * M - 90, FONT(500, 27)).slice(0, 6) : [], noteH = note ? 70 + noteL.length * 40 : 0;
-    const photos = async room => { const ims = []; for (const id of ids) ims.push(await pic(id)); const h0 = Math.min(room - 34, ids.length === 1 ? 900 : 1040); grid(ims, M, y, W - 2 * M, h0); y += h0 + 34; };
-    const late = ids.length && H - M - 40 - y - placesH - noteH < 480;   // fotoğraflar bu sayfaya sığmıyor: yerler ve not önce, fotoğraflar devam sayfasında
-    if (ids.length && !late) await photos(H - M - 40 - y - placesH - noteH);
+      const cut = m.cut[t.id] && m.cut[t.id].on && t.src, ph = 230 + (cut ? 290 : 0); await need(ph + 20);
+      const bx = M, by = y, bw = W - 2 * M, bh = 210, sx0 = bx + bw - 290;
+      x.fillStyle = mixHex(col, '#ffffff', .9); rr(x, bx, by, bw, bh, 24); x.fill(); x.strokeStyle = mixHex(col, '#ffffff', .55); x.lineWidth = 2; rr(x, bx, by, bw, bh, 24); x.stroke();
+      x.fillStyle = '#fff'; [by, by + bh].forEach(cy2 => { x.beginPath(); x.arc(sx0, cy2, 18, 0, Math.PI * 2); x.fill(); });
+      x.save(); x.setLineDash([10, 9]); x.strokeStyle = mixHex(col, '#ffffff', .45); x.lineWidth = 3; x.beginPath(); x.moveTo(sx0, by + 22); x.lineTo(sx0, by + bh - 22); x.stroke(); x.restore();
+      x.fillStyle = col; x.font = FONT(800, 22); x.fillText(t.air ? 'BİNİŞ KARTI' : 'YOLCULUK BİLETİ', bx + 36, by + 46);
+      x.fillStyle = RPT.muted; x.font = FONT(600, 22); x.fillText(fit(new Date(D.t).toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'}), 300, FONT(600, 22)), bx + 300, by + 46);
+      x.fillStyle = RPT.ink;
+      if (t.from && t.to){ x.font = DF(800, 50); const a = fit(t.from.toLocaleUpperCase('tr'), 320, DF(800, 50)), b = fit(t.to.toLocaleUpperCase('tr'), 320, DF(800, 50)), aw = x.measureText(a).width;
+        x.fillText(a, bx + 36, by + 118); x.font = FONT(500, 46); x.fillText(t.ic, bx + 56 + aw, by + 116); x.font = DF(800, 50); x.fillText(b, bx + 126 + aw, by + 118); }
+      else { x.font = DF(800, 44); x.fillText(fit(t.desc, sx0 - bx - 70, DF(800, 44)), bx + 36, by + 116); }
+      x.fillStyle = RPT.muted; x.font = FONT(500, 22); x.fillText(fit(t.from && t.to ? t.desc : '', sx0 - bx - 70, FONT(500, 22)), bx + 36, by + 166);
+      x.textAlign = 'center'; x.fillStyle = RPT.muted; x.font = FONT(700, 20); x.fillText('KALKIŞ', sx0 + 145, by + 58);
+      x.fillStyle = RPT.ink; x.font = DF(800, 56); x.fillText(t.t || '—', sx0 + 145, by + 122);
+      if (t.t2){ x.fillStyle = RPT.muted; x.font = FONT(600, 22); x.fillText(`varış ${t.t2}`, sx0 + 145, by + 166); } x.textAlign = 'left';
+      y += bh + 20;
+      if (cut){ const im = dry ? null : await albSrcImg(t.src), sh = 250, sw2 = W - 2 * M - 40, X0 = M + 20, Y0 = y;
+        x.save(); x.translate(X0 + sw2 / 2, Y0 + sh / 2); x.rotate(-.012); x.translate(-sw2 / 2, -sh / 2);
+        x.fillStyle = 'rgba(19,35,44,.12)'; x.fillRect(6, 8, sw2, sh); x.fillStyle = '#fff'; x.fillRect(0, 0, sw2, sh);
+        if (im){ const bandH = im.naturalWidth * sh / sw2, sy0 = Math.max(0, (im.naturalHeight - bandH) * (m.cut[t.id].y || 0) / 100); x.drawImage(im, 0, sy0, im.naturalWidth, Math.min(bandH, im.naturalHeight), 0, 0, sw2, sh); }
+        else { x.fillStyle = RPT.soft; x.fillRect(0, 0, sw2, sh); }
+        x.strokeStyle = '#E2E6E8'; x.lineWidth = 2; x.strokeRect(0, 0, sw2, sh); x.restore();
+        x.fillStyle = RPT.muted; x.font = HW(600, 30); x.fillText('biletimizden', X0 + sw2 - 170, Y0 + sh + 36); y += sh + 50; }
+      y += 14; }
+    if (story){ const L = lines(story, W - 2 * M, FONT(500, 31)).slice(0, 9); await need(L.length * 46 + 30); y = text(story, M, y + 36, W - 2 * M, FONT(500, 31), 46, 9) + 22; }
+    // Polaroid fotoğraflar: 1 büyük; 2 yan yana; 3 büyük + iki küçük; 4 eşit; hafif eğik.
+    if (ids.length){
+      const capH = ids.length === 1 ? 820 : ids.length === 2 ? 640 : 900;
+      if (H - M - 40 - y < 520){ await page(); head(true); }
+      const h0 = Math.min(capH, H - M - 40 - y - 20), ims = []; for (const id of ids) ims.push(await pic(id));
+      const w0 = W - 2 * M, g = 28, k = ims.length;
+      if (k === 1) polaroid(ims[0], M + w0 * .08, y, w0 * .84, h0, -.02);
+      else if (k === 2) ims.forEach((im, i) => polaroid(im, M + i * ((w0 + g) / 2), y + (i ? 26 : 0), (w0 - g) / 2, h0 - 26, i ? .03 : -.025));
+      else if (k === 3){ const bw = (w0 - g) * .58; polaroid(ims[0], M, y, bw, h0, -.02); polaroid(ims[1], M + bw + g, y + 10, w0 - bw - g, (h0 - g) / 2, .035); polaroid(ims[2], M + bw + g, y + (h0 + g) / 2, w0 - bw - g, (h0 - g) / 2 - 10, -.03); }
+      else ims.forEach((im, i) => polaroid(im, M + (i % 2) * ((w0 + g) / 2), y + Math.floor(i / 2) * ((h0 + g) / 2), (w0 - g) / 2, (h0 - g) / 2, (i % 3 ? .025 : -.02) * (i % 2 ? 1 : -1)));
+      y += h0 + 40;
+    }
+    // Bilet koçanları: solda delikli koçan (ad, saat), ortada tarih notu, sağda o yerin polaroidi.
+    if (D.stubs.length){
+      await need(280); x.fillStyle = RPT.ink; x.font = DF(800, 34); x.fillText('🎟️  Günün biletleri ve durakları', M, y + 34); y += 64;
+      for (const s of D.stubs){
+        const pid = m.ph.tk[s.key], nt = String(m.story.tk[s.key] ?? albTkAuto(s)).trim(), rowH = 230; await need(rowH + 16);
+        const sx = M, sy = y, sw0 = 330, sh0 = 190, pw = pid ? 200 : 0;
+        x.fillStyle = mixHex(col, '#ffffff', .88); rr(x, sx, sy, sw0, sh0, 18); x.fill();
+        x.fillStyle = '#fff'; [sy + 48, sy + sh0 - 48].forEach(cy2 => { x.beginPath(); x.arc(sx + sw0, cy2, 14, 0, Math.PI * 2); x.fill(); });
+        x.save(); x.setLineDash([8, 8]); x.strokeStyle = mixHex(col, '#ffffff', .4); x.lineWidth = 3; x.beginPath(); x.moveTo(sx + sw0 - 64, sy + 16); x.lineTo(sx + sw0 - 64, sy + sh0 - 16); x.stroke(); x.restore();
+        x.fillStyle = col; x.font = FONT(800, 18); x.fillText(s.bilet ? 'GİRİŞ BİLETİ' : 'GÜNÜN DURAĞI', sx + 24, sy + 38);
+        x.fillStyle = RPT.ink; const nl = lines(s.name, sw0 - 110, DF(800, 30)).slice(0, 2); x.font = DF(800, 30); nl.forEach((l, k2) => x.fillText(l, sx + 24, sy + 82 + k2 * 36));
+        if (s.t){ x.fillStyle = RPT.muted; x.font = FONT(700, 26); x.fillText(s.t, sx + 24, sy + sh0 - 26); }
+        x.save(); x.translate(sx + sw0 - 32, sy + sh0 / 2); x.rotate(-Math.PI / 2); x.textAlign = 'center'; x.fillStyle = col; x.font = FONT(800, 18); x.fillText(s.bilet ? 'TEK GİRİŞ' : '★ ★ ★', 0, 6); x.restore();
+        if (nt) text(nt, sx + sw0 + 30, sy + 38, W - 2 * M - sw0 - 30 - (pw ? pw + 30 : 0), FONT(500, 25), 36, 5, RPT.ink);
+        if (pid) polaroid(await pic(pid), W - M - pw, sy - 6, pw, rowH - 10, .04, '');
+        y += rowH + 12; }
+    }
     if (D.places.length){
-      if (y + placesH > H - M - 40){ await page(); head(true); }
+      const pr = Math.ceil(Math.min(D.places.length, 20) / 2); await need(76 + pr * 46);
       x.fillStyle = RPT.ink; x.font = DF(800, 32); x.fillText('Gezdiğimiz yerler', M, y + 32); y += 62;
       const cw = (W - 2 * M) / 2;
       D.places.slice(0, 20).forEach((p, i) => { const lx = M + (i >= pr ? cw : 0), ly = y + (i % pr) * 46;
@@ -11111,40 +11267,63 @@ async function albumPages(emit, dry, Ds, logo){
       y += pr * 46 + 14;
       if (D.places.length > 20){ x.fillStyle = RPT.muted; x.font = FONT(500, 20); x.fillText(`+${D.places.length - 20} yer daha`, M, y + 8); y += 30; }
     }
-    if (note){
-      if (y + noteH > H - M - 40){ await page(); head(true); }
-      x.fillStyle = mixHex(col, '#ffffff', .9); rr(x, M, y, W - 2 * M, noteH, 22); x.fill(); x.fillStyle = col; x.fillRect(M, y, 8, noteH);
-      x.fillStyle = RPT.ink; x.font = FONT(500, 40); x.fillText('“', M + 30, y + 58);
-      x.font = FONT(500, 27); x.fillStyle = RPT.ink; noteL.forEach((l, k) => x.fillText(l, M + 70, y + 54 + k * 40)); y += noteH + 20;
-    }
-    if (late){ if (H - M - 40 - y < 480){ await page(); head(true); } await photos(H - M - 40 - y); }
-    else if (!ids.length && H - M - 60 - y > 560){ // fotoğrafsız seyrek gün: ortada günün simgesi
-      const cy2 = y + (H - M - 60 - y) / 2, ic = D.trips.length ? D.trips[0].ic : D.places.length ? '📍' : '☀️';
+    if (D.food.length){ const fl = lines(D.food.join('  ·  '), W - 2 * M - 80, FONT(600, 26)).slice(0, 3), fh = 70 + fl.length * 38; await need(fh + 16);
+      x.fillStyle = '#FFF4E8'; rr(x, M, y, W - 2 * M, fh, 20); x.fill(); x.fillStyle = '#B5651D'; x.font = FONT(800, 22); x.fillText('🍽️  GÜNÜN TADI', M + 30, y + 42);
+      x.fillStyle = RPT.ink; x.font = FONT(600, 26); fl.forEach((l, k2) => x.fillText(l, M + 30, y + 84 + k2 * 38)); y += fh + 20; }
+    // Not: sarı yapışkan kâğıt üstünde el yazısıyla, hafif eğik.
+    if (note){ const nl = lines(note, W - 2 * M - 160, HW(600, 42)).slice(0, 6), nh = 70 + nl.length * 50; await need(nh + 30);
+      x.save(); x.translate(M + (W - 2 * M) / 2, y + nh / 2 + 6); x.rotate(-.012); x.translate(-(W - 2 * M - 60) / 2, -nh / 2);
+      x.fillStyle = 'rgba(19,35,44,.10)'; x.fillRect(6, 8, W - 2 * M - 60, nh); x.fillStyle = '#FFF6C9'; x.fillRect(0, 0, W - 2 * M - 60, nh);
+      x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect((W - 2 * M - 60) / 2 - 70, -14, 140, 34);
+      x.fillStyle = '#3B3420'; x.font = HW(600, 42); nl.forEach((l, k2) => x.fillText(l, 50, 66 + k2 * 50)); x.restore(); y += nh + 36; }
+    if (!ids.length && !D.stubs.length && H - M - 60 - y > 560){ // fotoğrafsız seyrek gün: ortada günün simgesi
+      const cy2 = y + (H - M - 60 - y) / 2, ic = D.trips.length ? D.trips[0].ic : D.places.length ? '📍' : wx ? wxOf(wx.c)[1] : '☀️';
       x.beginPath(); x.arc(W / 2, cy2, 170, 0, Math.PI * 2); x.fillStyle = mixHex(col, '#ffffff', .9); x.fill();
       x.font = FONT(500, 150); x.textAlign = 'center'; x.fillStyle = RPT.ink; x.globalAlpha = .9; x.fillText(ic, W / 2, cy2 + 52); x.globalAlpha = 1; x.textAlign = 'left'; }
   }
 
-  // 5) Seyahatin hikâyesi: grubun eğlenceli satırları ve sayımları (yalnız ortak kayıtlar).
-  const st = storyFacts(), fun = funCounts(true);
-  if (st || fun.length){
+  // 5) Seyahat karnesi: sayılarla seyahat (yürüyüş, adım, yer, bilet, fotoğraf, kahve, en sıcak gün, yağmurlu gün, en çok yürüdüğümüz gün),
+  // seyahatin hikâyesi (grubun satırları; yalnız ortak kayıtlar) ve Biz (herkese kayıtlardan olumlu bir ünvan).
+  {
+    const st = storyFacts(), fun = funCounts(true), WXd = Ds.filter(D => m.wx[D.d]), hot = WXd.slice().sort((a, c) => m.wx[c.d].hi - m.wx[a.d].hi)[0];
+    const rain = WXd.filter(D => m.wx[D.d].c >= 51 && m.wx[D.d].c <= 82).length, walkD = Ds.filter(D => D.walk).sort((a, c) => c.walk.km - a.walk.km)[0];
+    const nTk = Ds.reduce((a, D) => a + D.stubs.filter(s => s.bilet).length, 0), coffee = (fun.find(f0 => f0.l === 'kahve') || {}).n || 0;
+    const K = [km ? ['🚶', gKmTxt(km), 'yürüdük'] : null, steps ? ['👣', '~' + steps.toLocaleString('tr-TR'), 'adım'] : null, nPl ? ['📍', String(nPl), 'yer gezdik'] : null,
+      nTk ? ['🎟️', String(nTk), 'biletli giriş'] : null, nPh ? ['📷', String(nPh), 'fotoğraf'] : null, coffee ? ['☕', String(coffee), 'kahve'] : null,
+      hot ? [wxOf(m.wx[hot.d].c)[1], `${m.wx[hot.d].hi}°`, `en sıcak: ${hot.label}`] : null, WXd.length ? ['🌧️', String(rain), 'yağmurlu gün'] : null,
+      walkD ? ['🏃', gKmTxt(walkD.walk.km), `en çok yürüdüğümüz: ${walkD.label}`] : null, ['🧾', String(exps.length), 'ortak harcama'], ['🏙️', String(cities.length || 1), 'şehir'], ['📅', String(Ds.length), 'gün']].filter(Boolean).slice(0, 9);
     await page(); band(A, 14);
-    x.fillStyle = RPT.ink; x.font = DF(800, 60); x.fillText('Seyahatin hikâyesi ✨', M, y + 60); y += 110;
-    if (st) for (const [ic, l, v] of st.facts){ x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 130, 24); x.fill();
-      x.font = FONT(500, 56); x.fillStyle = RPT.ink; x.fillText(ic, M + 30, y + 86);
-      x.fillStyle = RPT.muted; x.font = FONT(600, 24); x.fillText(l, M + 130, y + 52); x.fillStyle = RPT.ink; x.font = DF(800, 36); x.fillText(fit(v, W - 2 * M - 160, DF(800, 36)), M + 130, y + 100); y += 150; }
-    if (fun.length && y < H - 300){ y += 20; x.fillStyle = RPT.ink; x.font = DF(800, 34); x.fillText('Sayılarla', M, y + 34); y += 70; let px = M;
-      fun.slice(0, 7).forEach(f0 => { x.font = FONT(700, 30); const t = `${f0.ic} ${f0.n} ${f0.l}`, w = x.measureText(t).width + 50; if (px + w > W - M){ px = M; y += 80; }
-        x.fillStyle = mixHex(A, '#ffffff', .88); rr(x, px, y, w, 64, 32); x.fill(); x.fillStyle = RPT.ink; x.fillText(t, px + 25, y + 43); px += w + 14; }); }
+    x.fillStyle = RPT.ink; x.font = DF(800, 60); x.fillText('Seyahat karnesi', M, y + 60); y += 110;
+    const tw = (W - 2 * M - 40) / 3, th = 150, lim = () => H - M - 40;
+    K.forEach(([ic, v, l], i) => { const tx = M + (i % 3) * (tw + 20), ty = y + Math.floor(i / 3) * (th + 18);
+      x.fillStyle = mixHex(A, '#ffffff', .9); rr(x, tx, ty, tw, th, 22); x.fill();
+      x.font = FONT(500, 36); x.fillStyle = RPT.ink; x.fillText(ic, tx + 22, ty + 50); x.font = DF(800, 42); x.fillText(fit(v, tw - 44, DF(800, 42)), tx + 22, ty + 102);
+      x.fillStyle = RPT.muted; x.font = FONT(600, 20); x.fillText(fit(l, tw - 44, FONT(600, 20)), tx + 22, ty + 134); });
+    y += Math.ceil(K.length / 3) * (th + 18) + 26;
+    const BZ = albTitles(), cw = (W - 2 * M - 20) / 2;
+    if (BZ.length){ if (y + 70 + Math.ceil(BZ.length / 2) * 126 > lim()){ await page(); band(A, 14); }
+      x.fillStyle = RPT.ink; x.font = DF(800, 36); x.fillText('Biz', M, y + 36); y += 64;
+      BZ.forEach((b, i) => { const bx = M + (i % 2) * (cw + 20), by = y + Math.floor(i / 2) * 126;
+        x.fillStyle = RPT.soft; rr(x, bx, by, cw, 110, 22); x.fill(); x.font = FONT(500, 46); x.fillStyle = RPT.ink; x.fillText(emojiOf(b.p.id), bx + 22, by + 72);
+        x.font = DF(800, 30); x.fillText(fit(b.p.name, cw - 120, DF(800, 30)), bx + 96, by + 46); x.fillStyle = mixHex(A, '#000000', .2); x.font = HW(700, 36); x.fillText(fit(`${b.ic} ${b.t}`, cw - 120, HW(700, 36)), bx + 96, by + 90); });
+      y += Math.ceil(BZ.length / 2) * 126 + 20; }
+    if (st){ if (y + 70 + 112 > lim()){ await page(); band(A, 14); }
+      x.fillStyle = RPT.ink; x.font = DF(800, 36); x.fillText('Seyahatin hikâyesi ✨', M, y + 36); y += 64;
+      for (let i = 0; i < st.facts.length; i++){ const [ic, l, v] = st.facts[i], col0 = i % 2;
+        if (!col0 && y + 104 > lim()){ await page(); band(A, 14); }
+        const bx = M + col0 * (cw + 20); x.fillStyle = RPT.soft; rr(x, bx, y, cw, 98, 20); x.fill(); x.font = FONT(500, 40); x.fillStyle = RPT.ink; x.fillText(ic, bx + 20, y + 64);
+        x.fillStyle = RPT.muted; x.font = FONT(600, 19); x.fillText(fit(l, cw - 110, FONT(600, 19)), bx + 86, y + 38); x.fillStyle = RPT.ink; x.font = DF(800, 26); x.fillText(fit(v, cw - 110, DF(800, 26)), bx + 86, y + 74);
+        if (col0 || i === st.facts.length - 1) y += 112; } }
   }
 
-  // 6) Kapanış: anılar kolajı (en çok 6 fotoğraf, her günden biri önce), kapanış yazısı, grubun toplamı, hesabın durumu (tutarsız).
+  // 6) Kapanış: anılar kolajı (polaroidler; her günden biri önce), kapanış yazısı, grubun toplamı, hesabın durumu (tutarsız).
   await page();
   const g2 = x.createLinearGradient(0, 0, W, H); g2.addColorStop(0, mixHex(A, '#ffffff', .9)); g2.addColorStop(1, '#ffffff'); x.fillStyle = g2; x.fillRect(0, 0, W, H); band(Q, 14);
   const pick6 = []; { const L = Ds.map(D => (m.ph.days[D.d] || []).slice()); for (let r = 0; pick6.length < 6 && L.some(a => a.length); r++) for (const a of L){ if (a.length && pick6.length < 6) pick6.push(a.shift()); } }
-  if (pick6.length){ x.fillStyle = RPT.ink; x.font = DF(800, 50); x.fillText('Anılar', M, y + 50); y += 80;
-    const cols = pick6.length <= 2 ? pick6.length : 3, rows2 = Math.ceil(pick6.length / cols), gw = (W - 2 * M - (cols - 1) * 16) / cols, gh = Math.min(380, (rows2 === 1 ? 520 : 760) / rows2);
-    for (let i = 0; i < pick6.length; i++) photo(await pic(pick6[i]), M + (i % cols) * (gw + 16), y + Math.floor(i / cols) * (gh + 16), gw, gh, 18);
-    y += rows2 * (gh + 16) + 30; }
+  if (pick6.length){ x.fillStyle = RPT.ink; x.font = DF(800, 50); x.fillText('Anılar', M, y + 50); y += 90;
+    const cols = pick6.length <= 2 ? pick6.length : 3, rows2 = Math.ceil(pick6.length / cols), gw = (W - 2 * M - (cols - 1) * 24) / cols, gh = Math.min(400, (rows2 === 1 ? 540 : 800) / rows2);
+    for (let i = 0; i < pick6.length; i++) polaroid(await pic(pick6[i]), M + (i % cols) * (gw + 24), y + Math.floor(i / cols) * (gh + 24), gw, gh, ((i * 37) % 5 - 2) * .012);
+    y += rows2 * (gh + 24) + 30; }
   const end = m.story.closing ?? albEndAuto(Ds);
   if (end) y = text(end, M, y + 50, W - 2 * M, DF(800, 46), 60, 5) + 30;
   x.fillStyle = RPT.muted; x.font = FONT(600, 26); x.fillText(fit(`${isFamily() ? 'Ailenin' : 'Grubun'} toplamı ${eu(C.total)} · kişi başı ${eu(Math.round(C.total / (n || 1)))}`, W - 2 * M, FONT(600, 26)), M, y + 26); y += 50;
@@ -11501,6 +11680,7 @@ document.addEventListener('click', ev => {
   if (d.ozd){ openSheet({mode:'ozd', key:d.ozd}); return; }
   if (d.albdel){ const j = d.albdel.indexOf('|'); albRemove(d.albdel.slice(0, j), d.albdel.slice(j + 1)); return; }
   if (d.albact){ if (d.albact === 'pdf') exportAlbum(); else if (d.albact === 'leyo') albLeyo(); return; }
+  if (d.albcut){ const mm = alb(), c = mm.cut[d.albcut] || (mm.cut[d.albcut] = {y:0}); c.on = !c.on; albStore(); drawSheetKeep(); return; }
   if (d.tab){ if (form && form.mode === 'ozd') closeSheet(true); tab = d.tab; if (d.tg) tgSet(d.tg); if (d.sv) shopView = d.sv; render(); window.scrollTo(0,0); if (tab === 'settle' && Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false); return; }
   if (d.trip){ closeSheet(); switchTrip(d.trip); return; }
   if (d.emo){ openSheet({mode:'emoji', pid:d.emo}); return; }
@@ -11732,6 +11912,7 @@ function drawSheetKeep(){
 document.addEventListener('input', ev => {
   const el = ev.target;
   if (form && form.mode === 'album' && el.dataset && el.dataset.alb){ albText(el.dataset.alb, el.value); return; }
+  if (form && form.mode === 'album' && el.dataset && el.dataset.albcuty){ const mm = alb(), c = mm.cut[el.dataset.albcuty] || (mm.cut[el.dataset.albcuty] = {on:true}); c.y = +el.value; const pv = document.getElementById('cutp_' + el.dataset.albcuty); if (pv) pv.style.backgroundPosition = `0 ${c.y}%`; albStoreSoon(); return; }
   if (el.id === 'planInp' && planDraft){ planDraft.v = el.value; return; }
   if (el.id === 'fDest' && form){ form.destDraft = el.value; return; }
   if (el.id === 'gwText' && form){ form.gwText = el.value; return; }
