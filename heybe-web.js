@@ -157,6 +157,14 @@
       if (!data || data.error) throw {code:'cloud'};
       return data;
     },
+    // Seyahat albümü: "✨ Leyo yazsın" anı metinleri (yalnız paylaşılabilir bilgi); web/functions/hikaye.
+    async story(payload){
+      await ready;
+      const {data, error} = await sb.functions.invoke('hikaye', {body:payload});
+      if (error){ const st = error.context && error.context.status; throw {code:st === 429 ? 'quota' : st === 402 ? 'kredi' : st ? 'cloud' : 'net', status:st || 0}; }
+      if (!data || data.error) throw {code:'cloud'};
+      return data;
+    },
     takeJoined(){ try { const t = localStorage.getItem(JOIN_KEY); localStorage.removeItem(JOIN_KEY); return t; } catch(_) { return null; } },
     joinFailed:() => !!window.__heybeJoinFailed
   };
