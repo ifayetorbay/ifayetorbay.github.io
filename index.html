@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127194158';</script>
-<script src="heybe-web.js?v=20261127194158"></script>
+<script>window.HEYBE_VER = '20261127194612';</script>
+<script src="heybe-web.js?v=20261127194612"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -397,6 +397,18 @@ button.mrow{border-left:0;border-right:0;border-bottom:0;background:none;width:1
 .rpt-row>span{display:flex;flex-direction:column}
 .rpt-row small{color:var(--muted);font-size:.78rem}
 @media (prefers-reduced-motion:reduce){.oz-dots i{transition:none}}
+.ozc-hit{position:absolute;inset:0;z-index:2;border:0;background:none;border-radius:22px;cursor:pointer}
+.ozc-share{position:absolute;top:12px;right:12px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.22);color:#fff;font-size:1.05rem;display:grid;place-items:center;cursor:pointer}
+.ozc .k{max-width:58%}
+.track.stk{position:relative}
+.track.stk .bud{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--ink);opacity:.6}
+.mleg .fb{background:var(--ink);width:3px;opacity:.6}
+.dday+.dday{margin-top:10px}
+.xmap{width:100%;height:auto;display:block}
+.xmap rect{fill:var(--sunk)}
+.xmap .xgrid line{stroke:var(--line);stroke-width:1}
+a.mrow{color:inherit;text-decoration:none}
+.plink{font-weight:700;text-align:left;padding:0}
 .solo-note{margin:0 0 4px;padding:9px 12px;border-radius:12px;background:var(--accent-soft);color:var(--ink)}
 .solo-hint{margin:4px 0 0}
 table{width:100%;border-collapse:collapse;font-size:.88rem}
@@ -3000,7 +3012,7 @@ function perPersonHtml(C){
         const kal = z ? 'Denk ✓' : mixed ? `${nw(tlk(Math.abs(nT)))}<br>${nw(eu(Math.abs(nE)))}` : two(Math.abs(nT), Math.abs(nE));
         const kalHint = z ? '' : mixed ? `TL ${nT < 0 ? 'gönderecek' : 'alacak'},<br>euro ${nE < 0 ? 'gönderecek' : 'alacak'}` : ((zT ? nE : nT) < 0 ? 'gönderecek' : 'alacak') + (zE ? '' : `<br>${nw('≈ ' + tlk(Math.abs(b)))}`);
         const shH = nw(LE && xe.share ? `≈ ${tlk(x.share + Math.round(xe.share * t.Q))}` : `≈ ${eu(Math.round(x.share / t.R))}`);
-        return `<tr><td>${esc(p.name)}</td><td class="r">${two(x.share, xe.share)}<br><small class="hint">${shH}</small></td><td class="r">${two(x.paid, xe.paid)}<br><small class="hint">harcamalarda</small></td>`
+        return `<tr><td><button type="button" class="link plink" data-person="${p.id}" aria-label="${esc(p.name)}: Hesaplaşma'daki dökümü">${esc(p.name)} ›</button></td><td class="r">${two(x.share, xe.share)}<br><small class="hint">${shH}</small></td><td class="r">${two(x.paid, xe.paid)}<br><small class="hint">harcamalarda</small></td>`
           + `<td class="r"><b class="${z ? 'pos' : b > 0 ? 'pos' : 'neg'}">${kal}</b>${z ? '' : `<br><small class="hint">${kalHint}</small>`}</td></tr>`; }).join('') +
       `</tbody></table><p class="note" style="margin:10px 0 0">${hasTL() ? `TL girilen harcamalar TL tutarıyla${legacyEur() ? `, eski euro kayıtları hesaplaşmanın kuruyla (${settleRateText(t.R)})` : ''}. ` : ''}${t.hasE ? `Bundan sonraki euro harcamaların borcu euro olarak kalır; ≈ ₺ bugünkü kurla (%${feeTxt(fxFee())} döviz farkıyla). ` : ''}“Ödediği” harcamalarda cebinden çıkan ve kasaya koyduğu para; “Kalan” yapılan ödemelerden sonra. <button class="link" data-tab="settle">Ayrıntı: Hesaplaşma › Hesap tablosu</button></p></div>`; }
   return h;
@@ -8975,18 +8987,18 @@ function ozetCards(C, M){
   const out = [], cnt = S.entries.filter(e => e.kind === 'expense').length, n = headcount();
   const P = planState(), days = groupDays(), tday = days.filter(d => d.n >= 1), maxD = tday.slice().sort((a, c) => c.v - a.v)[0];
   const elapsed = Math.max(1, P.elapsed || tday.length || 1);
-  if (M.all) out.push({k:'Bu seyahat sana', big:eu(M.all), sub:`≈ ${tl(M.all)}${M.trip + M.soloTrip + M.shop ? ` · gezide günde ~${eu(Math.round((M.trip + M.soloTrip + M.shop) / elapsed))}` : ''}`, ly:'bavul', to:'mb_ortak'});
-  if (C.total) out.push({k:isFamily() ? 'Ailenin toplamı' : 'Grubun toplamı', big:eu(C.total), sub:`kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama`, ly:'sevinc', to:'mb_grup'});
+  if (M.all) out.push({k:'Bu seyahat sana', big:eu(M.all), sub:`≈ ${tl(M.all)}${M.trip + M.soloTrip + M.shop ? ` · gezide günde ~${eu(Math.round((M.trip + M.soloTrip + M.shop) / elapsed))}` : ''}`, ly:'bavul', to:'mb_ortak', ico:'🧳'});
+  if (C.total) out.push({k:isFamily() ? 'Ailenin toplamı' : 'Grubun toplamı', big:eu(C.total), sub:`kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama`, ly:'sevinc', to:'mb_grup', ico:'👥', share:1});
   const tc = CATS.map(c => [c, C.cats[c.id] || 0]).filter(x => x[1] > 0).sort((a, c) => c[1] - a[1])[0];
-  if (tc) out.push({k:'En çok buraya gitti', big:`${tc[0].icon} ${tc[0].name}`, sub:`grubun harcamasının %${Math.round(tc[1] * 100 / (C.total || 1))}'i · ${eu(tc[1])}`, ly:'konusma', to:'mb_kat'});
-  if (maxD && tday.length > 1) out.push({k:'En pahalı gün', big:maxD.label, sub:`grup ${eu(maxD.v)}${maxD.top ? ` · en büyüğü: ${esc(maxD.top)}` : ''}`, ly:'saskin', to:'mb_gun'});
-  if (M.shop) out.push({k:'Alışverişin', big:eu(M.shop), sub:M.ref ? `tax-free ile ≈ ${eu(M.ref)} geri` : `${SH.items.filter(i => !i.ret).length} alışveriş`, ly:'alisveris', to:'mb_alis'});
+  if (tc) out.push({k:'En çok buraya gitti', big:`${tc[0].icon} ${tc[0].name}`, sub:`grubun harcamasının %${Math.round(tc[1] * 100 / (C.total || 1))}'i · ${eu(tc[1])}`, ly:'konusma', to:'mb_kat', ico:tc[0].icon, share:1});
+  if (maxD && tday.length > 1) out.push({k:'En pahalı gün', big:maxD.label, sub:`grup ${eu(maxD.v)}${maxD.top ? ` · en büyüğü: ${maxD.top}` : ''}`, ly:'saskin', to:'mb_gun', ico:'📅', share:1});
+  if (M.shop) out.push({k:'Alışverişin', big:eu(M.shop), sub:M.ref ? `tax-free ile ≈ ${eu(M.ref)} geri` : `${SH.items.filter(i => !i.ret).length} alışveriş`, ly:'alisveris', to:'mb_alis', ico:'🛍️'});
   if (P.plan > 0 && P.spent > 0){ const pc = Math.round(P.spent * 100 / P.plan);
-    out.push({k:'Kişi başı bütçe', big:`%${pc}`, sub:pc <= 100 ? `bütçenin %${pc}'i kullanıldı · ${fromTL(P.plan - P.spent, planCurOf(), 0)} kaldı` : `bütçe ${fromTL(P.spent - P.plan, planCurOf(), 0)} aşıldı`, ly:pc > 100 ? 'uzgun' : 'hesap'}); }
+    out.push({k:'Kişi başı bütçe', big:`%${pc}`, sub:pc <= 100 ? `bütçenin %${pc}'i kullanıldı · ${fromTL(P.plan - P.spent, planCurOf(), 0)} kaldı` : `bütçe ${fromTL(P.spent - P.plan, planCurOf(), 0)} aşıldı`, ly:pc > 100 ? 'uzgun' : 'hesap', ico:'💰'}); }
   if (!isFamily() && cnt){ const t = totalPlan(), mine = t.plan.filter(q => q.from === S.me || q.to === S.me).length;
-    out.push(t.plan.length ? {k:'Hesaplaşma', big:`${t.plan.length} ödeme kaldı`, sub:mine ? `${mine} tanesi seninle ilgili` : 'senin hesabın denk', ly:'hesap', to:'mb_hesap'}
-      : {k:'Hesaplaşma', big:'Herkes ödeşti 🎉', sub:'kimsenin kimseye borcu yok', ly:'sevinc', to:'mb_hesap'}); }
-  const fun = funCounts(); if (fun.length) out.push({k:'Bu seyahatte', big:fun.slice(0, 3).map(f => `${f.n} ${f.ic}`).join(' · '), sub:fun.slice(0, 3).map(f => `${f.n} ${f.l}`).join(', '), ly:'sevinc'});
+    out.push(t.plan.length ? {k:'Hesaplaşma', big:`${t.plan.length} ödeme kaldı`, sub:mine ? `${mine} tanesi seninle ilgili` : 'senin hesabın denk', ly:'hesap', to:'mb_hesap', ico:'🤝'}
+      : {k:'Hesaplaşma', big:'Herkes ödeşti 🎉', sub:'kimsenin kimseye borcu yok', ly:'sevinc', to:'mb_hesap', ico:'🤝', share:1}); }
+  const fun = funCounts(); if (fun.length) out.push({k:'Bu seyahatte', big:fun.slice(0, 3).map(f => `${f.n} ${f.ic}`).join(' · '), sub:fun.slice(0, 3).map(f => `${f.n} ${f.l}`).join(', '), ly:'sevinc', ico:fun[0].ic, share:1});
   return out;
 }
 // Eğlenceli sayımlar: ortak ve kişisel harcamaların açıklamalarındaki kelimelerden (kahve, taksi, müze…).
@@ -9004,28 +9016,77 @@ function groupDays(){
   return Object.values(m).map(o => { const n = o.key === 'pre' ? 0 : tripDay(new Date(o.key + 'T12:00:00').getTime());
     return {...o, n, label:o.key === 'pre' ? 'Seyahat öncesi' : n >= 1 ? `${n}. gün` : dayLabel(o.at)}; }).sort((a, c) => (a.key === 'pre' ? -1 : c.key === 'pre' ? 1 : a.key < c.key ? -1 : 1));
 }
+const OZ_PAL = [['#0B6B6B', '#14A38F'], ['#E4572E', '#F29E4C'], ['#6250D6', '#9C8CFA'], ['#2A78D6', '#4FC3F7'], ['#C2185B', '#F06292'], ['#1B7A4F', '#4CC38A'], ['#5F3DC4', '#8E6CF0'], ['#B26A00', '#F0AE55']];
+// Kartı 1080×1350 resim olarak paylaşır (2. aşama). Yalnız ortak ve eğlenceli kartlar paylaşılır (share); senin tutarlarını gösterenler
+// (bu seyahat sana, alışverişin, bütçe) paylaşıma kapalı. Paylaşılamazsa resim açılır, basılı tutup kaydedilir.
+async function shareOzCard(i){
+  const cards = ozetCards(compute(S, startOfToday()), myPicture()), c = cards[i]; if (!c || !c.share) return;
+  const [a, b] = OZ_PAL[i % OZ_PAL.length], cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const x = cv.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+  x.globalAlpha = .12; x.fillStyle = '#fff'; x.beginPath(); x.arc(930, 1180, 420, 0, Math.PI * 2); x.fill(); x.beginPath(); x.arc(120, 160, 220, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+  const wrap = (t, px, w, y0, lh, wt) => { x.font = FONT(wt, px); const ws = String(t).split(' '); let line = '', y = y0;
+    for (const word of ws){ const tst = line ? line + ' ' + word : word; if (x.measureText(tst).width > w && line){ x.fillText(line, 90, y); line = word; y += lh; } else line = tst; }
+    if (line) x.fillText(line, 90, y); return y + lh; };
+  x.fillStyle = '#fff'; x.globalAlpha = .85; x.font = FONT(700, 40); x.fillText(String(S.trip.name || 'Heybe').toLocaleUpperCase('tr'), 90, 150); x.globalAlpha = 1;
+  x.font = FONT(700, 46); x.globalAlpha = .9; x.fillText(c.k.toLocaleUpperCase('tr'), 90, 420); x.globalAlpha = 1;
+  let y = wrap(c.big, 120, 900, 560, 132, 800);
+  x.globalAlpha = .92; wrap(c.sub, 50, 900, y + 10, 66, 500); x.globalAlpha = 1;
+  if (c.ico){ x.font = '240px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif'; x.textAlign = 'right'; x.fillText(c.ico, 1000, 1220); x.textAlign = 'left'; }
+  x.font = FONT(700, 34); x.globalAlpha = .85; x.fillText('Heybe 🐦', 90, 1270); x.globalAlpha = 1;
+  const url = cv.toDataURL('image/png');
+  try { const file = new File([dataUrlToBlob(url)], 'heybe-kart.png', {type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:S.trip.name}); return; } } catch(e){ if (e && e.name === 'AbortError') return; }
+  showPhoto(url); toast('Resme basılı tutup kaydedebilir ya da paylaşabilirsin.');
+}
 function ozetCardsHtml(C, M){
   const cards = ozetCards(C, M); if (!cards.length) return '';
-  const PAL = [['#0B6B6B', '#14A38F'], ['#E4572E', '#F29E4C'], ['#6250D6', '#9C8CFA'], ['#2A78D6', '#4FC3F7'], ['#C2185B', '#F06292'], ['#1B7A4F', '#4CC38A'], ['#5F3DC4', '#8E6CF0'], ['#B26A00', '#F0AE55']];
-  return `<div class="oz-wrap"><div class="oz-cards" role="list" aria-label="Özet kartları">${cards.map((c, i) => { const [a, b] = PAL[i % PAL.length];
-      return `<button type="button" class="ozc" role="listitem" style="--c1:${a};--c2:${b}" ${c.to ? `data-ozto="${c.to}"` : 'tabindex="-1"'}><span class="k">${c.k}</span><span class="big num">${c.big}</span><span class="sub">${c.sub}</span>${c.to ? '<span class="go">Ayrıntı ›</span>' : ''}<span class="ly" aria-hidden="true">${leyo(c.ly, 'm', '')}</span></button>`; }).join('')}</div>
+  return `<div class="oz-wrap"><div class="oz-cards" role="list" aria-label="Özet kartları">${cards.map((c, i) => { const [a, b] = OZ_PAL[i % OZ_PAL.length];
+      return `<div class="ozc" role="listitem" style="--c1:${a};--c2:${b}">${c.to ? `<button type="button" class="ozc-hit" data-ozto="${c.to}" aria-label="${esc(c.k)}: ayrıntı"></button>` : ''}<span class="k">${esc(c.k)}</span><span class="big num">${esc(c.big)}</span><span class="sub">${esc(c.sub)}</span>${c.to ? '<span class="go">Ayrıntı ›</span>' : ''}<span class="ly" aria-hidden="true">${leyo(c.ly, 'm', '')}</span>${c.share ? `<button type="button" class="ozc-share" data-ozshare="${i}" aria-label="Kartı resim olarak paylaş">📤</button>` : ''}</div>`; }).join('')}</div>
     ${cards.length > 1 ? `<div class="oz-dots" aria-hidden="true">${cards.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</div>`;
 }
-// 📅 Günler: her gün senin harcaman (ortak payın + kişisel + alışveriş, üç renk) ve grubun o günkü toplamı.
+// 📅 Günler: her gün senin harcaman (ortak payın + kişisel + alışveriş, üç renk) ve grubun o günkü toplamı. 2. aşama: güne dokununca
+// o günün kalemleri; seyahat günlerinde kişi başı günlük bütçe çizgisi ((bütçe − seyahat öncesi) / gün sayısı, euroya çevrilmiş).
 function dayBox(M, box, ln){
-  const day = t => isoDay(t), m = {}, add = (k, f, v) => { const o = m[k] = m[k] || {k, p:0, s:0, a:0}; o[f] += v; };
-  M.shares.forEach(r => add(r.ph === 'pre' ? 'pre' : day(r.e.at), 'p', r.v));
-  M.soloRows.forEach(r => add(r.ph === 'pre' ? 'pre' : day(r.x.at), 's', r.v));
-  SH.items.forEach(i => add(phaseOf(i, S) === 'pre' ? 'pre' : day(i.at), 'a', Math.round(shopEur(i) * 100)));
+  const day = t => isoDay(t), m = {}, add = (k, f, v, row) => { const o = m[k] = m[k] || {k, p:0, s:0, a:0, it:[]}; o[f] += v; o.it.push(row); };
+  M.shares.forEach(r => add(r.ph === 'pre' ? 'pre' : day(r.e.at), 'p', r.v, ln(esc(r.e.desc), eu(r.v), `ortak payın · toplam ${money(r.e.amount, r.e.cur)}`, `data-edit="${r.e.id}"`)));
+  M.soloRows.forEach(r => add(r.ph === 'pre' ? 'pre' : day(r.x.at), 's', r.v, ln(esc(r.x.desc), money(r.x.amount, r.x.cur), 'kişisel', `data-solo="${r.x.id}"`)));
+  SH.items.forEach(i => add(phaseOf(i, S) === 'pre' ? 'pre' : day(i.at), 'a', Math.round(shopEur(i) * 100), ln(esc(i.store), money(shopAmt(i), i.cur), i.ret ? 'iade' : 'alışveriş', `data-shop="${i.id}"`)));
   const G = Object.fromEntries(groupDays().map(g => [g.key, g.v]));
   const rows = Object.values(m).sort((a, c) => (a.k === 'pre' ? -1 : c.k === 'pre' ? 1 : a.k < c.k ? -1 : 1));
   if (!rows.length) return box('mb_gun', '📅', 'Günler', 'henüz harcama yok', '', '<p class="hint" style="margin:0">Harcamalar geldikçe günlerin burada belirecek.</p>');
-  const tot = r => r.p + r.s + r.a, max = Math.max(1, ...rows.map(tot)), td = rows.filter(r => r.k !== 'pre'), top = td.slice().sort((a, c) => tot(c) - tot(a))[0];
+  const P = planState(), bud = P.plan > 0 && P.len ? Math.max(0, Math.round((P.plan - P.pre) / P.len / S.trip.rate)) : 0;
+  const tot = r => r.p + r.s + r.a, max = Math.max(1, ...rows.map(tot), bud), td = rows.filter(r => r.k !== 'pre'), top = td.slice().sort((a, c) => tot(c) - tot(a))[0];
   const lbl = k => { if (k === 'pre') return 'Seyahat öncesi'; const t = new Date(k + 'T12:00:00').getTime(), n = tripDay(t); return n >= 1 ? `${n}. gün · ${dayLabel(t)}` : dayLabel(t); };
+  const over = td.filter(r => bud && tot(r) > bud).length;
   return box('mb_gun', '📅', 'Günler', top ? `en çok: ${lbl(top.k).split(' · ')[0]} ${eu(tot(top))}` : `${rows.length} gün`, '',
-    `<div class="mleg"><span><i class="f1"></i>ortak payın</span><span><i class="f2"></i>kişisel</span><span><i class="f3"></i>alışveriş</span></div>`
-    + rows.map(r => `<div class="bar dbar"><div class="top2"><span>${lbl(r.k)}</span><span class="num"><b>${eu(tot(r))}</b>${G[r.k] ? ` <small>grup ${eu(G[r.k])}</small>` : ''}</span></div>
-      <div class="track stk"><div class="f1" style="width:${(r.p * 100 / max).toFixed(1)}%"></div><div class="f2" style="width:${(r.s * 100 / max).toFixed(1)}%"></div><div class="f3" style="width:${(r.a * 100 / max).toFixed(1)}%"></div></div></div>`).join(''));
+    `<div class="mleg"><span><i class="f1"></i>ortak payın</span><span><i class="f2"></i>kişisel</span><span><i class="f3"></i>alışveriş</span>${bud ? `<span><i class="fb"></i>günlük bütçe ${eu(bud)}</span>` : ''}</div>`
+    + rows.map(r => `<details class="mcat dday" id="md_${r.k}" ${openDet['md_' + r.k] ? 'open' : ''}><summary class="bar"><div class="top2"><span>${lbl(r.k)}<span class="mcv" aria-hidden="true">›</span></span><span class="num"><b class="${bud && r.k !== 'pre' && tot(r) > bud ? 'neg' : ''}">${eu(tot(r))}</b>${G[r.k] ? ` <small>grup ${eu(G[r.k])}</small>` : ''}</span></div>
+      <div class="track stk"><div class="f1" style="width:${(r.p * 100 / max).toFixed(1)}%"></div><div class="f2" style="width:${(r.s * 100 / max).toFixed(1)}%"></div><div class="f3" style="width:${(r.a * 100 / max).toFixed(1)}%"></div>${bud && r.k !== 'pre' ? `<i class="bud" style="left:${(bud * 100 / max).toFixed(1)}%"></i>` : ''}</div></summary>
+      <div class="mcl">${r.it.join('')}</div></details>`).join('')
+    + (bud ? `<p class="hint" style="margin:0">Çizgi kişi başı günlük bütçe: (bütçe − seyahat öncesi) ÷ ${P.len} gün.${over ? ` ${over} gün bütçenin üstünde (kırmızı).` : ''} Bütçe ortak harcamalar içindir; senin günün kişisel harcama ve alışverişi de gösterir.</p>` : ''));
+}
+// 🗺️ Harcama haritası (2. aşama): konumu olan harcamalar (ortak, kişisel, alışveriş) noktalarla; büyüklük tutarla, renk kategoriyle.
+// Altta en çok harcanan yerler, Google Haritalar'da açılır. Konum, harcama eklerken "📍 Buradayım" ile eklenir.
+function mapBox(box){
+  const pts = [], fin = v => v != null && v !== '' && isFinite(+v);
+  for (const e of S.entries) if (e.kind === 'expense' && fin(e.lat) && fin(e.lon)) pts.push({lat:+e.lat, lon:+e.lon, v:toCents(e), cat:e.cat, t:e.desc, place:e.place});
+  for (const x of SH.solo || []) if (fin(x.lat) && fin(x.lon)) pts.push({lat:+x.lat, lon:+x.lon, v:soloEur(x), cat:x.cat, t:x.desc, place:x.place, own:1});
+  for (const i of SH.items) if (fin(i.lat) && fin(i.lon)) pts.push({lat:+i.lat, lon:+i.lon, v:Math.round(shopEur(i) * 100), cat:'alisveris', t:i.store, place:i.place, own:1});
+  const nAll = S.entries.filter(e => e.kind === 'expense').length + (SH.solo || []).length + SH.items.length;
+  if (!pts.length) return box('mb_harita', '🗺️', 'Harcama haritası', 'konumlu harcama yok', '', '<p class="hint" style="margin:0">Harcama eklerken 📍 konum eklersen (Buradayım) harcamaların burada haritada görünür.</p>');
+  const W = 320, H = 170, la = pts.map(p => p.lat), lo = pts.map(p => p.lon), la0 = Math.min(...la), la1 = Math.max(...la), lo0 = Math.min(...lo), lo1 = Math.max(...lo);
+  const k = Math.cos(((la0 + la1) / 2) * Math.PI / 180), sx = (lo1 - lo0) * k, sy = la1 - la0, sc = sx || sy ? Math.min((W - 40) / (sx || 1e-9), (H - 40) / (sy || 1e-9)) : 1;
+  const X = v => W / 2 + (v - (lo0 + lo1) / 2) * k * sc, Y = v => H / 2 - (v - (la0 + la1) / 2) * sc, vmax = Math.max(...pts.map(p => p.v), 1);
+  const grid = [1, 2, 3].map(i => `<line x1="${W * i / 4}" y1="0" x2="${W * i / 4}" y2="${H}"/><line x1="0" y1="${H * i / 4}" x2="${W}" y2="${H * i / 4}"/>`).join('');
+  const dots = pts.slice().sort((a, c) => c.v - a.v).map(p => `<circle cx="${X(p.lon).toFixed(1)}" cy="${Y(p.lat).toFixed(1)}" r="${(4 + 11 * Math.sqrt(p.v / vmax)).toFixed(1)}" fill="${CAT_COLORS[p.cat] || '#888'}" fill-opacity=".78" stroke="var(--surface)" stroke-width="1.5"><title>${esc(p.t)} · ${eu(p.v)}</title></circle>`).join('');
+  // yerler: yer adına (yoksa ~100 m'lik kareye) göre toplanır
+  const by = {};
+  for (const p of pts){ const key = p.place || `${p.lat.toFixed(3)},${p.lon.toFixed(3)}`, o = by[key] = by[key] || {name:p.place || p.t, lat:p.lat, lon:p.lon, v:0, n:0}; o.v += p.v; o.n++; }
+  const places = Object.values(by).sort((a, c) => c.v - a.v).slice(0, 6);
+  return box('mb_harita', '🗺️', 'Harcama haritası', `${pts.length} konumlu harcama${nAll > pts.length ? ` · ${nAll - pts.length} konumsuz` : ''}`, '',
+    `<svg class="xmap" viewBox="0 0 ${W} ${H}" role="img" aria-label="Harcama haritası"><rect width="${W}" height="${H}" rx="14"/><g class="xgrid">${grid}</g>${dots}</svg>`
+    + places.map(o => `<a class="mrow" href="https://www.google.com/maps/search/?api=1&query=${o.lat.toFixed(6)},${o.lon.toFixed(6)}" target="_blank" rel="noopener"><span>📍 ${esc(o.name)}<small>${o.n} harcama · Google Haritalar'da aç</small></span><span class="num">${eu(o.v)}</span></a>`).join('')
+    + `<p class="hint" style="margin:0">Nokta büyüklüğü tutarla, rengi kategoriyle. Konum, harcama eklerken 📍 Buradayım ile eklenir.</p>`);
 }
 function viewOzet(C){
   const M = myPicture(), open = tgLast('mine'), pct = v => M.all ? ` · %${Math.round(v * 100 / M.all)}` : '';
@@ -9059,8 +9120,8 @@ function viewOzet(C){
   h += box('mb_hediye', '🎁', 'Hediyelerin', G.length ? `${G.length} hediye · ${gDone} alındı` : 'hediye listesi boş', gEst ? `<small>~${e0(gEst)}</small>` : '',
     (G.length ? G.slice().sort((a, c) => a.done - c.done).map(g => ln(`${g.done ? '✓' : '○'} ${esc(g.who)}`, g.est ? '~' + e0(g.est) : '', esc(g.what))).join('') : '')
     + `<p class="hint" style="margin:0">Hediye listesi bir yapılacaklar listesidir; tahminler toplama girmez, aldıkların alışverişinde sayılır.</p><button type="button" class="link" data-shopview="gifts">Hediye listesine git ›</button>`);
-  // 6) günler (senin: ortak payın + kişisel + alışveriş; yanında grubun günü)
-  h += dayBox(M, box, ln);
+  // 6) günler (senin: ortak payın + kişisel + alışveriş; yanında grubun günü) ve harcama haritası
+  h += dayBox(M, box, ln) + mapBox(box);
   // 7) nereye ne kadar (kategoriye dokununca kalemleri)
   const rows = CATS.map(c => ({c, p:M.catP[c.id] || 0, k:M.catS[c.id] || 0})).filter(r => r.p + r.k > 0);
   if (M.shop) rows.push({c:{id:'kshop', icon:'🛍️', name:'Kişisel alışveriş'}, p:0, k:M.shop});
@@ -10861,6 +10922,9 @@ document.addEventListener('click', ev => {
   if (d.edit && swOpen === t){ swClose(); return; }
   if (d.act !== 'deltrip') confirmTrip = false;
   if (d.lmode){ setListMode(d.lmode); render(); window.scrollTo(0, 0); return; }
+  if (d.person){ const id = d.person; tab = 'settle'; openDet['dLT_' + id] = true; openDet['dLE_' + id] = true; render();
+    const el = document.getElementById('dLT_' + id) || document.getElementById('dLE_' + id); if (el) el.scrollIntoView({block:'start', behavior:calm() ? 'auto' : 'smooth'}); else window.scrollTo(0, 0); return; }
+  if (d.ozshare){ shareOzCard(+d.ozshare); return; }
   if (d.ozto){ const el = document.getElementById(d.ozto); if (el){ el.open = true; el.scrollIntoView({block:'start', behavior:calm() ? 'auto' : 'smooth'}); } return; }
   if (d.tab){ tab = d.tab; if (d.tg) tgSet(d.tg); if (d.sv) shopView = d.sv; render(); window.scrollTo(0,0); if (tab === 'settle' && Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false); return; }
   if (d.trip){ closeSheet(); switchTrip(d.trip); return; }
