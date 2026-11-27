@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127180439';</script>
-<script src="heybe-web.js?v=20261127180439"></script>
+<script>window.HEYBE_VER = '20261127180920';</script>
+<script src="heybe-web.js?v=20261127180920"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -159,6 +159,20 @@ body.ro .wbtn.tbtn{pointer-events:auto}
 
 .day{font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:6px 2px -4px}
 .list{background:var(--surface);border-radius:var(--r);overflow:hidden}
+/* Seyahat sekmesi grupları (2026-11-27): açılır kartlar; kapalıyken simge, başlık ve tek satır özet */
+.tgrps{display:flex;flex-direction:column;gap:10px}
+.tgrp{background:var(--surface);border-radius:var(--r);box-shadow:var(--card-shadow)}
+.tgrp>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:var(--r)}
+.tgrp>summary::-webkit-details-marker{display:none}
+.tgi{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);font-size:1.2rem}
+.tgt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.tgt b{font-size:1rem;font-weight:700}
+.tgt small{color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tgc{flex:none;color:var(--muted);font-size:1.3rem;line-height:1;transition:transform .15s}
+.tgrp[open] .tgc{transform:rotate(90deg)}
+.tgrp[open]>summary{border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
+.tgb{display:flex;flex-direction:column;gap:16px;padding:14px 14px 16px}
+.tgb>.list{box-shadow:none;border:1px solid var(--line)}
 .row{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;background:none;width:100%;text-align:left}
 .row+.row{border-top:1px solid var(--line)}
 .ic{width:40px;height:40px;border-radius:12px;background:var(--sunk);display:grid;place-items:center;font-size:1.1rem;flex:none}
@@ -2032,6 +2046,13 @@ function localTrips(){
 let tab = 'list', form = null, confirmDel = false, confirmTrip = false, rateBusy = false, rateFailed = false;
 const openDet = {};   // açık bırakılan ayrıntı bölümleri, ekran yenilenince kapanmasın
 document.addEventListener('toggle', ev => { if (ev.target.tagName === 'DETAILS' && ev.target.id) openDet[ev.target.id] = ev.target.open; }, true);
+// Seyahat sekmesi grupları: aynı anda tek grup açık; son açılan bu telefonda hatırlanır (yalnız kolaylık; okunamazsa hepsi kapalı).
+let tgMem = null;
+function tgLast(){ if (tgMem === null){ try { tgMem = localStorage.getItem('heybe-tgrp') || ''; } catch(_) { tgMem = ''; } } return tgMem; }
+function tgSet(id){ tgMem = id || ''; try { localStorage.setItem('heybe-tgrp', tgMem); } catch(_) {} }
+document.addEventListener('toggle', ev => { const d = ev.target; if (!d.classList || !d.classList.contains('tgrp')) return;
+  if (d.open){ document.querySelectorAll('details.tgrp[open]').forEach(o => { if (o !== d) o.open = false; }); tgSet(d.id); }
+  else if (tgLast() === d.id) tgSet(''); }, true);
 
 // ---- biçimlendirme ----
 const nf = new Intl.NumberFormat('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -2279,7 +2300,7 @@ function render(){
   document.getElementById('tripName').textContent = empty ? 'Hoş geldin' : (tc ? flagOf(tc[0]) + ' ' : '') + S.trip.name;
   const range = tripRange(S.trip);
   document.getElementById('tripSub').innerHTML = empty ? 'Henüz bir seyahat yok'
-    : (range ? `<span class="dates">📅 ${range}</span>` : `<button class="link" data-tab="trip">📅 Tarih ekle</button>`)
+    : (range ? `<span class="dates">📅 ${range}</span>` : `<button class="link" data-tab="trip" data-tg="tg_trip">📅 Tarih ekle</button>`)
       + `<span>${tripDayText().replace(/^ · /, '')}</span><span>${peopleLabel()} · sen: ${nm(S.me)}</span>` + (S.sample ? `<span class="badge">Örnek veri</span>` : '') + (isRO() ? `<span class="badge">🗄️ Arşiv</span>` : '');
   if (empty){
     document.getElementById('fab').hidden = true;
@@ -2927,9 +2948,18 @@ function viewTrip(){
   const mg = isManager(), dis = mg ? '' : 'disabled', admins = new Set(S.trip.admins || []);
   // Diğer sekmelerdeki gibi renkli özet kartı: seyahatin adı, hangi gününde olunduğu, tarih ve kişiler.
   const tP = planState(), tLy = isRO() || tP.ended ? 'foto' : tP.started ? 'ucma' : 'bavul';
+  // Gruplar (2026-11-27, kullanıcı: "Seyahat sekmesi hep aşağı iniyor, ulaşmak zor"): açılır kartlar; kapalıyken başlık + tek satır özet.
+  // Aynı anda bir grup açık; son açılan bu telefonda hatırlanır (tgLast). Alanlar ve düğmeler aynen.
+  const nLeft = S.people.filter(p => p.left).length, tgOpen = tgLast(), tgO = id => tgOpen === id ? 'open' : '';
+  const tgHead = (ic, t, sub) => `<span class="tgi" aria-hidden="true">${ic}</span><span class="tgt"><b>${t}</b><small class="num">${sub}</small></span><span class="tgc" aria-hidden="true">›</span>`;
+  const sumTrip = [esc(S.trip.name), range || 'tarih yok'].join(' · ');
+  const sumPeople = (isFamilies() ? peopleLabel() : `${S.people.length - nLeft} kişi`) + (nLeft ? ` · ${nLeft} katılmıyor` : '');
+  const sumMoney = `1 € = ${nf4.format(S.trip.rate)} ₺ · fark %${feeTxt(fxFee())}`;
+  const sumBudget = [S.trip.plan > 0 ? `bütçe ${nf0.format(S.trip.plan)} ${symOf(planCurOf())}` : 'bütçe yok', isFamily() ? '' : S.trip.kasaOn ? `kasa: ${esc(rawName(S.trip.holder))}` : 'kasa kapalı'].filter(Boolean).join(' · ');
+  const sumPhone = (S.me ? esc(rawName(S.me)) : 'seçilmedi') + (leyoAnimPref() ? '' : ' · Leyo durgun');
   return `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${tc ? flagOf(tc[0]) + ' ' : ''}${esc(S.trip.name)}</div>
       <div class="big num">${isRO() ? '🗄️ Arşivde' : day ? day.replace(/^./, c => c.toLocaleUpperCase('tr')) : peopleLabel()}</div>
-      <div class="eur num">${[range ? '📅 ' + range : '', day || isRO() ? peopleLabel() : 'Tarihleri aşağıdan ekle'].filter(Boolean).join(' · ')}</div></div>
+      <div class="eur num">${[range ? '📅 ' + range : '', day || isRO() ? peopleLabel() : 'Tarihleri 🧳 Seyahat bölümünden ekle'].filter(Boolean).join(' · ')}</div></div>
       <div class="hero-mascot">${leyo(tLy, 'l', 'Leyo')}</div></div>
     <div class="me who2"><button class="wbtn tbtn tchip" data-act="trips">🧳 Değiştir</button>${IN_WEB && !S.sample && merged ? `<button class="wbtn tbtn tchip" data-act="invite">📨 Davet et</button>` : ''}<button class="wbtn tbtn tchip" data-act="newtrip">＋ Yeni</button>
       <button class="wbtn tbtn tchip more" data-act="tripmore" aria-expanded="${tripMore}" aria-label="Diğer seyahat işlemleri"><span>•••</span></button></div>
@@ -2938,9 +2968,10 @@ function viewTrip(){
       <button class="tbtn${confirmTrip ? ' sure' : ''}" data-act="deltrip">${confirmTrip ? 'Emin misin? Seyahat ve tüm kayıtları silinecek' : '🗑️ Seyahati sil'}</button></div>` : ''}</section>
   ${isRO() ? `<div class="callout warn"><b>🗄️ Bu seyahat arşivde</b><span>Kayıtlar sadece görüntülenebilir; ekleme, düzenleme, silme ve ödeme kapalı.${S.trip.closedAt ? ` Arşiv tarihi: ${new Date(S.trip.closedAt).toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})}.` : ''}</span>
     ${isTripAdmin() ? `<button class="btn sm" data-act="unarchive">Arşivden çıkar</button>` : ''}</div>` : ''}
-  <div class="card" style="display:flex;flex-direction:column;gap:16px">
     ${isTripAdmin() && myUid ? `<p class="note" style="margin:0">👑 Ortak ayarları sen ve ⭐ ile seçtiğin yardımcı kurucular değiştirebilir. Bunu diğerleri görmez.</p>`
       : mg && myUid ? `<p class="note" style="margin:0">⭐ Yardımcı kurucusun: ortak ayarları değiştirebilirsin.</p>` : ''}
+  <div class="tgrps">
+  <details class="tgrp" id="tg_trip" ${tgO('tg_trip')}><summary>${tgHead('🧳', 'Seyahat', sumTrip)}</summary><div class="tgb">
     <div class="f"><label for="tKind">Kimlerle gidiyorsunuz?${help('kind')}</label><select class="inp" id="tKind" data-bind="kind" ${dis}>
       ${[['friends','👫 Arkadaşlar'],['family','👨‍👩‍👧 Sadece ailem'],['families','👨‍👩‍👧‍👦 Birkaç aile']].map(([k, l]) => `<option value="${k}" ${KIND() === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
       ${isFamilies() ? `<label class="toggle"><span><b>Çocuklar yarım pay</b><span class="note" style="display:block">Açıksa her çocuk yetişkinin yarısı kadar pay alır.</span></span><input type="checkbox" class="sw" id="tKid" data-bind="kidHalf" ${S.trip.kidHalf ? 'checked' : ''} ${dis} aria-label="Çocuklar yarım pay"></label>` : ''}</div>
@@ -2950,28 +2981,8 @@ function viewTrip(){
     <div class="f"><span class="lab">Seyahat tarihleri</span>
       <div class="two"><input type="date" class="inp" id="tStart" value="${S.trip.start || ''}" data-bind="start" ${dis} aria-label="Gidiş"><input type="date" class="inp" id="tEnd" value="${S.trip.end || ''}" data-bind="end" ${dis} aria-label="Dönüş"></div>
       <span class="note">Gidişten önce girilen harcamalar kendiliğinden “Seyahat öncesi” sayılır.</span></div>
-    <div class="f"><label for="tRate">Euro kuru (1 € kaç ₺)${help('rate')}</label>
-      <div style="display:flex;gap:8px"><input class="inp num" id="tRate" inputmode="decimal" value="${nf4.format(S.trip.rate)}" data-bind="rate" style="flex:1;min-width:0">${IN_CLAUDE ? '' : `<button class="btn" data-act="rate">Canlı kuru çek</button>`}</div>
-      <span class="note">${IN_CLAUDE ? 'Claude içinde canlı kur alınamıyor; güncel kuru bankandan bakıp buraya yaz. Herkes için aynı kur kullanılır.' : 'Canlı kur kendiliğinden güncellenir (uygulama açıkken 2 saatte bir); istersen “Canlı kuru çek” ile hemen yenileyebilir ya da elle yazabilirsin.'} Durum: ${rateLabel()}</span>
-      ${Object.keys(S.trip.rates || {}).length ? `<span class="note num">Diğer kurlar: 1 € = ${OTHER_CURS.filter(([c]) => S.trip.rates[c]).map(([c]) => money(S.trip.rates[c], c)).join(' · ')}</span>` : ''}</div>
-    <div class="f"><label for="tFee">Döviz farkı (%)${help('fee')}</label>
-      <input class="inp num" id="tFee" inputmode="decimal" value="${feeTxt(fxFee())}" data-bind="fxFee" ${dis} style="max-width:8em" aria-label="Döviz farkı yüzdesi">
-      <span class="note">Euro borcu TL ile ödenirken ödeme gününün kuruna eklenir (alacaklı o euroyu kartla ya da bozdurarak yerine koyarken bu farkı öder). Euroyla ödenirse eklenmez. Bundan sonraki ödemelerde geçerli; yapılmış ödemeler kendi oranıyla kalır.</span></div>
-    <div class="f"><label for="tMe">Bu telefonu kim kullanıyor?${help('me')}</label>
-      ${myUid && myPerson() ? `<div style="display:flex;gap:8px;align-items:center"><div class="inp locked" style="flex:1">${emojiOf(S.me)} ${nm(S.me)} 🔒</div>${isTripAdmin() || selfFixLeft() ? `<button type="button" class="btn" data-release="${S.me}">Değiştir${isTripAdmin() ? '' : ` · ${Math.ceil(selfFixLeft() / 60e3)} dk`}</button>` : ''}</div><span class="note">Bu telefon/hesap ${nm(S.me)} olarak tanımlı; başka bir kişi seçilemez.${isTripAdmin() ? '' : selfFixLeft() ? ' Yanlışsa birkaç dakika içinde (bir kez) kendin değiştirebilirsin; sonrası için grupta söyle.' : ' Yanlış seçtiysen grupta söyle, düzeltilir.'}</span>`
-        : `<select class="inp" id="tMe" data-bind="me">${opt(S.me)}</select><span class="note">Harcama eklerken “ödeyen” otomatik bu kişi seçilir.</span>`}</div>
-    <div class="f"><span class="lab">Büyük harcama sınırı${help('big')}</span>
-      <div class="two"><input class="inp num" id="tBigE" inputmode="decimal" value="${nf0.format(bigLimits().eur)}" data-bind="bigEur" aria-label="Euro sınırı"><input class="inp num" id="tBigT" inputmode="decimal" value="${nf0.format(bigLimits().tr)}" data-bind="bigTry" aria-label="TL sınırı"></div>
-      <span class="note">Solda € (diğer para birimleri euro karşılığıyla), sağda ₺. Bu tutarın üstündeki harcamalar kırmızı tonla vurgulanır. Bu sınır sadece senin telefonunda geçerli.</span></div>
-    <div class="toggle"><div><b>🐦 Leyo animasyonları</b><div class="note">Maskot Leyo hareket etsin. Kapalıyken durgun durur; telefonda “hareketi azalt” açıksa zaten durur. Yalnız bu telefonda.</div></div><input type="checkbox" class="sw" id="tLeyo" ${leyoAnimPref() ? 'checked' : ''} aria-label="Leyo animasyonları"></div>
-    <div class="f"><label for="tPlan">Bütçe (kişi başı)${help('plan')}</label>
-      <div style="display:flex;gap:8px"><input class="inp num" id="tPlan" inputmode="decimal" placeholder="ör. 60.000" value="${S.trip.plan ? nf0.format(S.trip.plan) : ''}" data-bind="plan" style="flex:1;min-width:0">
-      <select class="inp" id="tPlanCur" data-bind="planCur" aria-label="Bütçe para birimi" style="width:auto">${PLAN_CURS.map(k => `<option value="${k}" ${planCurOf() === k ? 'selected' : ''}>${symOf(k)} ${k}</option>`).join('')}</select></div>
-      <span class="note">Bu tatil kişi başı kaça mal olsun? Seyahat öncesi harcananlar düşülür, kalanı seyahat günlerine bölünür. Boş bırakırsan bütçe takibi kapalı olur.</span></div>
-    ${isFamily() ? '' : `<div class="toggle" data-hhost><div><b>Ortak kasa</b>${help('kasa')}<div class="note">Herkes kasaya para koyar, harcamalar kasadan yapılır.</div></div><input type="checkbox" class="sw" id="tKasa" data-bind="kasaOn" ${S.trip.kasaOn?'checked':''} ${dis} aria-label="Ortak kasa"></div>`}
-    ${S.trip.kasaOn && !isFamily() ? `<div class="f"><label for="tHolder">Kasayı kim tutuyor?</label><select class="inp" id="tHolder" data-bind="holder" ${dis}>${opt(S.trip.holder)}</select></div>` : ''}
-  </div>
-  <h2>Katılımcılar</h2>
+  </div></details>
+  <details class="tgrp" id="tg_people" ${tgO('tg_people')}><summary>${tgHead('👥', isFamilies() ? 'Aileler' : 'Katılımcılar', sumPeople)}</summary><div class="tgb">
   <p class="hint">${mg ? `Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}${isTripAdmin() && myUid ? ' ☆ işaretine dokunarak birini yardımcı kurucu (⭐) yapabilirsin; ☆ kişi Heybe\'ye katılıp adını seçince çıkar.' : ''}` : 'Kendi emojine dokunarak değiştirebilirsin.'}</p>
   <div class="list">${S.people.map(p => `<div class="swr"><button class="swdel l" data-delp="${p.id}" tabindex="-1">Sil</button><button class="swdel r" data-delp="${p.id}" tabindex="-1">Sil</button><div class="row pcard prow">
     <button type="button" class="emo" data-emo="${p.id}" aria-label="${esc(p.name)} emojisini değiştir">${emojiOf(p.id)}</button>
@@ -2987,6 +2998,34 @@ function viewTrip(){
   ${mg && !isRO() && !isFamily() ? `<p class="hint">${GONE_ICO} ile geziye katılmayanı (gelemedi ya da yarıda ayrıldı) işaretlersin: bundan sonraki harcamalar ona bölünmez, eski payları yerinde kalır.</p>` : ''}
   ${isFamilies() ? `<p class="hint">👤 yetişkin, 🧒 çocuk sayısı: dokundukça artar (en fazla 9, sonra başa döner). Yeni harcamalar bu sayılara göre bölünür.</p>` : ''}
   ${mg ? `<button class="btn block" data-act="addperson">${isFamilies() ? '+ Aile ekle' : '+ Kişi ekle'}</button>` : ''}
+  </div></details>
+  <details class="tgrp" id="tg_money" ${tgO('tg_money')}><summary>${tgHead('💱', 'Para ve kur', sumMoney)}</summary><div class="tgb">
+    <div class="f"><label for="tRate">Euro kuru (1 € kaç ₺)${help('rate')}</label>
+      <div style="display:flex;gap:8px"><input class="inp num" id="tRate" inputmode="decimal" value="${nf4.format(S.trip.rate)}" data-bind="rate" style="flex:1;min-width:0">${IN_CLAUDE ? '' : `<button class="btn" data-act="rate">Canlı kuru çek</button>`}</div>
+      <span class="note">${IN_CLAUDE ? 'Claude içinde canlı kur alınamıyor; güncel kuru bankandan bakıp buraya yaz. Herkes için aynı kur kullanılır.' : 'Canlı kur kendiliğinden güncellenir (uygulama açıkken 2 saatte bir); istersen “Canlı kuru çek” ile hemen yenileyebilir ya da elle yazabilirsin.'} Durum: ${rateLabel()}</span>
+      ${Object.keys(S.trip.rates || {}).length ? `<span class="note num">Diğer kurlar: 1 € = ${OTHER_CURS.filter(([c]) => S.trip.rates[c]).map(([c]) => money(S.trip.rates[c], c)).join(' · ')}</span>` : ''}</div>
+    <div class="f"><label for="tFee">Döviz farkı (%)${help('fee')}</label>
+      <input class="inp num" id="tFee" inputmode="decimal" value="${feeTxt(fxFee())}" data-bind="fxFee" ${dis} style="max-width:8em" aria-label="Döviz farkı yüzdesi">
+      <span class="note">Euro borcu TL ile ödenirken ödeme gününün kuruna eklenir (alacaklı o euroyu kartla ya da bozdurarak yerine koyarken bu farkı öder). Euroyla ödenirse eklenmez. Bundan sonraki ödemelerde geçerli; yapılmış ödemeler kendi oranıyla kalır.</span></div>
+    <div class="f"><span class="lab">Büyük harcama sınırı${help('big')}</span>
+      <div class="two"><input class="inp num" id="tBigE" inputmode="decimal" value="${nf0.format(bigLimits().eur)}" data-bind="bigEur" aria-label="Euro sınırı"><input class="inp num" id="tBigT" inputmode="decimal" value="${nf0.format(bigLimits().tr)}" data-bind="bigTry" aria-label="TL sınırı"></div>
+      <span class="note">Solda € (diğer para birimleri euro karşılığıyla), sağda ₺. Bu tutarın üstündeki harcamalar kırmızı tonla vurgulanır. Bu sınır sadece senin telefonunda geçerli.</span></div>
+  </div></details>
+  <details class="tgrp" id="tg_budget" ${tgO('tg_budget')}><summary>${tgHead('💰', isFamily() ? 'Bütçe' : 'Bütçe ve kasa', sumBudget)}</summary><div class="tgb">
+    <div class="f"><label for="tPlan">Bütçe (kişi başı)${help('plan')}</label>
+      <div style="display:flex;gap:8px"><input class="inp num" id="tPlan" inputmode="decimal" placeholder="ör. 60.000" value="${S.trip.plan ? nf0.format(S.trip.plan) : ''}" data-bind="plan" style="flex:1;min-width:0">
+      <select class="inp" id="tPlanCur" data-bind="planCur" aria-label="Bütçe para birimi" style="width:auto">${PLAN_CURS.map(k => `<option value="${k}" ${planCurOf() === k ? 'selected' : ''}>${symOf(k)} ${k}</option>`).join('')}</select></div>
+      <span class="note">Bu tatil kişi başı kaça mal olsun? Seyahat öncesi harcananlar düşülür, kalanı seyahat günlerine bölünür. Boş bırakırsan bütçe takibi kapalı olur.</span></div>
+    ${isFamily() ? '' : `<div class="toggle" data-hhost><div><b>Ortak kasa</b>${help('kasa')}<div class="note">Herkes kasaya para koyar, harcamalar kasadan yapılır.</div></div><input type="checkbox" class="sw" id="tKasa" data-bind="kasaOn" ${S.trip.kasaOn?'checked':''} ${dis} aria-label="Ortak kasa"></div>`}
+    ${S.trip.kasaOn && !isFamily() ? `<div class="f"><label for="tHolder">Kasayı kim tutuyor?</label><select class="inp" id="tHolder" data-bind="holder" ${dis}>${opt(S.trip.holder)}</select></div>` : ''}
+  </div></details>
+  <details class="tgrp" id="tg_phone" ${tgO('tg_phone')}><summary>${tgHead('📱', 'Bu telefon', sumPhone)}</summary><div class="tgb">
+    <div class="f"><label for="tMe">Bu telefonu kim kullanıyor?${help('me')}</label>
+      ${myUid && myPerson() ? `<div style="display:flex;gap:8px;align-items:center"><div class="inp locked" style="flex:1">${emojiOf(S.me)} ${nm(S.me)} 🔒</div>${isTripAdmin() || selfFixLeft() ? `<button type="button" class="btn" data-release="${S.me}">Değiştir${isTripAdmin() ? '' : ` · ${Math.ceil(selfFixLeft() / 60e3)} dk`}</button>` : ''}</div><span class="note">Bu telefon/hesap ${nm(S.me)} olarak tanımlı; başka bir kişi seçilemez.${isTripAdmin() ? '' : selfFixLeft() ? ' Yanlışsa birkaç dakika içinde (bir kez) kendin değiştirebilirsin; sonrası için grupta söyle.' : ' Yanlış seçtiysen grupta söyle, düzeltilir.'}</span>`
+        : `<select class="inp" id="tMe" data-bind="me">${opt(S.me)}</select><span class="note">Harcama eklerken “ödeyen” otomatik bu kişi seçilir.</span>`}</div>
+    <div class="toggle"><div><b>🐦 Leyo animasyonları</b><div class="note">Maskot Leyo hareket etsin. Kapalıyken durgun durur; telefonda “hareketi azalt” açıksa zaten durur. Yalnız bu telefonda.</div></div><input type="checkbox" class="sw" id="tLeyo" ${leyoAnimPref() ? 'checked' : ''} aria-label="Leyo animasyonları"></div>
+  </div></details>
+  </div>
   ${errLogHtml()}
   ${window.HEYBE_VER ? `<p class="hint" style="text-align:center;opacity:.7">Heybe · sürüm ${window.HEYBE_VER.replace(/^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d).*/, '$3.$2 $4:$5')}</p>` : ''}
   ${S.sample ? `<p class="hint">Şu an örnek bir Roma gezisi görüyorsun. Üstteki “+ Yeni” ile kendi isimlerinizle sıfırdan başlayabilirsin.</p>` : ''}`;
@@ -10441,7 +10480,7 @@ document.addEventListener('click', ev => {
   if (d.plancur){ planDraft.cur = d.plancur; render(); const i = document.getElementById('planInp'); if (i) i.focus(); return; }
   if (d.edit && swOpen === t){ swClose(); return; }
   if (d.act !== 'deltrip') confirmTrip = false;
-  if (d.tab){ tab = d.tab; render(); window.scrollTo(0,0); if (tab === 'settle' && Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false); return; }
+  if (d.tab){ tab = d.tab; if (d.tg) tgSet(d.tg); render(); window.scrollTo(0,0); if (tab === 'settle' && Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false); return; }
   if (d.trip){ closeSheet(); switchTrip(d.trip); return; }
   if (d.emo){ openSheet({mode:'emoji', pid:d.emo}); return; }
   if (d.pickemo){
