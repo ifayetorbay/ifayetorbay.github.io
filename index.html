@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127201029';</script>
-<script src="heybe-web.js?v=20261127201029"></script>
+<script>window.HEYBE_VER = '20261127204931';</script>
+<script src="heybe-web.js?v=20261127204931"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -439,9 +439,13 @@ button.ozw{cursor:pointer}
 .ozal .mrow{text-align:left}
 .ozfun{display:flex;flex-wrap:wrap;gap:8px}
 .ozfun span{background:var(--surface);box-shadow:var(--card-shadow);border-radius:99px;padding:6px 12px;font-size:.82rem}
-.ozt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.ozt button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border:0;border-radius:16px;background:var(--surface);box-shadow:var(--card-shadow);font:inherit;font-weight:700;font-size:.84rem;color:var(--ink);cursor:pointer}
-.ozt button span{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--accent-soft);font-size:1.35rem}
+.ozt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ozt button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px;border:0;border-radius:16px;background:var(--surface);box-shadow:var(--card-shadow);font:inherit;font-weight:700;font-size:.76rem;color:var(--ink);cursor:pointer;min-width:0;overflow-wrap:anywhere;text-align:center}
+.ozt button span{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:var(--accent-soft);font-size:1.25rem}
+.oztfs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.oztf{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--ink)}
+.oztf::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--c)}
+.ozgo{align-self:flex-end;font-size:.8rem;font-weight:700;color:var(--accent)}
 .ozmath .math{color:var(--ink)}
 .ozc-hit{position:absolute;inset:0;z-index:2;border:0;background:none;border-radius:22px;cursor:pointer}
 .ozc-share{position:absolute;top:12px;right:12px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.22);color:#fff;font-size:1.05rem;display:grid;place-items:center;cursor:pointer}
@@ -1185,10 +1189,10 @@ button.gp-b:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srg
 <button class="fab" id="fab" data-act="add">+ Harcama</button>
 
 <nav class="tabs" aria-label="Sekmeler"><div class="in">
+  <button data-tab="ozet" aria-label="Özet (seyahatin ve senin özetin, raporlar)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="4.5" y="11" width="3.6" height="7" rx="1"/><rect x="10.2" y="5" width="3.6" height="13" rx="1"/><rect x="15.9" y="13.5" width="3.6" height="4.5" rx="1"/><path d="M19.5 3.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="currentColor" stroke-width="1"/></svg>Özet</button>
   <button data-tab="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Harcamalar</button>
   <button data-tab="settle" aria-label="Hesap (hesaplaşma)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-4-4M17 17H4l4 4"/></svg>Hesap</button>
   <button data-tab="gezi" aria-label="Gezi (plan ve rehber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Gezi</button>
-  <button data-tab="ozet" aria-label="Özet (seyahatin ve senin özetin, raporlar)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="4.5" y="11" width="3.6" height="7" rx="1"/><rect x="10.2" y="5" width="3.6" height="13" rx="1"/><rect x="15.9" y="13.5" width="3.6" height="4.5" rx="1"/><path d="M19.5 3.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="currentColor" stroke-width="1"/></svg>Özet</button>
   <button data-tab="trip" aria-label="Seyahat (kişiler ve ayarlar)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M22.17 17.42L23.74 18.40L22.80 20.67L21.00 20.26L20.26 21.00L20.67 22.80L18.40 23.74L17.42 22.17L16.38 22.17L15.40 23.74L13.13 22.80L13.54 21.00L12.80 20.26L11.00 20.67L10.06 18.40L11.63 17.42L11.63 16.38L10.06 15.40L11.00 13.13L12.80 13.54L13.54 12.80L13.13 11.00L15.40 10.06L16.38 11.63L17.42 11.63L18.40 10.06L20.67 11.00L20.26 12.80L21.00 13.54L22.80 13.13L23.74 15.40L22.17 16.38Z" fill="currentColor" style="stroke:var(--surface)" stroke-width="1.4"/><circle cx="16.9" cy="16.9" r="2.3" style="fill:var(--surface);stroke:none"/></svg>Seyahat</button>
 </div></nav>
 
@@ -2159,7 +2163,7 @@ function localTrip(tid){ try { return JSON.parse(localStorage.getItem(TRIP_KEY(t
 function localTrips(){
   try { return Object.keys(localStorage).filter(k => k.startsWith('yol-hesabi-gezi-')).map(k => localTrip(k.slice(16))).filter(Boolean); } catch(_) { return []; }
 }
-let tab = 'list', form = null, confirmDel = false, confirmTrip = false, rateBusy = false, rateFailed = false;
+let tab = 'ozet', form = null, confirmDel = false, confirmTrip = false, rateBusy = false, rateFailed = false;
 const openDet = {};   // açık bırakılan ayrıntı bölümleri, ekran yenilenince kapanmasın
 document.addEventListener('toggle', ev => { if (ev.target.tagName === 'DETAILS' && ev.target.id) openDet[ev.target.id] = ev.target.open; }, true);
 // Seyahat sekmesi grupları: aynı anda tek grup açık; son açılan bu telefonda hatırlanır (yalnız kolaylık; okunamazsa hepsi kapalı).
@@ -2442,9 +2446,9 @@ function render(){
   document.body.classList.toggle('ro', isRO());
   document.body.classList.toggle('nomgr', !isManager());
   // Her görünümde tek ekleme yolu: Harcamalar › Kişisel'de bölüme göre (Harcama "+ Kişisel", Alışveriş "+ Alışveriş"; Hediye'nin kendi
-  // formu var). Özet sekmesi okumak içindir, düğme yok.
+  // formu var). Uygulama Özet'le açıldığı için Özet'te de "+ Harcama" var (2026-11-27): harcama eklemek yine tek dokunuş.
   const kis = tab === 'list' && listMode() === 'kisisel';
-  fab.hidden = tab === 'trip' || tab === 'gezi' || tab === 'ozet' || isRO() || (kis && shopView === 'gifts');
+  fab.hidden = tab === 'trip' || tab === 'gezi' || isRO() || (kis && shopView === 'gifts');
   fab.textContent = tab === 'settle' ? '+ Ödeme' : kis ? (shopView === 'list' ? '+ Alışveriş' : '+ Kişisel') : '+ Harcama';
   fab.dataset.act = tab === 'settle' ? 'pay' : kis ? (shopView === 'list' ? 'addshop' : 'addsolo') : 'add';
   const C = compute(S, startOfToday());
@@ -7480,7 +7484,7 @@ function submit(){
     if (old2) SH.solo[SH.solo.indexOf(old2)] = x; else SH.solo.push(x);
     // Ortak listeden kişisele taşıma: yalnız kendi ödediği ve yalnız kendine bölünmüş kayıt (borç doğurmaz) ortak listeden çıkar.
     if (f.moveFrom){ const k = S.entries.findIndex(e => e.id === f.moveFrom), o = S.entries[k];
-      if (o && o.kind === 'expense' && o.paidBy === S.me && o.among.length === 1 && o.among[0] === S.me){ S.entries.splice(k, 1); logEvent(`ortak listeden kişisele taşıdı: ${o.desc}`); save(); } }
+      if (o && o.kind === 'expense' && o.paidBy === S.me && o.among.length === 1 && o.among[0] === S.me){ S.entries.splice(k, 1); logEvent(`ortak listeden çıkardı: ${o.desc}`); save(); } }   // "kişisele" yazılmaz: kişisel alana ne girdiği başkasına görünmesin
     saveShop(); closeSheet(); render();
     return toast(`🔒 ${x.desc} ${money(a, f.cur)} kişisel harcamalarına eklendi; yalnız sen görürsün.`, {act:'showsolo', label:'Göster', ms:6000});
   }
@@ -7713,7 +7717,7 @@ function emptyState(){
 async function enterTrip(build, toTab){
   finishGUndo(); await pushNow(); stashTrip();
   build(); loadMe(); loadLogs(); loadShop();
-  tab = toTab || 'list'; themeNow = null; render(); window.scrollTo(0,0); maybeAskWho(); rateCheck(30 * 6e4);
+  tab = toTab || 'ozet'; themeNow = null; render(); window.scrollTo(0,0); maybeAskWho(); rateCheck(30 * 6e4);
 }
 function switchTrip(tid){
   if (tid === S.tid && !S.sample) return;
@@ -7741,7 +7745,7 @@ async function deleteTrip(){
     if (merged && cloudMetas.has(next.tid)) openCloudTrip(next.tid);
     else { S = localTrip(next.tid) || emptyState(); }
   } else S = emptyState();
-  loadMe(); loadLogs(); loadShop(); tab = 'list'; themeNow = null; render(); window.scrollTo(0,0); maybeAskWho();
+  loadMe(); loadLogs(); loadShop(); tab = 'ozet'; themeNow = null; render(); window.scrollTo(0,0); maybeAskWho();
   toast(next ? `Seyahat silindi. ${S.trip.name} açıldı.` : 'Seyahat silindi');
 }
 
@@ -9102,7 +9106,7 @@ const ozF = v => fromTL(v, planCurOf(), 0);                 // bütçe tutarlar�
 const OZD_T = {sana:'💶 Bu seyahat sana', ortak:'👥 Ortak harcamalar', kisisel:'🔒 Kişisel cüzdanın', gunler:'📅 Günler', harita:'🗺️ Harcama haritası', kat:'🍽️ Nereye gidiyor', hesap:'🤝 Hesap durumun', butce:'💰 Bütçe', rapor:'📚 Raporlar'};
 function viewOzet(C){
   const M = myPicture(), P = planState(), ph = ozPhase(P), t = isFamily() ? null : totalPlan();
-  return ozHero(ph, P, C) + ozKpis(ph, P, C, M, t) + ozBudgetW(ph, P, C) + ozDaysW(ph, P) + ozCatsW(C) + ozFairW(t) + ozWalletW(M) + ozAlertsW(ph, P, C, t) + ozFunW(ph) + ozTilesW() + logsHtml() + ozLearnHtml();
+  return ozHero(ph, P, C) + ozKpis(ph, P, C, M, t) + ozBudgetW(ph, P, C) + ozDaysW(ph, P) + ozCatsW(C) + ozFairW(t) + ozWalletW(M) + ozShopW(ph, M) + ozAlertsW(ph, P, C, t) + ozFunW(ph) + ozTilesW() + logsHtml() + ozLearnHtml();
 }
 // Gezi kartı (uçan Leyo'lu, hikâye kartının görünümünde): dönemine göre başlık ve rakam; bitince hikâyenin satırları ve paylaşım.
 function ozHero(ph, P, C){
@@ -9204,6 +9208,28 @@ function ozWalletW(M){
     + ozLn('Alışveriş (tax-free sonrası)', eu(M.shop - M.ref), M.ref ? `${eu(M.shop)} − iade ≈ ${eu(M.ref)}` : '')
     + (G.length ? ozLn('Hediye listesi', `~${e0(gEst)}`, `${G.length} hediye · ${G.filter(g => g.done).length} alındı · toplama girmez`) : '') + `</button>`;
 }
+// 🛍️ Alışverişin (2026-11-27, kullanıcı: "Özet'te alışverişe gidince alışveriş sekmen gelmeli; alışveriş kişisel, herkes kendininkini
+// görsün"): yalnız bu kişinin özel alanından (SH.items), başkasının telefonunda onunki çıkar. Tax-free sonrası toplam, mağaza ve alışveriş
+// sayısı, en çok harcanan mağazalar, outlet / AVM, tax-free formlarının durumu, Türkiye karşılaştırması. Dokununca Alışveriş ekranı açılır.
+function ozShopW(ph, M){
+  const go = 'data-tab="shop" data-sv="list"';
+  if (!SH.items.length) return ph === 'trip' ? `<button type="button" class="ozw" ${go}><div class="ozw-h"><span>🛍️ Alışverişin · yalnız sen</span><span class="num">›</span></div><span class="mut">Outlet ve mağaza alışverişlerin, fişlerin ve tax-free iaden burada toplanır. Yalnız sen görürsün.</span></button>` : '';
+  const {ref} = shopCalc(), by = {};
+  for (const i of SH.items){ const k = i.store.trim().toLocaleLowerCase('tr'), o = by[k] = by[k] || {name:i.store.trim(), v:0}; o.v += Math.round(shopEur(i) * 100); }
+  const top = Object.values(by).filter(o => o.v > 0).sort((a, c) => c.v - a.v), nBuy = SH.items.filter(i => !i.ret).length, nRet = SH.items.length - nBuy;
+  const places = [...new Set(SH.items.map(i => (i.outlet || '').trim()).filter(Boolean))];
+  const forms = [0, 1, 2, 3].map(st => new Set(SH.items.filter(i => !i.ret && ref[i.id] > 0 && tfStep(i) === st).map(shopGroup)).size);
+  const tfTxt = ['alınmadı', 'onaylatılacak', 'iade bekliyor', 'iade alındı'].map((l, k) => forms[k] ? `<span class="oztf" style="--c:${TF_COLOR[k]}">${forms[k]} ${l}</span>` : '').join('');
+  const cs = SH.items.map(i => trCompare(i, ref[i.id])).filter(Boolean), gain = cs.reduce((a, c) => a + c.tr - c.net, 0);
+  return `<button type="button" class="ozw" ${go}><div class="ozw-h"><span>🛍️ Alışverişin · yalnız sen</span><span class="num">${eu(M.shop - M.ref)}</span></div>
+    <span class="mut">${top.length} mağaza · ${nBuy} alışveriş${nRet ? ` · ${nRet} iade` : ''}${M.ref ? ` · tax-free ≈ ${eu(M.ref)} geri` : ''}</span>`
+    + top.slice(0, 4).map(o => `<div class="hb"><span>${esc(o.name)}</span><b class="num">${eu(o.v)}</b><i style="width:${(o.v * 100 / top[0].v).toFixed(1)}%"></i></div>`).join('')
+    + (top.length > 4 ? `<span class="mut">+${top.length - 4} mağaza daha</span>` : '')
+    + (places.length ? `<span class="mut">📍 ${places.slice(0, 3).map(esc).join(' · ')}${places.length > 3 ? ` +${places.length - 3}` : ''}</span>` : '')
+    + (tfTxt ? `<span class="oztfs"><span class="mut">🧾 Tax-free formları</span>${tfTxt}</span>` : '')
+    + (cs.length ? `<span class="mut">🇹🇷 Türkiye fiyatlarına göre ${cs.reduce((a, c) => a + c.n, 0)} üründe ${gain >= 0 ? `<b class="pos">≈ ${nf0.format(gain)} ₺ kârdasın</b>` : `<b class="neg">≈ ${nf0.format(-gain)} ₺ daha pahalı</b>`}</span>` : '')
+    + `<span class="ozgo">Alışverişe git ›</span></button>`;
+}
 // Dikkat: döneme göre yapılacaklar (eksik tarih/bütçe, bekleyen ödemeler, tax-free formları, bütçe aşımı, kasa açığı, rapor); Leyo söyler.
 function ozAlertsW(ph, P, C, t){
   const A = [];
@@ -9227,9 +9253,11 @@ function ozAlertsW(ph, P, C, t){
 }
 function ozFunW(ph){ if (ph === 'pre') return ''; const F = funCounts(); if (!F.length) return '';
   return `<div class="ozfun">${F.slice(0, 6).map(x => `<span>${x.ic} <b>${x.n}</b> ${x.l}</span>`).join('')}</div>`; }
+// Kutucuklar 4 × 2: çoğu alttan ayrıntı sayfası açar; Alışveriş ve Hediye doğrudan kendi ekranına gider (Harcamalar › Kişisel).
 function ozTilesW(){
-  const T = [['ortak', '👥', 'Ortak'], ['kisisel', '🔒', 'Kişisel'], ['gunler', '📅', 'Günler'], ['harita', '🗺️', 'Harita'], ...(isFamily() ? [['kat', '🍽️', 'Kategoriler']] : [['hesap', '🤝', 'Hesap']]), ['rapor', '📚', 'Raporlar']];
-  return `<h2>Ayrıntılar</h2><div class="ozt">${T.map(([k, i, l]) => `<button type="button" data-ozd="${k}"><span aria-hidden="true">${i}</span>${l}</button>`).join('')}</div>`;
+  const T = [['data-ozd="ortak"', '👥', 'Ortak'], ['data-ozd="kisisel"', '🔒', 'Kişisel'], ['data-tab="shop" data-sv="list"', '🛍️', 'Alışveriş'], ['data-tab="shop" data-sv="gifts"', '🎁', 'Hediye'],
+    ['data-ozd="gunler"', '📅', 'Günler'], ['data-ozd="harita"', '🗺️', 'Harita'], isFamily() ? ['data-ozd="kat"', '🍽️', 'Kategori'] : ['data-ozd="hesap"', '🤝', 'Hesap'], ['data-ozd="rapor"', '📚', 'Raporlar']];
+  return `<h2>Ayrıntılar</h2><div class="ozt">${T.map(([a, i, l]) => `<button type="button" ${a}><span aria-hidden="true">${i}</span>${l}</button>`).join('')}</div>`;
 }
 // Alttan açılan ayrıntı sayfası (salt okunur): kutucuk, gösterge ve widget'lar buraya açılır.
 function ozDetail(key){
@@ -11254,7 +11282,7 @@ document.addEventListener('click', ev => {
     case 'archive':
       if (!confirmArc){ confirmArc = true; render(); break; }
       confirmArc = false; S.trip.closed = true; S.trip.closedAt = Date.now(); logEvent('seyahati arşivledi');
-      tab = 'list'; render(); window.scrollTo(0, 0); toast('🗄️ Seyahat arşivlendi; artık sadece görüntülenebilir.'); break;
+      tab = 'ozet'; render(); window.scrollTo(0, 0); toast('🗄️ Seyahat arşivlendi; artık sadece görüntülenebilir.'); break;
     case 'unarchive':
       if (!isTripAdmin()){ toast('Bu ayarı değiştirme yetkin yok.'); break; }
       S.trip.closed = false; logEvent('seyahati arşivden çıkardı'); render(); toast('Seyahat yeniden düzenlenebilir.'); break;
