@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127172625';</script>
-<script src="heybe-web.js?v=20261127172625"></script>
+<script>window.HEYBE_VER = '20261127175438';</script>
+<script src="heybe-web.js?v=20261127175438"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -468,6 +468,13 @@ html.sheetopen,html.sheetopen body{overflow:hidden}
 .lvr{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-top:1px solid var(--line)}
 .lvr>div:first-child{display:flex;flex-direction:column}
 .lvr .chip{padding:5px 10px;font-size:.8rem}
+.pp.gone:not(.sel){opacity:.6;border-style:dashed}
+.prow [data-rejoin],.prow [data-leave]{white-space:nowrap;flex:none}
+.lvsum{display:flex;flex-direction:column;gap:12px;margin:4px 0 10px}
+.lvi{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;line-height:1.45}
+.lvi>span{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-text);font-weight:800;font-size:.8rem}
+.lvi.lvq>span{background:var(--sun-soft);color:var(--sun-text)}
+.lvi .seg{margin-top:8px}
 .gfs{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
 .gfs:first-child{border-top:0}
 .gfs>div{min-width:0;display:flex;flex-direction:column}
@@ -1409,6 +1416,28 @@ function planDiff(direct, short, ids){
   return ids.map(id => { const d = side(direct, id), s = side(short, id);
     return {id, d, s, dNet:sum(d.inn) - sum(d.out), sNet:sum(s.inn) - sum(s.out), same:key(d) === key(s)}; });
 }
+// 🚪 Geziye katılmıyor (2026-11-19 "Geziden ayrıldı"; 2026-11-27 sadeleşti, kullanıcı: "seyahat öncesi payı doğru; bundan sonrakiler
+// 3'e bölünsün; esnek olsun"). Varsayılan: seyahat öncesi harcamalar ve yalnız onun için yapılmış harcama aynen kalır ("kalsin");
+// seyahatte girilmiş ortak harcamalarda payı kalanlara bölünür ("bol"). ch: harcama başına elle seçim. Ödediği harcamalar ve
+// ödemeler aynen kalır. TL'yle hemen ödeşilen harcamada "payını gönderdi" işaretleri önce ödeme kaydına çevrilir (paylar değişince
+// işaret anlamsızlaşır). Bundan sonraki harcamalarda kişi seçili gelmez (p.left), gerekirse elle eklenir.
+const leaveRows = (st, id) => st.entries.filter(e => e.kind === 'expense' && (e.among || []).includes(id)).sort((a, b) => a.at - b.at);
+const leaveDef = (e, id, st) => phaseOf(e, st) === 'pre' || (e.among.length === 1 && e.among[0] === id) ? 'kalsin' : 'bol';
+const leaveCh = (e, id, st, ch) => (ch && ch[e.id]) || leaveDef(e, id, st);
+function leaveApply(st, id, ch, R, newId = () => Math.random().toString(36).slice(2, 9), by = null){
+  const active = st.people.filter(p => p.id !== id && !p.left).map(p => p.id); let k = 0;
+  for (const e of [...st.entries]){
+    if (e.kind !== 'expense' || !(e.among || []).includes(id) || leaveCh(e, id, st, ch) !== 'bol') continue;
+    if (e.settleTL && (e.tlPaid || []).length){ const sh = splitShares(Math.round(e.amount * 100), e.among, e.weights);
+      for (const pid of e.tlPaid) if (pid !== e.paidBy && sh[pid]) st.entries.push({id:newId(), kind:'transfer', total:true, ...(e.v2 ? {v2:1} : {}), from:pid, to:e.paidBy, amount:sh[pid] / 100, cur:'TRY', rate:R, at:e.at, by, note:`Önceden gönderilen pay: ${e.desc}`});
+      e.tlPaid = []; }
+    const rest = e.among.filter(x => x !== id);
+    e.among = rest.length ? rest : active.slice();
+    if (e.weights){ const w = {...e.weights}; delete w[id]; e.weights = Object.keys(w).length ? w : null; }
+    k++;
+  }
+  return k;
+}
 </script>
 
 <script id="plan">
@@ -2338,13 +2367,13 @@ function fromTL(k, c, dec){
 // kalan para seyahat günlerine bölünür. Her harcama girildiği günün kuruyla TL'ye çevrilir (tlKurus);
 // kişi başı tutar = toplam / kişi sayısı. Günlük sınır gün başında hesaplanır: bugünkü harcama, bugünün sınırını düşürür.
 function planState(){
-  const n = headcount(), t0 = startOfToday();
+  const n = headcount(), na = headcount(true), t0 = startOfToday();
   let pre = 0, trip = 0, today = 0;
   for (const e of S.entries) if (e.kind === 'expense'){
     const k = tlKurus(e);
     if (phaseOf(e, S) === 'pre') pre += k; else { trip += k; if (e.at >= t0) today += k; }
   }
-  pre /= n; trip /= n; today /= n;
+  pre /= n; trip /= na; today /= na;   // seyahatteki harcamalar geziye katılanlara (🚪 sayılmaz)
   const day = tripDay(Date.now()), len = S.trip.end && S.trip.start ? tripDay(new Date(S.trip.end + 'T00:00:00').getTime()) : null;
   const started = day !== null ? day >= 1 : trip > 0, ended = !!len && day > len;
   const plan = planKurus(), spent = pre + trip;
@@ -2899,13 +2928,16 @@ function viewTrip(){
   <p class="hint">${mg ? `Emojiye dokunarak değiştirebilirsin. ${isRO() ? '' : `Silmek için satırı sağa ya da sola kaydır.`}${isTripAdmin() && myUid ? ' ☆ işaretine dokunarak birini yardımcı kurucu (⭐) yapabilirsin; ☆ kişi Heybe\'ye katılıp adını seçince çıkar.' : ''}` : 'Kendi emojine dokunarak değiştirebilirsin.'}</p>
   <div class="list">${S.people.map(p => `<div class="swr"><button class="swdel l" data-delp="${p.id}" tabindex="-1">Sil</button><button class="swdel r" data-delp="${p.id}" tabindex="-1">Sil</button><div class="row pcard prow">
     <button type="button" class="emo" data-emo="${p.id}" aria-label="${esc(p.name)} emojisini değiştir">${emojiOf(p.id)}</button>
-    <input class="inp" id="pn-${p.id}" data-pname="${p.id}" value="${esc(p.name)}" aria-label="İsim" ${dis}>${p.left ? '<span class="lockmark" title="Geziden ayrıldı; hesabı kapanınca silinebilir">🚪</span>' : ''}
+    <input class="inp" id="pn-${p.id}" data-pname="${p.id}" value="${esc(p.name)}" aria-label="İsim" ${dis}>${p.left ? '<span class="lockmark" title="Geziye katılmıyor; hesabı kapanınca silinebilir">🚪</span>' : ''}
     ${isTripAdmin() && myUid ? (p.uid === myUid ? `<span class="lockmark" title="Kurucu">👑</span>` : p.uid ? `<button type="button" class="fbtn" data-admin="${p.id}" aria-pressed="${admins.has(p.uid)}" title="Yardımcı kurucu">${admins.has(p.uid) ? '⭐' : '☆'}</button>` : '')
       : p.uid && p.uid === myUid && admins.has(myUid) ? `<span class="lockmark" title="Yardımcı kurucusun">⭐</span>` : ''}
     ${isFamilies() ? `<span class="famctl"><button type="button" class="fbtn" data-fam="${p.id}" data-fk="size">👤 ${p.size || 1}</button><button type="button" class="fbtn" data-fam="${p.id}" data-fk="kids">🧒 ${p.kids || 0}</button></span>` : ''}
     ${p.uid ? (isManager() && myUid ? (relAsk === p.id ? `<button type="button" class="btn sm danger" data-releaseok="${p.id}">Bağı kaldır?</button>` : `<button type="button" class="btn sm" data-release="${p.id}" title="Bu kişinin telefon bağını kaldır">🔓</button>`) : `<span class="lockmark" title="Bir telefona bağlı">🔒</span>`)
       : p.freed && isManager() && myUid && !S.people.some(q => q.uid === p.freed) ? `<button type="button" class="btn sm" data-relock="${p.id}" title="Eski telefona yeniden bağla">🔒 Yeniden kilitle</button>` : ''}
+    ${mg && !isRO() && !isFamily() ? (p.left ? `<button type="button" class="btn sm" data-rejoin="${p.id}" title="Geziye katıldı">↩ Katıldı</button>`
+      : S.people.filter(q => !q.left).length > 1 ? `<button type="button" class="btn sm" data-leave="${p.id}" title="Geziye katılmıyor (gelemedi ya da ayrıldı)" aria-label="${esc(p.name)} geziye katılmıyor">🚪</button>` : '') : ''}
   </div></div>`).join('')}</div>
+  ${mg && !isRO() && !isFamily() ? `<p class="hint">🚪 ile geziye katılmayanı (gelemedi ya da yarıda ayrıldı) işaretlersin: bundan sonraki harcamalar ona bölünmez, eski payları yerinde kalır.</p>` : ''}
   ${isFamilies() ? `<p class="hint">👤 yetişkin, 🧒 çocuk sayısı: dokundukça artar (en fazla 9, sonra başa döner). Yeni harcamalar bu sayılara göre bölünür.</p>` : ''}
   ${mg ? `<button class="btn block" data-act="addperson">${isFamilies() ? '+ Aile ekle' : '+ Kişi ekle'}</button>` : ''}
   ${errLogHtml()}
@@ -3180,10 +3212,10 @@ function drawSheet(){
   } else if (f.mode === 'addpeople'){
     body = addPeopleBody(f);
   } else if (f.mode === 'delperson' && (f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left){
-    body = `<div class="seg wide">${[['ayril', '🚪 Geziden ayrıldı'], ['aktar', '🔁 Kayıtlarını birine aktar']].map(([k, t]) => `<button type="button" data-delhow="${k}" aria-pressed="${(f.how || 'ayril') === k}">${t}</button>`).join('')}</div>` + leaveBody(f);
+    body = (f.direct ? '' : `<div class="seg wide">${[['ayril', '🚪 Geziye katılmıyor'], ['aktar', '🔁 Kayıtlarını birine aktar']].map(([k, t]) => `<button type="button" data-delhow="${k}" aria-pressed="${(f.how || 'ayril') === k}">${t}</button>`).join('')}</div>`) + leaveBody(f);
   } else if (f.mode === 'delperson'){
     const n = personUses(f.pid);
-    body = `${person(f.pid).left ? `<p class="note">🚪 ${nm(f.pid)} geziden ayrılmıştı. Hesabı kapandıysa (bakiyesi 0) kayıtlarını birine aktararak tamamen silebilirsin; kimsenin bakiyesi değişmez.</p>` : `<div class="seg wide">${[['ayril', '🚪 Geziden ayrıldı'], ['aktar', '🔁 Kayıtlarını birine aktar']].map(([k, t]) => `<button type="button" data-delhow="${k}" aria-pressed="${(f.how || 'ayril') === k}">${t}</button>`).join('')}</div>`}
+    body = `${person(f.pid).left ? `<p class="note">🚪 ${nm(f.pid)} geziye katılmıyor olarak işaretli. Hesabı kapandıysa (bakiyesi 0) kayıtlarını birine aktararak tamamen silebilirsin; kimsenin bakiyesi değişmez.</p>` : `<div class="seg wide">${[['ayril', '🚪 Geziye katılmıyor'], ['aktar', '🔁 Kayıtlarını birine aktar']].map(([k, t]) => `<button type="button" data-delhow="${k}" aria-pressed="${(f.how || 'ayril') === k}">${t}</button>`).join('')}</div>`}
       <p class="note"><b>${nmE(f.pid)}</b> adına ${n} kayıt var (ödediği, payı olduğu ya da gönderdiği/aldığı). Silmeden önce bu kayıtları kime aktaralım?</p>
       <div class="chips">${S.people.filter(p => p.id !== f.pid).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.target === p.id, `data-ptarget="${p.id}"`)).join('')}</div>
       <p class="note">Ödediği harcamalar ve ödemeler seçtiğin kişiye geçer, payı onun payına eklenir. Toplamlar değişmez.</p>`;
@@ -3208,8 +3240,8 @@ function drawSheet(){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: 'Katılımcıyı sil', addpeople: isFamilies() ? 'Aile ekle' : 'Kişi ekle', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', wiz: '🐦 Leyo\'yla planla', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
-  const saveLbl = {expense:'Kaydet', delperson:f.mode === 'delperson' && (f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left ? '🚪 Ayrıldı olarak kaydet' : 'Aktar ve sil', addpeople:'Ekle', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
+  const titles = {expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: f.direct ? '🚪 Geziye katılmıyor' : 'Katılımcıyı sil', addpeople: isFamilies() ? 'Aile ekle' : 'Kişi ekle', solo: f.id ? '🔒 Sadece bana · düzenle' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', wiz: '🐦 Leyo\'yla planla', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const saveLbl = {expense:'Kaydet', delperson:f.mode === 'delperson' && (f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left ? '🚪 Katılmıyor olarak kaydet' : 'Aktar ve sil', addpeople:'Ekle', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
   // Açık pencere yeniden çizilirken pencerenin kendisi korunur, yalnız içi yenilenir: telefonda kaydırma ve ivme kesilmez
@@ -3286,10 +3318,11 @@ function eachNote(){
 // çıkarmak için kendi adına dokunulur; yalnız kendine harcama "🔒 Sadece bana"dır).
 function pplHtml(){
   const f = form, a = parseAmt(f.amount), w = id => (f.weights && f.weights[id] > 1 ? f.weights[id] : 1), tot = f.among.reduce((s, id) => s + w(id), 0);
-  return S.people.filter(p => !p.left || f.among.includes(p.id)).map(p => {
-    const on = f.among.includes(p.id), sh = on && a > 0 && tot ? money(a * w(p.id) / tot, f.cur) : '';
-    const sub = !on ? 'dahil değil' : [sh, p.id === f.paidBy ? 'ödeyen' : ''].filter(Boolean).join(' · ') || 'dahil';
-    return `<button type="button" class="pp${on ? ' sel' : ''}" data-among="${p.id}" aria-pressed="${on}"><span class="ck">${on ? '✓' : ''}</span><span class="pn"><b>${emojiOf(p.id)} ${esc(p.name)}${on && w(p.id) > 1 ? ` ×${w(p.id)}` : ''}</b><small class="num">${sub}</small></span></button>`;
+  // Geziye katılmayan (🚪) gri ve seçisiz görünür; dokununca o harcamaya eklenir (ör. iptal ücreti).
+  return S.people.map(p => {
+    const on = f.among.includes(p.id), gone = !!p.left, sh = on && a > 0 && tot ? money(a * w(p.id) / tot, f.cur) : '';
+    const sub = !on ? (gone ? '🚪 katılmıyor' : 'dahil değil') : [sh, p.id === f.paidBy ? 'ödeyen' : '', gone ? '🚪' : ''].filter(Boolean).join(' · ') || 'dahil';
+    return `<button type="button" class="pp${on ? ' sel' : ''}${gone ? ' gone' : ''}" data-among="${p.id}" aria-pressed="${on}"><span class="ck">${on ? '✓' : ''}</span><span class="pn"><b>${emojiOf(p.id)} ${esc(p.name)}${on && w(p.id) > 1 ? ` ×${w(p.id)}` : ''}</b><small class="num">${sub}</small></span></button>`;
   }).join('');
 }
 function amongHtml(){
@@ -9070,7 +9103,7 @@ function setShopPhoto(id, d){ try { if (d) localStorage.setItem(shopPhotoKey(id)
 const KIND = () => (S.trip && S.trip.kind) || 'friends';
 const isFamily = () => KIND() === 'family', isFamilies = () => KIND() === 'families';
 const famWeight = p => (p.size || 1) + (p.kids || 0) * (S.trip.kidHalf ? .5 : 1);
-const headcount = () => S.people.reduce((a, p) => a + (isFamilies() ? (p.size || 1) + (p.kids || 0) : 1), 0) || 1;
+const headcount = (act = false) => S.people.filter(p => !act || !p.left).reduce((a, p) => a + (isFamilies() ? (p.size || 1) + (p.kids || 0) : 1), 0) || 1;
 const defaultWeights = () => { if (!isFamilies()) return null; const w = Object.fromEntries(S.people.filter(p => !p.left && famWeight(p) !== 1).map(p => [p.id, famWeight(p)])); return Object.keys(w).length ? w : null; };
 const peopleLabel = () => isFamilies() ? `${S.people.length} aile · ${headcount()} kişi` : isFamily() ? `aile · ${S.people.length} kişi` : `${S.people.length} kişi`;
 
@@ -9120,46 +9153,44 @@ function mergePerson(from, to){
   }
   S.entries = S.entries.filter(e => !((e.kind === 'transfer' || e.kind === 'kasaout') && e.from === e.to));
 }
-// 🚪 Geziden ayrıldı (2026-11-19, kullanıcı: "bir arkadaş geziye katılmayacak; payına düşenleri harmanlayalım; her ödemede
-// bölüştürülsün ya da kalsın seçeneği"): ayrılanın bölüştüğü her harcama için seçim: "bol" = payı kalanlara bölünür, "kalsin" = payını
-// yine o öder. Varsayılan: ortak harcamada bölünsün, yalnız onun için yapılmış harcamada (bölüşen yalnız o) yine o ödesin; orada
-// "bölünsün" seçilirse kalan herkese bölünür. Ödediği harcamalar ve ödemeler aynen kalır: kalanlar ona borçlanır. Kaydı kalmazsa
-// tamamen silinir; kalırsa "ayrıldı" (p.left) olur: yeni harcamalarda ve kişi seçimlerinde çıkmaz, Hesaplaşma'da 🚪 ile görünür.
-const leaveRows = id => S.entries.filter(e => e.kind === 'expense' && (e.among || []).includes(id)).sort((a, b) => a.at - b.at);
-const leaveDef = (e, id) => e.among.length === 1 && e.among[0] === id ? 'kalsin' : 'bol';
-function leaveApply(st, id, ch, R){
-  const active = st.people.filter(p => p.id !== id && !p.left).map(p => p.id); let k = 0;
-  for (const e of st.entries){
-    if (e.kind !== 'expense' || !(e.among || []).includes(id) || (ch[e.id] || leaveDef(e, id)) !== 'bol') continue;
-    // TL'yle hemen ödeşilen harcamada "payını gönderdi" işaretleri önce ödeme kaydına çevrilir (paylar değişince işaret anlamsızlaşır).
-    if (e.settleTL && (e.tlPaid || []).length){ const sh = splitShares(Math.round(e.amount * 100), e.among, e.weights);
-      for (const pid of e.tlPaid) if (pid !== e.paidBy && sh[pid]) st.entries.push({id:uid(), kind:'transfer', total:true, from:pid, to:e.paidBy, amount:sh[pid] / 100, cur:'TRY', rate:R, at:e.at, by:S.me, note:`Önceden gönderilen pay: ${e.desc}`});
-      e.tlPaid = []; }
-    const rest = e.among.filter(x => x !== id);
-    e.among = rest.length ? rest : active.slice();
-    if (e.weights){ const w = {...e.weights}; delete w[id]; e.weights = Object.keys(w).length ? w : null; }
-    k++;
-  }
-  return k;
-}
+// 🚪 Geziye katılmıyor ekranı: üç satırlık özet (şimdiye kadarki payı yerinde; bundan sonrakiler kalanlara; seyahatte girilmiş ve
+// onun da olduğu harcamalar için tek seçim), "Tek tek seç" ile harcama başına istisna, sonuç önizlemesi. Kural hesap çekirdeğinde.
 function leaveBody(f){
-  const id = f.pid, ch = f.lch || (f.lch = {}), R = totalPlan().R, rows = leaveRows(id);
+  const id = f.pid, ch = f.lch || (f.lch = {}), R = totalPlan().R, rows = leaveRows(S, id), who = nm(id);
+  const pre = rows.filter(e => phaseOf(e, S) === 'pre'), trip = rows.filter(e => phaseOf(e, S) !== 'pre');
   const st = {people:S.people.map(p => ({...p})), entries:JSON.parse(JSON.stringify(S.entries)), trip:S.trip};
   const before = todayNet(S, R); leaveApply(st, id, ch, R); const after = todayNet(st, R);
   const dif = S.people.filter(p => p.id !== id).map(p => [p, (after[p.id] || 0) - (before[p.id] || 0)]).filter(([, d]) => Math.abs(d) >= 100);
-  const xNet = after[id] || 0, tlx = k => nf.format(Math.abs(k) / 100) + ' ₺';
-  const row = e => { const c = ch[e.id] || leaveDef(e, id), sh = splitShares(Math.round(e.amount * 100), e.among, e.weights)[id] || 0;
-    return `<div class="lvr"><div><b>${iconOf(e)} ${esc(e.desc)}</b><span class="note">${money(e.amount, e.cur)} · ödeyen ${nm(e.paidBy)} · ${nm(id)}'in payı ${money(sh / 100, e.cur)}</span></div>
-      <div class="chips">${chip('Kalanlara bölünsün', c === 'bol', `data-lch="${e.id}" data-v="bol"`)}${chip('Payını yine o ödesin', c === 'kalsin', `data-lch="${e.id}" data-v="kalsin"`)}</div></div>`; };
-  return `<p class="note"><b>${nmE(id)}</b> geziden ayrılıyor. Bölüştüğü ${rows.length} harcamanın her biri için seç: payı kalanlara mı bölünsün, yoksa payını yine o mu ödesin (ör. iadesiz kaparo, onun adına alınmış bilet)?</p>
-    ${rows.length ? `<div class="lvlist">${rows.map(row).join('')}</div>` : '<p class="note">Bölüştüğü harcama yok.</p>'}
-    <div class="callout"><b>Sonuç</b>${dif.length ? dif.map(([p, d]) => `<span>${emojiOf(p.id)} ${esc(p.name)}: ${d < 0 ? 'payı ' + tlx(d) + ' arttı' : tlx(d) + ' daha az ödeyecek'}</span>`).join('') : '<span>Kimsenin payı değişmiyor.</span>'}
-      <span>${Math.abs(xNet) < 100 ? `${nm(id)} ile hesap kapanıyor; tamamen silinecek.` : xNet > 0 ? `${nm(id)} ${tlx(xNet)} alacaklı kalıyor (ödediği harcamalardan); Hesaplaşma'da 🚪 ile görünür.` : `${nm(id)} ${tlx(xNet)} borçlu kalıyor; Hesaplaşma'da 🚪 ile görünür.`}</span></div>
-    <p class="note">Ödediği harcamalar ve yaptığı ödemeler aynen kalır. Tercihleri rehberden çıkar, istekleri kalır. Toplam harcama değişmez; 10 saniye içinde geri alabilirsin.</p>`;
+  const xNet = after[id] || 0, tlx = k => nf.format(Math.abs(k) / 100) + ' ₺', n = S.people.filter(p => !p.left && p.id !== id).length;
+  const used = st.entries.some(e => e.paidBy === id || e.from === id || e.to === id || (e.among || []).includes(id));
+  const list = a => a.slice(0, 3).map(e => esc(e.desc)).join(', ') + (a.length > 3 ? ` ve ${a.length - 3} harcama daha` : '');
+  const tc = trip.map(e => leaveCh(e, id, S, ch)), tBol = tc.every(c => c === 'bol'), tKal = tc.every(c => c === 'kalsin');
+  const preBol = pre.filter(e => leaveCh(e, id, S, ch) === 'bol').length;
+  const row = e => { const c = leaveCh(e, id, S, ch), sh = splitShares(Math.round(e.amount * 100), e.among, e.weights)[id] || 0;
+    return `<div class="lvr"><div><b>${iconOf(e)} ${esc(e.desc)}</b><span class="note">${phaseOf(e, S) === 'pre' ? 'seyahat öncesi' : 'seyahatte'} · ${money(e.amount, e.cur)} · ödeyen ${nm(e.paidBy)} · payı ${money(sh / 100, e.cur)}</span></div>
+      <div class="chips">${chip('Aynen kalsın', c === 'kalsin', `data-lch="${e.id}" data-v="kalsin"`)}${chip(`${n} kişiye bölünsün`, c === 'bol', `data-lch="${e.id}" data-v="bol"`)}</div></div>`; };
+  const fate = !used ? `Hiç kaydı kalmadığı için ${who} listeden çıkarılacak.` : Math.abs(xNet) < 100 ? `${who} ile hesap denk; listede 🚪 ile kalır.`
+    : xNet > 0 ? `${who} ${tlx(xNet)} alacaklı kalıyor; Hesaplaşma'da 🚪 ile görünür.` : `${who} ${tlx(xNet)} borçlu kalıyor; Hesaplaşma'da 🚪 ile görünür.`;
+  return `<div class="lvsum">
+      <div class="lvi"><span>✓</span><div><b>Şimdiye kadarki payı yerinde kalır.</b>${pre.length ? ` Seyahat öncesi ${pre.length} harcama (${list(pre)}) aynen kalır${preBol ? `; ${preBol} tanesini bölünsün diye seçtin` : ''}.` : ''}</div></div>
+      <div class="lvi"><span>→</span><div><b>Bundan sonraki harcamalar ${n} kişiye bölünür.</b> Bölüşülen'de ${who} gri görünür; gerekirse dokunup o harcamaya eklersin.</div></div>
+      ${trip.length ? `<div class="lvi lvq"><span>!</span><div><b>Seyahatte girilmiş ${trip.length} harcamada ${who} de var</b> (${list(trip)}). Bunlarda payı ne olsun?
+        <div class="seg wide" role="group" aria-label="Seyahatteki harcamalar">${[['bol', `${n} kişiye bölünsün`], ['kalsin', 'Aynen kalsın']].map(([v, t]) => `<button type="button" data-ltrip="${v}" aria-pressed="${v === 'bol' ? tBol : tKal}">${t}</button>`).join('')}</div>
+        ${!tBol && !tKal ? '<span class="note">Bazıları bölünecek, bazıları kalacak (tek tek seçtin).</span>' : ''}</div></div>` : ''}
+    </div>
+    ${rows.length ? `<details class="more" id="dLv" ${openDet.dLv ? 'open' : ''}><summary>Tek tek seç (${rows.length} harcama)</summary><div class="inner"><div class="lvlist">${rows.map(row).join('')}</div></div></details>` : ''}
+    <div class="callout"><b>Sonuç</b>${dif.length ? dif.map(([p, d]) => `<span>${emojiOf(p.id)} ${esc(p.name)}: ${d < 0 ? 'payı ' + tlx(d) + ' arttı' : tlx(d) + ' daha az ödeyecek'}</span>`).join('') : '<span>Şimdiki borç ve alacaklar değişmiyor.</span>'}<span>${fate}</span></div>
+    <p class="note">Sonra da değiştirebilirsin: eski bir harcamayı açıp kişilere dokunarak ekler ya da çıkarırsın. Katılımcılar'daki "↩ Katıldı" ile geri alınır.</p>`;
+}
+// ↩ Geziye katıldı: işaret kalkar, yeni harcamalarda yine seçili gelir; geçmiş bölüşümler olduğu gibi kalır.
+function rejoinPerson(id){
+  const p = person(id); if (!p || !p.left) return;
+  delete p.left; logEvent(`katılımcı geziye katıldı: ${p.name}`); save(); render();
+  toast(`↩ ${p.name} geziye katıldı; yeni harcamalarda yine seçili gelir. Geçmiş bölüşümler değişmedi.`);
 }
 function leavePerson(id, ch){
   const p = person(id), name = p.name, R = totalPlan().R, snap = JSON.stringify({people:S.people, entries:S.entries, holder:S.trip.holder, prefs:S.trip.prefs || null, me:S.me});
-  const k = leaveApply(S, id, ch, R);
+  const k = leaveApply(S, id, ch, R, uid, S.me);
   if (S.trip.prefs) delete S.trip.prefs[id];
   if (S.trip.holder === id) S.trip.holder = (S.people.find(q => q.id !== id && !q.left) || {}).id;
   const used = S.entries.some(e => e.paidBy === id || e.from === id || e.to === id || (e.among || []).includes(id));
@@ -9167,14 +9198,15 @@ function leavePerson(id, ch){
     S.people = S.people.filter(q => q.id !== id);
     if (S.me === id){ S.me = S.people[0].id; try { localStorage.setItem(meKey(S.tid), S.me); } catch(_) {} } }
   else p.left = Date.now();
-  logEvent(`katılımcı geziden ayrıldı: ${name} (${k} harcamadaki payı kalanlara bölündü${used ? '; hesabı kapanana kadar listede' : '; silindi'})`);
+  logEvent(`katılımcı geziye katılmıyor: ${name} (${k} harcamada payı kalanlara bölündü${used ? '; hesabı kapanana kadar listede' : '; kaydı olmadığı için silindi'})`);
   save(); closeSheet(); render();
   finishGUndo();
   gUndo = {tid:S.tid, timer:setTimeout(finishGUndo, 10000), restore:() => { const o = JSON.parse(snap);
     S.people = o.people; S.entries = o.entries; S.trip.holder = o.holder; if (o.prefs) S.trip.prefs = o.prefs;
     if (S.me !== o.me){ S.me = o.me; try { localStorage.setItem(meKey(S.tid), o.me); } catch(_) {} }
-    logEvent(`ayrılmayı geri aldı: ${name}`); save(); }};
-  toast(`🚪 ${name} geziden ayrıldı; ${k} harcamadaki payı kalanlara bölündü.${used ? ' Hesabı kapanana kadar Hesaplaşma\'da görünür.' : ''}`, {act:'gundo', label:'Geri al', ms:10000});
+    logEvent(`katılmıyor işaretini geri aldı: ${name}`); save(); }};
+  const act = S.people.filter(q => !q.left).length;
+  toast(used ? `🚪 ${name} geziye katılmıyor: bundan sonraki harcamalar ${act} kişiye bölünür.${k ? ` ${k} harcamada payı kalanlara bölündü.` : ''}` : `${name} listeden çıkarıldı (hiç kaydı yoktu).`, {act:'gundo', label:'Geri al', ms:10000});
 }
 // ➕ Kişi ekle (2026-11-19, kullanıcı: "sonradan 3-4 kişi de katılabilir; benzer yöntemle"): birden çok ad (her satıra bir) ve eski
 // harcamaların her biri için "katılsın mı". Varsayılan: yalnız herkesin bölüştüğü harcamalar işaretli. Seçilen harcamada pay yeni
@@ -10279,10 +10311,10 @@ document.addEventListener('click', ev => {
   if (t.classList.contains('scrim') && ev.target !== t) return;
   const d = t.dataset;
   if (d.act !== 'archive') confirmArc = false;
-  if (isRO() && (d.edit || d.del || d.delshop || d.delgift || d.delsolo || d.delp || d.payto || d.shop || d.solo || d.gift || d.tf || d.emo || RO_ACTS.has(d.act))){
+  if (isRO() && (d.edit || d.del || d.delshop || d.delgift || d.delsolo || d.delp || d.leave || d.rejoin || d.payto || d.shop || d.solo || d.gift || d.tf || d.emo || RO_ACTS.has(d.act))){
     toast('🗄️ Bu seyahat arşivde, sadece görüntülenebilir. Değiştirmek için Seyahat sekmesinden arşivden çıkar.'); return;
   }
-  if (!isManager() && (d.delp || d.fam || d.admin || MGR_ACTS.has(d.act))){ mgrOnly(); return; }
+  if (!isManager() && (d.delp || d.leave || d.rejoin || d.fam || d.admin || MGR_ACTS.has(d.act))){ mgrOnly(); return; }
   if (d.act === 'leyobrief'){ openLeyoBrief(); return; }
   if (d.act === 'gshare'){ if (gShareFile) navigator.share({files:[gShareFile], title:gShareFile.name}).catch(() => {}); t.closest('.toast')?.remove(); return; }
   if (d.act === 'gundo2'){ if (gzUndo){ gzUndo(); gzUndo = null; } t.closest('.toast')?.remove(); return; }
@@ -10303,6 +10335,8 @@ document.addEventListener('click', ev => {
     p[k] = (p[k] || min) >= max ? min : (p[k] || min) + 1; render(); return;
   }
   if (d.delp){ askDeletePerson(d.delp); return; }
+  if (d.leave){ openSheet({mode:'delperson', pid:d.leave, how:'ayril', direct:true, lch:{}, target:null}); return; }
+  if (d.rejoin){ rejoinPerson(d.rejoin); return; }
   if (d.del){ swipeDelete(d.del); return; }
   if (d.payto){ startPay(d.payfrom, d.payto); return; }
   if (d.shop){ startShop(SH.items.find(i => i.id === d.shop)); return; }
@@ -10396,6 +10430,7 @@ document.addEventListener('click', ev => {
     if (d.ptarget){ form.target = d.ptarget; drawSheetKeep(); return; }
     if (d.delhow){ form.how = d.delhow; drawSheetKeep(); return; }
     if (d.lch){ (form.lch || (form.lch = {}))[d.lch] = d.v; drawSheetKeep(); return; }
+    if (d.ltrip){ const ch = form.lch || (form.lch = {}); leaveRows(S, form.pid).filter(e => phaseOf(e, S) !== 'pre').forEach(e => { ch[e.id] = d.ltrip; }); drawSheetKeep(); return; }
     if (d.jch){ (form.jch || (form.jch = {}))[d.jch] = d.v === '1'; drawSheetKeep(); return; }
     if (d.nfam !== undefined){
       const x = ((form.extra = form.extra || [])[+d.nfam] = form.extra[+d.nfam] || {}), k = d.fk, min = k === 'size' ? 1 : 0;
