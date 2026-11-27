@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127185138';</script>
-<script src="heybe-web.js?v=20261127185138"></script>
+<script>window.HEYBE_VER = '20261127192320';</script>
+<script src="heybe-web.js?v=20261127192320"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -358,6 +358,22 @@ details.why[open]>summary::after{content:" · kapat"}
 .mleg{display:flex;gap:14px;font-size:.78rem;color:var(--muted)}
 .mleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .mleg .f1{background:var(--accent)} .mleg .f2{background:var(--sun)}
+.tga{flex:none;font-weight:800;font-size:.95rem;text-align:right}
+.tga small{display:block;font-weight:500;font-size:.72rem;color:var(--muted)}
+.mbox .tgb{gap:8px}
+.mrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.86rem;padding:7px 0;border-top:1px solid var(--line)}
+button.mrow{border-left:0;border-right:0;border-bottom:0;background:none;width:100%;text-align:left;color:inherit;font:inherit;font-size:.86rem;cursor:pointer}
+.mrow>span:first-child{min-width:0}
+.mrow small{display:block;color:var(--muted);font-size:.75rem}
+.mrow .num{white-space:nowrap;font-weight:600}
+.mgrp{display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--muted);padding-top:8px}
+.mcat>summary{list-style:none;cursor:pointer}
+.mcat>summary::-webkit-details-marker{display:none}
+.mcat+.mcat{margin-top:10px}
+.mcv{display:inline-block;margin-left:6px;color:var(--muted);transition:transform .15s}
+.mcat[open] .mcv{transform:rotate(90deg)}
+.mcl{padding:2px 0 6px 12px}
+.solo-hero{background:linear-gradient(150deg,#3E4C5E,#273240);color:#fff;box-shadow:0 6px 20px rgba(30,40,55,.25)}
 .solo-note{margin:0 0 4px;padding:9px 12px;border-radius:12px;background:var(--accent-soft);color:var(--ink)}
 .solo-hint{margin:4px 0 0}
 table{width:100%;border-collapse:collapse;font-size:.88rem}
@@ -2066,12 +2082,17 @@ let tab = 'list', form = null, confirmDel = false, confirmTrip = false, rateBusy
 const openDet = {};   // açık bırakılan ayrıntı bölümleri, ekran yenilenince kapanmasın
 document.addEventListener('toggle', ev => { if (ev.target.tagName === 'DETAILS' && ev.target.id) openDet[ev.target.id] = ev.target.open; }, true);
 // Seyahat sekmesi grupları: aynı anda tek grup açık; son açılan bu telefonda hatırlanır (yalnız kolaylık; okunamazsa hepsi kapalı).
-let tgMem = null;
-function tgLast(){ if (tgMem === null){ try { tgMem = localStorage.getItem('heybe-tgrp') || ''; } catch(_) { tgMem = ''; } } return tgMem; }
-function tgSet(id){ tgMem = id || ''; try { localStorage.setItem('heybe-tgrp', tgMem); } catch(_) {} }
-document.addEventListener('toggle', ev => { const d = ev.target; if (!d.classList || !d.classList.contains('tgrp')) return;
-  if (d.open){ document.querySelectorAll('details.tgrp[open]').forEach(o => { if (o !== d) o.open = false; }); tgSet(d.id); }
-  else if (tgLast() === d.id) tgSet(''); }, true);
+// Grup anahtarı data-tgk ile (Seyahat sekmesi 'trip', Kişisel › Özetim 'mine'); her anahtarın son açılanı ayrı saklanır.
+const tgMem = {}, tgKey = k => k === 'trip' ? 'heybe-tgrp' : 'heybe-tgrp-' + k;
+function tgLast(k = 'trip'){ if (!(k in tgMem)){ try { tgMem[k] = localStorage.getItem(tgKey(k)) || ''; } catch(_) { tgMem[k] = ''; } } return tgMem[k]; }
+function tgSet(id, k = 'trip'){ tgMem[k] = id || ''; try { localStorage.setItem(tgKey(k), tgMem[k]); } catch(_) {} }
+document.addEventListener('toggle', ev => { const d = ev.target; if (!d.classList || !d.classList.contains('tgrp')) return; const k = d.dataset.tgk || 'trip';
+  if (d.open){ document.querySelectorAll('details.tgrp[open]').forEach(o => { if (o !== d && (o.dataset.tgk || 'trip') === k) o.open = false; }); tgSet(d.id, k); }
+  else if (tgLast(k) === d.id) tgSet('', k); }, true);
+// Harcamalar: 👥 Ortak | 🔒 Kişisel (2026-11-27, kullanıcı onayı); seçim bu telefonda hatırlanır.
+let lmMem = null;
+function listMode(){ if (lmMem === null){ try { lmMem = localStorage.getItem('heybe-listmode') === 'kisisel' ? 'kisisel' : 'ortak'; } catch(_) { lmMem = 'ortak'; } } return lmMem; }
+function setListMode(m){ lmMem = m === 'kisisel' ? 'kisisel' : 'ortak'; try { localStorage.setItem('heybe-listmode', lmMem); } catch(_) {} }
 
 // ---- biçimlendirme ----
 const nf = new Intl.NumberFormat('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -2338,8 +2359,9 @@ function render(){
   document.body.classList.toggle('nomgr', !isManager());
   // Her görünümde tek ekleme yolu: Kişisel'de düğme yalnız Alışveriş'te (Hediye'nin kendi formu var, "Sadece bana" + Harcama'da).
   fab.hidden = tab === 'trip' || tab === 'gezi' || isRO() || (tab === 'shop' && shopView !== 'list');
-  fab.textContent = tab === 'settle' ? '+ Ödeme' : tab === 'shop' ? '+ Alışveriş' : '+ Harcama';
-  fab.dataset.act = tab === 'settle' ? 'pay' : tab === 'shop' ? 'addshop' : 'add';
+  const soloFab = tab === 'list' && listMode() === 'kisisel';
+  fab.textContent = tab === 'settle' ? '+ Ödeme' : tab === 'shop' ? '+ Alışveriş' : soloFab ? '+ Kişisel' : '+ Harcama';
+  fab.dataset.act = tab === 'settle' ? 'pay' : tab === 'shop' ? 'addshop' : soloFab ? 'addsolo' : 'add';
   const C = compute(S, startOfToday());
   const v = document.getElementById('view');
   S.people.forEach(rememberEmoji);
@@ -2552,9 +2574,11 @@ function listLeyoMood(C){
   if (P.plan && P.dayLimit && P.today <= P.dayLimit) return {st:'cuzdan', msg:`Bugünkü sınırın altındasın, bütçe kontrol altında 👌`};
   return {st:'cuzdan', msg:P.len ? `${Math.min(P.day, P.len)}. güne hoş geldin! Harcamalar güvende 💶` : 'Cüzdan kontrol altında — keyifli geziler!'};
 }
+const listSeg = m => `<div class="seg wide" role="tablist" aria-label="Harcama görünümü"><button type="button" data-lmode="ortak" aria-pressed="${m === 'ortak'}">👥 Ortak</button><button type="button" data-lmode="kisisel" aria-pressed="${m === 'kisisel'}">🔒 Kişisel</button></div>`;
 function viewList(C){
+  if (listMode() === 'kisisel') return webSampleNote() + listSeg('kisisel') + soloListHtml();
   const lm = listLeyoMood(C);
-  let h = webSampleNote() + todayStrip() + `<section class="hero hero-ly"><div class="hero-row">
+  let h = webSampleNote() + listSeg('ortak') + todayStrip() + `<section class="hero hero-ly"><div class="hero-row">
     <div><div class="lbl">Toplam harcama</div>
     <div class="big num">${eu(C.total)}</div><div class="eur num">bugünkü kurla ${tl(C.total)}</div>
     ${C.preTotal ? `<div class="eur num">Öncesi ${eu(C.preTotal)} · Gezi ${eu(C.total - C.preTotal)}</div>` : ''}</div>
@@ -8894,59 +8918,88 @@ function myPicture(){
   shares.sort((a, c) => a.e.at - c.e.at); solo.sort((a, c) => a.x.at - c.x.at);
   return {pre, trip, shop, solo:so, soloPre, soloTrip, ref, cats, catP, catS, shares, soloRows:solo, all:pre + trip + shop + so};
 }
-// 🔒 Kişisel harcamalar (2026-11-27, kullanıcı: "kişisel harcama doğrudan kişisel listeye eklensin, arkadaşlar görmesin"): yalnız bu
-// kişinin özel alanında (SH.solo); seyahat öncesi / seyahatte ayrı. Ortak toplama ve hesaplaşmaya girmez, Özetim'e girer.
-function viewSolo(){
+// 🔒 Kişisel harcamalar (2026-11-27): Harcamalar › Kişisel tarafı. Yalnız bu kişinin özel alanında (SH.solo); seyahat öncesi / seyahatte
+// ayrı. Ortak toplama ve hesaplaşmaya girmez, Kişisel › Özetim'e girer. Ekleme sağ alttaki "+ Kişisel" ile.
+function soloListHtml(){
   const L = (SH.solo || []).slice().sort((a, c) => c.at - a.at), pre = L.filter(x => phaseOf(x, S) === 'pre'), trip = L.filter(x => phaseOf(x, S) !== 'pre');
   const sum = a => a.reduce((t, x) => t + soloEur(x), 0), tot = sum(L);
-  const row = x => { const c = catById(x.cat);
-    return `<div class="swr"><button class="swdel l" data-delsolo="${x.id}" tabindex="-1">Sil</button><button class="swdel r" data-delsolo="${x.id}" tabindex="-1">Sil</button><button class="row solo" data-solo="${x.id}"><span class="ic cat-${c.id}" title="${c.name}">${catSvg(c.id)}</span>
-      <span class="mid"><span class="d">${esc(x.desc)}</span><span class="m">${dayLabel(x.at)} · ${c.name}</span></span><span class="amt num"><b>${money(x.amount, x.cur)}</b>${x.cur === 'EUR' ? '' : `<small>${eu(soloEur(x))}</small>`}</span></button></div>`; };
-  let h = `<section class="budget"><div class="bhead"><span>🔒 Kişisel harcamalarım</span></div>
-    ${L.length ? `<div class="stats num"><div><small>Toplam</small><b>${eu(tot)}</b></div><div><small>Seyahat öncesi</small><b>${eu(sum(pre))}</b></div><div><small>Seyahatte</small><b>${eu(sum(trip))}</b></div></div>` : ''}
-    <p class="note" style="margin:0">Yalnız sen görürsün; seyahatin toplamına ve hesaplaşmaya girmez, Özetim'deki toplamına girer.</p>
-    <button class="btn pri block" data-act="addsolo">+ Kişisel harcama</button></section>`;
-  if (!L.length) return h + `<div class="card done leyo-empty">${leyo('fis', 'm')}<span>Kendi uçak biletin, kahven, taksin gibi bölüşülmeyen harcamaları buraya ekle. Arkadaşların görmez.</span></div>`;
-  if (trip.length) h += `<div class="day">Seyahatte · ${eu(sum(trip))}</div><div class="list">${trip.map(row).join('')}</div>`;
-  if (pre.length) h += `<div class="day">Seyahat öncesi · ${eu(sum(pre))}</div><div class="list">${pre.map(row).join('')}</div>`;
+  let h = `<section class="hero hero-ly solo-hero"><div class="hero-row"><div><div class="lbl">🔒 Kişisel harcamaların</div>
+      <div class="big num">${eu(tot)}</div><div class="eur num">bugünkü kurla ${tl(tot)}</div>
+      ${pre.length && trip.length ? `<div class="eur num">Öncesi ${eu(sum(pre))} · Gezi ${eu(sum(trip))}</div>` : ''}</div>
+      <div class="hero-mascot">${leyo('fis', 'l', 'Leyo')}</div></div>
+    <div class="me">Yalnız sen görürsün. Seyahatin toplamına ve hesaplaşmaya girmez; Kişisel › Özetim'deki toplamına girer.</div></section>`;
+  if (!L.length) return h + `<div class="card done leyo-empty">${leyo('fis', 'm')}<span>Kendi uçak biletin, kahven, taksin gibi bölüşülmeyen harcamaları sağ alttaki <b>+ Kişisel</b> ile ekle. Arkadaşların görmez.</span></div>`;
+  if (trip.length) h += `<div class="day">Seyahatte · ${eu(sum(trip))}</div><div class="list">${trip.map(soloRow).join('')}</div>`;
+  if (pre.length) h += `<div class="day">Seyahat öncesi · ${eu(sum(pre))}</div><div class="list">${pre.map(soloRow).join('')}</div>`;
   return h + `<p class="hint">Düzenlemek için dokun; silmek için satırı sağa ya da sola kaydır.</p>`;
 }
+function soloRow(x){ const c = catById(x.cat);
+  return `<div class="swr"><button class="swdel l" data-delsolo="${x.id}" tabindex="-1">Sil</button><button class="swdel r" data-delsolo="${x.id}" tabindex="-1">Sil</button><button class="row solo" data-solo="${x.id}"><span class="ic cat-${c.id}" title="${c.name}">${catSvg(c.id)}</span>
+    <span class="mid"><span class="d">${esc(x.desc)}</span><span class="m">${dayLabel(x.at)} · ${c.name}</span></span><span class="amt num"><b>${money(x.amount, x.cur)}</b>${x.cur === 'EUR' ? '' : `<small>${eu(soloEur(x))}</small>`}</span></button></div>`; }
+// 👤 Özetim (2026-11-27, kullanıcı: "özette alışverişim şu kadar, basınca detayları gelsin"): en üstte "bu seyahat sana"; altında
+// açılır kutular (aynı anda biri açık, son açılan hatırlanır): ortak payın, kişisel harcamaların, alışverişin, hediyelerin, nereye ne
+// kadar (kategoriye dokununca kalemleri), hesap durumun. Altında kişisel rapor.
 function viewMine(){
-  const M = myPicture(), part = v => M.all ? v / M.all : 0;
-  const blk = (icon, label, v, subs, link = '') => !v ? '' : `<div class="mblk"><div class="mbh"><span>${icon} ${label}</span><b class="num">${eu(v)}<small> · %${Math.round(part(v) * 100)}</small></b></div>
-      <div class="track"><div class="fill" style="width:${(part(v) * 100).toFixed(1)}%"></div></div>
-      ${subs.filter(([, x]) => x).map(([l, x]) => `<div class="mbs num"><span>${l}</span><span>${x < 0 ? '−' + eu(-x) : eu(x)}</span></div>`).join('')}${link}</div>`;
-  const rows = CATS.map(c => [c, M.catP[c.id] || 0, M.catS[c.id] || 0]).filter(r => r[1] + r[2] > 0);
-  if (M.shop) rows.push([{id:'kshop', icon:'🛍️', name:'Kişisel alışveriş'}, 0, M.shop]);
-  rows.sort((a, c) => (c[1] + c[2]) - (a[1] + a[2]));
-  const max = Math.max(1, ...rows.map(r => r[1] + r[2]));
-  return `<section class="story"><div class="st-h">${emojiOf(S.me)} ${nm(S.me)}, bu seyahat sana</div>
-      <div class="st-big num">${eu(M.all)}<small>≈ ${tl(M.all)}${M.ref ? ` · tax-free sonrası ≈ ${eu(M.all - M.ref)}` : ''}</small></div></section>
-    <h2>Nereden geliyor?</h2>
-    <div class="card mine-src">${blk('👥', 'Ortak harcamalardaki payın', M.pre + M.trip, [['Seyahat öncesi', M.pre], ['Seyahatte', M.trip]])}
-      ${blk('🔒', 'Kişisel harcamaların', M.solo, [['Seyahat öncesi', M.soloPre], ['Seyahatte', M.soloTrip]], `<button class="link" data-shopview="solo">Listeyi gör ›</button>`)}
-      ${blk('🛍️', 'Kişisel alışverişin', M.shop, [['Tax-free iadesi (tahmini)', -M.ref]])}
-      ${M.all ? '' : `<p class="hint" style="margin:0">Henüz bir şey yok. Ortak harcamalar, kişisel harcamaların ve alışverişin burada toplanır.</p>`}</div>
-    ${savingsHtml()}
-    ${rows.length ? `<h2>Nereye ne kadar</h2><div class="card bars"><div class="mleg"><span><i class="f1"></i>ortak payın</span><span><i class="f2"></i>kişisel</span></div>` + rows.map(([c, p, k]) => `<div class="bar"><div class="top2"><span>${c.icon} ${c.name}</span><span class="num"><b>${eu(p + k)}</b>${p && k ? ` <small>(${eu(p)} + ${eu(k)})</small>` : ''}</span></div>
-        <div class="track stk"><div class="f1" style="width:${(p * 100 / max).toFixed(1)}%"></div><div class="f2" style="width:${(k * 100 / max).toFixed(1)}%"></div></div></div>`).join('') + `</div>` : ''}
-    ${M.all ? `<h2>Kişisel rapor</h2><div class="two"><button class="btn" data-act="mypdf">📄 PDF indir</button><button class="btn" data-act="myxlsx">📊 Excel indir</button></div>
-      <p class="hint">Yalnız senin harcamaların: ortak harcamalardaki payın kalem kalem, kişisel harcamaların ve alışverişin; kategoriler ve grafiklerle.</p>` : ''}`
+  const M = myPicture(), open = tgLast('mine'), pct = v => M.all ? ` · %${Math.round(v * 100 / M.all)}` : '';
+  const box = (id, icon, title, sub, amt, body) => `<details class="tgrp mbox" data-tgk="mine" id="${id}" ${open === id ? 'open' : ''}><summary><span class="tgi" aria-hidden="true">${icon}</span><span class="tgt"><b>${title}</b><small class="num">${sub}</small></span><span class="tga num">${amt}</span><span class="tgc" aria-hidden="true">›</span></summary><div class="tgb">${body}</div></details>`;
+  const ln = (l, v, sub = '', attr = '') => attr ? `<button type="button" class="mrow" ${attr}><span>${l}${sub ? `<small>${sub}</small>` : ''}</span><span class="num">${v}</span></button>`
+    : `<div class="mrow"><span>${l}${sub ? `<small>${sub}</small>` : ''}</span><span class="num">${v}</span></div>`;
+  const grp = (l, v) => `<div class="mgrp"><span>${l}</span><span class="num">${v}</span></div>`;
+  const byPh = (rows, phOf, row) => ['pre', 'trip'].map(ph => { const a = rows.filter(r => phOf(r) === ph); return a.length ? grp(ph === 'pre' ? 'Seyahat öncesi' : 'Seyahatte', eu(a.reduce((t, r) => t + r.v, 0))) + a.map(row).join('') : ''; }).join('');
+  let h = `<section class="story"><div class="st-h">${emojiOf(S.me)} ${nm(S.me)}, bu seyahat sana</div>
+      <div class="st-big num">${eu(M.all)}<small>≈ ${tl(M.all)}${M.ref ? ` · tax-free sonrası ≈ ${eu(M.all - M.ref)}` : ''}</small></div></section><div class="tgrps">`;
+  // 1) ortak harcamalardaki payın
+  h += box('mb_ortak', '👥', 'Ortak harcamalardaki payın', M.shares.length ? `öncesi ${eu(M.pre)} · seyahatte ${eu(M.trip)}` : 'payın olan ortak harcama yok', eu(M.pre + M.trip) + `<small>${pct(M.pre + M.trip)}</small>`,
+    (M.shares.length ? byPh(M.shares, r => r.ph, r => ln(`${dmy(r.e.at)} · ${esc(r.e.desc)}`, eu(r.v), `toplam ${money(r.e.amount, r.e.cur)} · ${r.e.paidBy === 'kasa' ? 'kasadan' : esc(rawName(r.e.paidBy)) + ' ödedi'}`, `data-edit="${r.e.id}"`)) : '<p class="hint" style="margin:0">Henüz payın olan ortak harcama yok.</p>')
+    + (isFamily() ? '' : `<button type="button" class="link" data-tab="settle">Hesaplaşma'da gör ›</button>`));
+  // 2) kişisel harcamaların
+  h += box('mb_kisisel', '🔒', 'Kişisel harcamaların', M.soloRows.length ? `${M.soloRows.length} kayıt · öncesi ${eu(M.soloPre)} · seyahatte ${eu(M.soloTrip)}` : 'yalnız sen görürsün', eu(M.solo) + `<small>${pct(M.solo)}</small>`,
+    (M.soloRows.length ? byPh(M.soloRows, r => r.ph, r => ln(`${dmy(r.x.at)} · ${esc(r.x.desc)}`, money(r.x.amount, r.x.cur), `${catById(r.x.cat).name}${r.x.cur === 'EUR' ? '' : ' · ' + eu(r.v)}`, `data-solo="${r.x.id}"`)) : '<p class="hint" style="margin:0">Kendi biletin, kahven gibi bölüşülmeyen harcamalar burada toplanır; arkadaşların görmez.</p>')
+    + `<div class="two"><button type="button" class="btn sm" data-act="addsolo">+ Kişisel harcama</button><button type="button" class="btn sm" data-act="showsolo">Harcamalar › Kişisel</button></div>`);
+  // 3) alışverişin
+  const {ref} = shopCalc(), items = SH.items.slice().sort((a, c) => a.at - c.at), nShop = items.filter(i => !i.ret).length;
+  h += box('mb_alis', '🛍️', 'Alışverişin', nShop ? `${nShop} alışveriş${M.ref ? ` · tax-free ≈ ${eu(M.ref)}` : ''}` : 'henüz alışveriş yok', eu(M.shop) + `<small>${pct(M.shop)}</small>`,
+    (items.length ? items.map(i => ln(`${dmy(i.at)} · ${esc(i.store)}${i.ret ? ' <small class="retb">↩ iade</small>' : ''}`, money(shopAmt(i), i.cur), ref[i.id] ? `tax-free ≈ ${eu(Math.round(ref[i.id] * 100))}` : '', `data-shop="${i.id}"`)).join('')
+      + (M.ref ? ln('<b>Tax-free iadesi (tahmini)</b>', '−' + eu(M.ref)) + ln('<b>Tax-free sonrası</b>', eu(M.shop - M.ref)) : '') : '<p class="hint" style="margin:0">Kişisel alışverişlerin ve tax-free iadeleri burada toplanır.</p>')
+    + savingsHtml() + `<button type="button" class="link" data-shopview="list">Alışveriş listesine git ›</button>`);
+  // 4) hediyelerin (toplama girmez)
+  const G = SH.gifts || [], gDone = G.filter(g => g.done).length, gEst = G.reduce((a, g) => a + (g.est || 0), 0);
+  h += box('mb_hediye', '🎁', 'Hediyelerin', G.length ? `${G.length} hediye · ${gDone} alındı` : 'hediye listesi boş', gEst ? `<small>~${e0(gEst)}</small>` : '',
+    (G.length ? G.slice().sort((a, c) => a.done - c.done).map(g => ln(`${g.done ? '✓' : '○'} ${esc(g.who)}`, g.est ? '~' + e0(g.est) : '', esc(g.what))).join('') : '')
+    + `<p class="hint" style="margin:0">Hediye listesi bir yapılacaklar listesidir; tahminler toplama girmez, aldıkların alışverişinde sayılır.</p><button type="button" class="link" data-shopview="gifts">Hediye listesine git ›</button>`);
+  // 5) nereye ne kadar (kategoriye dokununca kalemleri)
+  const rows = CATS.map(c => ({c, p:M.catP[c.id] || 0, k:M.catS[c.id] || 0})).filter(r => r.p + r.k > 0);
+  if (M.shop) rows.push({c:{id:'kshop', icon:'🛍️', name:'Kişisel alışveriş'}, p:0, k:M.shop});
+  rows.sort((a, c) => (c.p + c.k) - (a.p + a.k));
+  const max = Math.max(1, ...rows.map(r => r.p + r.k)), top = rows[0];
+  const catItems = id => id === 'kshop' ? items.map(i => ln(`${dmy(i.at)} · ${esc(i.store)}`, eu(Math.round(shopEur(i) * 100)), 'kişisel alışveriş'))
+    : [...M.shares.filter(r => r.e.cat === id).map(r => ln(`${dmy(r.e.at)} · ${esc(r.e.desc)}`, eu(r.v), 'ortak payın')), ...M.soloRows.filter(r => r.x.cat === id).map(r => ln(`${dmy(r.x.at)} · ${esc(r.x.desc)}`, eu(r.v), 'kişisel'))];
+  h += box('mb_kat', '📊', 'Nereye ne kadar', top ? `en çok: ${top.c.name} ${eu(top.p + top.k)}` : 'henüz harcama yok', '',
+    rows.length ? `<div class="mleg"><span><i class="f1"></i>ortak payın</span><span><i class="f2"></i>kişisel</span></div>` + rows.map(({c, p, k}) => `<details class="mcat" id="mc_${c.id}" ${openDet['mc_' + c.id] ? 'open' : ''}><summary class="bar"><div class="top2"><span>${c.icon} ${c.name}<span class="mcv" aria-hidden="true">›</span></span><span class="num"><b>${eu(p + k)}</b>${p && k ? ` <small>(${eu(p)} + ${eu(k)})</small>` : ''}</span></div>
+        <div class="track stk"><div class="f1" style="width:${(p * 100 / max).toFixed(1)}%"></div><div class="f2" style="width:${(k * 100 / max).toFixed(1)}%"></div></div></summary><div class="mcl">${catItems(c.id).join('')}</div></details>`).join('') : '<p class="hint" style="margin:0">Henüz harcama yok.</p>');
+  // 6) hesap durumun (ortak hesaplaşma; TL, bugünkü değeriyle)
+  if (!isFamily()){ const t = totalPlan(), b = t.net[S.me] || 0, z = Math.abs(b) < 100, mt = meText(t.T, t.R, t.net, false, t.TE, t.Q, preOf(t, S.me));
+    h += box('mb_hesap', '💸', 'Hesap durumun', z ? 'hesabın denk' : b < 0 ? 'göndereceksin' : 'alacaksın', z ? 'Denk ✓' : tlk(Math.abs(b)),
+      (mt || ln(z ? 'Kalan · denk' : b < 0 ? 'Kalan · göndereceksin' : 'Kalan · alacaksın', z ? '0,00 ₺' : tlk(Math.abs(b))))
+      + `<p class="hint" style="margin:0">Ortak harcamalardaki payın, ödediklerin ve yapılan ödemelerden; kişisel harcamalar ve alışveriş girmez.</p><button type="button" class="link" data-tab="settle">Hesaplaşma'da gör ›</button>`); }
+  h += `</div>`;
+  return h + (M.all ? `<h2>Kişisel rapor</h2><div class="two"><button class="btn" data-act="mypdf">📄 PDF indir</button><button class="btn" data-act="myxlsx">📊 Excel indir</button></div>
+      <p class="hint">Yalnız senin harcamaların: ortak harcamalardaki payın kalem kalem, kişisel harcamaların ve alışverişin; kategoriler ve grafiklerle. Excel'de hediye listen de var.</p>` : '')
     + `<p class="hint">Ortak harcamalarda senin payın + sadece sana ait harcamalar ve alışveriş. Bu özet sadece sende görünür.</p>`
     + (RC_LEARN.size || RC_LINES.size ? `<p class="hint">📚 Fiş düzeltmelerinden öğrendiklerim: ${RC_LEARN.size} kelime, ${RC_LINES.size} ürün adı · <button class="link" data-act="forgetlearn">${forgetSure ? 'Emin misin? Hepsini unut' : 'unut'}</button></p>` : '')
     + (RC_SHARED.size ? `<p class="hint">🌍 Ortak sözlük: arkadaşlarının ve Heybe kullanıcılarının öğrettiği ${RC_SHARED.size} kelime de kullanılıyor.</p>` : '');
 }
-// Kişisel sekmesinin dört görünümü (Harcama, Alışveriş, Hediye, Özetim). Seçilinin arkasındaki renkli vurgu yeni seçilene kayar (psegFrom: önceki sıra).
+// Kişisel sekmesinin üç görünümü (Alışveriş, Hediye, Özetim); kişisel harcamalar Harcamalar › Kişisel'de. Seçilinin arkasındaki renkli vurgu yeni seçilene kayar (psegFrom: önceki sıra).
 // Rozetler: tax-free formu bekleyen mağaza sayısı ve henüz alınmamış hediye sayısı.
-const PSEG = [['solo', '🧾', 'Harcama'], ['list', '🛍️', 'Alışveriş'], ['gifts', '🎁', 'Hediye'], ['mine', '👤', 'Özetim']];
+const PSEG = [['list', '🛍️', 'Alışveriş'], ['gifts', '🎁', 'Hediye'], ['mine', '👤', 'Özetim']];
 let psegFrom = null;
 function viewShop(){
   if (!PSEG.some(x => x[0] === shopView)) shopView = 'list';
   const {ref} = shopCalc(), idx = PSEG.findIndex(x => x[0] === shopView), from = psegFrom === null ? idx : psegFrom; psegFrom = null;
   const badge = {list:new Set(SH.items.filter(i => !i.ret && ref[i.id] > 0 && tfStep(i) < 3).map(shopGroup)).size, gifts:SH.gifts.filter(g => !g.done).length};
   const segs = `<div class="pseg" role="group" aria-label="Görünüm" style="--i:${from};--n:${PSEG.length}" data-to="${idx}">${PSEG.map(([k, ic, l]) => `<button type="button" data-shopview="${k}" aria-pressed="${shopView === k}"><span class="pic" aria-hidden="true">${ic}</span>${l}${badge[k] ? `<span class="pbadge" aria-label="${badge[k]} bekleyen">${badge[k]}</span>` : ''}</button>`).join('')}</div>`;
-  const ly = shopView === 'solo' ? ((SH.solo || []).length ? 'fis' : '') : shopView === 'gifts' ? (SH.gifts.length ? 'hediye' : '') : shopView === 'mine' ? (SH.items.length ? 'hesap' : '') : (SH.items.length ? 'alisveris' : '');
-  return `<div class="privrow"><p class="privline">🔒 <b>Kişisel</b> · bu sekmeyi sadece sen görürsün</p>${ly ? leyo(ly, 'm', 'Leyo') : ''}</div>` + segs + airportHtml() + (shopView === 'solo' ? viewSolo() : shopView === 'mine' ? viewMine() : shopView === 'gifts' ? viewGifts() : viewShopList());
+  const ly = shopView === 'gifts' ? (SH.gifts.length ? 'hediye' : '') : shopView === 'mine' ? (SH.items.length ? 'hesap' : '') : (SH.items.length ? 'alisveris' : '');
+  return `<div class="privrow"><p class="privline">🔒 <b>Kişisel</b> · bu sekmeyi sadece sen görürsün</p>${ly ? leyo(ly, 'm', 'Leyo') : ''}</div>` + segs + airportHtml() + (shopView === 'mine' ? viewMine() : shopView === 'gifts' ? viewGifts() : viewShopList());
 }
 let forgetSure = false;
 // 🎁 Hediye listesi: gitmeden kime ne alınacağı yazılır, alınınca işaretlenir.
@@ -9906,6 +9959,14 @@ function myXlsx(ExcelJS){
   const pie = [...CATS.map(c => ({name:c.name, v:(P.catP[c.id] || 0) + (P.catS[c.id] || 0), color:CAT_COLORS[c.id]})), ...(P.shop ? [{name:'Kişisel alışveriş', v:P.shop, color:'#B04FC4'}] : [])].filter(c => c.v > 0).sort((a, c) => c.v - a.v);
   if (pie.length){ const h = Math.max(420, 60 + pie.length * 40), img = chartImage(1000, h, x => drawDonut(x, 30, 30, 180, pie, pie.reduce((a, c) => a + c.v, 0)));
     o.addImage(wb.addImage({base64:img, extension:'png'}), {tl:{col:0, row:o.rowCount + 1}, ext:{width:640, height:Math.round(h * .64)}}); }
+  // Hediyelerim (2026-11-27): yapılacaklar listesi; tahminler toplama girmez.
+  const G = SH.gifts || [];
+  if (G.length){ const sg = wb.addWorksheet('Hediyelerim', {views:[{state:'frozen', ySplit:1}]});
+    sg.columns = [{header:'Kime', width:18}, {header:'Ne', width:30}, {header:'Tahmini (€)', width:13}, {header:'Durum', width:12}];
+    head(sg.getRow(1));
+    G.slice().sort((a, c) => a.done - c.done).forEach(g => { const r = sg.addRow([g.who, g.what, g.est || null, g.done ? 'Alındı' : 'Alınacak']); r.getCell(3).numFmt = EUR; });
+    const r = sg.getRow(G.length + 2); r.getCell(2).value = 'Toplam (tahmini)'; r.getCell(3).value = {formula:`SUM(C2:C${G.length + 1})`, result:G.reduce((a, g) => a + (g.est || 0), 0)}; r.getCell(3).numFmt = EUR; bold(r);
+    sg.addRow([]); sg.addRow(['', 'Hediye listesi bir yapılacaklar listesidir; tahminler "Bu seyahat sana" toplamına girmez.']).font = grey; }
   return wb;
 }
 function pdfPages(){
@@ -10694,6 +10755,7 @@ document.addEventListener('click', ev => {
   if (d.plancur){ planDraft.cur = d.plancur; render(); const i = document.getElementById('planInp'); if (i) i.focus(); return; }
   if (d.edit && swOpen === t){ swClose(); return; }
   if (d.act !== 'deltrip') confirmTrip = false;
+  if (d.lmode){ setListMode(d.lmode); render(); window.scrollTo(0, 0); return; }
   if (d.tab){ tab = d.tab; if (d.tg) tgSet(d.tg); render(); window.scrollTo(0,0); if (tab === 'settle' && Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false); return; }
   if (d.trip){ closeSheet(); switchTrip(d.trip); return; }
   if (d.emo){ openSheet({mode:'emoji', pid:d.emo}); return; }
@@ -10789,7 +10851,7 @@ document.addEventListener('click', ev => {
       openSheet({mode:'solo', desc:f.desc || '', cat:f.cat, amount:f.amount || '', cur:f.cur, rate:f.cur === 'EUR' ? null : (f.rate || null), date:f.date || isoDay(Date.now()),
         when:f.when || '', until:f.until || '', from:f.from || '', to:f.to || '', dest:f.dest || null, place:f.place || null, lat:f.lat, lon:f.lon, placeState:f.place ? 'ok' : 'off', ...(f.id ? {moveFrom:f.id} : {})});
       break; }
-    case 'showsolo': tab = 'shop'; psegFrom = PSEG.findIndex(x => x[0] === shopView); shopView = 'solo'; render(); window.scrollTo(0, 0); break;
+    case 'showsolo': tab = 'list'; setListMode('kisisel'); render(); window.scrollTo(0, 0); break;
     case 'addsolo': startSolo(); break;
     case 'mypdf': exportMyPdf(); break;
     case 'myxlsx': exportMyXlsx(); break;
