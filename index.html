@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127204931';</script>
-<script src="heybe-web.js?v=20261127204931"></script>
+<script>window.HEYBE_VER = '20261127210241';</script>
+<script src="heybe-web.js?v=20261127210241"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -396,6 +396,7 @@ button.mrow{border-left:0;border-right:0;border-bottom:0;background:none;width:1
 .rpt-row{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
 .rpt-row>span{display:flex;flex-direction:column}
 .rpt-row small{color:var(--muted);font-size:.78rem}
+.rpt-row.rpt-main{border-top:0;padding-top:0}
 @media (prefers-reduced-motion:reduce){.oz-dots i{transition:none}}
 /* Özet panosu (2026-11-27): gezi kartı, 2×2 göstergeler, widget'lar, kutucuklar; dönem ne olursa olsun aynı görünüm */
 .ozks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -9296,9 +9297,9 @@ function ozDetail(key){
       + (ph !== 'pre' ? ozGrp('Nasıl hesaplanır?', '') + `<p class="hint" style="margin:0">${ph === 'trip' ? 'Tahmin: seyahat öncesi + (şimdiye kadarki seyahat harcaması ÷ geçen gün) × gün sayısı. Bugün için kalan: kalan bütçenin kalan günlere bölünmüşü − bugün harcanan.' : 'Sonuç: bütçe − harcanan (kişi başı). Planlanan günlük: (bütçe − seyahat öncesi) ÷ gün sayısı.'}</p>` : '')
       + `<button type="button" class="btn block" data-tab="trip" data-tg="tg_budget">Bütçeyi değiştir</button>`
     : `<p class="hint">Kişi başı bütçe yok.</p><button type="button" class="btn block" data-tab="trip" data-tg="tg_budget">Bütçe belirle</button>`;
-  if (key === 'rapor') return `<button class="btn pri block" data-act="album">📖 Seyahat albümü</button><p class="hint" style="margin:0">Paylaşmalık anı defteri: kapak, hikâye, gün gün neler oldu, kim ne kadar ve hesaplaşma.</p>
-      <div class="rpt-row"><span><b>👥 Ortak rapor</b><small>bütün harcamalar, hesap tablosu, hesaplaşma</small></span><div class="two"><button class="btn sm" data-act="pdf">📄 PDF</button><button class="btn sm" data-act="xlsx">📊 Excel</button></div></div>
-      <div class="rpt-row"><span><b>🔒 Kişisel rapor</b><small>yalnız senin harcamaların, alışverişin, hediye listen</small></span><div class="two"><button class="btn sm" data-act="mypdf">📄 PDF</button><button class="btn sm" data-act="myxlsx">📊 Excel</button></div></div>`;
+  if (key === 'rapor') return `<div class="rpt-row rpt-main"><span><b>🧳 Gezi raporu · yalnız sen</b><small>Her şey grafikleriyle: bir bakışta, gün gün, bütçe, nerede harcadın, ortak payın, kişisel harcamaların, alışverişin (mağaza, outlet, tax-free, ürünler), hediyeler, hesabın ve fiş fotoğrafların. İçinde kişisel bilgilerin var.</small></span><div class="two"><button class="btn pri" data-act="tpdf">📄 PDF</button><button class="btn" data-act="txlsx">📊 Excel</button></div></div>
+      <div class="rpt-row"><span><b>👥 Ortak rapor</b><small>grupla paylaşmak için: bütün ortak harcamalar, herkesin hesap tablosu, hesaplaşma</small></span><div class="two"><button class="btn sm" data-act="pdf">📄 PDF</button><button class="btn sm" data-act="xlsx">📊 Excel</button></div></div>
+      <div class="rpt-row"><span><b>📖 Seyahat albümü</b><small>paylaşmalık anı defteri: kapak, hikâye, gün gün neler oldu</small></span><button class="btn sm" data-act="album">📖 Albümü indir</button></div>`;
   return '';
 }
 // Fiş okumanın öğrendikleri (bu telefonda) ve ortak sözlük; Özet'in en altında, "unut" düğmesiyle.
@@ -9492,8 +9493,8 @@ function viewShopList(){
   if (SH.items.length > 1) h += `<div class="isearch"><input class="inp" id="shopQ" type="search" placeholder="🔍 Ürün ya da mağaza ara (fişteki yazıyla da)" value="${esc(shopQ)}" autocomplete="off" enterkeyhint="search"></div>`;
   h += `<div id="shopRes">${shopRowsHtml()}</div>`;
   h += opSummary(ref);
-  h += `<h2>Alışveriş raporu</h2><div class="two"><button class="btn" data-act="shoppdf">📄 PDF indir</button><button class="btn" data-act="shopxlsx">📊 Excel indir</button></div>
-    <p class="hint">Özet, mağazalar, yerler, tax-free durumu, fiş fiş ürünler ve hediye listesi. Sadece senin alışverişlerin.</p>`;
+  h += `<h2>🧳 Gezi raporu</h2><div class="two"><button class="btn" data-act="tpdf">📄 PDF indir</button><button class="btn" data-act="txlsx">📊 Excel indir</button></div>
+    <p class="hint">Alışverişlerin (mağazalar, yerler, tax-free durumu, fiş fiş ürünler, fiş fotoğrafları) ve bütün seyahatin tek raporda. Yalnız senin.</p>`;
   return h;
 }
 // Marka logosu (Simple Icons 16.31.0, açık kaynak, CC0): yollar sayfaya gömülü. Simple Icons'ta olmayan markalarda
@@ -10128,164 +10129,511 @@ async function exportPdf(){
 }
 // A4 sayfaları (1240×1754, 150 dpi): 1) başlık, özet kutuları, kategori halkası, günlük çubuklar; 2+) aile seyahati dışında
 // hesap tablosu, kim kime, doğrudan ↔ daha az ödeme, kişi kartları; sonra bütçe ve harcamalar tablosu.
-// 👤 Kişisel rapor (2026-11-27, kullanıcı: "kişisel olarak ne harcadığımız PDF'te ve güzel bir Excel tablosunda gözüksün; detaylı"):
-// yalnız bu kişinin harcamaları. Özet (bu seyahat sana; ortak payı, kişisel harcamalar, alışveriş; seyahat öncesi / seyahatte),
-// kategoriler (halka), sonra kalem kalem tablolar. Tutarlar euro; TL karşılığı bugünkü kurla. Arkadaşlara gitmez, yalnız indirilir.
+// 🧳 Gezi raporu (2026-11-27, kullanıcı: "özetten rapor alınca çok detaylı bir rapor isterim: her şey istatistiğiyle, grafiğiyle; alışveriş,
+// outlet alışverişleri ve nerede yapıldığı, bütün fişlerine kadar tek bir rapor, güzel grafikli"). Yalnız bu kişinin: ortak harcamalardaki
+// payı, kişisel harcamaları, alışverişi (kişisel alan), hediyeleri ve kendi hesabı; grubun yalnız toplamları. Eski Kişisel rapor ile Alışveriş
+// raporu bunda birleşti; herkesin hesap tablosunu gösteren Ortak rapor grupla paylaşmak için ayrı. Bölümler: bir bakışta, gün gün ve bütçe,
+// nerede harcadın, ortak payın, kişisel harcamaların, alışverişin (mağaza, yer, tax-free, fiş fiş ürünler), hediyeler, hesabın, fişlerin.
+// PDF sayfaları tek tek çizilip hemen PDF'e eklenir ve tuval bırakılır (iPhone'da tuval belleği sınırlı); alt bilgide "3/12" yazsın diye
+// önce tek tuvalle kuru bir geçişle sayfalar sayılır.
 const mySlug = () => (rawName(S.me) || 'ben').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'ben';
 const dmy = t => new Date(t).toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'2-digit'});
-function myPdfPages(){
-  const W = 1240, H = 1754, M = 80, P = myPicture(), D = reportData(), A = D.accent, pages = []; let cv, x, y;
-  const page = () => { cv = document.createElement('canvas'); cv.width = W; cv.height = H; x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); y = M; pages.push(cv); };
-  const fit = (t, max, font) => { x.font = font; let s = String(t); if (x.measureText(s).width <= max) return s; while (s.length > 2 && x.measureText(s + '…').width > max) s = s.slice(0, -1); return s + '…'; };
-  const title = (t, px = 32) => { if (y + 110 > H - M) page(); x.fillStyle = RPT.ink; x.font = FONT(800, px); x.fillText(t, M, y + px); y += px + 22; };
-  const note = (t, px = 19) => { x.fillStyle = RPT.muted; x.font = FONT(400, px); x.fillText(fit(t, W - 2 * M, FONT(400, px)), M, y + px); y += px + 14; };
-  const need = h => { if (y + h > H - M) page(); };
-  // Tablo: başlık bandı, dönem satırları (group), satırlar (cells), toplam (total); sayfa taşarsa başlık tekrarlanır.
-  const table = (cols, rows) => {
-    const head = () => { x.fillStyle = A; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 18);
-      cols.forEach(([t, cx, al]) => { x.textAlign = al; x.fillText(t, cx, y + 29); }); x.textAlign = 'left'; y += 52; };
-    head(); let z = 0;
+const tripSlug = () => `${fileBase()}-gezi-raporu-${mySlug()}`;
+const TRIP_SOLO = '#E0A21B', TRIP_SHOP = '#8E6CF0';   // gün gün çubuklarında kişisel ve alışveriş (ortak payın seyahatin renginde)
+// Hesap denkleminin etiketleri raporda ikinci tekil kişiyle ("ödediği" → "ödediğin").
+const youTxt = s => String(s).replace('Harcamalarda ödediği', 'Harcamalarda ödediğin').replace('Toplam borcu', 'Toplam borcun').replace('Toplam alacağı', 'Toplam alacağın')
+  .replace('Gönderdiği', 'Gönderdiğin').replace('Aldığı', 'Aldığın').replace('Kalan · gönderecek', 'Kalan · göndereceksin').replace('Kalan · alacak', 'Kalan · alacaksın');
+const fitT = (x, t, max, font) => { x.font = font; let s = String(t == null ? '' : t); if (x.measureText(s).width <= max) return s; while (s.length > 2 && x.measureText(s + '…').width > max) s = s.slice(0, -1); return s + '…'; };
+const loadImg = src => new Promise((ok, no) => { const img = new Image(), t = setTimeout(() => no(new Error('zaman aşımı')), 15000);
+  img.onload = () => { clearTimeout(t); ok(img); }; img.onerror = () => { clearTimeout(t); no(new Error('fotoğraf')); }; img.src = src; });
+// Senin günlerin (euro sent): ortak payın, kişisel, alışveriş; seyahat öncesi tek satır. Özet › Günler ile aynı toplama.
+function myDays(M){
+  const m = {}, add = (k, f, v) => { const o = m[k] = m[k] || {k, p:0, s:0, a:0}; o[f] += v; };
+  M.shares.forEach(r => add(r.ph === 'pre' ? 'pre' : isoDay(r.e.at), 'p', r.v));
+  M.soloRows.forEach(r => add(r.ph === 'pre' ? 'pre' : isoDay(r.x.at), 's', r.v));
+  SH.items.forEach(i => add(phaseOf(i, S) === 'pre' ? 'pre' : isoDay(i.at), 'a', Math.round(shopEur(i) * 100)));
+  return Object.values(m).sort((a, c) => (a.k === 'pre' ? -1 : c.k === 'pre' ? 1 : a.k < c.k ? -1 : 1)).map(o => {
+    const t = o.k === 'pre' ? 0 : new Date(o.k + 'T12:00:00').getTime(), n = t ? tripDay(t) : 0;
+    return {...o, t, tot:o.p + o.s + o.a, label:!t ? 'Önce' : n >= 1 ? `${n}. gün` : new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}),
+      long:!t ? 'Seyahat öncesi' : (n >= 1 ? `${n}. gün · ` : '') + new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'long', weekday:'short'})}; });
+}
+// Nerede harcadın: yer adına göre (ortak harcamada senin payın, kişisel, alışverişte outlet / AVM ya da yer).
+function myPlaces(M){
+  const by = {}, put = (name, v) => { name = String(name || '').split(',')[0].trim(); if (!name || !v) return;
+    const k = name.toLocaleLowerCase('tr'), o = by[k] = by[k] || {label:name, v:0, n:0}; o.v += v; o.n++; };
+  M.shares.forEach(r => put(r.e.place, r.v)); M.soloRows.forEach(r => put(r.x.place, r.v));
+  SH.items.forEach(i => put(i.outlet || i.place, Math.round(shopEur(i) * 100)));
+  return Object.values(by).filter(o => o.v > 0).sort((a, c) => c.v - a.v);
+}
+// Konumlu harcamaların noktaları (senin payın, kişisel, alışveriş): Özet › Harita'nın kâğıt hali.
+function myPoints(M){
+  const pts = [], ok = v => v != null && v !== '' && isFinite(+v);
+  M.shares.forEach(r => { if (ok(r.e.lat) && ok(r.e.lon)) pts.push({lat:+r.e.lat, lon:+r.e.lon, v:r.v, cat:r.e.cat}); });
+  M.soloRows.forEach(r => { if (ok(r.x.lat) && ok(r.x.lon)) pts.push({lat:+r.x.lat, lon:+r.x.lon, v:r.v, cat:r.x.cat}); });
+  SH.items.forEach(i => { if (ok(i.lat) && ok(i.lon)) pts.push({lat:+i.lat, lon:+i.lon, v:Math.round(Math.abs(shopEur(i)) * 100), cat:'alisveris'}); });
+  return pts;
+}
+// Günlük yığılı dikey çubuklar (ortak payın, kişisel, alışveriş); kesik çizgi kişi başı günlük bütçe.
+function drawStack(x, X, Y, W, H, days, cols, bud, s = 1){
+  if (!days.length) return;
+  const n = days.length, max = Math.max(1, ...days.map(d => d.tot), bud || 0), bw = Math.max(6 * s, Math.min(64 * s, (W - 10 * s) / n - 8 * s)), gap = (W - bw * n) / (n + 1);
+  const base = Y + H - 34 * s, top = Y + 34 * s, hh = base - top;
+  x.strokeStyle = RPT.line; x.lineWidth = 2 * s; x.beginPath(); x.moveTo(X, base); x.lineTo(X + W, base); x.stroke();
+  days.forEach((d, i) => { const bx = X + gap + i * (bw + gap); let yy = base;
+    [['p', cols[0]], ['s', cols[1]], ['a', cols[2]]].forEach(([k, col]) => { const h = Math.max(0, d[k]) / max * hh; if (h <= 0) return; x.fillStyle = col; x.fillRect(bx, yy - h, bw, h); yy -= h; });
+    x.textAlign = 'center'; x.fillStyle = RPT.muted; x.font = FONT(500, (n > 14 ? 13 : 17) * s);
+    if (n <= 20 || i % 2 === 0) x.fillText(d.label, bx + bw / 2, base + 24 * s);
+    if (n <= 12 && d.tot > 0){ x.fillStyle = RPT.ink; x.font = FONT(700, 16 * s); x.fillText(nf0.format(Math.round(d.tot / 100)) + ' €', bx + bw / 2, yy - 8 * s); }
+    x.textAlign = 'left'; });
+  if (bud > 0){ const by = base - bud / max * hh; x.save(); x.setLineDash([10 * s, 8 * s]); x.strokeStyle = RPT.ink; x.globalAlpha = .55; x.lineWidth = 2.5 * s;
+    x.beginPath(); x.moveTo(X, by); x.lineTo(X + W, by); x.stroke(); x.restore();
+    x.fillStyle = RPT.muted; x.font = FONT(600, 16 * s); x.textAlign = 'right'; x.fillText(`günlük bütçe ${eu(bud)}`, X + W, by - 8 * s); x.textAlign = 'left'; }
+}
+// Noktalı harita (harita karosu yok, yalnız konumlar): büyüklük tutarla, renk kategoriyle.
+function drawDotMap(x, X, Y, W, H, pts){
+  x.fillStyle = RPT.soft; rr(x, X, Y, W, H, 22); x.fill();
+  x.strokeStyle = RPT.line; x.lineWidth = 1;
+  for (let i = 1; i < 4; i++){ x.beginPath(); x.moveTo(X + W * i / 4, Y); x.lineTo(X + W * i / 4, Y + H); x.moveTo(X, Y + H * i / 4); x.lineTo(X + W, Y + H * i / 4); x.stroke(); }
+  const la = pts.map(p => p.lat), lo = pts.map(p => p.lon), la0 = Math.min(...la), la1 = Math.max(...la), lo0 = Math.min(...lo), lo1 = Math.max(...lo);
+  const k = Math.cos((la0 + la1) / 2 * Math.PI / 180), sx = (lo1 - lo0) * k, sy = la1 - la0, sc = sx || sy ? Math.min((W - 90) / (sx || 1e-9), (H - 90) / (sy || 1e-9)) : 1;
+  const PX = v => X + W / 2 + (v - (lo0 + lo1) / 2) * k * sc, PY = v => Y + H / 2 - (v - (la0 + la1) / 2) * sc, vmax = Math.max(1, ...pts.map(p => p.v));
+  pts.slice().sort((a, c) => c.v - a.v).forEach(p => { x.beginPath(); x.arc(PX(p.lon), PY(p.lat), 9 + 24 * Math.sqrt(p.v / vmax), 0, Math.PI * 2);
+    x.fillStyle = CAT_COLORS[p.cat] || '#888888'; x.globalAlpha = .78; x.fill(); x.globalAlpha = 1; x.strokeStyle = '#fff'; x.lineWidth = 3; x.stroke(); });
+}
+// Fişlerin fotoğrafları: payın olan ya da senin ödediğin ortak harcamaların fişleri (buluttan ya da bu telefondan) ve alışveriş fişlerin
+// (bu telefonda). Buluttaki fotoğraf fetch ile alınır (tuval kirlenmesin); gelmeyen atlanır. Küçültülmüş JPEG olarak tutulur (bellek).
+async function myReceipts(max = 900, limit = 120){
+  const L = [];
+  for (const e of S.entries) if (e.kind === 'expense' && (e.among.includes(S.me) || e.paidBy === S.me)){ const src = photoSrc(e); if (src) L.push({src, at:e.at, t:e.desc, kind:'Ortak', amt:money(e.amount, e.cur)}); }
+  for (const i of SH.items){ const src = getShopPhoto(i.id); if (src) L.push({src, at:i.at, t:i.store, kind:i.ret ? 'İade' : 'Alışveriş', amt:money(shopAmt(i), i.cur), where:i.outlet || ''}); }
+  L.sort((a, c) => a.at - c.at);
+  const pick = L.slice(0, limit), out = [];
+  const one = async r => { let url = r.src, tmp = null;
+    try {
+      if (!/^data:/.test(url)){ const res = await fetch(url); if (!res.ok) throw new Error('fotoğraf'); tmp = url = URL.createObjectURL(await res.blob()); }
+      const img = await loadImg(url), k = Math.min(1, max / Math.max(img.naturalWidth || 1, img.naturalHeight || 1)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k)); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      out.push({at:r.at, t:r.t, kind:r.kind, amt:r.amt, where:r.where || '', data:c.toDataURL('image/jpeg', .8), w:c.width, h:c.height}); c.width = c.height = 0;
+    } catch(_) {} finally { if (tmp) URL.revokeObjectURL(tmp); } };
+  for (let k = 0; k < pick.length; k += 4) await Promise.all(pick.slice(k, k + 4).map(one));
+  out.sort((a, c) => a.at - c.at);
+  return {photos:out, more:L.length - pick.length, missing:pick.length - out.length};
+}
+// PDF sayfaları. emit(tuval) her biten sayfada çağrılır; dry: yalnız sayfa sayısı (tek tuval, PDF'e eklenmez). Sayfa sayısını döndürür.
+function tripPdfPages(emit, dry){
+  const W = 1240, H = 1754, M = 80, P = myPicture(), D = reportData(), C = D.C, A = D.accent, PS = planState(), SD = shopReportData(), t = isFamily() ? null : D.tp;
+  const COL = [A, TRIP_SOLO, TRIP_SHOP];
+  let cv = null, cv0 = null, x, y, n = 0;
+  const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+  const page = () => { if (cv && !dry) emit(cv); cv = dry ? (cv0 = cv0 || mk()) : mk(); x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); y = M; n++; };
+  const fit = (s0, max, font) => fitT(x, s0, max, font);
+  const need = h => { if (y + h > H - M - 30) page(); };
+  const title = (s0, h = 110) => { need(h); x.fillStyle = RPT.ink; x.font = FONT(800, 32); x.fillText(s0, M, y + 32); y += 54; };
+  const note = (s0, px = 18) => { need(px + 14); x.fillStyle = RPT.muted; x.font = FONT(400, px); x.fillText(fit(s0, W - 2 * M, FONT(400, px)), M, y + px); y += px + 14; };
+  // Büyük bölüm: yeni sayfa, üstte ince renk şeridi, simgeli başlık ve tek satır açıklama.
+  const part = (icon, s0, sub) => { page(); x.fillStyle = A; x.fillRect(0, 0, W, 14); x.fillStyle = RPT.ink; x.font = FONT(800, 44); x.fillText(`${icon}  ${s0}`, M, y + 44); y += 66;
+    if (sub){ x.fillStyle = RPT.muted; x.font = FONT(500, 20); x.fillText(fit(sub, W - 2 * M, FONT(500, 20)), M, y + 4); y += 40; } };
+  const tiles = (T, cols = 3, h = 150) => { const tw = (W - 2 * M - (cols - 1) * 20) / cols; need(Math.ceil(T.length / cols) * (h + 20));
+    T.forEach(([l, v, sub, col], i) => { const tx = M + (i % cols) * (tw + 20), ty = y + Math.floor(i / cols) * (h + 20);
+      x.fillStyle = RPT.soft; rr(x, tx, ty, tw, h, 18); x.fill();
+      x.fillStyle = RPT.muted; x.font = FONT(600, 19); x.fillText(fit(l, tw - 40, FONT(600, 19)), tx + 22, ty + 40);
+      x.fillStyle = col || RPT.ink; x.font = FONT(800, 34); x.fillText(fit(v, tw - 40, FONT(800, 34)), tx + 22, ty + 90);
+      x.fillStyle = RPT.muted; x.font = FONT(500, 17); x.fillText(fit(sub || '', tw - 40, FONT(500, 17)), tx + 22, ty + 124); });
+    y += Math.ceil(T.length / cols) * (h + 20) + 10; };
+  // Tablo: başlık bandı (head: false ise yok), dönem satırları (group), satırlar (cells), toplam (total); sayfa taşarsa başlık tekrarlanır.
+  const table = (cols, rows, head = true) => {
+    const hd = () => { if (!head) return; x.fillStyle = A; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 18);
+      cols.forEach(([s0, cx, al]) => { x.textAlign = al; x.fillText(s0, cx, y + 29); }); x.textAlign = 'left'; y += 52; };
+    need(head ? 100 : 48); hd(); let z = 0;
     for (const r of rows){
-      if (y + 48 > H - M){ page(); head(); }
+      if (y + 48 > H - M - 30){ page(); hd(); }
       if (r.group){ x.fillStyle = RPT.ink; x.font = FONT(800, 19); x.fillText(r.group, M + 12, y + 26); if (r.sum){ x.textAlign = 'right'; x.fillText(r.sum, W - M - 14, y + 26); x.textAlign = 'left'; } y += 40; z = 0; continue; }
       if (r.total){ x.strokeStyle = RPT.line; x.lineWidth = 2; x.beginPath(); x.moveTo(M, y - 4); x.lineTo(W - M, y - 4); x.stroke(); x.fillStyle = RPT.ink; x.font = FONT(800, 19);
-        r.total.forEach((t, i) => { if (t == null) return; const [, cx, al] = cols[i]; x.textAlign = al; x.fillText(t, cx, y + 26); }); x.textAlign = 'left'; y += 50; continue; }
+        r.total.forEach((s0, i) => { if (s0 == null) return; const [, cx, al] = cols[i]; x.textAlign = al; x.fillText(s0, cx, y + 26); }); x.textAlign = 'left'; y += 50; continue; }
       if (z++ % 2){ x.fillStyle = RPT.soft; x.fillRect(M, y - 6, W - 2 * M, 42); }
-      r.cells.forEach((t, i) => { const [, cx, al, mw] = cols[i]; x.fillStyle = r.muted ? RPT.muted : RPT.ink; x.font = FONT(500, 18); x.textAlign = al; x.fillText(mw ? fit(t, mw, FONT(500, 18)) : t, cx, y + 22); });
+      r.cells.forEach((s0, i) => { const [, cx, al, mw] = cols[i]; x.fillStyle = r.muted ? RPT.muted : RPT.ink; x.font = FONT(i === 0 && !head ? 600 : 500, 18); x.textAlign = al; x.fillText(mw ? fit(s0, mw, FONT(500, 18)) : s0, cx, y + 22); });
       x.textAlign = 'left'; y += 42;
     }
     y += 18;
   };
+  const legend = L => { need(40); let lx = M; x.font = FONT(600, 18); L.forEach(([l, col]) => { x.fillStyle = col; rr(x, lx, y, 18, 18, 4); x.fill(); x.fillStyle = RPT.ink; x.fillText(l, lx + 26, y + 15); lx += x.measureText(l).width + 60; }); y += 38; };
+  const ev = v => v ? eu(v) : '—', days = myDays(P), tdays = days.filter(d => d.k !== 'pre'), nDays = PS.len || tdays.length || 1;
+
+  // 1) Bir bakışta: kapak bandı, "bu seyahat sana", altı gösterge, nereden geliyor, nereye ne kadar.
   page();
-  // başlık bandı
-  x.fillStyle = A; x.fillRect(0, 0, W, 230);
-  x.fillStyle = '#fff'; x.globalAlpha = .85; x.font = FONT(700, 22); x.fillText('KİŞİSEL RAPOR · yalnız senin harcamaların', M, 76); x.globalAlpha = 1;
-  x.font = FONT(800, 52); x.fillText(fit(`${rawName(S.me)} · ${S.trip.name}`, W - 2 * M, FONT(800, 52)), M, 140);
-  x.font = FONT(500, 22); x.globalAlpha = .9; x.fillText(fit([tripRange(S.trip) || '', `Hazırlanma: ${new Date().toLocaleString('tr-TR')}`].filter(Boolean).join('  ·  '), W - 2 * M, FONT(500, 22)), M, 190); x.globalAlpha = 1;
-  y = 290;
-  x.fillStyle = RPT.muted; x.font = FONT(600, 24); x.fillText('Bu seyahat sana', M, y); y += 66;
-  x.fillStyle = RPT.ink; x.font = FONT(800, 64); x.fillText(eu(P.all), M, y); const bw = x.measureText(eu(P.all)).width;
-  x.fillStyle = RPT.muted; x.font = FONT(500, 24); x.fillText(fit(`≈ ${tl(P.all)}${P.ref ? `  ·  tax-free sonrası ≈ ${eu(P.all - P.ref)}` : ''}`, W - 2 * M - bw - 30, FONT(500, 24)), M + bw + 28, y - 8); y += 46;
-  // üç kutu
-  const tw = (W - 2 * M - 40) / 3;
-  [['Ortak harcamalardaki payın', P.pre + P.trip], ['Kişisel harcamaların', P.solo], ['Kişisel alışverişin', P.shop]].forEach(([l, v], i) => { const tx = M + i * (tw + 20);
-    x.fillStyle = RPT.soft; rr(x, tx, y, tw, 150, 18); x.fill();
-    x.fillStyle = RPT.muted; x.font = FONT(600, 19); x.fillText(fit(l, tw - 40, FONT(600, 19)), tx + 22, y + 40);
-    x.fillStyle = RPT.ink; x.font = FONT(800, 34); x.fillText(fit(eu(v), tw - 40, FONT(800, 34)), tx + 22, y + 90);
-    x.fillStyle = RPT.muted; x.font = FONT(500, 18); x.fillText(`%${Math.round(v * 100 / (P.all || 1))} · ≈ ${tl(v)}`, tx + 22, y + 124); });
-  y += 200;
-  // nereden geliyor
+  const tc = themeCountry();
+  x.fillStyle = A; x.fillRect(0, 0, W, 262);
+  x.fillStyle = '#fff'; x.globalAlpha = .85; x.font = FONT(700, 22); x.fillText('GEZİ RAPORU  ·  YALNIZ SENİN', M, 74); x.globalAlpha = 1;
+  x.font = FONT(800, 58); x.fillText(fit(S.trip.name, W - 2 * M, FONT(800, 58)), M, 146);
+  x.font = FONT(500, 24); x.globalAlpha = .92; x.fillText(fit([rawName(S.me), tripRange(S.trip), PS.len ? PS.len + ' gün' : '', tc ? tc[1] : ''].filter(Boolean).join('  ·  '), W - 2 * M, FONT(500, 24)), M, 196);
+  x.font = FONT(400, 19); x.fillText(fit(`Hazırlanma: ${new Date().toLocaleString('tr-TR')}  ·  kişisel harcamaların ve alışverişin yalnız sende`, W - 2 * M, FONT(400, 19)), M, 236); x.globalAlpha = 1;
+  y = 320;
+  x.fillStyle = RPT.muted; x.font = FONT(600, 24); x.fillText('Bu seyahat sana', M, y); y += 72;
+  x.fillStyle = RPT.ink; x.font = FONT(800, 72); x.fillText(eu(P.all), M, y); const bw0 = x.measureText(eu(P.all)).width;
+  x.fillStyle = RPT.muted; x.font = FONT(500, 24); x.fillText(fit(`≈ ${tl(P.all)}${P.ref ? '  ·  tax-free sonrası ≈ ' + eu(P.all - P.ref) : ''}`, W - 2 * M - bw0 - 30, FONT(500, 24)), M + bw0 + 28, y - 10); y += 48;
+  const me = t ? (t.net[S.me] || 0) : 0, pc = v => `%${Math.round(v * 100 / (P.all || 1))}`;
+  tiles([['Ortak harcamalardaki payın', eu(P.pre + P.trip), `${pc(P.pre + P.trip)} · ${P.shares.length} harcama`],
+    ['Kişisel harcamaların', eu(P.solo), `${pc(P.solo)} · ${P.soloRows.length} kayıt`],
+    ['Alışverişin', eu(P.shop), `${pc(P.shop)} · ${SH.items.length} alışveriş${P.ref ? ' · iade ≈ ' + eu(P.ref) : ''}`],
+    ['Günlük ortalaman', eu(Math.round((P.trip + P.soloTrip + P.shop) / nDays)), `seyahatte · ${nDays} gün`],
+    [isFamily() ? 'Ailenin toplamı' : 'Grubun toplamı', eu(C.total), `kişi başı ${eu(Math.round(C.total / (D.n || 1)))}`],
+    t ? ['Hesabın', Math.abs(me) < 100 ? 'Denk ✓' : (me > 0 ? '+' : '−') + tlk(Math.abs(me)), Math.abs(me) < 100 ? 'bekleyen ödeme yok' : me > 0 ? 'alacaksın' : 'göndereceksin', Math.abs(me) < 100 || me > 0 ? '#1B7A4F' : '#B23A26']
+      : ['Kayıt', String(P.shares.length + P.soloRows.length + SH.items.length), 'ortak pay + kişisel + alışveriş']]);
   title('Nereden geliyor?');
-  const SC = [['', M + 14, 'left'], ['Seyahat öncesi', M + 620, 'right'], ['Seyahatte', M + 850, 'right'], ['Toplam', W - M - 14, 'right']];
-  const ev = v => v ? eu(v) : '—';
-  table(SC, [{cells:['Ortak harcamalardaki payın', ev(P.pre), ev(P.trip), eu(P.pre + P.trip)]}, {cells:['Kişisel harcamaların', ev(P.soloPre), ev(P.soloTrip), eu(P.solo)]},
-    {cells:['Kişisel alışverişin', '—', '—', eu(P.shop)]}, {total:['Toplam', eu(P.pre + P.soloPre), eu(P.trip + P.soloTrip), eu(P.all)]},
-    ...(P.ref ? [{cells:['Tax-free iadesi (tahmini)', '', '', '−' + eu(P.ref)], muted:true}, {cells:['Tax-free sonrası', '', '', eu(P.all - P.ref)]}] : [])]);
-  note('Ortak harcamalarda yalnız senin payın sayılır; kimin ödediği ve hesaplaşma ortak raporda. Alışveriş seyahatte sayılır.', 18);
-  // kategoriler
+  table([['', M + 14, 'left'], ['Seyahat öncesi', M + 620, 'right'], ['Seyahatte', M + 850, 'right'], ['Toplam', W - M - 14, 'right']],
+    [{cells:['Ortak harcamalardaki payın', ev(P.pre), ev(P.trip), eu(P.pre + P.trip)]}, {cells:['Kişisel harcamaların', ev(P.soloPre), ev(P.soloTrip), eu(P.solo)]},
+     {cells:['Kişisel alışverişin', '—', ev(P.shop), eu(P.shop)]}, {total:['Toplam', eu(P.pre + P.soloPre), eu(P.trip + P.soloTrip + P.shop), eu(P.all)]},
+     ...(P.ref ? [{cells:['Tax-free iadesi (tahmini)', '', '', '−' + eu(P.ref)], muted:true}, {cells:['Tax-free sonrası', '', '', eu(P.all - P.ref)]}] : [])]);
+  note('Ortak harcamalarda yalnız senin payın sayılır; kimin ödediği ve herkesin hesabı Ortak raporda. Alışveriş seyahatte sayılır.');
   const cats = [...CATS.map(c => ({name:c.name, v:(P.catP[c.id] || 0) + (P.catS[c.id] || 0), color:CAT_COLORS[c.id]})), ...(P.shop ? [{name:'Kişisel alışveriş', v:P.shop, color:'#B04FC4'}] : [])].filter(c => c.v > 0).sort((a, c) => c.v - a.v);
-  if (cats.length){ need(480); title('Nereye ne kadar?'); drawDonut(x, M, y, 185, cats, cats.reduce((a, c) => a + c.v, 0)); y += Math.max(400, 20 + cats.length * 40); }
-  // kalem kalem
-  const byPh = (rows, sum, mk) => ['pre', 'trip'].flatMap(ph => { const a = rows.filter(r => r.ph === ph); return a.length ? [{group:ph === 'pre' ? 'Seyahat öncesi' : 'Seyahatte', sum:eu(a.reduce((t, r) => t + r.v, 0))}, ...a.map(mk)] : []; });
-  if (P.shares.length){ page(); title('Ortak harcamalardaki payın');
-    note(`${P.shares.length} harcamada payın var; "Harcama" harcamanın tamamı, "Payın" sana düşen kısım.`, 18);
+  if (cats.length){ title('Nereye ne kadar?', Math.max(430, 70 + cats.length * 40)); drawDonut(x, M, y, 185, cats, cats.reduce((a, c) => a + c.v, 0)); y += Math.max(400, 20 + cats.length * 40); }
+
+  // 2) Gün gün ve bütçe
+  if (days.length){
+    part('📅', 'Gün gün', 'Her gün senin harcaman: ortak payın, kişisel harcaman ve alışverişin. Kesik çizgi kişi başı günlük bütçe.');
+    const bud = PS.plan > 0 && PS.len ? Math.max(0, Math.round((PS.plan - PS.pre) / PS.len / S.trip.rate)) : 0;
+    legend([['Ortak payın', COL[0]], ['Kişisel', COL[1]], ['Alışveriş', COL[2]]]);
+    drawStack(x, M, y, W - 2 * M, 460, days, COL, bud); y += 480;
+    if (tdays.length > 1){ const hi = tdays.reduce((a, d) => d.tot > a.tot ? d : a), lo = tdays.reduce((a, d) => d.tot < a.tot ? d : a);
+      note(`En pahalı günün ${hi.long} (${eu(hi.tot)}), en ekonomik günün ${lo.long} (${eu(lo.tot)}).`, 19); }
+    title('Gün gün tablo', 160);
+    const sum = k => days.reduce((a, d) => a + d[k], 0);
+    table([['Gün', M + 14, 'left', 430], ['Ortak payın', M + 640, 'right'], ['Kişisel', M + 800, 'right'], ['Alışveriş', M + 950, 'right'], ['Toplam', W - M - 14, 'right']],
+      [...days.map(d => ({cells:[d.long, ev(d.p), ev(d.s), ev(d.a), eu(d.tot)]})), {total:['Toplam', eu(sum('p')), eu(sum('s')), eu(sum('a')), eu(sum('tot'))]}]);
+  }
+  if (PS.plan > 0){
+    title('Bütçe (kişi başı, ortak harcamalar)', 320);
+    const ph = ozPhase(PS), pct = Math.round(PS.spent * 100 / PS.plan), F = v => ozF(v);
+    x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 26, 13); x.fill();
+    x.fillStyle = pct > 100 ? '#B23A26' : pct > 80 ? '#C97A12' : A; rr(x, M, y, Math.max(26, (W - 2 * M) * Math.min(1, PS.spent / PS.plan)), 26, 13); x.fill(); y += 46;
+    const rows = [['Kişi başı bütçe', F(PS.plan)], ['Harcanan (ortak payın)', `${F(PS.spent)} · %${pct}`]];
+    if (ph === 'pre'){ rows.push(['Seyahat öncesi harcanan', F(PS.pre)], ['Seyahate kalan', F(PS.plan - PS.pre)]); if (PS.len) rows.push(['Günde harcayabileceğin', F((PS.plan - PS.pre) / PS.len)]); }
+    else if (ph === 'trip'){ const fc = PS.elapsed > 0 && PS.len ? PS.pre + PS.trip / PS.elapsed * PS.len : 0;
+      if (fc) rows.push(['Bu hızla seyahat sonu', `${F(fc)} · %${Math.round(fc * 100 / PS.plan)}`]); if (PS.leftDays) rows.push(['Kalan günlerde günde', F(Math.max(0, (PS.plan - PS.spent) / PS.leftDays))]); }
+    else { const diff = PS.plan - PS.spent; rows.push([diff >= 0 ? 'Bütçenin altında kaldın' : 'Bütçe aşıldı', F(Math.abs(diff))]);
+      if (PS.len) rows.push(['Günlük: planlanan / gerçekleşen', `${F((PS.plan - PS.pre) / PS.len)} / ${F(PS.trip / PS.len)}`]); }
+    table([['', M + 14, 'left'], ['', W - M - 14, 'right']], rows.map(r => ({cells:r})), false);
+    note('Bütçe ortak harcamalar içindir; kişisel harcamaların ve alışverişin bütçeye girmez.');
+  }
+  if (!isFamily() && C.total){ const avg = Math.round(C.total / (D.n || 1)), mine = P.pre + P.trip, d0 = avg ? Math.round((mine - avg) * 100 / avg) : 0;
+    title('Sen ve grup', 240);
+    tiles([['Grubun toplamı', eu(C.total), `${S.entries.filter(e => e.kind === 'expense').length} ortak harcama`], ['Kişi başı ortalama', eu(avg), `${D.n} kişi`],
+      ['Senin ortak payın', eu(mine), avg ? `ortalamaya göre ${d0 >= 0 ? '+' : '−'}%${Math.abs(d0)}` : '']]); }
+
+  // 3) Nerede harcadın
+  const pl = myPlaces(P), pts = myPoints(P);
+  if (pl.length || pts.length > 1){
+    part('📍', 'Nerede harcadın?', 'Yer adı olan harcamaların (ortak harcamada senin payın); alışverişte outlet, AVM ya da cadde.');
+    if (pl.length){ need(40 + Math.min(10, pl.length) * 46); y = drawHBars(x, M, y, W - 2 * M, pl.slice(0, 10).map(o => ({label:o.label, v:o.v})), A) + 16; if (pl.length > 10) note(`+${pl.length - 10} yer daha`); }
+    if (pts.length > 1){ title('Harita', 580); drawDotMap(x, M, y, W - 2 * M, 480, pts); y += 500; note('Nokta büyüklüğü tutarla, rengi kategoriyle. Konum, harcama eklerken 📍 Buradayım ile eklenir.'); }
+  }
+
+  // 4) Ortak harcamalardaki payın · 5) Kişisel harcamaların (kalem kalem)
+  const byPh = (rows, mk2) => ['pre', 'trip'].flatMap(ph => { const a = rows.filter(r => r.ph === ph); return a.length ? [{group:ph === 'pre' ? 'Seyahat öncesi' : 'Seyahatte', sum:eu(a.reduce((s0, r) => s0 + r.v, 0))}, ...a.map(mk2)] : []; });
+  if (P.shares.length){ part('👥', 'Ortak harcamalardaki payın', `${P.shares.length} harcamada payın var; "Harcama" tamamı, "Payın" sana düşen kısım.`);
     table([['Tarih', M + 14, 'left'], ['Açıklama', M + 130, 'left', 480], ['Ödeyen', M + 630, 'left', 180], ['Harcama', M + 950, 'right'], ['Payın', W - M - 14, 'right']],
-      [...byPh(P.shares, null, r => ({cells:[dmy(r.e.at), r.e.desc, r.e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(r.e.paidBy), money(r.e.amount, r.e.cur), eu(r.v)]})), {total:['Toplam', null, null, null, eu(P.pre + P.trip)]}]); }
-  if (P.soloRows.length){ if (y + 260 > H - M) page(); title('Kişisel harcamaların');
+      [...byPh(P.shares, r => ({cells:[dmy(r.e.at), r.e.desc, r.e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(r.e.paidBy), money(r.e.amount, r.e.cur), eu(r.v)]})), {total:['Toplam', null, null, null, eu(P.pre + P.trip)]}]); }
+  if (P.soloRows.length){ if (P.shares.length) title('🔒 Kişisel harcamaların', 260); else part('🔒', 'Kişisel harcamaların', 'Yalnız sende; seyahatin toplamına ve hesaplaşmaya girmez.');
     table([['Tarih', M + 14, 'left'], ['Açıklama', M + 130, 'left', 500], ['Kategori', M + 650, 'left', 180], ['Tutar', M + 950, 'right'], ['€', W - M - 14, 'right']],
-      [...byPh(P.soloRows, null, r => ({cells:[dmy(r.x.at), r.x.desc, catById(r.x.cat).name, money(r.x.amount, r.x.cur), eu(r.v)]})), {total:['Toplam', null, null, null, eu(P.solo)]}]); }
-  if (SH.items.length){ const {ref} = shopCalc(); if (y + 260 > H - M) page(); title('Kişisel alışverişin');
-    table([['Tarih', M + 14, 'left'], ['Mağaza', M + 130, 'left', 560], ['Tutar', M + 860, 'right'], ['Tax-free iade', W - M - 14, 'right']],
-      [...SH.items.slice().sort((a, c) => a.at - c.at).map(i => ({cells:[dmy(i.at), (i.ret ? '↩ İade: ' : '') + i.store, money(shopAmt(i), i.cur), ref[i.id] ? '≈ ' + eu(Math.round(ref[i.id] * 100)) : '—']})),
-       {total:['Toplam', null, eu(P.shop), P.ref ? '≈ ' + eu(P.ref) : '—']}]); }
-  pages.forEach((pg, i) => { const g = pg.getContext('2d'); g.font = FONT(400, 18); g.fillStyle = '#93A4AE'; g.fillText(`Heybe · Kişisel rapor · ${rawName(S.me)} · ${i + 1}/${pages.length}`, M, H - 36); });
-  return pages;
+      [...byPh(P.soloRows, r => ({cells:[dmy(r.x.at), r.x.desc, catById(r.x.cat).name, money(r.x.amount, r.x.cur), eu(r.v)]})), {total:['Toplam', null, null, null, eu(P.solo)]}]); }
+
+  // 6) Alışverişin: göstergeler, mağazalar, yerler, tax-free, fiş fiş ürünler
+  if (SH.items.length){
+    part('🛍️', 'Alışverişin', `${SD.items.length} alışveriş · ${SD.stores.length} mağaza${SD.lines ? ' · ' + SD.lines + ' ürün' : ''} · yalnız sende`);
+    tiles([['Harcanan', e0(SD.total), '≈ ' + nf0.format(Math.round(SD.total * S.trip.rate)) + ' ₺'], ['Tahmini tax-free iadesi', '≈ ' + e0(SD.refund), 'KDV payının %60’ı'], ['Net maliyet', e0(SD.total - SD.refund), 'iade sonrası'],
+      SD.trN ? ['Türkiye’ye göre', `${SD.gain >= 0 ? '+' : '−'}${nf0.format(Math.abs(SD.gain))} ₺`, `${SD.trN} ürün · senin girdiğin fiyatlar`, SD.gain >= 0 ? '#1B7A4F' : '#B23A26'] : ['Ürün', String(SD.lines || SD.items.length), SD.lines ? 'fişlerden' : 'alışveriş']], 4);
+    if (SH.limit > 0){ const pct = Math.min(1, SD.total / SH.limit); need(90);
+      x.fillStyle = RPT.ink; x.font = FONT(600, 22); x.fillText(`Alışveriş bütçem ${e0(SH.limit)}  ·  ${SD.total <= SH.limit ? 'kalan ' + e0(SH.limit - SD.total) : 'aşım ' + e0(SD.total - SH.limit)}`, M, y + 22);
+      y += 36; x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 20, 10); x.fill(); x.fillStyle = SD.total <= SH.limit ? A : '#B23A26'; rr(x, M, y, Math.max(20, (W - 2 * M) * pct), 20, 10); x.fill(); y += 50; }
+    if (SD.donut.length){ title('Mağazalara göre', Math.max(440, 70 + SD.donut.length * 40)); drawDonut(x, M, y, 190, SD.donut, Math.round(SD.total * 100)); y += Math.max(400, 40 * SD.donut.length + 40); }
+    if (SD.outlets.length){ title('Yerlere göre (outlet, AVM, cadde)', 80 + SD.outlets.length * 46); y = drawHBars(x, M, y, W - 2 * M, SD.outlets, A) + 20; }
+    if (SD.groups.length){
+      title('Tax-free durumu', 300);
+      x.fillStyle = RPT.muted; x.font = FONT(500, 20);
+      x.fillText(fit(SD.T ? `${SD.T.name}: KDV %${Math.round(SD.T.vat * 1000) / 10}${SD.T.min ? `, aynı mağaza ve gün en az ${money(SD.T.min, SD.T.cur)}` : ', en az tutar yok'}. Form başına bir satır.` : '', W - 2 * M, FONT(500, 20)), M, y); y += 30;
+      const cols = [['Şirket', M + 16], ['Form', M + 470, 'right'], ['Alışveriş', M + 650, 'right'], ['Tahmini iade', M + 860, 'right'], ['Alınan', W - M - 16, 'right']];
+      need(120 + SD.ops.length * 50);
+      x.fillStyle = A; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 20);
+      cols.forEach(([s0, cx, al]) => { x.textAlign = al || 'left'; x.fillText(s0, cx, y + 29); }); x.textAlign = 'left'; y += 54;
+      const row = (vals, b, shade) => { if (shade){ x.fillStyle = RPT.soft; x.fillRect(M, y - 6, W - 2 * M, 48); }
+        x.fillStyle = RPT.ink; x.font = FONT(b ? 800 : 600, 21); vals.forEach((v, k) => { x.textAlign = cols[k][2] || 'left'; x.fillText(k ? v : fit(v, 420, FONT(b ? 800 : 600, 21)), cols[k][1], y + 24); }); x.textAlign = 'left'; y += 48; };
+      SD.ops.forEach((o, k) => row([opName(o.op), String(o.n), e0(o.v), '≈ ' + e0(o.ref), o.paidRef ? e0(o.paidRef) : '—'], false, k % 2));
+      x.strokeStyle = RPT.ink; x.lineWidth = 2; x.beginPath(); x.moveTo(M, y - 4); x.lineTo(W - M, y - 4); x.stroke(); y += 6;
+      row(['Toplam', String(SD.ops.reduce((a, o) => a + o.n, 0)), e0(SD.ops.reduce((a, o) => a + o.v, 0)), '≈ ' + e0(SD.ops.reduce((a, o) => a + o.ref, 0)), e0(SD.ops.reduce((a, o) => a + o.paidRef, 0))], true);
+      y += 24; title('Formlar (şirket şirket)', 200);
+      const hdr = () => { x.fillStyle = A; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 20);
+        [['Mağaza', M + 70], ['Tarih', M + 470], ['Tutar', M + 720, 'right'], ['Tahmini iade', M + 890, 'right'], ['Durum', W - M - 16, 'right']].forEach(([s0, cx, al]) => { x.textAlign = al || 'left'; x.fillText(s0, cx, y + 29); }); x.textAlign = 'left'; y += 54; };
+      hdr(); let lastOp = null;
+      SD.groups.forEach((g, i) => { if (y + 56 > H - M - 30){ page(); hdr(); }
+        if (g.op !== lastOp){ lastOp = g.op; const o = SD.ops.find(q => q.op === g.op) || {n:0, ref:0}; if (y + 110 > H - M - 30){ page(); hdr(); }
+          x.fillStyle = RPT.ink; x.font = FONT(800, 22); x.fillText(`${opName(g.op)}  ·  ${o.n} form  ·  ≈ ${e0(o.ref)}`, M + 4, y + 22); y += 40; }
+        if (i % 2){ x.fillStyle = RPT.soft; x.fillRect(M, y - 6, W - 2 * M, 54); }
+        drawBrand(x, g.store, M + 12, y - 2, 40, SD.colorOf(g.store));
+        x.fillStyle = RPT.ink; x.font = FONT(600, 21); x.fillText(fit(g.store, 390, FONT(600, 21)), M + 70, y + 26);
+        x.font = FONT(400, 20); x.fillText(new Date(g.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}), M + 470, y + 26);
+        x.textAlign = 'right'; x.fillText(e0(g.v), M + 720, y + 26); x.fillText('≈ ' + e0(g.ref), M + 890, y + 26);
+        const lb = TF_LABEL[g.tf], col = TF_COLOR[g.tf]; x.font = FONT(700, 18); const pw = x.measureText(lb).width + 28;
+        x.fillStyle = mixHex(col, '#ffffff', .85); rr(x, W - M - 16 - pw, y + 2, pw, 34, 17); x.fill(); x.fillStyle = col; x.fillText(lb, W - M - 30, y + 26); x.textAlign = 'left'; y += 54; });
+      y += 20;
+      const open = SD.groups.filter(g => g.tf < 3).length;
+      if (open){ need(150); x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 120, 14); x.fill(); x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(`🧾 ${open} formun iadesi bekliyor`, M + 24, y + 40);
+        x.fillStyle = RPT.muted; x.font = FONT(400, 19); x.fillText('Formu mağazadan al → AB’den son çıkışta gümrükte (kiosk) onaylat → iadeni al.', M + 24, y + 74);
+        x.fillText('Tutarlar tahminidir (KDV payının %60’ı); kesin tutarı mağaza ve aracı şirket söyler.', M + 24, y + 102); y += 150; }
+    }
+    title('Fiş fiş alışverişlerin', 220);
+    for (const i of SD.items){
+      const L = i.lines || [];
+      if (y + Math.min(96 + Math.max(1, L.length) * 38, 300) > H - M - 30) page();
+      x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 80, 14); x.fill();
+      drawBrand(x, i.store, M + 16, y + 14, 52, SD.colorOf(i.store));
+      x.fillStyle = RPT.ink; x.font = FONT(700, 24); x.fillText(fit(i.store, 560, FONT(700, 24)), M + 86, y + 36);
+      x.fillStyle = RPT.muted; x.font = FONT(400, 18);
+      const r = SD.ref[i.id] || 0, c = trCompare(i, r);
+      x.fillText(fit(`${new Date(i.at).toLocaleDateString('tr-TR', {day:'numeric', month:'long'})}${i.outlet ? ' · ' + i.outlet : ''}${r > 0 ? ' · iade ≈ ' + e0(r) : i.noTF ? ' · tax-free yok' : ''}${c ? ` · 🇹🇷 ${nf0.format(c.tr)} ₺` : ''}`, 680, FONT(400, 18)), M + 86, y + 64);
+      x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(800, 26); x.fillText(money(shopAmt(i), i.cur), W - M - 20, y + 38);
+      if (i.cur !== 'EUR'){ x.fillStyle = RPT.muted; x.font = FONT(500, 18); x.fillText(e0(shopEur(i)), W - M - 20, y + 64); }
+      x.textAlign = 'left'; y += 92;
+      if (!L.length){ x.fillStyle = RPT.muted; x.font = FONT(400, 18); x.fillText('Ürün ayrıntısı girilmemiş.', M + 86, y + 14); y += 36; }
+      const keep = 1 - r / (shopEur(i) || 1);
+      L.forEach(l => { if (y + 40 > H - M - 30) page();
+        x.fillStyle = RPT.ink; x.font = FONT(400, 20); x.fillText('•  ' + fit(l.name, 560, FONT(400, 20)), M + 86, y + 20);
+        if (l.tr > 0){ const net = (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)) * keep * S.trip.rate, pc2 = Math.round((1 - net / l.tr) * 100);
+          x.fillStyle = pc2 >= 0 ? '#1B7A4F' : '#B23A26'; x.font = FONT(600, 18); x.fillText(`🇹🇷 ${nf0.format(l.tr)} ₺ · ${pc2 >= 0 ? '%' + pc2 + ' ucuz' : '%' + (-pc2) + ' pahalı'}`, M + 700, y + 20); }
+        x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(600, 20); x.fillText(money(l.price, i.cur), W - M - 20, y + 20); x.textAlign = 'left'; y += 38; });
+      y += 18;
+    }
+  }
+  // 7) Hediyeler
+  if ((SH.gifts || []).length){
+    title('🎁 Hediye listesi', 160);
+    SH.gifts.forEach(g => { if (y + 44 > H - M - 30) page();
+      x.fillStyle = g.done ? '#1B7A4F' : RPT.line; rr(x, M, y, 30, 30, 7); x.fill(); if (g.done){ x.fillStyle = '#fff'; x.font = FONT(800, 22); x.fillText('✓', M + 6, y + 24); }
+      x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(fit(g.who, 260, FONT(700, 22)), M + 50, y + 24);
+      x.fillStyle = RPT.muted; x.font = FONT(400, 20); x.fillText(fit(g.what || '', 560, FONT(400, 20)), M + 330, y + 24);
+      x.textAlign = 'right'; x.fillText(g.est ? '~' + e0(g.est) : '', W - M, y + 24); x.textAlign = 'left'; y += 46; });
+    note('Hediye listesi bir yapılacaklar listesidir; tahminler toplama girmez.');
+  }
+  // 8) Hesabın: kendi denklemin (TL defteri, varsa euro defteri), dönem dökümü ve seninle ilgili bekleyen ödemeler
+  if (t){
+    part('🤝', 'Hesabın', 'Ortak harcamalardaki payın, ödediklerin ve yapılan ödemeler; kişisel harcama ve alışveriş girmez.');
+    const books = [['T', tlk, 100, 'TL defteri'], ...(t.hasE ? [['E', eu, 5, 'Euro defteri (euro harcamaların)']] : [])];
+    for (const [cur, fm, zt, nmB] of books){
+      const Lx = ledgerShown(t, cur)[S.me]; if (!Lx) continue;
+      const lines = ledgerLines(S.me, Lx, zt); if (!lines.length) continue;
+      if (books.length > 1) title(nmB, 160);
+      const rh = l => l[3] ? 58 : 46, boxH = 24 + lines.reduce((a, l) => a + rh(l), 0);
+      need(boxH + 20); x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, boxH, 18); x.fill(); y += 12;
+      for (const l of lines){ const [sg, lb, v, sub, tot] = l;
+        if (tot){ x.strokeStyle = RPT.line; x.lineWidth = 2; x.beginPath(); x.moveTo(M + 20, y); x.lineTo(W - M - 20, y); x.stroke(); }
+        x.fillStyle = RPT.muted; x.font = FONT(800, 24); x.textAlign = 'center'; x.fillText(sg, M + 40, y + 30); x.textAlign = 'left';
+        x.fillStyle = RPT.ink; x.font = FONT(tot ? 800 : 600, 22); x.fillText(fit(youTxt(lb), 640, FONT(tot ? 800 : 600, 22)), M + 74, y + 30);
+        if (sub){ x.fillStyle = RPT.muted; x.font = FONT(400, 17); x.fillText(fit(sub, 760, FONT(400, 17)), M + 74, y + 52); }
+        x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(tot ? 800 : 600, 23); x.fillText(fm(v), W - M - 24, y + 30); x.textAlign = 'left';
+        y += rh(l); }
+      y += 22;
+      const ph = phaseText(ledgerPhases(Lx, S), fm, zt); if (ph) note(ph, 18);
+    }
+    const mine = t.plan.filter(q => q.from === S.me || q.to === S.me);
+    title('Bekleyen ödemelerin', 110 + mine.length * 50);
+    if (!mine.length) note(t.plan.length ? 'Seninle ilgili bekleyen ödeme yok ✓' : 'Herkes ödeşti ✓', 20);
+    mine.forEach(q => { need(50); const out = q.from === S.me;
+      x.fillStyle = out ? '#B23A26' : '#1B7A4F'; x.font = FONT(700, 22); x.fillText(fit(out ? `→ ${rawName(q.to)} kişisine göndereceksin` : `← ${rawName(q.from)} sana gönderecek`, 700, FONT(700, 22)), M, y + 24);
+      x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(800, 24); x.fillText(payAmtText(q), W - M, y + 24); x.textAlign = 'left'; y += 48; });
+    note(t.hasE ? 'Euro borcu euro olarak kalır; TL ile ödenirse ödeme gününün kuru ve döviz farkıyla.' : `Hesaplaşmanın kuru: ${settleRateText(t.R)}`, 17);
+  }
+  if (!dry && cv) emit(cv);
+  return n;
 }
-async function exportMyPdf(){
-  toast('📄 Kişisel PDF hazırlanıyor…');
+// Fiş sayfası: 2 × 2 fotoğraf, altlarında tarih, ad, tür ve tutar; ilk sayfada başlık.
+async function receiptPage(R, k, A){
+  const W = 1240, H = 1754, M = 80, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); let y = M;
+  if (k === 0){ x.fillStyle = A; x.fillRect(0, 0, W, 14); x.fillStyle = RPT.ink; x.font = FONT(800, 44); x.fillText('🧾  Fişlerin', M, y + 44); y += 66;
+    x.fillStyle = RPT.muted; x.font = FONT(500, 20);
+    x.fillText(fitT(x, `${R.photos.length} fiş fotoğrafı · payın olan ortak harcamalar ve alışverişlerin${R.more ? ` · ${R.more} fiş sığmadı` : ''}${R.missing ? ` · ${R.missing} fotoğraf alınamadı` : ''}`, W - 2 * M, FONT(500, 20)), M, y + 4); y += 40; }
+  const gap = 40, cap = 76, cw = (W - 2 * M - gap) / 2, ch = (H - M - 40 - y - gap) / 2;
+  const list = R.photos.slice(k, k + 4);
+  for (let i = 0; i < list.length; i++){
+    const r = list[i], cx = M + (i % 2) * (cw + gap), cy = y + Math.floor(i / 2) * (ch + gap), ih = ch - cap;
+    x.fillStyle = RPT.soft; rr(x, cx, cy, cw, ih, 18); x.fill();
+    try { const img = await loadImg(r.data), s0 = Math.min((cw - 24) / img.naturalWidth, (ih - 24) / img.naturalHeight), w = img.naturalWidth * s0, h = img.naturalHeight * s0;
+      x.save(); rr(x, cx, cy, cw, ih, 18); x.clip(); x.drawImage(img, cx + (cw - w) / 2, cy + (ih - h) / 2, w, h); x.restore(); } catch(_) {}
+    x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(fitT(x, `${dmy(r.at)} · ${r.t}`, cw, FONT(700, 22)), cx, cy + ih + 32);
+    x.fillStyle = RPT.muted; x.font = FONT(500, 18); x.fillText(fitT(x, [r.kind, r.amt, r.where].filter(Boolean).join(' · '), cw, FONT(500, 18)), cx, cy + ih + 60);
+  }
+  return cv;
+}
+const tripFoot = (cv, i, N) => { const g = cv.getContext('2d'); g.font = FONT(400, 17); g.fillStyle = '#93A4AE'; g.fillText(`Heybe · Gezi raporu · ${rawName(S.me)} · ${i}/${N}`, 80, 1754 - 36); };
+async function exportTripPdf(){
+  toast('🧳 Gezi raporu hazırlanıyor; fişlerin de ekleniyor…');
   let jsPDF; try { jsPDF = (await loadLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf')).jsPDF; } catch(_) { return toast('PDF aracı indirilemedi; internet bağlantını kontrol et.'); }
-  const pages = myPdfPages(), doc = new jsPDF({unit:'pt', format:'a4'});
-  pages.forEach((pg, i) => { if (i) doc.addPage(); doc.addImage(pg.toDataURL('image/jpeg', .92), 'JPEG', 0, 0, 595.28, 841.89); });
-  if (await saveFile(`${fileBase()}-kisisel-${mySlug()}.pdf`, doc.output('blob'))) toast('📄 Kişisel PDF hazır.');
+  const R = await myReceipts(900, 120), A = reportData().accent, N = tripPdfPages(null, true) + Math.ceil(R.photos.length / 4);
+  const doc = new jsPDF({unit:'pt', format:'a4', compress:true}); let i = 0;
+  const emit = (cv, q = .9) => { tripFoot(cv, ++i, N); if (i > 1) doc.addPage(); doc.addImage(cv.toDataURL('image/jpeg', q), 'JPEG', 0, 0, 595.28, 841.89); cv.width = cv.height = 0; };
+  tripPdfPages(emit, false);
+  for (let k = 0; k < R.photos.length; k += 4){ emit(await receiptPage(R, k, A), .85); await new Promise(r => setTimeout(r, 0)); }
+  doc.setProperties({title:`${S.trip.name} · Gezi raporu`, creator:'Heybe'});
+  if (await saveFile(tripSlug() + '.pdf', doc.output('blob'))) toast('🧳 Gezi raporu hazır.');
 }
-// Kişisel Excel: Özet (formüllü: dönemler SUMIF ile ayrıntı sayfalarından, kategoriler, tax-free), Ortak paylarım, Kişisel harcamalarım,
-// Alışverişlerim. Ayrıntı sayfalarında filtre ve toplam satırı.
-async function exportMyXlsx(){
-  toast('📊 Kişisel Excel hazırlanıyor…');
+// Excel: Özet (formüllü: dönemler ve kategoriler SUMIF ile ayrıntı sayfalarından; grafikler resim), Günler, Ortak paylarım, Kişisel
+// harcamalarım, Alışverişler, Ürünler, Mağazalar, Şirketler, Tax-free, Hediyelerim, Hesabım, Fişler (küçük fotoğraflarla).
+async function exportTripXlsx(){
+  toast('🧳 Gezi raporu (Excel) hazırlanıyor…');
   let ExcelJS; try { ExcelJS = await loadLib('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js', 'ExcelJS'); } catch(_) { return toast('Excel aracı indirilemedi; internet bağlantını kontrol et.'); }
-  const wb = myXlsx(ExcelJS);
-  const buf = await wb.xlsx.writeBuffer();
-  if (await saveFile(`${fileBase()}-kisisel-${mySlug()}.xlsx`, new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))) toast('📊 Kişisel Excel hazır.');
+  const R = await myReceipts(360, 150), wb = tripXlsx(ExcelJS, R), buf = await wb.xlsx.writeBuffer();
+  if (await saveFile(tripSlug() + '.xlsx', new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))) toast('🧳 Gezi raporu (Excel) hazır.');
 }
-function myXlsx(ExcelJS){
-  const P = myPicture(), D = reportData(), wb = new ExcelJS.Workbook(), A = 'FF' + D.accent.slice(1).toUpperCase(), EUR = '#,##0.00 "€"', TRY = '#,##0.00 "₺"', grey = {color:{argb:'FF5B6A74'}};
+function tripXlsx(ExcelJS, R){
+  const P = myPicture(), D = reportData(), C = D.C, SD = shopReportData(), PS = planState(), t = isFamily() ? null : D.tp;
+  const wb = new ExcelJS.Workbook(), A = 'FF' + D.accent.slice(1).toUpperCase(), EUR = '#,##0.00 "€"', TRY = '#,##0.00 "₺"', TRY0 = '#,##0 "₺"', grey = {color:{argb:'FF5B6A74'}};
   const head = row => { row.eachCell(c => { c.font = {bold:true, color:{argb:'FFFFFFFF'}}; c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:A}}; c.alignment = {vertical:'middle'}; }); row.height = 22; };
   const PH = ph => ph === 'pre' ? 'Seyahat öncesi' : 'Seyahatte', bold = row => row.eachCell(c => { c.font = {bold:true}; c.border = {top:{style:'thin'}}; });
-  wb.creator = 'Heybe'; wb.created = new Date(); wb.calcProperties.fullCalcOnLoad = true;   // Excel açılışta formülleri yeniden hesaplasın (0 sonuçlar boş saklanıyor)
+  const tint = hex => ({type:'pattern', pattern:'solid', fgColor:{argb:'FF' + mixHex(hex, '#ffffff', .78).slice(1).toUpperCase()}});
+  wb.creator = 'Heybe'; wb.created = new Date(); wb.calcProperties.fullCalcOnLoad = true;   // Excel açılışta formülleri yeniden hesaplasın
   const o = wb.addWorksheet('Özet', {views:[{showGridLines:false}]});
+  // Günler
+  const days = myDays(P), bud = PS.plan > 0 && PS.len ? Math.max(0, Math.round((PS.plan - PS.pre) / PS.len / S.trip.rate)) : 0;
+  const g = wb.addWorksheet('Günler', {views:[{state:'frozen', ySplit:1}]});
+  g.columns = [{header:'Gün', width:30}, {header:'Ortak payın', width:14}, {header:'Kişisel', width:12}, {header:'Alışveriş', width:12}, {header:'Toplam', width:13}, ...(bud ? [{header:'Günlük bütçe (kişi başı)', width:22}] : [])];
+  head(g.getRow(1));
+  days.forEach((d, i) => { const r = g.addRow([d.long, d.p / 100, d.s / 100, d.a / 100, {formula:`SUM(B${i + 2}:D${i + 2})`, result:d.tot / 100}, ...(bud ? [d.k === 'pre' ? null : bud / 100] : [])]);
+    for (let k = 2; k <= (bud ? 6 : 5); k++) r.getCell(k).numFmt = EUR; });
+  const gEnd = Math.max(2, days.length + 1);
+  if (days.length){ const r = g.getRow(days.length + 2); r.getCell(1).value = 'Toplam'; ['B', 'C', 'D', 'E'].forEach((c, k) => { r.getCell(k + 2).value = {formula:`SUM(${c}2:${c}${gEnd})`}; r.getCell(k + 2).numFmt = EUR; }); bold(r); }
+  try { if (days.length) g.addConditionalFormatting({ref:`E2:E${gEnd}`, rules:[{type:'dataBar', cfvo:[{type:'min'}, {type:'max'}], color:{argb:A}}]}); } catch(_) {}
   // Ortak paylarım
   const SP = 'Ortak paylarım', sp = wb.addWorksheet(SP, {views:[{state:'frozen', ySplit:1}]});
-  sp.columns = [{header:'Tarih', width:11}, {header:'Açıklama', width:32}, {header:'Kategori', width:13}, {header:'Dönem', width:15}, {header:'Ödeyen', width:14}, {header:'Harcama', width:12}, {header:'Birim', width:7}, {header:'Payım (€)', width:13}];
+  sp.columns = [{header:'Tarih', width:11}, {header:'Açıklama', width:32}, {header:'Kategori', width:13}, {header:'Dönem', width:15}, {header:'Ödeyen', width:14}, {header:'Harcama', width:12}, {header:'Birim', width:7}, {header:'Payım (€)', width:13}, {header:'Yer', width:24}];
   head(sp.getRow(1));
-  P.shares.forEach(({e, v, ph}) => { const r = sp.addRow([new Date(e.at), e.desc, catById(e.cat).name, PH(ph), e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(e.paidBy), e.amount, e.cur, v / 100]);
+  P.shares.forEach(({e, v, ph}) => { const r = sp.addRow([new Date(e.at), e.desc, catById(e.cat).name, PH(ph), e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(e.paidBy), e.amount, e.cur, v / 100, e.place || '']);
     r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(6).numFmt = '#,##0.00'; r.getCell(8).numFmt = EUR; });
   const sEnd = Math.max(2, P.shares.length + 1), sTot = P.shares.length + 2;
-  { const r = sp.getRow(sTot); r.getCell(2).value = 'Toplam'; r.getCell(8).value = {formula:`SUM(H2:H${sEnd})`, result:(P.pre + P.trip) / 100}; r.getCell(8).numFmt = EUR; bold(r); }
-  if (P.shares.length) sp.autoFilter = {from:'A1', to:`H${P.shares.length + 1}`};
+  { const r = sp.getRow(sTot); r.getCell(2).value = 'Toplam'; r.getCell(8).value = P.shares.length ? {formula:`SUM(H2:H${sEnd})`, result:(P.pre + P.trip) / 100} : 0; r.getCell(8).numFmt = EUR; bold(r); }
+  if (P.shares.length) sp.autoFilter = {from:'A1', to:`I${P.shares.length + 1}`};
   // Kişisel harcamalarım
   const SK = 'Kişisel harcamalarım', sk = wb.addWorksheet(SK, {views:[{state:'frozen', ySplit:1}]});
-  sk.columns = [{header:'Tarih', width:11}, {header:'Açıklama', width:32}, {header:'Kategori', width:13}, {header:'Dönem', width:15}, {header:'Tutar', width:12}, {header:'Birim', width:7}, {header:'€ karşılığı', width:13}];
+  sk.columns = [{header:'Tarih', width:11}, {header:'Açıklama', width:32}, {header:'Kategori', width:13}, {header:'Dönem', width:15}, {header:'Tutar', width:12}, {header:'Birim', width:7}, {header:'€ karşılığı', width:13}, {header:'Yer', width:24}];
   head(sk.getRow(1));
-  P.soloRows.forEach(({x, v, ph}) => { const r = sk.addRow([new Date(x.at), x.desc, catById(x.cat).name, PH(ph), x.amount, x.cur, v / 100]);
+  P.soloRows.forEach(({x, v, ph}) => { const r = sk.addRow([new Date(x.at), x.desc, catById(x.cat).name, PH(ph), x.amount, x.cur, v / 100, x.place || '']);
     r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(5).numFmt = '#,##0.00'; r.getCell(7).numFmt = EUR; });
   const kEnd = Math.max(2, P.soloRows.length + 1), kTot = P.soloRows.length + 2;
-  { const r = sk.getRow(kTot); r.getCell(2).value = 'Toplam'; r.getCell(7).value = {formula:`SUM(G2:G${kEnd})`, result:P.solo / 100}; r.getCell(7).numFmt = EUR; bold(r); }
-  if (P.soloRows.length) sk.autoFilter = {from:'A1', to:`G${P.soloRows.length + 1}`};
-  // Alışverişlerim
-  const SA = 'Alışverişlerim', sa = wb.addWorksheet(SA, {views:[{state:'frozen', ySplit:1}]}), {ref} = shopCalc();
-  sa.columns = [{header:'Tarih', width:11}, {header:'Mağaza', width:28}, {header:'Tutar', width:12}, {header:'Birim', width:7}, {header:'€ karşılığı', width:13}, {header:'Tax-free iade (€, tahmini)', width:22}, {header:'Not', width:16}];
+  { const r = sk.getRow(kTot); r.getCell(2).value = 'Toplam'; r.getCell(7).value = P.soloRows.length ? {formula:`SUM(G2:G${kEnd})`, result:P.solo / 100} : 0; r.getCell(7).numFmt = EUR; bold(r); }
+  if (P.soloRows.length) sk.autoFilter = {from:'A1', to:`H${P.soloRows.length + 1}`};
+  // Alışverişler (mağaza, yer, tax-free, şirket, ürün sayısı, Türkiye karşılaştırması)
+  const SA = 'Alışverişler', sa = wb.addWorksheet(SA, {views:[{state:'frozen', ySplit:1}]});
+  sa.columns = [{header:'Tarih', width:12}, {header:'Mağaza', width:22}, {header:'Yer', width:30}, {header:'Tutar', width:12}, {header:'Birim', width:7}, {header:'Euro', width:12},
+    {header:'Tahmini iade', width:13}, {header:'Tax-free', width:15}, {header:'Şirket', width:17}, {header:'Ürün', width:7}, {header:'Türkiye fiyatı', width:14}, {header:'Fark', width:9}];
   head(sa.getRow(1));
-  const items = SH.items.slice().sort((a, c) => a.at - c.at);
-  items.forEach(i => { const r = sa.addRow([new Date(i.at), i.store, shopAmt(i), i.cur, Math.round(shopEur(i) * 100) / 100, Math.round((ref[i.id] || 0) * 100) / 100, i.ret ? 'Ürün iadesi' : '']);
-    r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(3).numFmt = '#,##0.00'; r.getCell(5).numFmt = EUR; r.getCell(6).numFmt = EUR; });
-  const aEnd = Math.max(2, items.length + 1), aTot = items.length + 2;
-  { const r = sa.getRow(aTot); r.getCell(2).value = 'Toplam'; r.getCell(5).value = {formula:`SUM(E2:E${aEnd})`, result:P.shop / 100}; r.getCell(6).value = {formula:`SUM(F2:F${aEnd})`, result:P.ref / 100};
-    [5, 6].forEach(k => r.getCell(k).numFmt = EUR); bold(r); }
-  // Özet
-  o.columns = [{width:34}, {width:17}, {width:17}, {width:17}];
-  o.addRow([`${rawName(S.me)} · ${S.trip.name}`]).font = {size:18, bold:true, color:{argb:A}};
-  o.addRow([`Kişisel rapor${tripRange(S.trip) ? ' · ' + tripRange(S.trip) : ''} · yalnız senin harcamaların · tutarlar euro`]).font = grey;
-  o.addRow([]);
-  const sumif = (sh, col, end, crit, ccol = 'D') => `SUMIF('${sh}'!$${ccol}$2:$${ccol}$${end},"${crit}",'${sh}'!$${col}$2:$${col}$${end})`;
-  head(o.addRow(['Nereden geliyor?', 'Seyahat öncesi', 'Seyahatte', 'Toplam']));
-  const r0 = o.rowCount + 1;
-  const put = (vals) => { const r = o.addRow(vals); [2, 3, 4].forEach(k => r.getCell(k).numFmt = EUR); return r; };
-  put(['Ortak harcamalardaki payın', {formula:sumif(SP, 'H', sEnd, 'Seyahat öncesi'), result:P.pre / 100}, {formula:sumif(SP, 'H', sEnd, 'Seyahatte'), result:P.trip / 100}, {formula:`B${r0}+C${r0}`, result:(P.pre + P.trip) / 100}]);
-  put(['Kişisel harcamaların', {formula:sumif(SK, 'G', kEnd, 'Seyahat öncesi'), result:P.soloPre / 100}, {formula:sumif(SK, 'G', kEnd, 'Seyahatte'), result:P.soloTrip / 100}, {formula:`B${r0 + 1}+C${r0 + 1}`, result:P.solo / 100}]);
-  put(['Kişisel alışverişin', null, {formula:`'${SA}'!E${aTot}`, result:P.shop / 100}, {formula:`C${r0 + 2}`, result:P.shop / 100}]);
-  const rT = o.rowCount + 1;
-  bold(put(['Bu seyahat sana', {formula:`SUM(B${r0}:B${r0 + 2})`, result:(P.pre + P.soloPre) / 100}, {formula:`SUM(C${r0}:C${r0 + 2})`, result:(P.trip + P.soloTrip + P.shop) / 100}, {formula:`SUM(D${r0}:D${r0 + 2})`, result:P.all / 100}]));
-  if (P.ref){ put(['Tax-free iadesi (tahmini)', null, null, {formula:`-'${SA}'!F${aTot}`, result:-P.ref / 100}]); put(['Tax-free sonrası', null, null, {formula:`D${rT}+D${rT + 1}`, result:(P.all - P.ref) / 100}]); }
-  { const r = o.addRow(['Bugünkü kurla TL karşılığı', null, null, {formula:`D${rT}*${S.trip.rate}`, result:Math.round(P.all * S.trip.rate) / 100}]); r.getCell(4).numFmt = TRY; r.getCell(1).font = grey; }
-  o.addRow([]); o.addRow(['Alışveriş seyahatte sayılır. Ortak harcamalarda yalnız senin payın; kimin ödediği ve hesaplaşma ortak raporda.']).font = grey;
-  o.addRow([]);
-  head(o.addRow(['Kategori', 'Ortak payın', 'Kişisel', 'Toplam']));
-  const c0 = o.rowCount + 1, cats = CATS.filter(c => (P.catP[c.id] || 0) + (P.catS[c.id] || 0) > 0);
-  cats.forEach((c, i) => { const r = c0 + i; put([c.name, {formula:sumif(SP, 'H', sEnd, c.name, 'C'), result:(P.catP[c.id] || 0) / 100}, {formula:sumif(SK, 'G', kEnd, c.name, 'C'), result:(P.catS[c.id] || 0) / 100}, {formula:`B${r}+C${r}`, result:((P.catP[c.id] || 0) + (P.catS[c.id] || 0)) / 100}]); });
-  if (P.shop){ const r = o.rowCount + 1; put(['Kişisel alışveriş', null, {formula:`'${SA}'!E${aTot}`, result:P.shop / 100}, {formula:`C${r}`, result:P.shop / 100}]); }
-  { const c1 = o.rowCount; bold(put(['Toplam', {formula:`SUM(B${c0}:B${c1})`, result:(P.pre + P.trip) / 100}, {formula:`SUM(C${c0}:C${c1})`, result:(P.solo + P.shop) / 100}, {formula:`SUM(D${c0}:D${c1})`, result:P.all / 100}])); }
-  // halka grafik
-  const pie = [...CATS.map(c => ({name:c.name, v:(P.catP[c.id] || 0) + (P.catS[c.id] || 0), color:CAT_COLORS[c.id]})), ...(P.shop ? [{name:'Kişisel alışveriş', v:P.shop, color:'#B04FC4'}] : [])].filter(c => c.v > 0).sort((a, c) => c.v - a.v);
-  if (pie.length){ const h = Math.max(420, 60 + pie.length * 40), img = chartImage(1000, h, x => drawDonut(x, 30, 30, 180, pie, pie.reduce((a, c) => a + c.v, 0)));
-    o.addImage(wb.addImage({base64:img, extension:'png'}), {tl:{col:0, row:o.rowCount + 1}, ext:{width:640, height:Math.round(h * .64)}}); }
-  // Hediyelerim (2026-11-27): yapılacaklar listesi; tahminler toplama girmez.
+  SD.items.forEach(i => { const r0 = SD.ref[i.id] || 0, c = trCompare(i, r0);
+    const r = sa.addRow([new Date(i.at), i.store + (i.ret ? ' (ürün iadesi)' : ''), i.outlet || i.place || '', shopAmt(i), i.cur, Math.round(shopEur(i) * 100) / 100, Math.round(r0 * 100) / 100,
+      i.ret ? (r0 ? 'formdan düşüldü' : 'etkisi yok') : r0 > 0 ? TF_LABEL[tfStep(i)] : (i.noTF ? 'yok' : 'sınır altı'), r0 > 0 && i.op ? opName(i.op) : '', (i.lines || []).length, c ? c.tr : null, c ? 1 - c.net / c.tr : null]);
+    r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(4).numFmt = '#,##0.00'; r.getCell(6).numFmt = EUR; r.getCell(7).numFmt = EUR; r.getCell(11).numFmt = TRY0; r.getCell(12).numFmt = '0%';
+    r.getCell(2).fill = tint(SD.colorOf(i.store)); if (r0 > 0 && !i.ret) r.getCell(8).font = {bold:true, color:{argb:'FF' + TF_COLOR[tfStep(i)].slice(1)}}; });
+  const nI = SD.items.length, aEnd = Math.max(2, nI + 1), aTot = nI + 2;
+  { const r = sa.getRow(aTot); r.getCell(2).value = 'Toplam'; r.getCell(6).value = nI ? {formula:`SUM(F2:F${aEnd})`, result:P.shop / 100} : 0; r.getCell(7).value = nI ? {formula:`SUM(G2:G${aEnd})`, result:P.ref / 100} : 0;
+    r.getCell(6).numFmt = EUR; r.getCell(7).numFmt = EUR; bold(r); }
+  if (nI) sa.autoFilter = {from:'A1', to:`L${nI + 1}`};
+  if (nI){
+    // Ürünler
+    const u = wb.addWorksheet('Ürünler', {views:[{state:'frozen', ySplit:1}]});
+    u.columns = [{header:'Tarih', width:12}, {header:'Mağaza', width:22}, {header:'Ürün', width:34}, {header:'Fiyat', width:12}, {header:'Birim', width:7}, {header:'Türkiye fiyatı', width:14}, {header:'Fark', width:9}];
+    head(u.getRow(1));
+    SD.items.forEach(i => { const keep = 1 - (SD.ref[i.id] || 0) / (shopEur(i) || 1);
+      (i.lines || []).forEach(l => { const net = l.tr > 0 ? (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)) * keep * S.trip.rate : 0;
+        const r = u.addRow([new Date(i.at), i.store, l.name, l.price, i.cur, l.tr || null, l.tr ? 1 - net / l.tr : null]);
+        r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(4).numFmt = '#,##0.00'; r.getCell(6).numFmt = TRY0; r.getCell(7).numFmt = '0%'; r.getCell(2).fill = tint(SD.colorOf(i.store)); }); });
+    if (u.rowCount > 1) u.autoFilter = {from:'A1', to:`G${u.rowCount}`};
+    // Mağazalar
+    const m = wb.addWorksheet('Mağazalar'); m.columns = [{header:'Mağaza', width:24}, {header:'Alışveriş', width:10}, {header:'Euro', width:14}, {header:'Tahmini iade', width:14}, {header:'Pay', width:8}];
+    head(m.getRow(1));
+    SD.stores.forEach(s0 => { const r = m.addRow([s0.name, s0.n, s0.v / 100, s0.ref / 100, s0.v / (SD.total * 100 || 1)]); r.getCell(3).numFmt = EUR; r.getCell(4).numFmt = EUR; r.getCell(5).numFmt = '0%'; r.getCell(1).fill = tint(s0.color); });
+    try { m.addConditionalFormatting({ref:`C2:C${SD.stores.length + 1}`, rules:[{type:'dataBar', cfvo:[{type:'min'}, {type:'max'}], color:{argb:A}}]}); } catch(_) {}
+    // Tax-free şirketleri ve formlar
+    if (SD.ops.length){ const s2 = wb.addWorksheet('Şirketler', {views:[{state:'frozen', ySplit:1}]});
+      s2.columns = [{header:'Şirket', width:22}, {header:'Form', width:8}, {header:'Alışveriş', width:14}, {header:'Tahmini iade', width:15}, {header:'Alınan iade', width:14}, {header:'Bekleyen iade', width:15},
+        {header:'Alınmadı', width:10}, {header:'Onaylatılacak', width:14}, {header:'İade bekliyor', width:14}, {header:'İade alındı', width:12}];
+      head(s2.getRow(1));
+      SD.ops.forEach(op => { const r = s2.addRow([opName(op.op), op.n, op.v, op.ref, op.paidRef, op.ref - op.paidRef, ...op.c]); [3, 4, 5, 6].forEach(k => r.getCell(k).numFmt = EUR); });
+      const n2 = SD.ops.length + 1, tr2 = s2.addRow(['Toplam', ...['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].map(c => ({formula:`SUM(${c}2:${c}${n2})`}))]);
+      tr2.font = {bold:true}; [3, 4, 5, 6].forEach(k => tr2.getCell(k).numFmt = EUR); tr2.eachCell(c => { c.border = {top:{style:'medium'}}; }); }
+    if (SD.groups.length){ const f = wb.addWorksheet('Tax-free'); f.columns = [{header:'Mağaza', width:24}, {header:'Tarih', width:12}, {header:'Tutar', width:13}, {header:'Tahmini iade', width:14}, {header:'Durum', width:16}, {header:'Şirket', width:18}];
+      head(f.getRow(1));
+      SD.groups.forEach(q => { const r = f.addRow([q.store, new Date(q.at), q.v, q.ref, TF_LABEL[q.tf], q.op ? opName(q.op) : '']); r.getCell(2).numFmt = 'dd.mm.yyyy'; r.getCell(3).numFmt = EUR; r.getCell(4).numFmt = EUR;
+        r.getCell(5).font = {bold:true, color:{argb:'FF' + TF_COLOR[q.tf].slice(1)}}; }); }
+  }
+  // Hediyelerim: yapılacaklar listesi; tahminler toplama girmez.
   const G = SH.gifts || [];
   if (G.length){ const sg = wb.addWorksheet('Hediyelerim', {views:[{state:'frozen', ySplit:1}]});
     sg.columns = [{header:'Kime', width:18}, {header:'Ne', width:30}, {header:'Tahmini (€)', width:13}, {header:'Durum', width:12}];
     head(sg.getRow(1));
-    G.slice().sort((a, c) => a.done - c.done).forEach(g => { const r = sg.addRow([g.who, g.what, g.est || null, g.done ? 'Alındı' : 'Alınacak']); r.getCell(3).numFmt = EUR; });
-    const r = sg.getRow(G.length + 2); r.getCell(2).value = 'Toplam (tahmini)'; r.getCell(3).value = {formula:`SUM(C2:C${G.length + 1})`, result:G.reduce((a, g) => a + (g.est || 0), 0)}; r.getCell(3).numFmt = EUR; bold(r);
+    G.slice().sort((a, c) => a.done - c.done).forEach(q => { const r = sg.addRow([q.who, q.what, q.est || null, q.done ? 'Alındı' : 'Alınacak']); r.getCell(3).numFmt = EUR; });
+    const r = sg.getRow(G.length + 2); r.getCell(2).value = 'Toplam (tahmini)'; r.getCell(3).value = {formula:`SUM(C2:C${G.length + 1})`, result:G.reduce((a, q) => a + (q.est || 0), 0)}; r.getCell(3).numFmt = EUR; bold(r);
     sg.addRow([]); sg.addRow(['', 'Hediye listesi bir yapılacaklar listesidir; tahminler "Bu seyahat sana" toplamına girmez.']).font = grey; }
+  // Hesabım: kendi denklemin (TL defteri, varsa euro defteri) ve seninle ilgili bekleyen ödemeler.
+  if (t){ const h = wb.addWorksheet('Hesabım', {views:[{showGridLines:false}]}); h.columns = [{width:5}, {width:34}, {width:16}, {width:60}];
+    h.addRow(['', 'Hesabın']).font = {size:16, bold:true, color:{argb:A}};
+    h.addRow(['', 'Ortak harcamalardaki payın, ödediklerin ve yapılan ödemeler; kişisel harcama ve alışveriş girmez.']).font = grey;
+    const books = [['T', TRY, 100, 'TL defteri'], ...(t.hasE ? [['E', EUR, 5, 'Euro defteri (euro harcamaların)']] : [])];
+    for (const [cur, fmt, zt, nmB] of books){ const Lx = ledgerShown(t, cur)[S.me]; if (!Lx) continue;
+      h.addRow([]); head(h.addRow(['', nmB, 'Tutar', 'Açıklama']));
+      ledgerLines(S.me, Lx, zt).forEach(([sg0, lb, v, sub, tot]) => { const r = h.addRow([sg0, youTxt(lb), v / 100, sub || '']);
+        r.getCell(3).numFmt = fmt; if (tot) bold(r); });
+      const ph = phaseText(ledgerPhases(Lx, S), cur === 'T' ? tlk : eu, zt); if (ph) h.addRow(['', ph]).font = grey; }
+    const mine = t.plan.filter(q => q.from === S.me || q.to === S.me);
+    h.addRow([]); head(h.addRow(['', 'Bekleyen ödemelerin', 'Tutar', '']));
+    if (!mine.length) h.addRow(['', t.plan.length ? 'Seninle ilgili bekleyen ödeme yok' : 'Herkes ödeşti']);
+    mine.forEach(q => h.addRow([q.from === S.me ? '→' : '←', q.from === S.me ? `${rawName(q.to)} kişisine göndereceksin` : `${rawName(q.from)} sana gönderecek`, payAmtText(q), '']));
+  }
+  // Fişler: küçük fotoğraflarla (fotoğrafı olan fişler)
+  if (R && R.photos.length){ const f = wb.addWorksheet('Fişler', {views:[{state:'frozen', ySplit:1}]});
+    f.columns = [{header:'Tarih', width:12}, {header:'Tür', width:11}, {header:'Açıklama / mağaza', width:30}, {header:'Tutar', width:14}, {header:'Yer', width:22}, {header:'Fotoğraf', width:30}];
+    head(f.getRow(1));
+    R.photos.forEach((r, i) => { const row = f.addRow([new Date(r.at), r.kind, r.t, r.amt, r.where || '']); row.getCell(1).numFmt = 'dd.mm.yyyy'; row.height = 105; row.alignment = {vertical:'top'};
+      const k = Math.min(200 / r.w, 130 / r.h); f.addImage(wb.addImage({base64:r.data, extension:'jpeg'}), {tl:{col:5.05, row:i + 1.05}, ext:{width:Math.round(r.w * k), height:Math.round(r.h * k)}}); });
+    if (R.more || R.missing){ f.addRow([]); f.addRow(['', '', `${R.more ? R.more + ' fiş sığmadı. ' : ''}${R.missing ? R.missing + ' fotoğraf alınamadı.' : ''}`]).font = grey; } }
+  // Özet
+  o.columns = [{width:34}, {width:17}, {width:17}, {width:17}];
+  o.addRow([`${rawName(S.me)} · ${S.trip.name}`]).font = {size:18, bold:true, color:{argb:A}};
+  o.addRow([`Gezi raporu${tripRange(S.trip) ? ' · ' + tripRange(S.trip) : ''} · yalnız senin · tutarlar euro`]).font = grey;
+  o.addRow([]);
+  const sumif = (sh, col, end, crit, ccol = 'D') => `SUMIF('${sh}'!$${ccol}$2:$${ccol}$${end},"${crit}",'${sh}'!$${col}$2:$${col}$${end})`;
+  head(o.addRow(['Nereden geliyor?', 'Seyahat öncesi', 'Seyahatte', 'Toplam']));
+  const r0 = o.rowCount + 1;
+  const put = vals => { const r = o.addRow(vals); [2, 3, 4].forEach(k => r.getCell(k).numFmt = EUR); return r; };
+  put(['Ortak harcamalardaki payın', {formula:sumif(SP, 'H', sEnd, 'Seyahat öncesi'), result:P.pre / 100}, {formula:sumif(SP, 'H', sEnd, 'Seyahatte'), result:P.trip / 100}, {formula:`B${r0}+C${r0}`, result:(P.pre + P.trip) / 100}]);
+  put(['Kişisel harcamaların', {formula:sumif(SK, 'G', kEnd, 'Seyahat öncesi'), result:P.soloPre / 100}, {formula:sumif(SK, 'G', kEnd, 'Seyahatte'), result:P.soloTrip / 100}, {formula:`B${r0 + 1}+C${r0 + 1}`, result:P.solo / 100}]);
+  put(['Kişisel alışverişin', null, {formula:`'${SA}'!F${aTot}`, result:P.shop / 100}, {formula:`C${r0 + 2}`, result:P.shop / 100}]);
+  const rT = o.rowCount + 1;
+  bold(put(['Bu seyahat sana', {formula:`SUM(B${r0}:B${r0 + 2})`, result:(P.pre + P.soloPre) / 100}, {formula:`SUM(C${r0}:C${r0 + 2})`, result:(P.trip + P.soloTrip + P.shop) / 100}, {formula:`SUM(D${r0}:D${r0 + 2})`, result:P.all / 100}]));
+  if (P.ref){ put(['Tax-free iadesi (tahmini)', null, null, {formula:`-'${SA}'!G${aTot}`, result:-P.ref / 100}]); put(['Tax-free sonrası', null, null, {formula:`D${rT}+D${rT + 1}`, result:(P.all - P.ref) / 100}]); }
+  { const r = o.addRow(['Bugünkü kurla TL karşılığı', null, null, {formula:`D${rT}*${S.trip.rate}`, result:Math.round(P.all * S.trip.rate) / 100}]); r.getCell(4).numFmt = TRY; r.getCell(1).font = grey; }
+  o.addRow([]);
+  const nDays = PS.len || days.filter(d => d.k !== 'pre').length || 1, me = t ? (t.net[S.me] || 0) : 0;
+  head(o.addRow(['Bir bakışta', 'Değer', '', '']));
+  { const r = o.addRow(['Günlük ortalaman (seyahatte)', {formula:`C${rT}/${nDays}`, result:(P.trip + P.soloTrip + P.shop) / nDays / 100}, `${nDays} gün`]); r.getCell(2).numFmt = EUR; }
+  { const r = o.addRow([isFamily() ? 'Ailenin toplamı' : 'Grubun toplamı', C.total / 100, `kişi başı ${eu(Math.round(C.total / (D.n || 1)))}`]); r.getCell(2).numFmt = EUR; }
+  if (t){ const r = o.addRow(['Hesabın', Math.abs(me) < 100 ? 0 : me / 100, Math.abs(me) < 100 ? 'denk' : me > 0 ? 'alacaksın' : 'göndereceksin']); r.getCell(2).numFmt = TRY; }
+  if (PS.plan > 0){ const r = o.addRow(['Kişi başı bütçe (ortak harcamalar)', ozF(PS.plan), `harcanan ${ozF(PS.spent)} · %${Math.round(PS.spent * 100 / PS.plan)}`]); r.getCell(1).font = grey; }
+  { const r = o.addRow(['Alışveriş', `${SD.items.length} alışveriş · ${SD.stores.length} mağaza`, SD.lines ? `${SD.lines} ürün` : '']); r.getCell(1).font = grey; }
+  if (R && R.photos.length) o.addRow(['Fiş fotoğrafı', R.photos.length, 'Fişler sayfasında']).getCell(1).font = grey;
+  o.addRow([]);
+  head(o.addRow(['Kategori', 'Ortak payın', 'Kişisel', 'Toplam']));
+  const c0 = o.rowCount + 1, cats = CATS.filter(c => (P.catP[c.id] || 0) + (P.catS[c.id] || 0) > 0);
+  cats.forEach((c, i) => { const r = c0 + i; put([c.name, {formula:sumif(SP, 'H', sEnd, c.name, 'C'), result:(P.catP[c.id] || 0) / 100}, {formula:sumif(SK, 'G', kEnd, c.name, 'C'), result:(P.catS[c.id] || 0) / 100}, {formula:`B${r}+C${r}`, result:((P.catP[c.id] || 0) + (P.catS[c.id] || 0)) / 100}]); });
+  if (P.shop){ const r = o.rowCount + 1; put(['Kişisel alışveriş', null, {formula:`'${SA}'!F${aTot}`, result:P.shop / 100}, {formula:`C${r}`, result:P.shop / 100}]); }
+  { const c1 = o.rowCount; bold(put(['Toplam', {formula:`SUM(B${c0}:B${c1})`, result:(P.pre + P.trip) / 100}, {formula:`SUM(C${c0}:C${c1})`, result:(P.solo + P.shop) / 100}, {formula:`SUM(D${c0}:D${c1})`, result:P.all / 100}])); }
+  o.addRow([]); o.addRow(['Ortak harcamalarda yalnız senin payın; kimin ödediği ve herkesin hesabı Ortak raporda. Alışveriş seyahatte sayılır.']).font = grey;
+  // Grafikler (resim): kategoriler, gün gün, mağazalar, yerler — tabloların sağında
+  const im = (data, col, row, w, h) => o.addImage(wb.addImage({base64:data, extension:'png'}), {tl:{col, row}, ext:{width:w, height:h}});
+  let gr = 0;
+  const pie = [...CATS.map(c => ({name:c.name, v:(P.catP[c.id] || 0) + (P.catS[c.id] || 0), color:CAT_COLORS[c.id]})), ...(P.shop ? [{name:'Kişisel alışveriş', v:P.shop, color:'#B04FC4'}] : [])].filter(c => c.v > 0).sort((a, c) => c.v - a.v);
+  if (pie.length){ const hh = Math.max(460, 120 + pie.length * 40); im(chartImage(1000, hh, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Nereye ne kadar?', 30, 50); drawDonut(x, 30, 90, 180, pie, pie.reduce((a, c) => a + c.v, 0)); }), 5, gr, 620, Math.round(hh * .62)); gr += Math.ceil(hh * .62 / 20) + 1; }
+  if (days.length){ const COL = [D.accent, TRIP_SOLO, TRIP_SHOP];
+    im(chartImage(1100, 560, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Gün gün', 30, 50); let lx = 220; x.font = FONT(600, 20);
+      [['Ortak payın', COL[0]], ['Kişisel', COL[1]], ['Alışveriş', COL[2]]].forEach(([l, col]) => { x.fillStyle = col; rr(x, lx, 32, 20, 20, 4); x.fill(); x.fillStyle = RPT.ink; x.fillText(l, lx + 28, 49); lx += x.measureText(l).width + 64; });
+      drawStack(x, 30, 80, 1040, 460, days, COL, bud); }), 5, gr, 680, 346); gr += 19; }
+  if (SD.donut.length){ const hh = Math.max(460, 120 + SD.donut.length * 40); im(chartImage(900, hh, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Mağazalara göre', 30, 50); drawDonut(x, 30, 90, 170, SD.donut, Math.round(SD.total * 100), .9); }), 5, gr, 600, Math.round(hh * 600 / 900)); gr += Math.ceil(hh * 600 / 900 / 20) + 1; }
+  if (SD.outlets.length){ const hh = 110 + SD.outlets.length * 46; im(chartImage(900, hh, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Yerlere göre', 30, 50); drawHBars(x, 30, 80, 840, SD.outlets, D.accent, .9); }), 5, gr, 520, Math.round(hh * 520 / 900)); }
   return wb;
 }
 function pdfPages(){
@@ -10637,171 +10985,6 @@ function drawHBars(x, X, Y, W, rows, color, s = 1){
     x.fillStyle = RPT.muted; x.font = FONT(600, 20 * s); x.fillText(eu(r.v), X + lw + w + 12 * s, y + 23 * s); y += 46 * s;
   }
   return y;
-}
-function shopFileBase(){ return `${fileBase()}-alisveris-${(rawName(S.me) || 'ben').replace(/[^\p{L}\p{N}]+/gu, '-')}`; }
-function shopPdfPages(){
-  const W = 1240, H = 1754, M = 80, D = shopReportData(), pages = []; let cv, x, y;
-  const page = () => { cv = document.createElement('canvas'); cv.width = W; cv.height = H; x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); y = M; pages.push(cv); };
-  const fit = (t, max, font) => { x.font = font; let s0 = String(t); if (x.measureText(s0).width <= max) return s0; while (s0.length > 2 && x.measureText(s0 + '…').width > max) s0 = s0.slice(0, -1); return s0 + '…'; };
-  const title = (t, need = 120) => { if (y + need > H - M) page(); x.fillStyle = RPT.ink; x.font = FONT(800, 34); x.fillText(t, M, y + 34); y += 60; };
-  page();
-  x.fillStyle = D.accent; x.fillRect(0, 0, W, 250);
-  x.fillStyle = '#fff'; x.globalAlpha = .85; x.font = FONT(700, 22); x.fillText('ALIŞVERİŞ RAPORU  ·  KİŞİSEL', M, 70); x.globalAlpha = 1;
-  x.font = FONT(800, 56); x.fillText(fit(S.trip.name, W - 2 * M, FONT(800, 56)), M, 135);
-  x.font = FONT(500, 26); x.globalAlpha = .9; x.fillText(fit(`${rawName(S.me)}${tripRange(S.trip) ? '  ·  ' + tripRange(S.trip) : ''}  ·  ${D.items.length} alışveriş · ${D.stores.length} mağaza${D.lines ? ' · ' + D.lines + ' ürün' : ''}`, W - 2 * M, FONT(500, 26)), M, 185);
-  x.font = FONT(400, 20); x.fillText(`Hazırlanma: ${new Date().toLocaleString('tr-TR')}  ·  sadece bu kişiye ait kayıtlar`, M, 222); x.globalAlpha = 1;
-  y = 290;
-  const tiles = [['Harcanan', e0(D.total), '≈ ' + nf0.format(Math.round(D.total * S.trip.rate)) + ' ₺'], ['Tahmini tax-free iadesi', '≈ ' + e0(D.refund), 'KDV payının %60’ı'], ['Net maliyet', e0(D.total - D.refund), 'iade sonrası'],
-    D.trN ? ['Türkiye’ye göre', `${D.gain >= 0 ? '+' : '−'}${nf0.format(Math.abs(D.gain))} ₺`, `${D.trN} ürün · senin girdiğin fiyatlar`] : ['Ürün', String(D.lines || D.items.length), D.lines ? 'fişlerden' : 'alışveriş']];
-  const tw = (W - 2 * M - 60) / 4;
-  tiles.forEach(([l, v, sub], i) => { const tx = M + i * (tw + 20); x.fillStyle = RPT.soft; rr(x, tx, y, tw, 150, 18); x.fill();
-    x.fillStyle = RPT.muted; x.font = FONT(600, 19); x.fillText(fit(l, tw - 40, FONT(600, 19)), tx + 22, y + 40);
-    x.fillStyle = i === 3 && D.trN ? (D.gain >= 0 ? '#1B7A4F' : '#B23A26') : RPT.ink; x.font = FONT(800, 32); x.fillText(fit(v, tw - 40, FONT(800, 32)), tx + 22, y + 90);
-    x.fillStyle = RPT.muted; x.font = FONT(500, 17); x.fillText(fit(sub, tw - 40, FONT(500, 17)), tx + 22, y + 125); });
-  y += 190;
-  if (SH.limit > 0){ const pct = Math.min(1, D.total / SH.limit);
-    x.fillStyle = RPT.ink; x.font = FONT(600, 22); x.fillText(`Alışveriş bütçem ${e0(SH.limit)}  ·  ${D.total <= SH.limit ? 'kalan ' + e0(SH.limit - D.total) : 'aşım ' + e0(D.total - SH.limit)}`, M, y + 22);
-    y += 36; x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 20, 10); x.fill(); x.fillStyle = D.total <= SH.limit ? D.accent : '#B23A26'; rr(x, M, y, Math.max(20, (W - 2 * M) * pct), 20, 10); x.fill(); y += 50; }
-  if (D.donut.length){ title('Mağazalara göre'); drawDonut(x, M, y, 190, D.donut, Math.round(D.total * 100)); y += Math.max(400, 40 * D.donut.length + 40); }
-  if (D.outlets.length){ title('Yerlere göre', 60 + D.outlets.length * 46); y = drawHBars(x, M, y, W - 2 * M, D.outlets, D.accent) + 20; }
-  // tax-free
-  if (D.groups.length){
-    page(); title('Tax-free durumu');
-    x.fillStyle = RPT.muted; x.font = FONT(500, 20);
-    x.fillText(D.T ? `${D.T.name}: KDV %${Math.round(D.T.vat * 1000) / 10}${D.T.min ? `, aynı mağaza ve gün en az ${money(D.T.min, D.T.cur)}` : ', en az tutar yok'}. Form başına bir satır.` : '', M, y); y += 30;
-    const hdr = () => { x.fillStyle = D.accent; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 20);
-      [['Mağaza', M + 70], ['Tarih', M + 470], ['Tutar', M + 720, 'right'], ['Tahmini iade', M + 890, 'right'], ['Durum', W - M - 16, 'right']].forEach(([t, cx, al]) => { x.textAlign = al || 'left'; x.fillText(t, cx, y + 29); }); x.textAlign = 'left'; y += 54; };
-    // Şirkete göre iade: şirket başına form sayısı, alışveriş, tahmini iade, alınan; en altta toplam.
-    { const cols = [['Şirket', M + 16], ['Form', M + 470, 'right'], ['Alışveriş', M + 650, 'right'], ['Tahmini iade', M + 860, 'right'], ['Alınan', W - M - 16, 'right']];
-      title('Şirkete göre iade', 120 + D.ops.length * 50);
-      x.fillStyle = D.accent; rr(x, M, y, W - 2 * M, 44, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 20);
-      cols.forEach(([t, cx, al]) => { x.textAlign = al || 'left'; x.fillText(t, cx, y + 29); }); x.textAlign = 'left'; y += 54;
-      const row = (vals, bold, shade) => { if (shade){ x.fillStyle = RPT.soft; x.fillRect(M, y - 6, W - 2 * M, 48); }
-        x.fillStyle = RPT.ink; x.font = FONT(bold ? 800 : 600, 21); vals.forEach((v, k) => { x.textAlign = cols[k][2] || 'left'; x.fillText(k ? v : fit(v, 420, FONT(bold ? 800 : 600, 21)), cols[k][1], y + 24); }); x.textAlign = 'left'; y += 48; };
-      D.ops.forEach((o, k) => row([opName(o.op), String(o.n), e0(o.v), '≈ ' + e0(o.ref), o.paidRef ? e0(o.paidRef) : '—'], false, k % 2));
-      x.strokeStyle = RPT.ink; x.lineWidth = 2; x.beginPath(); x.moveTo(M, y - 4); x.lineTo(W - M, y - 4); x.stroke(); y += 6;
-      row(['Toplam', String(D.ops.reduce((a, o) => a + o.n, 0)), e0(D.ops.reduce((a, o) => a + o.v, 0)), '≈ ' + e0(D.ops.reduce((a, o) => a + o.ref, 0)), e0(D.ops.reduce((a, o) => a + o.paidRef, 0))], true);
-      y += 30; title('Formlar (şirket şirket)', 200); }
-    hdr();
-    let lastOp = null;
-    D.groups.forEach((g, i) => { if (y + 56 > H - M){ page(); hdr(); }
-      if (g.op !== lastOp){ lastOp = g.op; const o = D.ops.find(q => q.op === g.op) || {n:0, ref:0}; if (y + 110 > H - M){ page(); hdr(); }
-        x.fillStyle = RPT.ink; x.font = FONT(800, 22); x.fillText(`${opName(g.op)}  ·  ${o.n} form  ·  ≈ ${e0(o.ref)}`, M + 4, y + 22); y += 40; }
-      if (i % 2){ x.fillStyle = RPT.soft; x.fillRect(M, y - 6, W - 2 * M, 54); }
-      drawBrand(x, g.store, M + 12, y - 2, 40, D.colorOf(g.store));
-      x.fillStyle = RPT.ink; x.font = FONT(600, 21); x.fillText(fit(g.store, 390, FONT(600, 21)), M + 70, y + 26);
-      x.font = FONT(400, 20); x.fillText(new Date(g.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}), M + 470, y + 26);
-      x.textAlign = 'right'; x.fillText(e0(g.v), M + 720, y + 26); x.fillText('≈ ' + e0(g.ref), M + 890, y + 26);
-      const lb = TF_LABEL[g.tf], col = TF_COLOR[g.tf]; x.font = FONT(700, 18); const pw = x.measureText(lb).width + 28;
-      x.fillStyle = mixHex(col, '#ffffff', .85); rr(x, W - M - 16 - pw, y + 2, pw, 34, 17); x.fill(); x.fillStyle = col; x.fillText(lb, W - M - 30, y + 26); x.textAlign = 'left'; y += 54; });
-    y += 20;
-    const open = D.groups.filter(g => g.tf < 3).length;
-    if (open){ x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 120, 14); x.fill(); x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(`🧾 ${open} formun iadesi bekliyor`, M + 24, y + 40);
-      x.fillStyle = RPT.muted; x.font = FONT(400, 19); x.fillText('Formu mağazadan al → AB’den son çıkışta gümrükte (kiosk) onaylat → iadeni al.', M + 24, y + 74);
-      x.fillText('Tutarlar tahminidir (KDV payının %60’ı); kesin tutarı mağaza ve aracı şirket söyler.', M + 24, y + 102); y += 150; }
-  }
-  // kalem kalem
-  title('Kalem kalem alışverişler', 200);
-  for (const i of D.items){
-    const L = i.lines || [], need = 96 + Math.max(1, L.length) * 38;
-    if (y + Math.min(need, 300) > H - M) page();
-    x.fillStyle = RPT.soft; rr(x, M, y, W - 2 * M, 80, 14); x.fill();
-    drawBrand(x, i.store, M + 16, y + 14, 52, D.colorOf(i.store));
-    x.fillStyle = RPT.ink; x.font = FONT(700, 24); x.fillText(fit(i.store, 560, FONT(700, 24)), M + 86, y + 36);
-    x.fillStyle = RPT.muted; x.font = FONT(400, 18);
-    const r = D.ref[i.id] || 0, c = trCompare(i, r);
-    x.fillText(fit(`${new Date(i.at).toLocaleDateString('tr-TR', {day:'numeric', month:'long'})}${i.outlet ? ' · ' + i.outlet : ''}${r > 0 ? ' · iade ≈ ' + e0(r) : i.noTF ? ' · tax-free yok' : ''}${c ? ` · 🇹🇷 ${nf0.format(c.tr)} ₺` : ''}`, 680, FONT(400, 18)), M + 86, y + 64);
-    x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(800, 26); x.fillText(money(shopAmt(i), i.cur), W - M - 20, y + 38);
-    if (i.cur !== 'EUR'){ x.fillStyle = RPT.muted; x.font = FONT(500, 18); x.fillText(e0(shopEur(i)), W - M - 20, y + 64); }
-    x.textAlign = 'left'; y += 92;
-    if (!L.length){ x.fillStyle = RPT.muted; x.font = FONT(400, 18); x.fillText('Ürün ayrıntısı girilmemiş.', M + 86, y + 14); y += 36; }
-    const keep = 1 - r / (shopEur(i) || 1);
-    L.forEach(l => { if (y + 40 > H - M) page();
-      x.fillStyle = RPT.ink; x.font = FONT(400, 20); x.fillText('•  ' + fit(l.name, 560, FONT(400, 20)), M + 86, y + 20);
-      if (l.tr > 0){ const net = (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)) * keep * S.trip.rate, pc = Math.round((1 - net / l.tr) * 100);
-        x.fillStyle = pc >= 0 ? '#1B7A4F' : '#B23A26'; x.font = FONT(600, 18); x.fillText(`🇹🇷 ${nf0.format(l.tr)} ₺ · ${pc >= 0 ? '%' + pc + ' ucuz' : '%' + (-pc) + ' pahalı'}`, M + 700, y + 20); }
-      x.textAlign = 'right'; x.fillStyle = RPT.ink; x.font = FONT(600, 20); x.fillText(money(l.price, i.cur), W - M - 20, y + 20); x.textAlign = 'left'; y += 38; });
-    y += 18;
-  }
-  // hediyeler
-  if ((SH.gifts || []).length){
-    title('Hediye listesi', 160);
-    SH.gifts.forEach(g => { if (y + 44 > H - M) page();
-      x.fillStyle = g.done ? '#1B7A4F' : RPT.line; rr(x, M, y, 30, 30, 7); x.fill(); if (g.done){ x.fillStyle = '#fff'; x.font = FONT(800, 22); x.fillText('✓', M + 6, y + 24); }
-      x.fillStyle = RPT.ink; x.font = FONT(700, 22); x.fillText(fit(g.who, 260, FONT(700, 22)), M + 50, y + 24);
-      x.fillStyle = RPT.muted; x.font = FONT(400, 20); x.fillText(fit(g.what || '', 560, FONT(400, 20)), M + 330, y + 24);
-      x.textAlign = 'right'; x.fillText(g.est ? '~' + e0(g.est) : '', W - M, y + 24); x.textAlign = 'left'; y += 46; });
-  }
-  pages.forEach((p, i) => { const g = p.getContext('2d'); g.font = FONT(400, 16); g.fillStyle = '#93A4AE'; g.fillText(`Heybe · Alışveriş raporu · ${rawName(S.me)} · ${i + 1}/${pages.length}`, M, H - 36); });
-  return pages;
-}
-async function exportShopPdf(){
-  if (!SH.items.length) return toast('Henüz alışveriş yok.');
-  toast('📄 Alışveriş raporu hazırlanıyor…');
-  let jsPDF; try { jsPDF = (await loadLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf')).jsPDF; } catch(_) { return toast('PDF aracı indirilemedi; Excel dosyasını deneyebilirsin.'); }
-  const pages = shopPdfPages(), doc = new jsPDF({unit:'pt', format:'a4'});
-  pages.forEach((p, i) => { if (i) doc.addPage(); doc.addImage(p.toDataURL('image/jpeg', .92), 'JPEG', 0, 0, 595.28, 841.89); });
-  if (await saveFile(shopFileBase() + '.pdf', doc.output('blob'))) toast('📄 Alışveriş raporu hazır.');
-}
-async function exportShopXlsx(){
-  if (!SH.items.length) return toast('Henüz alışveriş yok.');
-  toast('📊 Alışveriş Excel’i hazırlanıyor…');
-  let ExcelJS; try { ExcelJS = await loadLib('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js', 'ExcelJS'); } catch(_) { return toast('Excel aracı indirilemedi.'); }
-  const D = shopReportData(), wb = new ExcelJS.Workbook(), A = 'FF' + D.accent.slice(1).toUpperCase(), EUR = '#,##0.00 "€"', TRY = '#,##0 "₺"';
-  const head = row => { row.eachCell(c => { c.font = {bold:true, color:{argb:'FFFFFFFF'}}; c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:A}}; }); row.height = 22; };
-  const tint = hex => ({type:'pattern', pattern:'solid', fgColor:{argb:'FF' + mixHex(hex, '#ffffff', .78).slice(1).toUpperCase()}});
-  // Özet
-  const o = wb.addWorksheet('Özet', {views:[{showGridLines:false}]}); o.columns = [{width:32}, {width:20}];
-  o.addRow(['Alışveriş raporu · ' + S.trip.name]).font = {size:18, bold:true, color:{argb:A}};
-  o.addRow([`${rawName(S.me)} · ${tripRange(S.trip) || ''} · kişisel`]).font = {color:{argb:'FF5B6A74'}}; o.addRow([]);
-  [['Harcanan', D.total, EUR], ['Tahmini tax-free iadesi', D.refund, EUR], ['Net maliyet', D.total - D.refund, EUR], ['Alışveriş sayısı', D.items.length, '0'], ['Mağaza', D.stores.length, '0'], ['Ürün', D.lines, '0']]
-    .concat(D.trN ? [['Türkiye fiyatına göre kâr (senin girdiğin fiyatlar)', Math.round(D.gain), TRY]] : []).concat(SH.limit ? [['Alışveriş bütçem', SH.limit, EUR]] : [])
-    .forEach(([l, v, f]) => { const r = o.addRow([l, v]); r.getCell(2).numFmt = f; r.getCell(1).font = {color:{argb:'FF5B6A74'}}; r.getCell(2).font = {bold:true, size:13}; });
-  const im = (data, tl, w, h) => o.addImage(wb.addImage({base64:data, extension:'png'}), {tl, ext:{width:w, height:h}});
-  im(chartImage(900, Math.max(460, 120 + D.donut.length * 40), x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Mağazalara göre', 30, 50); drawDonut(x, 30, 90, 170, D.donut, Math.round(D.total * 100), .9); }), {col:3, row:0}, 600, Math.round(Math.max(460, 120 + D.donut.length * 40) * 600 / 900));
-  im(chartImage(900, 110 + D.outlets.length * 46, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Yerlere göre', 30, 50); drawHBars(x, 30, 80, 840, D.outlets, D.accent, .9); }), {col:0, row:13}, 520, Math.round((110 + D.outlets.length * 46) * 520 / 900));
-  // Alışverişler
-  const a = wb.addWorksheet('Alışverişler', {views:[{state:'frozen', ySplit:1}]});
-  a.columns = [{header:'Tarih', width:12}, {header:'Mağaza', width:22}, {header:'Yer', width:30}, {header:'Tutar', width:12}, {header:'Birim', width:7}, {header:'Euro', width:12},
-    {header:'Tahmini iade', width:13}, {header:'Tax-free', width:15}, {header:'Şirket', width:17}, {header:'Ürün', width:7}, {header:'Türkiye fiyatı', width:14}, {header:'Fark', width:9}];
-  head(a.getRow(1));
-  D.items.forEach(i => { const r0 = D.ref[i.id] || 0, c = trCompare(i, r0);
-    const r = a.addRow([new Date(i.at), i.store + (i.ret ? ' (ürün iadesi)' : ''), i.outlet || '', shopAmt(i), i.cur, shopEur(i), r0, i.ret ? (r0 ? 'formdan düşüldü' : 'etkisi yok') : r0 > 0 ? TF_LABEL[tfStep(i)] : (i.noTF ? 'yok' : 'sınır altı'), r0 > 0 && i.op ? opName(i.op) : '', (i.lines || []).length, c ? c.tr : null, c ? 1 - c.net / c.tr : null]);
-    r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(4).numFmt = '#,##0.00'; r.getCell(6).numFmt = EUR; r.getCell(7).numFmt = EUR; r.getCell(11).numFmt = TRY; r.getCell(12).numFmt = '0%';
-    r.getCell(2).fill = tint(D.colorOf(i.store)); if (r0 > 0) r.getCell(8).font = {bold:true, color:{argb:'FF' + TF_COLOR[tfStep(i)].slice(1)}}; });
-  const n = D.items.length; const t = a.addRow(['', 'Toplam', '', '', '', {formula:`SUM(F2:F${n + 1})`}, {formula:`SUM(G2:G${n + 1})`}]); t.font = {bold:true}; t.getCell(6).numFmt = EUR; t.getCell(7).numFmt = EUR;
-  a.autoFilter = {from:'A1', to:`L${n + 1}`};
-  // Ürünler
-  const u = wb.addWorksheet('Ürünler', {views:[{state:'frozen', ySplit:1}]});
-  u.columns = [{header:'Tarih', width:12}, {header:'Mağaza', width:22}, {header:'Ürün', width:34}, {header:'Fiyat', width:12}, {header:'Birim', width:7}, {header:'Türkiye fiyatı', width:14}, {header:'Fark', width:9}];
-  head(u.getRow(1));
-  D.items.forEach(i => { const keep = 1 - (D.ref[i.id] || 0) / (shopEur(i) || 1);
-    (i.lines || []).forEach(l => { const net = l.tr > 0 ? (i.cur === 'EUR' ? l.price : l.price / (i.rate || 1)) * keep * S.trip.rate : 0;
-      const r = u.addRow([new Date(i.at), i.store, l.name, l.price, i.cur, l.tr || null, l.tr ? 1 - net / l.tr : null]);
-      r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(4).numFmt = '#,##0.00'; r.getCell(6).numFmt = TRY; r.getCell(7).numFmt = '0%'; r.getCell(2).fill = tint(D.colorOf(i.store)); }); });
-  if (u.rowCount > 1) u.autoFilter = {from:'A1', to:`G${u.rowCount}`};
-  // Mağazalar
-  const m = wb.addWorksheet('Mağazalar'); m.columns = [{header:'Mağaza', width:24}, {header:'Alışveriş', width:10}, {header:'Euro', width:14}, {header:'Tahmini iade', width:14}, {header:'Pay', width:8}];
-  head(m.getRow(1));
-  D.stores.forEach(s0 => { const r = m.addRow([s0.name, s0.n, s0.v / 100, s0.ref / 100, s0.v / (D.total * 100 || 1)]); r.getCell(3).numFmt = EUR; r.getCell(4).numFmt = EUR; r.getCell(5).numFmt = '0%'; r.getCell(1).fill = tint(s0.color); });
-  try { m.addConditionalFormatting({ref:`C2:C${D.stores.length + 1}`, rules:[{type:'dataBar', cfvo:[{type:'min'}, {type:'max'}], color:{argb:A}}]}); } catch(_) {}
-  // Tax-free
-  if (D.ops.length){ const s2 = wb.addWorksheet('Şirketler', {views:[{state:'frozen', ySplit:1}]});
-    s2.columns = [{header:'Şirket', width:22}, {header:'Form', width:8}, {header:'Alışveriş', width:14}, {header:'Tahmini iade', width:15}, {header:'Alınan iade', width:14}, {header:'Bekleyen iade', width:15},
-      {header:'Alınmadı', width:10}, {header:'Onaylatılacak', width:14}, {header:'İade bekliyor', width:14}, {header:'İade alındı', width:12}];
-    head(s2.getRow(1));
-    D.ops.forEach(o => { const r = s2.addRow([opName(o.op), o.n, o.v, o.ref, o.paidRef, o.ref - o.paidRef, ...o.c]); [3, 4, 5, 6].forEach(k => r.getCell(k).numFmt = EUR); });
-    const n2 = D.ops.length + 1, tr2 = s2.addRow(['Toplam', ...['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].map(c => ({formula:`SUM(${c}2:${c}${n2})`}))]);
-    tr2.font = {bold:true}; [3, 4, 5, 6].forEach(k => tr2.getCell(k).numFmt = EUR); tr2.eachCell(c => { c.border = {top:{style:'medium'}}; }); }
-  if (D.groups.length){ const f = wb.addWorksheet('Tax-free'); f.columns = [{header:'Mağaza', width:24}, {header:'Tarih', width:12}, {header:'Tutar', width:13}, {header:'Tahmini iade', width:14}, {header:'Durum', width:16}, {header:'Şirket', width:18}];
-    head(f.getRow(1));
-    D.groups.forEach(g => { const r = f.addRow([g.store, new Date(g.at), g.v, g.ref, TF_LABEL[g.tf], g.op ? opName(g.op) : '']); r.getCell(2).numFmt = 'dd.mm.yyyy'; r.getCell(3).numFmt = EUR; r.getCell(4).numFmt = EUR;
-      r.getCell(5).font = {bold:true, color:{argb:'FF' + TF_COLOR[g.tf].slice(1)}}; }); }
-  // Hediyeler
-  if ((SH.gifts || []).length){ const h = wb.addWorksheet('Hediyeler'); h.columns = [{header:'Kime', width:18}, {header:'Ne', width:28}, {header:'Tahmini', width:12}, {header:'Alındı', width:9}];
-    head(h.getRow(1)); SH.gifts.forEach(g => { const r = h.addRow([g.who, g.what, g.est || null, g.done ? '✓' : '']); r.getCell(3).numFmt = EUR; if (g.done) r.getCell(4).font = {bold:true, color:{argb:'FF1B7A4F'}}; }); }
-  const buf = await wb.xlsx.writeBuffer();
-  if (await saveFile(shopFileBase() + '.xlsx', new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))) toast('📊 Alışveriş Excel’i hazır.');
 }
 
 // ---- konfeti ----
@@ -11178,8 +11361,8 @@ document.addEventListener('click', ev => {
       break; }
     case 'showsolo': if (form && form.mode === 'ozd') closeSheet(true); tab = 'list'; setListMode('kisisel'); shopView = 'solo'; render(); window.scrollTo(0, 0); break;
     case 'addsolo': startSolo(); break;
-    case 'mypdf': exportMyPdf(); break;
-    case 'myxlsx': exportMyXlsx(); break;
+    case 'tpdf': exportTripPdf(); break;
+    case 'txlsx': exportTripXlsx(); break;
     case 'addgift': {
       if (!giftDraft.who.trim() && !giftDraft.what.trim()){ toast('Kime ve ne alacağını yaz.'); break; }
       const est = parseAmt(giftDraft.est);
@@ -11233,8 +11416,6 @@ document.addEventListener('click', ev => {
     case 'pdf': exportPdf(); break;
     case 'album': exportAlbum(); break;
     case 'xlsx': exportXlsx(); break;
-    case 'shoppdf': exportShopPdf(); break;
-    case 'shopxlsx': exportShopXlsx(); break;
     case 'forgetlearn':
       if (!forgetSure){ forgetSure = true; render(); break; }
       forgetSure = false; RC_LEARN.clear(); RC_LINES.clear(); saveLearn(); render(); toast('Öğrenilenler silindi; fişler yine sözlükle okunacak.'); break;
