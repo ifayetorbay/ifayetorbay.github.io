@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127162144';</script>
-<script src="heybe-web.js?v=20261127162144"></script>
+<script>window.HEYBE_VER = '20261127172625';</script>
+<script src="heybe-web.js?v=20261127172625"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -310,6 +310,7 @@ details.why[open]>summary::after{content:" · kapat"}
 .lcat span:nth-child(2){flex:1;min-width:0}
 .lcat small{color:var(--muted)}
 .lnote{font-size:.78rem;color:var(--muted);margin:6px 0 0;line-height:1.5}
+.lrep{margin-top:12px}
 .dfl{padding:0 12px}
 .dfr{display:flex;flex-direction:column;gap:3px;padding:10px 0;font-size:.86rem}
 .dfr+.dfr{border-top:1px solid var(--line)}
@@ -2659,7 +2660,9 @@ function ledgerCard(t, C){
       <p class="lnote num">Payların toplamı = bütün harcamalar: ${fm(tot)} ✓ · Gönderilecek = alınacak: ${fm(give)} ✓${kasaNote}${eurNote}</p>`;
   };
   return `<section class="card ledgcard"><div class="lhead" data-hhost><h2>📋 Hesap tablosu${help('ledger')}</h2><span class="note num">herkes${legacyEur() ? ` · ${settleRateText(t.R)}` : ''}</span></div>
-    ${hasTL() ? sec('T') : ''}${t.hasE ? sec('E') : ''}<p class="lnote">Kişiye dokun: payı nereden geliyor, ne ödedi, ne gönderdi.</p></section>`;
+    ${hasTL() ? sec('T') : ''}${t.hasE ? sec('E') : ''}<p class="lnote">Kişiye dokun: payı nereden geliyor, ne ödedi, ne gönderdi.</p>
+    <div class="two lrep"><button class="btn" data-act="pdf">📄 PDF indir</button><button class="btn" data-act="xlsx">📊 Excel indir</button></div>
+    <p class="lnote">PDF'te bu tablo, kim kime şeması ve kişi kartları; Excel'de formüllü hesap tablosu ve paylar.</p></section>`;
 }
 // Doğrudan ↔ daha az ödeme: yalnız değişen kişiler; önce (doğrudan) ve sonra (daha az), toplamın aynı kaldığı.
 function diffCard(t){
