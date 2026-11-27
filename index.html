@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127130949';</script>
-<script src="heybe-web.js?v=20261127130949"></script>
+<script>window.HEYBE_VER = '20261127162144';</script>
+<script src="heybe-web.js?v=20261127162144"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -325,6 +325,9 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}
 th{text-align:left;color:var(--muted);font-weight:600;font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;padding:0 0 8px}
 td{padding:8px 0;border-top:1px solid var(--line)}
 td.r,th.r{text-align:right}
+.kb{font-size:.8rem}
+.kb td.r,.kb th.r{padding-left:6px}
+.kb small{font-size:.7rem}
 
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
 nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
@@ -396,6 +399,22 @@ html.sheetopen,html.sheetopen body{overflow:hidden}
 .srow b{font-weight:600;text-align:right;min-width:0}
 .chips.pad{padding:10px 0;border-bottom:1px solid var(--line)}
 .rows #fEach{padding-top:8px}
+.nw{white-space:nowrap}
+/* Bölüşülen (2026-11-27): isimler hep açık; seçili kişi ✓ ve payıyla, dışarıdaki soluk ve "dahil değil" */
+.amg{display:flex;flex-direction:column;gap:9px;padding:12px 0;border-bottom:1px solid var(--line)}
+.amh{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.amh .lab{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.ppl{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:8px}
+.pp{display:flex;align-items:center;gap:9px;border:1.5px solid var(--line);background:none;border-radius:14px;padding:8px 10px;text-align:left;color:var(--muted);min-width:0}
+.pp .ck{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:.78rem;font-weight:800}
+.pp .pn{display:flex;flex-direction:column;min-width:0}
+.pp .pn b,.pp .pn small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pp .pn b{font-weight:600}
+.pp .pn small{font-size:.75rem;font-weight:500}
+.pp.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.pp.sel .ck{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pp.sel .pn small{color:var(--accent-text)}
+.lsec{font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:14px 0 2px}
 .place{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.92rem}
 .place{flex-direction:column;align-items:stretch}
 .bk{display:flex;flex-direction:column;gap:6px}
@@ -1116,6 +1135,8 @@ function splitShares(v, ids, w){
 
 // Ortak kasa, kasayı tutan kişi üzerinden hesaplanır: kasaya para koymak o kişiye ödeme yapmak,
 // kasadan harcamak o kişinin ödemesi demektir. Kasada kalan para da böylece hesaplaşmaya girer.
+// Burada eski kayıtların euro defteri (bal) tutulur; "borç harcandığı parayla kalır" kuralıyla girilen kayıtlar (e.v2) bu deftere
+// girmez, TL ve euro defterlerinde ayrıca işlenir (v2Each). Toplamlar (harcama, kategori, bütçe, kişi başı pay ve cebinden çıkan) her kaydı sayar.
 function compute(st, dayStart){
   const ids = st.people.map(p => p.id);
   const bal = {}, share = {}, paid = {};
@@ -1126,10 +1147,11 @@ function compute(st, dayStart){
     const v = toCents(e);
     if (e.kind === 'expense'){
       const sh = splitShares(v, e.among, e.weights);
-      if (e.settleTL){
-        // TL olarak sabit harcama: euro bakiyesine girmez (hesaplaşmaya TL olarak eklenir); "cebinden çıkan" ödeyene yazılır.
+      if (e.settleTL || e.v2){
+        // TL olarak sabit (eski) ya da yeni kuralla girilen harcama: euro defterine girmez; "cebinden çıkan" ödeyene yazılır,
+        // kasadan ödendiyse kasadan düşer.
         for (const id in sh) share[id] += sh[id];
-        if (e.paidBy in paid) paid[e.paidBy] += v;
+        if (e.paidBy === 'kasa') kasaOut += v; else if (e.paidBy in paid) paid[e.paidBy] += v;
       } else {
         const payer = e.paidBy === 'kasa' ? st.trip.holder : e.paidBy;
         bal[payer] += v;
@@ -1141,21 +1163,23 @@ function compute(st, dayStart){
       if (phaseOf(e, st) === 'pre') preTotal += v;
       else { budgetTotal += v; if (dayStart && e.at >= dayStart) today += v; }
     } else if (e.kind === 'kasa'){
-      bal[e.from] += v; bal[st.trip.holder] -= v; kasaIn += v; paid[e.from] += v;
+      if (!e.v2){ bal[e.from] += v; bal[st.trip.holder] -= v; }
+      kasaIn += v; paid[e.from] += v;
     } else if (e.kind === 'kasaout'){
       // Kasada kalan paranın bir kişiye geri verilmesi: kasayı tutan kişi o kişiye ödeme yapar.
-      bal[st.trip.holder] += v; bal[e.to] -= v; kasaBack += v; paid[e.to] -= v;
-    } else if (e.kind === 'transfer' && !e.total){
-      // Toplam hesaplaşma ödemeleri (e.total) euro hesabına değil, doğrudan TL olarak totalNet'e girer.
+      if (!e.v2){ bal[st.trip.holder] += v; bal[e.to] -= v; }
+      kasaBack += v; paid[e.to] -= v;
+    } else if (e.kind === 'transfer' && !e.total && !e.v2){
+      // Toplam hesaplaşma ödemeleri (e.total) ve yeni kuralla girilen ödemeler (e.v2) euro defterine girmez.
       bal[e.from] += v; bal[e.to] -= v;
     }
   }
   return {bal, share, paid, kasaIn, kasaOut, kasaBack, kasaLeft: kasaIn - kasaOut - kasaBack, total, budgetTotal, preTotal, today, cats};
 }
 
-// Hemen TL ile ödeşilen harcamalarda kişi başı TL paylar (kuruş). Ödeyen kişi kendine borçlu değildir.
+// Hemen TL ile ödeşilen eski harcamalarda (settleTL) kişi başı TL paylar (kuruş). Ödeyen kişi kendine borçlu değildir.
 function tlSplits(st){
-  return st.entries.filter(e => e.kind === 'expense' && e.settleTL).map(e => {
+  return st.entries.filter(e => e.kind === 'expense' && e.settleTL && !e.v2).map(e => {
     const sh = splitShares(Math.round(e.amount * 100), e.among, e.weights);
     const rows = e.among.filter(id => id !== e.paidBy).map(id => ({id, amt: sh[id], paid: (e.tlPaid || []).includes(id)}));
     return {e, rows};
@@ -1168,27 +1192,68 @@ function tlSplits(st){
 // günün TL kuruyla (e.tlRate, 1 € kaç ₺) çevrilir.
 const tlKurus = e => Math.round((e.cur === 'TRY' ? e.amount : e.cur === 'EUR' ? e.amount * e.rate : e.amount / e.rate * e.tlRate) * 100);
 
-// Toplam hesaplaşma (TL kuruş): euro hesabı R kuruyla TL'ye çevrilir, TL ile sabit payları eklenir (gross).
-// Yapılan ödemeler ayrı tutulur: out = gönderilen, inn = alınan. net = gross + out − inn. Pozitif = alacaklı.
+// ---- "Borç, harcandığı parayla kalır" (2026-11-27, kullanıcı onayı; e.v2 = 1 olan kayıtlar) ----
+// Bu kuralla girilen kayıtlar iki ayrı defterde tutulur: TL harcaması TL borcu (kuruş), euro harcaması euro borcu (sent) doğurur;
+// diğer dövizler girildiği günün kuruyla euroya çevrilir. Her defter kendi içinde sıfıra denktir. Ortak kasa euro olduğu için kasa
+// hareketleri euro defterindedir (kur oynasa da kasada kimseye kayıp ya da kazanç kalmaz). Euro borcu TL ile ödenirse ödeme gününün
+// kuru × (1 + döviz farkı) ile çevrilir (alacaklı o euroyu satış kurundan yerine koyar; kartla ya da nakitle ödemiş olması fark
+// etmez); euroyla ödenirse tam euro ödenir. Ödeme kaydı kapattığı parçaları ve kuru saklar (e.pa = {t: kuruş, e: sent, r: 1 € kaç ₺,
+// f: fark %}); kur sonradan değişse de kapanan borç yeniden açılmaz. Ödenene kadar euro borcu € olarak ve bugünkü TL değeriyle
+// gösterilir. Eski kayıtlar (e.v2 yok) eski kurala göre işler.
+const v2Cur = e => e.cur === 'TRY' ? 'T' : 'E';
+const v2Val = e => e.cur === 'TRY' ? Math.round(e.amount * 100) : toCents(e);
+// Ödemenin kapattığı parçalar; kayıtta saklı değilse ödeme kendi para biriminin defterine girer.
+const payParts = e => e.pa ? {t:e.pa.t || 0, e:e.pa.e || 0} : (e.cur === 'TRY' ? {t:Math.round(e.amount * 100), e:0} : {t:0, e:toCents(e)});
+// Euronun TL değeri: kur (1 € kaç ₺) × (1 + döviz farkı %).
+const fxQ = (rate, fee) => rate * (1 + (fee || 0) / 100);
+// cur ('T' TL | 'E' euro) defterindeki her yeni kural hareketi. debt(borçlu, alacaklı, tutar, kayıt, etiket, işaretli): harcama
+// payları ve kasa; pay(gönderen, alan, tutar, kayıt, işaretli): ödemeler. İşaretli: TL harcamasında "payını gönderdi" (tlPaid).
+function v2Each(st, cur, debt, pay){
+  const H = st.trip.holder;
+  for (const e of st.entries){
+    if (!e.v2) continue;
+    if (e.kind === 'transfer'){ const p = payParts(e), k = cur === 'T' ? p.t : p.e; if (k) pay(e.from, e.to, k, e, false); continue; }
+    if (v2Cur(e) !== cur) continue;
+    const v = v2Val(e);
+    if (e.kind === 'expense'){
+      const payer = e.paidBy === 'kasa' ? H : e.paidBy, sh = splitShares(v, e.among, e.weights), lbl = e.paidBy === 'kasa' ? e.desc + ' (kasadan)' : e.desc;
+      for (const id in sh) if (id !== payer && sh[id]){ const mk = (e.tlPaid || []).includes(id); debt(id, payer, sh[id], e, lbl, mk); if (mk) pay(id, payer, sh[id], e, true); }
+    } else if (e.kind === 'kasa') debt(H, e.from, v, e, 'Kasaya koyduğu para', false);
+    else if (e.kind === 'kasaout') debt(e.to, H, v, e, 'Kasadan geri aldığı', false);
+  }
+}
+
+// TL defteri (kuruş): eski euro defteri R kuruyla TL'ye çevrilir, eski TL ile sabit payları ve yeni kuralın TL hareketleri eklenir
+// (gross). Yapılan ödemeler ayrı tutulur: out = gönderilen, inn = alınan. net = gross + out − inn. Pozitif = alacaklı.
 function totalParts(st, R){
   const {bal} = compute(st), gross = {}, out = {}, inn = {};
   for (const id in bal){ gross[id] = Math.round(bal[id] * R); out[id] = 0; inn[id] = 0; }
   const pay = (from, to, k) => { if (from in out && to in inn){ out[from] += k; inn[to] += k; } };
   for (const {e, rows} of tlSplits(st)) for (const r of rows){ gross[r.id] -= r.amt; gross[e.paidBy] += r.amt; if (r.paid) pay(r.id, e.paidBy, r.amt); }
-  for (const e of st.entries) if (e.kind === 'transfer' && e.total) pay(e.from, e.to, tlKurus(e));
+  for (const e of st.entries) if (e.kind === 'transfer' && e.total && !e.v2) pay(e.from, e.to, tlKurus(e));
+  v2Each(st, 'T', (db, cr, k) => { if (db in gross && cr in gross){ gross[db] -= k; gross[cr] += k; } }, (f, t, k) => pay(f, t, k));
   const net = {};
   for (const id in gross) net[id] = gross[id] + out[id] - inn[id];
   return {gross, out, inn, net};
 }
 const totalNet = (st, R) => totalParts(st, R).net;
+// Euro defteri (sent): yalnız yeni kuralla girilen euro (ve diğer döviz) harcamaları, kasa ve ödemelerin euro parçası.
+function totalPartsE(st){
+  const gross = {}, out = {}, inn = {}, net = {};
+  st.people.forEach(p => { gross[p.id] = 0; out[p.id] = 0; inn[p.id] = 0; });
+  v2Each(st, 'E', (db, cr, k) => { if (db in gross && cr in gross){ gross[db] -= k; gross[cr] += k; } }, (f, t, k) => { if (f in out && t in inn){ out[f] += k; inn[t] += k; } });
+  for (const id in gross) net[id] = gross[id] + out[id] - inn[id];
+  return {gross, out, inn, net};
+}
 
 // Doğrudan hesaplaşma (TL kuruş, euro hesabı R kuruyla): her harcamada pay sahipleri, ödeyen kişiye payı
 // kadar borçlanır. İki kişi arasındaki karşılıklı borçlar birbirinden düşülür (mahsup), başka kimseyle karıştırılmaz.
 // Böylece her ödeme gerçek harcamalara dayanır: "Uğur'un ödediklerinden payın 100.000, Murat'ınkinden 5.000".
 // Ortak kasa, kasayı tutan kişi üzerinden işler; yapılan ödemeler ilgili ikilinin borcunu kapatır.
 // Dönen her ödeme: {from, to, amt, items:[{label, k}]} — k > 0 "from, to'ya borçlu", k < 0 ters yön (mahsup edilen).
-function pairPlan(st, R, min = 100){
-  const ids = st.people.map(p => p.id), D = {}, items = {};
+// pairBook: add(from, to, k, label) "from, to'ya k borçlu"; done(min) mahsup edip ödemeleri döndürür (TL ve euro defteri ortak).
+function pairBook(ids){
+  const D = {}, items = {};
   const add = (from, to, k, label) => {
     if (from === to || !k || !ids.includes(from) || !ids.includes(to)) return;
     const key = from + '>' + to; D[key] = (D[key] || 0) + k;
@@ -1196,8 +1261,24 @@ function pairPlan(st, R, min = 100){
     const list = items[pk] || (items[pk] = []), it = list.find(x => x.label === label);
     if (it) it.k += sign * k; else list.push({label, k:sign * k});
   };
+  const done = min => {
+    const out = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++){
+      const a = ids[i], b = ids[j], x = (D[a + '>' + b] || 0) - (D[b + '>' + a] || 0);
+      if (Math.abs(x) < min) continue;
+      const pk = a < b ? a + '|' + b : b + '|' + a, dir = (x > 0) === (a < b) ? 1 : -1;   // items yönünü ödemeye çevir
+      const its = (items[pk] || []).map(it => ({label:it.label, k:it.k * dir})).filter(it => it.k).sort((p, q) => q.k - p.k);
+      out.push(x > 0 ? {from:a, to:b, amt:x, items:its} : {from:b, to:a, amt:-x, items:its});
+    }
+    return out.sort((p, q) => q.amt - p.amt);
+  };
+  return {add, done};
+}
+function pairPlan(st, R, min = 100){
+  const B = pairBook(st.people.map(p => p.id)), add = B.add;
   for (const {e, rows} of tlSplits(st)) for (const r of rows) if (!r.paid) add(r.id, e.paidBy, r.amt, e.desc);
   for (const e of st.entries){
+    if (e.v2) continue;
     if (e.kind === 'expense' && !e.settleTL){
       const payer = e.paidBy === 'kasa' ? st.trip.holder : e.paidBy, sh = splitShares(toCents(e), e.among, e.weights);
       for (const id in sh) add(id, payer, Math.round(sh[id] * R), e.paidBy === 'kasa' ? e.desc + ' (kasadan)' : e.desc);
@@ -1205,15 +1286,14 @@ function pairPlan(st, R, min = 100){
     else if (e.kind === 'kasaout') add(e.to, st.trip.holder, Math.round(toCents(e) * R), 'Kasadan geri aldığı');
     else if (e.kind === 'transfer') add(e.to, e.from, e.total ? tlKurus(e) : Math.round(toCents(e) * R), 'Yapılan ödeme');
   }
-  const out = [];
-  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++){
-    const a = ids[i], b = ids[j], x = (D[a + '>' + b] || 0) - (D[b + '>' + a] || 0);
-    if (Math.abs(x) < min) continue;
-    const pk = a < b ? a + '|' + b : b + '|' + a, dir = (x > 0) === (a < b) ? 1 : -1;   // items yönünü ödemeye çevir
-    const its = (items[pk] || []).map(it => ({label:it.label, k:it.k * dir})).filter(it => it.k).sort((p, q) => q.k - p.k);
-    out.push(x > 0 ? {from:a, to:b, amt:x, items:its} : {from:b, to:a, amt:-x, items:its});
-  }
-  return out.sort((p, q) => q.amt - p.amt);
+  v2Each(st, 'T', (db, cr, k, e, lbl, mk) => { if (!mk) add(db, cr, k, lbl); }, (f, t, k, e, mk) => { if (!mk) add(t, f, k, 'Yapılan ödeme'); });
+  return B.done(min);
+}
+// Euro defterinin doğrudan ödemeleri (sent); mahsup ve kalemler TL'dekiyle aynı.
+function pairPlanE(st, min = 5){
+  const B = pairBook(st.people.map(p => p.id));
+  v2Each(st, 'E', (db, cr, k, e, lbl, mk) => { if (!mk) B.add(db, cr, k, lbl); }, (f, t, k, e, mk) => { if (!mk) B.add(t, f, k, 'Yapılan ödeme'); });
+  return B.done(min);
 }
 
 function settle(bal, min = 5){
@@ -1231,47 +1311,82 @@ function settle(bal, min = 5){
   return out;
 }
 
+// İki defterin ödemeleri, aynı yöndeki ikililer için tek satırda: {from, to, tl (kuruş), eur (sent), amt, items, itemsE}.
+// amt: bugünkü TL değeri (tl + eur × Q). Ters yöndekiler ayrı satırda kalır (mahsup yalnız aynı para biriminde yapılır).
+function mergePlans(pT, pE, Q){
+  const rows = pT.map(p => ({...p, tl:p.amt, eur:0, items:p.items || [], itemsE:[]}));
+  for (const p of pE){ const r = rows.find(x => x.from === p.from && x.to === p.to);
+    if (r){ r.eur = p.amt; r.itemsE = p.items || []; }
+    else rows.push({...p, tl:0, eur:p.amt, items:[], itemsE:p.items || []}); }
+  rows.forEach(r => { r.amt = r.tl + Math.round(r.eur * Q); });
+  return rows.sort((a, b) => b.amt - a.amt);
+}
+// Bir ödemenin kapattığı parçalar (kaydedilirken bir kez hesaplanır, e.pa). row: o ikilinin açık borcu {tl, eur}; yoksa ödeme kendi
+// para biriminin defterine girer. TL ödemede önce TL borcu, kalanı euro borcu (Q kuruyla); euro ödemede önce euro borcu, kalanı
+// TL borcu. Fazlası ödemenin kendi para biriminde kalır. amountK: TL ödemede kuruş, euro ödemede sent.
+function allocPay(amountK, cur, row, Q){
+  const tl0 = row ? Math.max(0, row.tl || 0) : 0, eur0 = row ? Math.max(0, row.eur || 0) : 0;
+  if (cur === 'TRY'){
+    const t1 = Math.min(amountK, tl0), e = Math.min(Math.round((amountK - t1) / Q), eur0);
+    return {t:amountK - Math.round(e * Q), e};
+  }
+  const e1 = Math.min(amountK, eur0), t = Math.min(Math.round((amountK - e1) * Q), tl0);
+  return {t, e:amountK - Math.round(t / Q)};
+}
+
 // ---- Hesap tablosu (2026-11-27, kullanıcı: "kimin ne ödediğini anlamak için anlaşılır bir tablo") ----
-// Kişi başı döküm; hesaplaşmanın kuruyla (R) TL kuruş. Hesaplaşma, Özet ve raporlar aynı rakamı göstersin diye tek kaynak.
-// share: payına düşen (TL ile sabit harcamalar TL tutarıyla, euro defteri R kuruyla; kalem kalem yuvarlanır).
-// paid: harcamalarda ödediği + kasaya koyduğu − kasadan geri aldığı. kasa: kasayı tutan kişide kasada kalan para (eksi).
-// gross = paid − share + kasa: toplam borç (−) ya da alacak (+). out/inn: hesaplaşma ödemeleri (gönderdiği, aldığı).
-// net = gross + out − inn = kalan; totalParts ile birebir aynıdır. rnd: euro kalemler kişi başı yuvarlandığından kalan birkaç kuruş
-// (gross = paid − share + kasa + rnd); share ve paid kalemlerin tam toplamıdır.
+// Kişi başı döküm, bir defterde: cur 'T' TL kuruş (eski kayıtlar hesaplaşmanın kuruyla R; yeni kuralın TL kayıtları), cur 'E' euro
+// sent (yalnız yeni kuralın euro kayıtları). Hesaplaşma, Özet ve raporlar aynı rakamı göstersin diye tek kaynak.
+// share: payına düşen (kalem kalem yuvarlanır). paid: harcamalarda ödediği + kasaya koyduğu − kasadan geri aldığı.
+// kasa: kasayı tutan kişide kasada kalan para (eksi). gross = paid − share + kasa: toplam borç (−) ya da alacak (+).
+// out/inn: hesaplaşma ödemeleri (gönderdiği, aldığı). net = gross + out − inn = kalan; totalParts / totalPartsE ile birebir aynıdır.
+// rnd: euro kalemler kişi başı yuvarlandığından kalan birkaç kuruş (gross = paid − share + kasa + rnd).
 // items: her harcamada kişinin payı ve ödediği; pays: gönderdiği ve aldığı ödemeler (dir 'out' | 'in').
-// Kalemlerin TL değeri yalnız itemTL'den gelir (kur kuralı değişirse tek yer değişir).
-function ledger(st, R){
-  const P = totalParts(st, R), L = {};
+// Kalemlerin değeri yalnız itemTL'den gelir.
+function ledger(st, R, cur = 'T'){
+  const P = cur === 'T' ? totalParts(st, R) : totalPartsE(st), L = {};
   st.people.forEach(p => L[p.id] = {share:0, paid:0, kasa:0, out:P.out[p.id] || 0, inn:P.inn[p.id] || 0, net:P.net[p.id] || 0, items:[], pays:[]});
   const put = (id, e, share, paid, eur) => { if (!L[id] || (!share && !paid)) return; L[id].items.push({e, share, paid, eur}); L[id].share += share; L[id].paid += paid; };
-  let kasaLeft = 0;
+  let kasaLeft = 0, kasaV = 0;   // eski kasa (euro sent, R ile çevrilir) ve yeni kuralın kasası (bu defterde)
   for (const e of st.entries){
-    const I = itemTL(e, R);
+    if (e.v2 ? (e.kind !== 'transfer' && v2Cur(e) !== cur) : cur !== 'T') continue;
+    const I = itemTL(e, R, cur);
     if (e.kind === 'expense'){
       const payer = e.paidBy === 'kasa' ? null : e.paidBy;
       for (const id of new Set([...e.among, ...(payer ? [payer] : [])])) put(id, e, I.sh[id] || 0, id === payer ? I.v : 0, I.eur ? I.eur[id] || 0 : 0);
-      if (!payer && !e.settleTL) kasaLeft -= toCents(e);
-    } else if (e.kind === 'kasa'){ put(e.from, e, 0, I.v); kasaLeft += toCents(e); }
-    else if (e.kind === 'kasaout'){ put(e.to, e, 0, -I.v); kasaLeft -= toCents(e); }
+      if (!payer){ if (e.v2) kasaV -= I.v; else if (!e.settleTL) kasaLeft -= toCents(e); }
+    } else if (e.kind === 'kasa'){ put(e.from, e, 0, I.v); if (e.v2) kasaV += I.v; else kasaLeft += toCents(e); }
+    else if (e.kind === 'kasaout'){ put(e.to, e, 0, -I.v); if (e.v2) kasaV -= I.v; else kasaLeft -= toCents(e); }
     else if (e.kind === 'transfer'){
-      const k = I.v;
-      if (!e.total){ if (L[e.from]) L[e.from].out += k; if (L[e.to]) L[e.to].inn += k; }   // euro defterindeki eski ödemeler
+      const k = I.v; if (!k) continue;
+      if (!e.total && !e.v2){ if (L[e.from]) L[e.from].out += k; if (L[e.to]) L[e.to].inn += k; }   // euro defterindeki eski ödemeler
       if (L[e.from]) L[e.from].pays.push({e, k, dir:'out', who:e.to}); if (L[e.to]) L[e.to].pays.push({e, k, dir:'in', who:e.from});
     }
   }
   // TL harcamada "payını gönderdi" işareti: o ikili arasında yapılmış bir ödemedir.
-  for (const {e, rows} of tlSplits(st)) for (const r of rows) if (r.paid){
-    if (L[r.id]) L[r.id].pays.push({e, k:r.amt, dir:'out', who:e.paidBy, mark:true}); if (L[e.paidBy]) L[e.paidBy].pays.push({e, k:r.amt, dir:'in', who:r.id, mark:true}); }
-  if (kasaLeft && L[st.trip.holder]) L[st.trip.holder].kasa = -itemTL({kind:'kasa', amount:kasaLeft / 100, cur:'EUR'}, R).v;
+  const mark = (from, to, k, e) => { if (L[from]) L[from].pays.push({e, k, dir:'out', who:to, mark:true}); if (L[to]) L[to].pays.push({e, k, dir:'in', who:from, mark:true}); };
+  if (cur === 'T') for (const {e, rows} of tlSplits(st)) for (const r of rows) if (r.paid) mark(r.id, e.paidBy, r.amt, e);
+  v2Each(st, cur, () => {}, (f, t, k, e, mk) => { if (mk) mark(f, t, k, e); });
+  const kasa = (kasaLeft ? itemTL({kind:'kasa', amount:kasaLeft / 100, cur:'EUR'}, R).v : 0) + kasaV;
+  if (kasa && L[st.trip.holder]) L[st.trip.holder].kasa = -kasa;
   for (const id in L){ const x = L[id]; x.gross = x.net - x.out + x.inn; x.rnd = x.gross - (x.paid - x.share + x.kasa); }
   return L;
 }
 
-// Bir kaydın hesaplaşmadaki TL değeri (kuruş): {v: toplam, sh: kişi başı TL payları, eur: kişi başı euro payları (sent)}.
-// TL ile sabit harcamada TL tutarı; euro defterinde R kuruyla, kişi başı yuvarlanıp toplanır (satır toplamı = paylar toplamı).
-// Kasa ve eski euro ödemeleri R kuruyla; toplam hesaplaşma ödemesi kendi TL tutarıyla. Hesap tablosu, Özet ve raporlar
-// kalemlerin TL değerini yalnız buradan alır; kur kuralı değişirse yalnız bu işlev değişir.
-function itemTL(e, R){
+// Bir kaydın bir defterdeki değeri: {v: toplam, sh: kişi başı paylar, eur: kişi başı euro payları (sent; eski euro kalemlerde)}.
+// TL defteri (cur 'T'): eski TL ile sabit harcamada TL tutarı; eski euro defterinde R kuruyla, kişi başı yuvarlanıp toplanır (satır
+// toplamı = paylar toplamı); kasa ve eski euro ödemeleri R kuruyla; toplam hesaplaşma ödemesi kendi TL tutarıyla; yeni kuralın TL
+// kayıtları kendi tutarıyla. Euro defteri (cur 'E'): yalnız yeni kuralın euro kayıtları (sent). Yeni kural ödemelerinde o defterdeki
+// parçası. Hesap tablosu, Özet ve raporlar kalemlerin değerini yalnız buradan alır.
+function itemTL(e, R, cur = 'T'){
+  const Z = {v:0, sh:{}, eur:null};
+  if (e.v2){
+    if (e.kind === 'transfer'){ const p = payParts(e); return {v:cur === 'T' ? p.t : p.e, sh:{}, eur:null}; }
+    if (v2Cur(e) !== cur) return Z;
+    const v = v2Val(e);
+    return e.kind === 'expense' ? {v, sh:splitShares(v, e.among, e.weights), eur:null} : {v, sh:{}, eur:null};
+  }
+  if (cur !== 'T') return Z;
   if (e.kind === 'expense'){
     if (e.settleTL){ const v = Math.round(e.amount * 100); return {v, sh:splitShares(v, e.among, e.weights), eur:null}; }
     const eur = splitShares(toCents(e), e.among, e.weights), sh = {}; let v = 0;
@@ -1285,8 +1400,9 @@ function itemTL(e, R){
 // "Daha az ödeme"ye geçince ne değişir: kişi başı doğrudan ve birleştirilmiş ödemeler yan yana. Herkesin toplamı aynıdır
 // (kuruş yuvarlaması hariç); değişen yalnız parayı kime gönderdiği ya da kimden aldığıdır. same: o kişi için hiçbir şey değişmedi.
 function planDiff(direct, short, ids){
-  const side = (plan, id) => ({out:plan.filter(p => p.from === id).map(p => ({who:p.to, amt:p.amt, items:p.items || []})),
-    inn:plan.filter(p => p.to === id).map(p => ({who:p.from, amt:p.amt, items:p.items || []}))});
+  const its = p => [...(p.items || []), ...(p.itemsE || [])];
+  const side = (plan, id) => ({out:plan.filter(p => p.from === id).map(p => ({who:p.to, amt:p.amt, tl:p.tl, eur:p.eur, items:its(p)})),
+    inn:plan.filter(p => p.to === id).map(p => ({who:p.from, amt:p.amt, tl:p.tl, eur:p.eur, items:its(p)}))});
   const sum = a => a.reduce((s, x) => s + x.amt, 0);
   const key = s => [...s.out.map(x => 'o' + x.who + ':' + x.amt), ...s.inn.map(x => 'i' + x.who + ':' + x.amt)].sort().join('|');
   return ids.map(id => { const d = side(direct, id), s = side(short, id);
@@ -2145,28 +2261,44 @@ function render(){
 }
 
 // Toplam hesaplaşmanın kuru: ilk "Ödendi" ile sabitlenir, böylece ödemeler farklı günlerde yapılsa da tutarlar kaymaz.
-function totalPlan(){
-  const lock = S.entries.filter(e => e.kind === 'transfer' && e.total).sort((a,b) => a.at - b.at)[0];
-  const R = lock ? lock.rate : S.trip.rate, T = totalParts(S, R), direct = pairPlan(S, R);
-  // Daha az ödeme: borçlar birleştirilir (herkesin toplamı aynı). Seyahatin ortak ayarı, varsayılan doğrudan.
-  const short = settle(T.net, 100).map(p => ({...p, items:[]})), mode = S.trip.settleMode === 'min' ? 'min' : 'direct';
+// Döviz farkı (seyahat ayarı, %; varsayılan 2): euro borcu TL ile ödenirken eklenir (alacaklı o euroyu satış kurundan yerine koyar).
+const fxFee = (st = S) => { const v = ((st || {}).trip || {}).fxFee; return v == null || isNaN(+v) ? 2 : +v; };
+const feeTxt = v => nf.format(v).replace(/,00$/, '');
+// Yeni kayıt "borç harcandığı parayla kalır" kuralıyla mı girilir? Ortak kasada eski kurala göre para varsa kasa hareketleri eski
+// kuralda kalır (kasa tek defterde dursun); diğer her yeni kayıt yeni kuralla girilir. Düzenlenen kayıt kendi kuralında kalır.
+const legacyKasa = () => S.entries.some(e => !e.v2 && (e.kind === 'kasa' || e.kind === 'kasaout' || (e.kind === 'expense' && e.paidBy === 'kasa')));
+const v2New = (kind, paidBy) => !((kind === 'kasa' || kind === 'kasaout' || paidBy === 'kasa') && legacyKasa());
+function totalPlan(st = S){
+  // Eski kayıtların hesaplaşma kuru (R) ilk eski "Ödendi" ile sabitlenir; yeni kural ödemeleri kuru kilitlemez, her biri kendi
+  // kurunu saklar. Q: euronun bugünkü TL değeri (kur × (1 + döviz farkı)); euro borcunun TL karşılığı bununla gösterilir.
+  const lock = st.entries.filter(e => e.kind === 'transfer' && e.total && !e.v2).sort((a,b) => a.at - b.at)[0];
+  const R = lock ? lock.rate : st.trip.rate, T = totalParts(st, R), TE = totalPartsE(st), Q = fxQ(st.trip.rate, fxFee(st));
+  const direct = mergePlans(pairPlan(st, R), pairPlanE(st), Q);
+  // Daha az ödeme: borçlar her defterde ayrı birleştirilir (herkesin toplamı aynı). Seyahatin ortak ayarı, varsayılan doğrudan.
+  const short = mergePlans(settle(T.net, 100).map(p => ({...p, items:[]})), settle(TE.net, 5).map(p => ({...p, items:[]})), Q), mode = st.trip.settleMode === 'min' ? 'min' : 'direct';
   // Daha az ödemede gerekçe (2026-11-27): ödeyenin tek ödemesiyse, doğrudan ödemede kime ne gönderip kimden ne alacağıyla açıklanır.
-  const diff = planDiff(direct, short, S.people.map(p => p.id));
+  const diff = planDiff(direct, short, st.people.map(p => p.id));
   short.forEach(p => { const r = diff.find(d => d.id === p.from);
     if (r && short.filter(q => q.from === p.from).length === 1 && !short.some(q => q.to === p.from)) p.mins = r.d; });
   const plan = mode === 'min' ? short : direct;
-  // Kişinin kalan bakiyesi, ekranda görünen ödemelerin toplamıdır (pozitif = alacaklı).
-  const net = {}; S.people.forEach(p => net[p.id] = 0);
-  plan.forEach(p => { net[p.from] -= p.amt; net[p.to] += p.amt; });
-  return {R, T, net, plan, mode, direct, short, diff, nDirect:direct.length, nShort:short.length, locked: !!lock};   // 1 TL altı kalıntılar yok sayılır
+  // Kişinin kalan bakiyesi, ekranda görünen ödemelerin toplamıdır (pozitif = alacaklı): net bugünkü TL değeriyle, netT TL, netE euro.
+  const net = {}, netT = {}, netE = {}; st.people.forEach(p => { net[p.id] = 0; netT[p.id] = 0; netE[p.id] = 0; });
+  plan.forEach(p => { net[p.from] -= p.amt; net[p.to] += p.amt; netT[p.from] -= p.tl; netT[p.to] += p.tl; netE[p.from] -= p.eur; netE[p.to] += p.eur; });
+  const hasE = st.entries.some(e => e.v2 && (e.kind === 'transfer' ? payParts(e).e : v2Cur(e) === 'E'));
+  return {R, Q, T, TE, net, netT, netE, plan, mode, direct, short, diff, hasE, nDirect:direct.length, nShort:short.length, locked: !!lock};   // 1 TL ve 5 sent altı kalıntılar yok sayılır
 }
+// Kişinin bugünkü TL değeriyle kalanı (TL defteri + euro defteri × Q); kişi ekleme/çıkarma önizlemeleri için.
+function todayNet(st, R){ const T = totalParts(st, R).net, E = totalPartsE(st).net, Q = fxQ(st.trip.rate, fxFee(st)), o = {};
+  for (const id in T) o[id] = T[id] + Math.round((E[id] || 0) * Q); return o; }
 const tlk = k => nf.format(k/100) + ' ₺';
 // Hesaplaşmanın kuru yazısı tek yerden (kur kuralı değişirse yalnız burası değişir).
 const settleRateText = R => `1 € = ${nf4.format(R)} ₺`;
 // Kişinin toplam durumu; ödeme yapıldıysa altında "toplam − ödenen = kalan" hesabı.
-function meText(T, R, net, head = true){
-  // Kalan (b) ödeme listesinden gelir; toplam borç/alacak = kalan + gönderilen − alınan.
-  const id = S.me, b = (net || T.net)[id] || 0, out = T.out[id] || 0, inn = T.inn[id] || 0, g = b - out + inn;
+function meText(T, R, net, head = true, TE = null, Q = 0){
+  // Kalan (b) ödeme listesinden gelir; toplam borç/alacak = kalan + gönderilen − alınan. Euro defterindeki ödemeler bugünkü TL
+  // değeriyle eklenir (b de bugünkü değerdir).
+  const id = S.me, b = (net || T.net)[id] || 0, eo = TE ? Math.round((TE.out[id] || 0) * Q) : 0, ei = TE ? Math.round((TE.inn[id] || 0) * Q) : 0;
+  const out = (T.out[id] || 0) + eo, inn = (T.inn[id] || 0) + ei, g = b - out + inn;
   let h = !head ? '' : Math.abs(b) < 100 ? `${nm(id)}, hesabın denk.`
     : `${nm(id)}, toplamda <b class="num">${tlk(Math.abs(b))}</b> ${b > 0 ? 'alacaklısın' : 'göndereceksin'} (${eu(Math.round(Math.abs(b) / R))})`;
   if (!out && !inn) return h;
@@ -2180,9 +2312,9 @@ function meText(T, R, net, head = true){
 // Harcamalar sekmesindeki özet: kişinin kime ne kadar göndereceği / kimden alacağı, ayrıntısı Hesaplaşma'da.
 function meLine(){
   if (isFamily()) return `👨‍👩‍👧 Aile seyahati: aranızda hesaplaşma yok, sadece harcamalar izleniyor.`;
-  const {T, R, net, plan} = totalPlan(), mine = plan.filter(p => p.from === S.me || p.to === S.me);
-  const who = mine.map(p => `<button class="wbtn" data-payfrom="${p.from}" data-payto="${p.to}">${p.from === S.me ? `→ ${nmE(p.to)}` : `← ${nmE(p.from)}`} <b>${tlk(p.amt)}</b></button>`).join('');
-  return meText(T, R, net) + (mine.length ? `<div class="who2 num">${who}<button class="link" data-tab="settle">Ayrıntı ›</button></div>` : '');
+  const {T, TE, Q, R, net, plan} = totalPlan(), mine = plan.filter(p => p.from === S.me || p.to === S.me);
+  const who = mine.map(p => `<button class="wbtn" data-payfrom="${p.from}" data-payto="${p.to}">${p.from === S.me ? `→ ${nmE(p.to)}` : `← ${nmE(p.from)}`} <b>${payAmtText(p)}</b></button>`).join('');
+  return meText(T, R, net, true, TE, Q) + (mine.length ? `<div class="who2 num">${who}<button class="link" data-tab="settle">Ayrıntı ›</button></div>` : '');
 }
 
 
@@ -2377,9 +2509,14 @@ function rowInner(e){
   if (e.kind === 'kasaout') return `<button class="row kasarow" data-edit="${e.id}"><span class="ic">↩️</span>
     <span class="mid"><span class="d">Kasadan geri verildi</span><span class="m">${nm(e.to)} aldı</span></span>
     <span class="amt num"><b>${money(e.amount, e.cur)}</b>${other}</span></button>`;
-  if (e.kind === 'transfer') return `<button class="row trf" data-edit="${e.id}"><span class="ic">🤝</span>
-    <span class="mid"><span class="d">${nm(e.from)} → ${nm(e.to)}</span><span class="m">${e.note ? esc(e.note) : 'Hesap kapatma'}${e.cur === 'TRY' ? ` · kur ${nf4.format(e.rate)}` : ''}</span></span>
-    <span class="amt num"><b>${money(e.amount, e.cur)}</b>${other}</span></button>`;
+  if (e.kind === 'transfer'){
+    // Yeni kural: ödemenin kapattığı borç başka para birimindeyse altında o tutar, açıklamada kullanılan kur.
+    const pa = e.v2 && e.pa ? e.pa : null, cv = pa && ((e.cur === 'TRY' && pa.e) || (e.cur !== 'TRY' && pa.t));
+    const sub = pa ? (cv ? ` · 1 € = ${nf4.format(fxQ(pa.r, pa.f))} ₺ (%${feeTxt(pa.f)} farkla)` : '') : e.cur === 'TRY' ? ` · kur ${nf4.format(e.rate)}` : '';
+    const sm = pa ? (cv ? `<small>${[pa.t ? tlk(pa.t) : '', pa.e ? eu(pa.e) : ''].filter(Boolean).join(' + ')} kapandı</small>` : '') : other;
+    return `<button class="row trf" data-edit="${e.id}"><span class="ic">🤝</span>
+    <span class="mid"><span class="d">${nm(e.from)} → ${nm(e.to)}</span><span class="m">${e.note ? esc(e.note) : 'Hesap kapatma'}${sub}</span></span>
+    <span class="amt num"><b>${money(e.amount, e.cur)}</b>${sm}</span></button>`; }
   const cat = catById(e.cat);
   // Kim girdi: aile modunda ödeyen yerine giren gösterilir; diğerlerinde giren ödeyenden farklıysa eklenir.
   const by = e.by && S.people.some(p => p.id === e.by) ? e.by : null;
@@ -2394,12 +2531,24 @@ function rowInner(e){
 // Hesaplaşma: en üstte tek kutuda toplam hesap; ayrıntılar kapalı bölümlerde.
 // Bir ödemenin gerekçesi: kısa özet (ilk iki kalem) ve dokununca açılan kalem kalem döküm.
 function whyHtml(p){
-  if (!p.items.length) return '';
-  const pos = p.items.filter(it => it.k > 0), neg = p.items.filter(it => it.k < 0);
+  // TL kalemleri ₺, euro defterinin kalemleri € ile (euro borcu euro olarak durur).
+  const all = [...(p.items || []).map(it => ({...it, f:tlk})), ...(p.itemsE || []).map(it => ({...it, f:eu}))];
+  if (!all.length) return '';
+  const pos = all.filter(it => it.k > 0), neg = all.filter(it => it.k < 0);
   const short = pos.slice(0, 2).map(it => esc(it.label)).join(', ') + (pos.length > 2 ? ` ve ${pos.length - 2} kalem daha` : '') + (neg.length ? ' · mahsup edildi' : '');
   return `<details class="why"><summary>${short || 'Ayrıntı'}</summary><div class="wl num">`
-    + p.items.map(it => `<div><span>${esc(it.label)}</span><span>${it.k > 0 ? '+' : '−'} ${tlk(Math.abs(it.k))}</span></div>`).join('')
-    + `<div class="tot"><span>${nm(p.from)} → ${nm(p.to)}</span><span>${tlk(p.amt)}</span></div></div></details>`;
+    + all.map(it => `<div><span>${esc(it.label)}</span><span>${it.k > 0 ? '+' : '−'} ${it.f(Math.abs(it.k))}</span></div>`).join('')
+    + `<div class="tot"><span>${nm(p.from)} → ${nm(p.to)}</span><span>${payAmtText(p)}</span></div></div></details>`;
+}
+// Bir ödemenin tutarı: euro parçası varsa "730,17 ₺ + 29,91 €", yoksa TL.
+const payAmtText = p => p.eur ? (p.tl ? tlk(p.tl) + ' + ' : '') + eu(p.eur) : tlk(p.amt);
+// Ödemenin euroyla tutarı (sent): euro parçası tam ödenir, TL parçası bugünkü kur × (1 + döviz farkı) ile çevrilir.
+const payEur = (p, Q) => (p.eur || 0) + Math.round((p.tl || 0) / Q);
+// Yeni kural ödemesinin kapattığı borç ve kullanılan kur (çevrim olduysa): "29,91 € euro borcu · 1 € = 51,0000 ₺ (%2 farkla)".
+function paText(e){
+  const pa = e.v2 && e.pa; if (!pa) return '';
+  const cv = (e.cur === 'TRY' && pa.e) || (e.cur !== 'TRY' && pa.t);
+  return [pa.t ? `${tlk(pa.t)} TL borcu` : '', pa.e ? `${eu(pa.e)} euro borcu` : ''].filter(Boolean).join(' + ') + (cv ? ` · 1 € = ${nf4.format(fxQ(pa.r, pa.f))} ₺ (%${feeTxt(pa.f)} farkla)` : '');
 }
 // Daha az ödemede bir ödemenin gerekçesi: ödeyen, doğrudan ödemede kime ne gönderecek, kimden ne alacaktı.
 // Tek kalemden gelen doğrudan ödemenin nedeni de yazılır (ör. araç kiralaması). Kuruş yuvarlaması ayrı satırda.
@@ -2408,36 +2557,42 @@ function whyMinHtml(p){
   const rs = x => { const pos = x.items.filter(it => it.k > 0); return pos.length === 1 ? ` <small>(${esc(pos[0].label)})</small>` : ''; };
   const k = p.amt - d.out.reduce((s, x) => s + x.amt, 0) + d.inn.reduce((s, x) => s + x.amt, 0);
   return `<details class="why"><summary>Neden bu tutar?</summary><div class="wl num"><div><span>Doğrudan ödemede ${nm(p.from)}:</span><span></span></div>`
-    + d.out.map(x => `<div><span>→ ${nm(x.who)}${rs(x)}</span><span>+ ${tlk(x.amt)}</span></div>`).join('')
-    + d.inn.map(x => `<div><span>← ${nm(x.who)}${rs(x)}</span><span>− ${tlk(x.amt)}</span></div>`).join('')
+    + d.out.map(x => `<div><span>→ ${nm(x.who)}${rs(x)}</span><span>+ ${payAmtText(x)}</span></div>`).join('')
+    + d.inn.map(x => `<div><span>← ${nm(x.who)}${rs(x)}</span><span>− ${payAmtText(x)}</span></div>`).join('')
     + (k ? `<div><span>kuruş yuvarlaması</span><span>${k > 0 ? '+' : '−'} ${tlk(Math.abs(k))}</span></div>` : '')
-    + `<div class="tot"><span>Daha az ödemede: ${nm(p.from)} → ${nm(p.to)}</span><span>${tlk(p.amt)}</span></div></div></details>`;
+    + `<div class="tot"><span>Daha az ödemede: ${nm(p.from)} → ${nm(p.to)}</span><span>${payAmtText(p)}</span></div></div></details>`;
 }
-function payHtml(p, i, R){
+// Ödeme kartı: TL tutarı (euro borcu varsa bugünkü kurla) ve euroyla ödeme seçeneği. "Ödendi" TL, "Euro ile ödendi" euro kaydeder;
+// kayıt, kapattığı TL ve euro parçasını o günün kuruyla saklar.
+function payHtml(p, i, R, Q){
+  const fee = feeTxt(fxFee());
   return `<div class="pay"><div class="l1"><span class="who">${nmE(p.from)}<span class="arrow">→</span>${nmE(p.to)}</span>
-      <span class="tl num">${tlk(p.amt)}<small>${eu(Math.round(p.amt / R))}</small></span></div>${p.mins ? whyMinHtml(p) : whyHtml(p)}
-    <div class="acts"><button class="btn sm" data-act="copyamt" data-i="${i}">Tutarı kopyala</button><button class="btn sm pri" data-act="paid" data-i="${i}">Ödendi</button></div></div>`;
+      <span class="tl num">${tlk(p.amt)}<small>${p.eur ? payAmtText(p) : `ya da ${eu(payEur(p, Q))}`}</small></span></div>${p.mins ? whyMinHtml(p) : whyHtml(p)}
+    ${p.eur ? `<span class="note num">Euro borcu euro olarak duruyor. TL ile: bugünkü kurla (1 € = ${nf4.format(Q)} ₺, %${fee} farkla) ${tlk(p.amt)} · euroyla: ${eu(payEur(p, Q))}</span>` : ''}
+    <div class="acts"><button class="btn sm" data-act="copyamt" data-i="${i}">Tutarı kopyala</button><button class="btn sm" data-act="paideur" data-i="${i}">Euro ile ödendi</button><button class="btn sm pri" data-act="paid" data-i="${i}">Ödendi</button></div></div>`;
 }
 // ---- Hesap tablosu (2026-11-27): herkesin payı, harcamalarda ödediği, gönderdiği/aldığı ve kalanı tek kartta ----
 // Kalan, ekrandaki ödemelerle aynıdır (meText'teki gibi): görünen ödemelerin toplamı. Kuruş yuvarlaması ve 1 TL altı
 // kalıntılar "kur yuvarlaması"na yazılır; böylece kartta, ödeme listesinde ve hero'da aynı rakam görünür.
-function ledgerShown(t){
-  const L = ledger(S, t.R);
-  for (const id in L){ const x = L[id], d = (t.net[id] || 0) - x.net; if (d){ x.net += d; x.gross += d; x.rnd += d; } }
+// cur: 'T' TL defteri (kalan, ekrandaki ödemelerin TL parçası), 'E' euro defteri (euro parçası).
+function ledgerShown(t, cur = 'T'){
+  const L = ledger(S, t.R, cur), tgt = cur === 'T' ? t.netT : t.netE;
+  for (const id in L){ const x = L[id], d = (tgt[id] || 0) - x.net; if (d){ x.net += d; x.gross += d; x.rnd += d; } }
   return L;
 }
-function ledgerRow(id, x){
-  const b = x.net, g = x.gross, z = Math.abs(b) < 100, debt = g < 0, need = Math.abs(g);
-  const done = Math.max(0, debt ? x.out - x.inn : x.inn - x.out), pct = need < 100 ? 1 : Math.min(1, done / need);
+// fm: tutar biçimi (tlk ya da eu); zt: denk sayılan en büyük kalıntı (TL'de 1 ₺, euroda 5 sent).
+function ledgerRow(id, x, fm = tlk, zt = 100){
+  const tlk = fm, b = x.net, g = x.gross, z = Math.abs(b) < zt, debt = g < 0, need = Math.abs(g);
+  const done = Math.max(0, debt ? x.out - x.inn : x.inn - x.out), pct = need < zt ? 1 : Math.min(1, done / need);
   const pill = z ? '<span class="lgp ok">Denk ✓</span>' : b < 0 ? `<span class="lgp give">${tlk(-b)} gönderecek</span>` : `<span class="lgp get">${tlk(b)} alacak</span>`;
-  const sub = need < 100 ? 'Payı kadar ödedi' : debt ? `Borcu ${tlk(need)} · gönderdi ${tlk(done)}` : `Alacağı ${tlk(need)} · aldı ${tlk(done)}`;
+  const sub = need < zt ? 'Payı kadar ödedi' : debt ? `Borcu ${tlk(need)} · gönderdi ${tlk(done)}` : `Alacağı ${tlk(need)} · aldı ${tlk(done)}`;
   return `<summary><span class="lgh"><span class="n">${nmE(id)}${id === S.me ? ' <small class="hint">(sen)</small>' : ''}</span>${pill}</span>
     <span class="lgbar"><i style="width:${Math.round(pct * 100)}%"></i></span><span class="lgs num"><span>${sub}</span><span>%${Math.round(pct * 100)}</span></span></summary>`;
 }
 // Kişinin denklem satırları, düz yazı (ekran, PDF ve Excel ortak): [işaret, etiket, tutar, alt satır, toplam satırı mı].
 // Borçluda payından, alacaklıda ödediğinden başlar; ödeme yapıldıysa sonunda kalan.
-function ledgerLines(id, x){
-  const b = x.net, g = x.gross, z = Math.abs(b) < 100, debt = g < 0, out = [];
+function ledgerLines(id, x, zt = 100){
+  const b = x.net, g = x.gross, z = Math.abs(b) < zt, debt = g < 0, out = [];
   const add = (sg, l, v, sub = '', t = false) => out.push([sg, l, v, sub, t]);
   const list = (a, n = 2) => a.slice(0, n).join(', ') + (a.length > n ? ` ve ${a.length - n} kalem daha` : '');
   const paidL = x.items.filter(it => it.paid > 0).map(it => it.e.kind === 'kasa' ? 'kasaya koyduğu para' : it.e.desc);
@@ -2447,7 +2602,7 @@ function ledgerLines(id, x){
     if (x.rnd) add(debt === (x.rnd < 0) ? '+' : '−', 'Kur yuvarlaması', Math.abs(x.rnd), 'euro kalemlerin kuruş farkı'); };
   if (debt){ add('', 'Payına düşen', x.share); add('−', 'Harcamalarda ödediği', x.paid, list(paidL)); kasa(); add('=', 'Toplam borcu', -g, '', true);
     if (x.out) add('−', 'Gönderdiği', x.out, grp('out', '→')); if (x.inn) add('+', 'Aldığı', x.inn, grp('in', '←')); }
-  else { add('', 'Harcamalarda ödediği', x.paid, list(paidL)); add('−', 'Payına düşen', x.share); kasa(); add('=', g < 100 ? 'Toplam · denk' : 'Toplam alacağı', g, '', true);
+  else { add('', 'Harcamalarda ödediği', x.paid, list(paidL)); add('−', 'Payına düşen', x.share); kasa(); add('=', g < zt ? 'Toplam · denk' : 'Toplam alacağı', g, '', true);
     if (x.inn) add('−', 'Aldığı', x.inn, grp('in', '←')); if (x.out) add('+', 'Gönderdiği', x.out, grp('out', '→')); }
   if (x.out || x.inn) add('=', z ? 'Kalan · denk ✓' : b < 0 ? 'Kalan · gönderecek' : 'Kalan · alacak', z ? 0 : Math.abs(b), '', true);
   return out;
@@ -2461,24 +2616,24 @@ function ledgerCats(x){
 // Bir ödemenin gerekçesi, düz yazı (raporlar): daha az ödemede doğrudan ödemedeki karşılığı, doğrudan ödemede kalemler.
 function payReasonText(p){
   const one = x => { const pos = (x.items || []).filter(it => it.k > 0); return pos.length === 1 ? ` (${pos[0].label})` : ''; };
-  if (p.mins) return 'Doğrudan ödemede: ' + [...p.mins.out.map(x => `→ ${rawName(x.who)} ${tlk(x.amt)}${one(x)}`), ...p.mins.inn.map(x => `← ${rawName(x.who)} ${tlk(x.amt)} düşülür${one(x)}`)].join(', ');
-  const pos = (p.items || []).filter(i => i.k > 0), neg = (p.items || []).filter(i => i.k < 0);
+  if (p.mins) return 'Doğrudan ödemede: ' + [...p.mins.out.map(x => `→ ${rawName(x.who)} ${payAmtText(x)}${one(x)}`), ...p.mins.inn.map(x => `← ${rawName(x.who)} ${payAmtText(x)} düşülür${one(x)}`)].join(', ');
+  const all = [...(p.items || []), ...(p.itemsE || [])], pos = all.filter(i => i.k > 0), neg = all.filter(i => i.k < 0);
   return pos.map(i => i.label).join(', ') + (neg.length ? ' · düşülen: ' + neg.map(i => i.label).join(', ') : '');
 }
 // Doğrudan ↔ daha az ödeme karşılaştırmasının bir kişilik düz yazısı (raporlar).
 function diffLines(d){
   const rs = x => { const pos = (x.items || []).filter(it => it.k > 0); return pos.length === 1 ? ` (${pos[0].label})` : ''; };
   const side = (s, past) => { const a = [];
-    if (s.out.length) a.push(`${past ? 'gönderecekti' : 'gönderiyor'} ${s.out.map(x => `→ ${rawName(x.who)} ${tlk(x.amt)}${past ? rs(x) : ''}`).join(', ')}`);
-    if (s.inn.length) a.push(`${past ? 'alacaktı' : 'alıyor'} ${s.inn.map(x => `← ${rawName(x.who)} ${tlk(x.amt)}${past ? rs(x) : ''}`).join(', ')}`);
+    if (s.out.length) a.push(`${past ? 'gönderecekti' : 'gönderiyor'} ${s.out.map(x => `→ ${rawName(x.who)} ${payAmtText(x)}${past ? rs(x) : ''}`).join(', ')}`);
+    if (s.inn.length) a.push(`${past ? 'alacaktı' : 'alıyor'} ${s.inn.map(x => `← ${rawName(x.who)} ${payAmtText(x)}${past ? rs(x) : ''}`).join(', ')}`);
     return a.join(' · ') || 'hiçbir şey'; };
   const why = d.d.out.length && d.d.inn.length ? (d.s.out.length || d.s.inn.length ? 'Göndereceği ile alacağı birbirinden düşüldü; yalnız farkı kaldı.' : 'Göndereceği ile alacağı birbirini götürdü.') : '';
   return {before:'Doğrudan: ' + side(d.d, true), after:'Daha az: ' + side(d.s, false), why,
     tot:'Toplam aynı ✓ ' + (Math.abs(d.sNet) < 100 ? 'denk' : d.sNet < 0 ? `${tlk(-d.sNet)} gönderir` : `${tlk(d.sNet)} alır`)};
 }
 // Kişinin dökümü: denklem, payın kategorilere dağılımı, kalem kalem.
-function ledgerDetail(id, x){
-  const eq = ledgerLines(id, x).map(([sg, l, v, sub, t]) => `${t ? '<span class="hr"></span>' : ''}<span class="sg${t ? ' t' : ''}">${sg}</span><span${t ? ' class="t"' : ''}>${l}${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="v${t ? ' t' : ''}">${tlk(v)}</span>`).join('');
+function ledgerDetail(id, x, fm = tlk, zt = 100){
+  const tlk = fm, eq = ledgerLines(id, x, zt).map(([sg, l, v, sub, t]) => `${t ? '<span class="hr"></span>' : ''}<span class="sg${t ? ' t' : ''}">${sg}</span><span${t ? ' class="t"' : ''}>${l}${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="v${t ? ' t' : ''}">${tlk(v)}</span>`).join('');
   const catRows = ledgerCats(x).map(c => `<div class="lcat"><span class="ic cat-${c.id}">${catSvg(c.id)}</span><span>${c.name} <small>· ${c.n} kalem</small></span><b class="num">${tlk(c.v)}</b></div>`).join('');
   const its = x.items.filter(it => it.e.kind === 'expense').sort((a, c) => c.share - a.share || c.paid - a.paid);
   const itRows = its.map(it => { const e = it.e, who = e.paidBy === 'kasa' ? 'kasadan ödendi' : e.paidBy === id ? 'kendisi ödedi' : `${rawName(e.paidBy)} ödedi`;
@@ -2487,14 +2642,24 @@ function ledgerDetail(id, x){
     + (catRows ? `<div class="lcats"><span class="lsub">Payına düşen nereden geliyor?</span>${catRows}</div>` : '')
     + (its.length ? `<details class="why"><summary>Kalem kalem (${its.length})</summary><div class="wl num">${itRows}<div class="tot"><span>Payına düşen</span><span>${tlk(x.share)}</span></div></div></details>` : '');
 }
+// Hesap tablosunda TL defteri var mı (eski kayıtlar ya da yeni kuralın TL kayıtları); euro defteri t.hasE.
+const hasTL = () => S.entries.some(e => !e.v2 || (e.kind === 'transfer' ? payParts(e).t : v2Cur(e) === 'T'));
+// Eski euro kayıtları (hesaplaşma kuruyla çevrilenler) var mı: kur yazısı yalnız o zaman anlamlı.
+const legacyEur = () => S.entries.some(e => !e.v2 && ((e.kind === 'expense' && !e.settleTL) || e.kind === 'kasa' || e.kind === 'kasaout' || (e.kind === 'transfer' && !e.total)));
 function ledgerCard(t, C){
   if (!S.entries.some(e => e.kind === 'expense')) return '';
-  const L = ledgerShown(t), ids = S.people.map(p => p.id);
-  const tot = ids.reduce((s, id) => s + L[id].share, 0), give = ids.reduce((s, id) => s + Math.max(0, -L[id].net), 0);
-  const kasaNote = C && C.kasaLeft > 0 && ids.includes(S.trip.holder) ? ` · Kasada kalan ${eu(C.kasaLeft)}, kasayı tutan ${nm(S.trip.holder)} kişisinde; hesaba dahil.` : '';
-  return `<section class="card ledgcard"><div class="lhead" data-hhost><h2>📋 Hesap tablosu${help('ledger')}</h2><span class="note num">herkes · ${settleRateText(t.R)}</span></div>
-    <div class="ledg">${ids.map(id => `<details id="dL_${id}" ${openDet['dL_' + id] ? 'open' : ''}>${ledgerRow(id, L[id])}<div class="lgd">${ledgerDetail(id, L[id])}</div></details>`).join('')}</div>
-    <p class="lnote num">Payların toplamı = bütün harcamalar: ${tlk(tot)} ✓ · Gönderilecek = alınacak: ${tlk(give)} ✓${kasaNote}<br>Kişiye dokun: payı nereden geliyor, ne ödedi, ne gönderdi.</p></section>`;
+  const ids = S.people.map(p => p.id), both = t.hasE && hasTL();
+  const sec = cur => {
+    const L = ledgerShown(t, cur), fm = cur === 'T' ? tlk : eu, zt = cur === 'T' ? 100 : 5;
+    const tot = ids.reduce((s, id) => s + L[id].share, 0), give = ids.reduce((s, id) => s + Math.max(0, -L[id].net), 0);
+    const kasaNote = cur === 'T' && C && C.kasaLeft > 0 && legacyKasa() && ids.includes(S.trip.holder) ? ` · Kasada kalan ${eu(C.kasaLeft)}, kasayı tutan ${nm(S.trip.holder)} kişisinde; hesaba dahil.` : '';
+    const head = !both ? '' : cur === 'T' ? '<h3 class="lsec">₺ TL defteri</h3>' : '<h3 class="lsec">💶 Euro defteri</h3>';
+    const eurNote = cur === 'E' ? `<br>Euro harcamalarının borcu euro olarak durur; TL ile ödenirse ödeme gününün kuru + %${feeTxt(fxFee())} farkla çevrilir (bugün 1 € = ${nf4.format(t.Q)} ₺), euroyla ödenirse tam euro.` : '';
+    return head + `<div class="ledg">${ids.map(id => `<details id="dL${cur}_${id}" ${openDet['dL' + cur + '_' + id] ? 'open' : ''}>${ledgerRow(id, L[id], fm, zt)}<div class="lgd">${ledgerDetail(id, L[id], fm, zt)}</div></details>`).join('')}</div>
+      <p class="lnote num">Payların toplamı = bütün harcamalar: ${fm(tot)} ✓ · Gönderilecek = alınacak: ${fm(give)} ✓${kasaNote}${eurNote}</p>`;
+  };
+  return `<section class="card ledgcard"><div class="lhead" data-hhost><h2>📋 Hesap tablosu${help('ledger')}</h2><span class="note num">herkes${legacyEur() ? ` · ${settleRateText(t.R)}` : ''}</span></div>
+    ${hasTL() ? sec('T') : ''}${t.hasE ? sec('E') : ''}<p class="lnote">Kişiye dokun: payı nereden geliyor, ne ödedi, ne gönderdi.</p></section>`;
 }
 // Doğrudan ↔ daha az ödeme: yalnız değişen kişiler; önce (doğrudan) ve sonra (daha az), toplamın aynı kaldığı.
 function diffCard(t){
@@ -2503,8 +2668,8 @@ function diffCard(t){
   const rows = diff.filter(r => !r.same); if (!rows.length) return '';
   const rs = x => { const pos = x.items.filter(it => it.k > 0); return pos.length === 1 ? ` <small>(${esc(pos[0].label)})</small>` : ''; };
   const side = (s, past) => { const a = [];
-    if (s.out.length) a.push(`${past ? 'gönderecekti' : 'gönderiyor'} ${s.out.map(x => `→ ${nm(x.who)} <b>${tlk(x.amt)}</b>${past ? rs(x) : ''}`).join(', ')}`);
-    if (s.inn.length) a.push(`${past ? 'alacaktı' : 'alıyor'} ${s.inn.map(x => `← ${nm(x.who)} <b>${tlk(x.amt)}</b>${past ? rs(x) : ''}`).join(', ')}`);
+    if (s.out.length) a.push(`${past ? 'gönderecekti' : 'gönderiyor'} ${s.out.map(x => `→ ${nm(x.who)} <b>${payAmtText(x)}</b>${past ? rs(x) : ''}`).join(', ')}`);
+    if (s.inn.length) a.push(`${past ? 'alacaktı' : 'alıyor'} ${s.inn.map(x => `← ${nm(x.who)} <b>${payAmtText(x)}</b>${past ? rs(x) : ''}`).join(', ')}`);
     return a.join(' · ') || 'hiçbir şey'; };
   const why = r => r.d.out.length && r.d.inn.length ? (r.s.out.length || r.s.inn.length ? 'Göndereceği ile alacağı birbirinden düşüldü; yalnız farkı kaldı.' : 'Göndereceği ile alacağı birbirini götürdü.') : '';
   const tot = r => Math.abs(r.sNet) < 100 ? 'denk' : r.sNet < 0 ? `${tlk(-r.sNet)} gönderir` : `${tlk(r.sNet)} alır`;
@@ -2518,15 +2683,15 @@ function hesapSeg(active){
 }
 // Hesaplaşma: en üstte kişinin toplamı, altında kendi ödemeleri (gerekçesiyle); diğerlerininki kapalı bölümde.
 function viewSettle(C){
-  const t = totalPlan(), {R, T, net, plan, mode, nDirect, nShort, locked} = t;
+  const t = totalPlan(), {R, Q, T, TE, net, netE, plan, mode, nDirect, nShort, locked} = t;
   const mine = [], others = [];
   plan.forEach((p, i) => (p.from === S.me || p.to === S.me ? mine : others).push([p, i]));
   // Her sekme aynı yapıda renkli bir özet kartıyla açılır: burada kişinin göndereceği ya da alacağı.
-  const b = net[S.me] || 0, z = Math.abs(b) < 100, math = meText(T, R, net, false);
+  const b = net[S.me] || 0, z = Math.abs(b) < 100, math = meText(T, R, net, false, TE, Q);
   const sLy = z ? 'sevinc' : b > 0 ? 'hesap' : 'dusunme';
   let h = hesapSeg('settle') + `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
     <div class="big num">${z ? 'Denk ✓' : tlk(Math.abs(b))}</div>
-    <div class="eur num">${z ? 'Göndereceğin ya da alacağın bir şey yok' : `${b < 0 ? 'göndereceksin' : 'alacaksın'} · ≈ ${eu(Math.round(Math.abs(b) / R))}`}</div></div>
+    <div class="eur num">${z ? 'Göndereceğin ya da alacağın bir şey yok' : `${b < 0 ? 'göndereceksin' : 'alacaksın'}${netE[S.me] ? ` · ${eu(Math.abs(netE[S.me]))} euro borcu bugünkü kurla dahil` : ` · ≈ ${eu(Math.round(Math.abs(b) / R))}`}`}</div></div>
     <div class="hero-mascot">${leyo(sLy, 'l', 'Leyo')}</div></div>
     ${math ? `<div class="me">${math}</div>` : ''}</section>`;
   h += `<section class="bigcard"><div class="head" data-hhost><h2>Senin ödemelerin${help('settle')}</h2><span class="note num">${settleRateText(R)}</span></div>
@@ -2536,7 +2701,7 @@ function viewSettle(C){
         ${canSetMode() ? `<button class="btn sm" data-act="setmode" data-m="direct">Doğrudan ödemeye dön (${nDirect} ödeme)</button>${modeNote()}` : '<span class="note">Seyahat başladı; hesaplaşma şekli artık sabit.</span>'}</div>` : '');
   if (!plan.length) h += `<div class="done leyo-empty">${leyo('sevinc', 'm')}<span>Hesaplar tertemiz ✨<br>Kimsenin kimseye borcu yok.</span></div>`;
   else if (!mine.length) h += `<div class="done leyo-empty">${leyo('hesap', 'm')}<span>Senin hesabın denk 👌<br>Göndereceğin ya da alacağın bir şey yok.</span></div>`;
-  else h += mine.map(([p, i]) => payHtml(p, i, R)).join('');
+  else h += mine.map(([p, i]) => payHtml(p, i, R, Q)).join('');
   // Doğrudan yöntemdeyken, ödeme sayısı gerçekten azalıyorsa açıklamalı öneri kutusu.
   if (mode !== 'min' && nShort < nDirect && canSetMode()) h += `<div class="callout"><b>💡 ${nDirect} yerine ${nShort} ödemeyle de kapanabilir</b>
     <span>Borçlar birleştirilir: daha az havale yapılır, herkesin toplam tutarı aynı kalır; sadece <b>kime</b> gönderileceği değişir. Seçim herkes için geçerlidir.</span>
@@ -2545,7 +2710,7 @@ function viewSettle(C){
   h += `</section>`;
   h += ledgerCard(t, C) + diffCard(t);
   if (others.length) h += `<details class="more" id="dOthers" ${openDet.dOthers ? 'open' : ''}><summary>Diğerlerinin ödemeleri (${others.length})</summary><div class="inner"><div class="list">`
-    + others.map(([p, i]) => payHtml(p, i, R)).join('') + `</div></div></details>`;
+    + others.map(([p, i]) => payHtml(p, i, R, Q)).join('') + `</div></div></details>`;
 
   const payments = S.entries.filter(e => e.kind === 'transfer').sort((a, b) => a.at - b.at);
   if (payments.length) h += `<details class="more" id="dKalem" ${openDet.dKalem ? 'open' : ''}><summary>Yapılan ödemeler (${payments.length})</summary><div class="inner">`
@@ -2653,12 +2818,19 @@ function viewSum(C){
   if (isFamily()) h += `<h2>Kişi başı</h2><div class="card" style="overflow-x:auto"><table class="num"><thead><tr><th>Kişi</th><th class="r">Payına düşen</th><th class="r">Cebinden çıkan</th></tr></thead><tbody>` +
     S.people.map(p => `<tr><td>${esc(p.name)}</td><td class="r">${eu(C.share[p.id])}<br><small class="hint">${tl(C.share[p.id])}</small></td><td class="r">${eu(C.paid[p.id])}<br><small class="hint">${tl(C.paid[p.id])}</small></td></tr>`).join('') +
     `</tbody></table><p class="note" style="margin:10px 0 0">“Cebinden çıkan” kasaya koyduğu parayı da içerir. TL tutarlar bugünkü kurla.</p></div>`;
-  else { const t = totalPlan(), L = ledgerShown(t);
-    h += `<h2>Kişi başı</h2><div class="card" style="overflow-x:auto"><table class="num"><thead><tr><th>${isFamilies() ? 'Aile' : 'Kişi'}</th><th class="r">Payına düşen</th><th class="r">Ödediği</th><th class="r">Kalan</th></tr></thead><tbody>` +
-      S.people.map(p => { const x = L[p.id], b = x.net, z = Math.abs(b) < 100;
-        return `<tr><td>${esc(p.name)}</td><td class="r">${tlk(x.share)}<br><small class="hint">≈ ${eu(Math.round(x.share / t.R))}</small></td><td class="r">${tlk(x.paid)}<br><small class="hint">harcamalarda</small></td>`
-          + `<td class="r"><b class="${z ? 'pos' : b > 0 ? 'pos' : 'neg'}">${z ? 'Denk ✓' : tlk(Math.abs(b))}</b>${z ? '' : `<br><small class="hint">${b < 0 ? 'gönderecek' : 'alacak'}</small>`}</td></tr>`; }).join('') +
-      `</tbody></table><p class="note" style="margin:10px 0 0">Hesaplaşmanın kuruyla (${settleRateText(t.R)}): TL girilen harcamalar TL tutarıyla. “Ödediği” harcamalarda cebinden çıkan ve kasaya koyduğu para; “Kalan” yapılan ödemelerden sonra. <button class="link" data-tab="settle">Ayrıntı: Hesaplaşma › Hesap tablosu</button></p></div>`; }
+  else { const t = totalPlan(), L = ledgerShown(t), LE = t.hasE ? ledgerShown(t, 'E') : null;
+    // İki defter (2026-11-27): euro harcamaların payı ve kalanı euro olarak yazılır ("730 ₺ + 29,91 €"); altında bugünkü TL değeri.
+    // Telefonda dar sütun: her parça kendi satırında, tutar ortadan bölünmez.
+    const nw = t => `<span class="nw">${t}</span>`, two = (vT, vE) => Math.abs(vE) < 5 ? nw(tlk(vT)) : Math.abs(vT) < 100 ? nw(eu(vE)) : `${nw(tlk(vT))}<br>${nw('+ ' + eu(vE))}`;
+    h += `<h2>Kişi başı</h2><div class="card" style="overflow-x:auto"><table class="num kb"><thead><tr><th>${isFamilies() ? 'Aile' : 'Kişi'}</th><th class="r">Payına düşen</th><th class="r">Ödediği</th><th class="r">Kalan</th></tr></thead><tbody>` +
+      S.people.map(p => { const x = L[p.id], xe = LE ? LE[p.id] : {share:0, paid:0}, nT = t.netT[p.id] || 0, nE = t.netE[p.id] || 0, b = t.net[p.id] || 0;
+        const zT = Math.abs(nT) < 100, zE = Math.abs(nE) < 5, z = zT && zE, mixed = !zT && !zE && Math.sign(nT) !== Math.sign(nE);
+        const kal = z ? 'Denk ✓' : mixed ? `${nw(tlk(Math.abs(nT)))}<br>${nw(eu(Math.abs(nE)))}` : two(Math.abs(nT), Math.abs(nE));
+        const kalHint = z ? '' : mixed ? `TL ${nT < 0 ? 'gönderecek' : 'alacak'},<br>euro ${nE < 0 ? 'gönderecek' : 'alacak'}` : ((zT ? nE : nT) < 0 ? 'gönderecek' : 'alacak') + (zE ? '' : `<br>${nw('≈ ' + tlk(Math.abs(b)))}`);
+        const shH = nw(LE && xe.share ? `≈ ${tlk(x.share + Math.round(xe.share * t.Q))}` : `≈ ${eu(Math.round(x.share / t.R))}`);
+        return `<tr><td>${esc(p.name)}</td><td class="r">${two(x.share, xe.share)}<br><small class="hint">${shH}</small></td><td class="r">${two(x.paid, xe.paid)}<br><small class="hint">harcamalarda</small></td>`
+          + `<td class="r"><b class="${z ? 'pos' : b > 0 ? 'pos' : 'neg'}">${kal}</b>${z ? '' : `<br><small class="hint">${kalHint}</small>`}</td></tr>`; }).join('') +
+      `</tbody></table><p class="note" style="margin:10px 0 0">${hasTL() ? `TL girilen harcamalar TL tutarıyla${legacyEur() ? `, eski euro kayıtları hesaplaşmanın kuruyla (${settleRateText(t.R)})` : ''}. ` : ''}${t.hasE ? `Bundan sonraki euro harcamaların borcu euro olarak kalır; ≈ ₺ bugünkü kurla (%${feeTxt(fxFee())} döviz farkıyla). ` : ''}“Ödediği” harcamalarda cebinden çıkan ve kasaya koyduğu para; “Kalan” yapılan ödemelerden sonra. <button class="link" data-tab="settle">Ayrıntı: Hesaplaşma › Hesap tablosu</button></p></div>`; }
   h += `<h2>Rapor</h2><button class="btn pri block" data-act="album">📖 Seyahat albümü</button>
     <p class="hint">Paylaşmalık anı defteri: kapak, hikâye, gün gün neler oldu, kim ne kadar ve hesaplaşma.</p>
     <div class="two"><button class="btn" data-act="pdf">📄 PDF indir</button><button class="btn" data-act="xlsx">📊 Excel indir</button></div>
@@ -2703,6 +2875,9 @@ function viewTrip(){
       <div style="display:flex;gap:8px"><input class="inp num" id="tRate" inputmode="decimal" value="${nf4.format(S.trip.rate)}" data-bind="rate" style="flex:1;min-width:0">${IN_CLAUDE ? '' : `<button class="btn" data-act="rate">Canlı kuru çek</button>`}</div>
       <span class="note">${IN_CLAUDE ? 'Claude içinde canlı kur alınamıyor; güncel kuru bankandan bakıp buraya yaz. Herkes için aynı kur kullanılır.' : 'Canlı kur kendiliğinden güncellenir (uygulama açıkken 2 saatte bir); istersen “Canlı kuru çek” ile hemen yenileyebilir ya da elle yazabilirsin.'} Durum: ${rateLabel()}</span>
       ${Object.keys(S.trip.rates || {}).length ? `<span class="note num">Diğer kurlar: 1 € = ${OTHER_CURS.filter(([c]) => S.trip.rates[c]).map(([c]) => money(S.trip.rates[c], c)).join(' · ')}</span>` : ''}</div>
+    <div class="f"><label for="tFee">Döviz farkı (%)${help('fee')}</label>
+      <input class="inp num" id="tFee" inputmode="decimal" value="${feeTxt(fxFee())}" data-bind="fxFee" ${dis} style="max-width:8em" aria-label="Döviz farkı yüzdesi">
+      <span class="note">Euro borcu TL ile ödenirken ödeme gününün kuruna eklenir (alacaklı o euroyu kartla ya da bozdurarak yerine koyarken bu farkı öder). Euroyla ödenirse eklenmez. Bundan sonraki ödemelerde geçerli; yapılmış ödemeler kendi oranıyla kalır.</span></div>
     <div class="f"><label for="tMe">Bu telefonu kim kullanıyor?${help('me')}</label>
       ${myUid && myPerson() ? `<div style="display:flex;gap:8px;align-items:center"><div class="inp locked" style="flex:1">${emojiOf(S.me)} ${nm(S.me)} 🔒</div>${isTripAdmin() || selfFixLeft() ? `<button type="button" class="btn" data-release="${S.me}">Değiştir${isTripAdmin() ? '' : ` · ${Math.ceil(selfFixLeft() / 60e3)} dk`}</button>` : ''}</div><span class="note">Bu telefon/hesap ${nm(S.me)} olarak tanımlı; başka bir kişi seçilemez.${isTripAdmin() ? '' : selfFixLeft() ? ' Yanlışsa birkaç dakika içinde (bir kez) kendin değiştirebilirsin; sonrası için grupta söyle.' : ' Yanlış seçtiysen grupta söyle, düzeltilir.'}</span>`
         : `<select class="inp" id="tMe" data-bind="me">${opt(S.me)}</select><span class="note">Harcama eklerken “ödeyen” otomatik bu kişi seçilir.</span>`}</div>
@@ -2876,10 +3051,7 @@ function drawSheet(){
     ? `<div class="seg wide kinds" role="group" aria-label="Kayıt türü">${kinds.map(([k, l, m]) => `<button type="button" data-kind="${k}" aria-pressed="${f.mode === m}">${l}</button>`).join('')}</div>` : '';
   if (f.mode === 'expense'){
     // Sade form: varsayılanlar hazır gelir, sadece değiştirmek istenene dokunulur.
-    const n = f.among.length, act = S.people.filter(p => !p.left), everyone = n === act.length && act.every(p => f.among.includes(p.id)), cat = catById(f.cat);
-    const wOf = id => (f.weights && f.weights[id] > 1 ? f.weights[id] : 1), heavy = f.among.filter(id => wOf(id) > 1);
-    const amongText = (everyone ? `Herkes (${n} kişi)` : (n ? f.among.map(nm).join(', ') : 'Kimse seçilmedi'))
-      + (heavy.length ? ' · ' + heavy.map(id => `${nm(id)} ×${wOf(id)}`).join(', ') : '');
+    const cat = catById(f.cat);
     body = `<div class="f"><span class="lab">Ne zaman?${help('phase')}</span><div class="seg wide" role="group" aria-label="Ne zaman">${[['pre','Seyahat öncesi'],['trip','Seyahatte']].map(([k,l]) => `<button type="button" data-phase="${k}" aria-pressed="${f.phase===k}">${l}</button>`).join('')}</div></div>`
     + amountBlock
     + rateBlock()
@@ -2891,8 +3063,7 @@ function drawSheet(){
       ${dateBlock(f)}
       ${isFamily() ? '' : `<button type="button" class="srow" data-act="togglepayer"><span>Ödeyen</span><b>${nmE(f.paidBy)} ›</b></button>`}
       ${f.showPayer ? `<div class="chips pad">${S.people.filter(p => !p.left || f.paidBy === p.id).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.paidBy===p.id, `data-payer="${p.id}"`)).join('')}${S.trip.kasaOn ? chip('💰 Ortak kasa', f.paidBy==='kasa', 'data-payer="kasa"', 'kasa-c') : ''}</div>` : ''}
-      ${isFamily() ? '' : `<button type="button" class="srow" data-act="toggleamong"><span>Bölüşülen</span><b>${amongText} ›</b></button>`}
-      ${f.showAmong ? `<div class="chips pad">${chip('Herkes', everyone, 'data-all="1"')}${act.length > 1 ? chip('Ben hariç', n === act.length - 1 && !f.among.includes(S.me), 'data-all="notme"') : ''}${chip('Sadece ben', n === 1 && f.among[0] === S.me, 'data-all="onlyme"')}${S.people.filter(p => !p.left || f.among.includes(p.id)).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.among.includes(p.id), `data-among="${p.id}"`)).join('')}</div>${weightsHtml()}` : ''}
+      ${isFamily() ? '' : amongHtml()}
       ${isFamily() ? '' : `<span class="note num" id="fEach">${eachNote()}</span>`}
     </div>
     ${!f.photo && !f.scanning ? `<label class="fis-cta" for="fPhoto">${leyo('fis', 's', 'Leyo')}<div><b>Fişin fotoğrafını ekle, ben okuyayım ✨</b><span>Tutar, mağaza ve tarih otomatik dolsun.</span></div></label>` : ''}
@@ -2915,9 +3086,9 @@ function drawSheet(){
     const left = totalPlan().plan.find(q => q.from === f.from && q.to === f.to);
     body = `<div class="f"><span class="lab">Kim gönderdi?</span><div class="chips">${S.people.map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.from === p.id, `data-pfrom="${p.id}"`)).join('')}</div></div>
       <div class="f"><span class="lab">Kime?</span><div class="chips">${S.people.filter(p => p.id !== f.from).map(p => chip(`${emojiOf(p.id)} ${esc(p.name)}`, f.to === p.id, `data-pto="${p.id}"`)).join('')}</div></div>`
-      + amountBlock + noteBlock() + `<p class="note">${left ? `Hesaplaşmaya göre ${nm(f.from)} → ${nm(f.to)} kalan: <b class="num">${tlk(left.amt)}</b>. Bankadan farklı bir tutar gönderdiysen onu yaz.` : `${nm(f.from)} ile ${nm(f.to)} arasında bekleyen bir ödeme yok; yine de kaydedebilirsin.`}</p>`;
+      + amountBlock + noteBlock() + `<p class="note">${left ? `Hesaplaşmaya göre ${nm(f.from)} → ${nm(f.to)} kalan: <b class="num">${payAmtText(left)}</b>${left.eur ? ` (bugünkü kurla ≈ ${tlk(left.amt)})` : ''}. Bankadan farklı bir tutar gönderdiysen onu yaz.` : `${nm(f.from)} ile ${nm(f.to)} arasında bekleyen bir ödeme yok; yine de kaydedebilirsin.`}</p>`;
   } else if (f.mode === 'transfer'){
-    body = amountBlock + (f.from === 'kasa' ? '' : noteBlock()) + `<p class="note">${nm(f.from)} → ${nm(f.to)} ödemesi${f.cur === 'TRY' ? `, kur 1 € = ${nf4.format(f.rate)} ₺` : ''}. Bankadan gönderdiğin tutar farklıysa düzeltebilirsin.</p>`;
+    body = amountBlock + (f.from === 'kasa' ? '' : noteBlock()) + `<p class="note">${nm(f.from)} → ${nm(f.to)} ödemesi${f.cur === 'TRY' && !v2Form() ? `, kur 1 € = ${nf4.format(f.rate)} ₺` : ''}. Bankadan gönderdiğin tutar farklıysa düzeltebilirsin.</p>`;
   } else if (f.mode === 'shop'){
     const stores = [...new Set(SH.items.map(i => i.store))];
     body = `<div class="seg wide" role="group" aria-label="Kayıt türü"><button type="button" data-shopret="0" aria-pressed="${!f.ret}">🛍️ Alışveriş</button><button type="button" data-shopret="1" aria-pressed="${!!f.ret}">↩️ Ürün iadesi</button></div>`
@@ -3071,21 +3242,57 @@ function setCur(c){
 function convNote(){
   const a = parseAmt(form.amount), c = form.cur, r = form.rate || curRate(c);
   if (!(a > 0)) return ' ';
-  if (isExpr(form.amount)) return `= ${money(a, c)} · ` + convNote2(a, c, r);
-  return convNote2(a, c, r);
+  const pre = isExpr(form.amount) ? `= ${money(a, c)} · ` : '';
+  if (form.mode === 'transfer' && v2Form()){ const pv = payPreview(a); if (pv) return pre + pv; }
+  return pre + convNote2(a, c, r) + (form.mode === 'expense' && c !== 'TRY' && v2Form() ? ' · borç euro olarak kalır' : '');
 }
 function convNote2(a, c, r){
   if (c === 'EUR') return `Bugünkü kurla ≈ ${nf.format(a*S.trip.rate)} ₺`;
   if (!r) return 'Bu para birimi için kur yok; kuru yaz.';
   return c === 'TRY' ? `≈ ${nf.format(a/r)} €` : `≈ ${nf.format(a/r)} € · ≈ ${nf.format(a/r*S.trip.rate)} ₺`;
 }
+// Formdaki kayıt yeni kuralla mı ("borç harcandığı parayla kalır"): yeni kayıtta v2New, düzenlenende kaydın kendi kuralı.
+const v2Form = () => { const o = form.id ? S.entries.find(x => x.id === form.id) : null; return o ? !!o.v2 : v2New(form.mode, form.paidBy); };
+// Ödemenin kapatacağı parçalar (kaydedince e.pa olarak saklanır): bu ödeme olmadan açık olan aynı yöndeki borçtan.
+function payPreview(a){
+  const f = form, old = f.id ? S.entries.find(x => x.id === f.id) : null;
+  if (f.from === 'kasa' || (old && old.kind === 'kasaout') || !f.from || !f.to) return '';
+  const rate = f.rate || curRate(f.cur); if (!(rate > 0)) return '';
+  const t0 = totalPlan({...S, entries:S.entries.filter(x => x.id !== f.id)}), row = t0.plan.find(p => p.from === f.from && p.to === f.to) || null;
+  const fee = old && old.pa ? old.pa.f : fxFee(), Qp = fxQ(isOther(f.cur) ? S.trip.rate : rate, fee);
+  const k = f.cur === 'TRY' ? Math.round(a * 100) : Math.round((f.cur === 'EUR' ? a : a / rate) * 100), pa = allocPay(k, f.cur === 'TRY' ? 'TRY' : 'EUR', row, Qp);
+  const parts = [pa.t ? `${tlk(pa.t)} TL borcu` : '', pa.e ? `${eu(pa.e)} euro borcu` : ''].filter(Boolean).join(' ve ');
+  const conv = (f.cur === 'TRY' && pa.e) || (f.cur !== 'TRY' && pa.t) ? ` (1 € = ${nf4.format(Qp)} ₺, %${feeTxt(fee)} farkla)` : '';
+  return `Bu ödeme ${parts} kapatır${conv}.`;
+}
 function eachNote(){
-  const a = parseAmt(form.amount), n = form.among.length;
+  const f = form, a = parseAmt(f.amount), n = f.among.length;
   if (!n) return 'En az bir kişi seç.';
-  const w = id => (form.weights && form.weights[id] > 1 ? form.weights[id] : 1), tot = form.among.reduce((s, id) => s + w(id), 0);
-  if (tot === n) return a > 0 ? `Kişi başı ${money(a/n, form.cur)}` : `${n} kişi arasında eşit bölünecek.`;
-  if (!(a > 0)) return `${tot} paya bölünecek.`;
-  return `Pay başı ${money(a/tot, form.cur)} · ` + form.among.filter(id => w(id) > 1).map(id => `${rawName(id)} ×${w(id)}: ${money(a*w(id)/tot, form.cur)}`).join(' · ');
+  const w = id => (f.weights && f.weights[id] > 1 ? f.weights[id] : 1), tot = f.among.reduce((s, id) => s + w(id), 0);
+  let t = tot === n ? (a > 0 ? `${n} kişiye bölünecek · kişi başı ${money(a / n, f.cur)}.` : `${n} kişiye eşit bölünecek.`)
+    : (a > 0 ? `${tot} paya bölünecek · pay başı ${money(a / tot, f.cur)}.` : `${tot} paya bölünecek.`);
+  // Ödeyen dahil değilse "başkaları için ödedi" cümlesi onu anlatır; "dahil değil" listesinde tekrar yazılmaz.
+  const payerOut = f.paidBy && f.paidBy !== 'kasa' && !f.among.includes(f.paidBy);
+  const out = S.people.filter(p => !p.left && !f.among.includes(p.id) && !(payerOut && p.id === f.paidBy)).map(p => p.name);
+  if (out.length) t += ` ${out.join(', ')} bu harcamaya dahil değil.`;
+  if (payerOut) t += ` ${rawName(f.paidBy)} başkaları için ödedi, payı yok.`;
+  return t;
+}
+// Bölüşülen (2026-11-27, kullanıcı: "isimlere dokununca açılsın ya da kapansın; herkesi tek dokunuşla seçebileyim"): kişiler hep
+// açık; seçilende ✓ ve payı, dışarıdakinde "dahil değil". "Herkes" hepsini seçer; "Ben hariç" ve "Sadece ben" kalktı (kendini
+// çıkarmak için kendi adına dokunulur; yalnız kendine harcama "🔒 Sadece bana"dır).
+function pplHtml(){
+  const f = form, a = parseAmt(f.amount), w = id => (f.weights && f.weights[id] > 1 ? f.weights[id] : 1), tot = f.among.reduce((s, id) => s + w(id), 0);
+  return S.people.filter(p => !p.left || f.among.includes(p.id)).map(p => {
+    const on = f.among.includes(p.id), sh = on && a > 0 && tot ? money(a * w(p.id) / tot, f.cur) : '';
+    const sub = !on ? 'dahil değil' : [sh, p.id === f.paidBy ? 'ödeyen' : ''].filter(Boolean).join(' · ') || 'dahil';
+    return `<button type="button" class="pp${on ? ' sel' : ''}" data-among="${p.id}" aria-pressed="${on}"><span class="ck">${on ? '✓' : ''}</span><span class="pn"><b>${emojiOf(p.id)} ${esc(p.name)}${on && w(p.id) > 1 ? ` ×${w(p.id)}` : ''}</b><small class="num">${sub}</small></span></button>`;
+  }).join('');
+}
+function amongHtml(){
+  const f = form, all = S.people.filter(p => !p.left).every(p => f.among.includes(p.id));
+  return `<div class="amg"><div class="amh"><span class="lab">Kime bölünecek?</span><button type="button" class="chip${all ? ' on' : ''}" data-all="1" aria-pressed="${all}">👥 Herkes</button></div>
+    <div class="ppl" id="fPpl">${pplHtml()}</div>${weightsHtml()}</div>`;
 }
 // "Paylar eşit değil mi?": kişi başına ×1…×9 pay (ör. çift ya da aile ×2).
 function weightsHtml(){
@@ -3100,14 +3307,14 @@ function payDefault(from, to){ const p = totalPlan().plan.find(q => q.from === f
 // Not önerisi: bu ikilinin borcunu oluşturan kalemler ("Otel, Müze bileti"). Sadece not; hesabı değiştirmez.
 function payNote(from, to){
   const p = totalPlan().plan.find(q => q.from === from && q.to === to);
-  const its = p ? p.items.filter(it => it.k > 0 && it.label !== 'Yapılan ödeme').map(it => it.label) : [];
-  return its.slice(0, 3).join(', ') + (its.length > 3 ? ' …' : '');
+  const its = p ? [...p.items, ...(p.itemsE || [])].filter(it => it.k > 0 && it.label !== 'Yapılan ödeme').map(it => it.label) : [];
+  return [...new Set(its)].slice(0, 3).join(', ') + (its.length > 3 ? ' …' : '');
 }
 function startPay(from, to){
-  const {plan, R} = totalPlan();
+  const {plan} = totalPlan();
   from = from || S.me;
   if (!to){ const p = plan.find(q => q.from === from); to = p ? p.to : (S.people.find(q => q.id !== from) || {}).id; }
-  openSheet({mode:'transfer', pick:true, total:true, cur:'TRY', rate:R, from, to, amount:payDefault(from, to), autoAmt:true, note:payNote(from, to)});
+  openSheet({mode:'transfer', pick:true, total:true, cur:'TRY', rate:S.trip.rate, from, to, amount:payDefault(from, to), autoAmt:true, note:payNote(from, to)});
 }
 function startExpense(e){
   if (e) openSheet({mode:'expense', id:e.id, phase:phaseOf(e, S), amount:nf.format(e.amount), cur:e.cur, desc:e.desc, cat:e.cat, catManual:true, paidBy:e.paidBy, among:[...e.among], weights:e.weights ? {...e.weights} : null, rate:e.rate, settleTL:!!e.settleTL, date:isoDay(e.at), phaseManual:true,
@@ -6999,6 +7206,8 @@ function submit(){
   if (!(rate > 0)) return fail(`${symOf(f.cur)} için kur yok. Kuru yaz (1 € kaç ${symOf(f.cur)}).`);
   // Euro ve TL dışındaki birimlerde TL'ye çevirmek için o günün TL kuru da saklanır.
   const tlx = isOther(f.cur) ? {tlRate: old && old.cur === f.cur && old.tlRate || S.trip.rate} : {};
+  // "Borç, harcandığı parayla kalır" (2026-11-27): yeni ortak kayıt bu kuralla girilir (e.v2 = 1); düzenlenen kayıt kendi kuralında kalır.
+  const v2 = old ? !!old.v2 : v2New(f.mode, f.paidBy), v2f = v2 ? {v2:1} : {};
   if (f.mode === 'solo'){
     if (!f.desc.trim()) return fail('Ne için harcandığını kısaca yaz.');
     const id = f.id || uid(), old2 = SH.solo.find(x => x.id === id);
@@ -7057,7 +7266,7 @@ function submit(){
     const wts = Object.fromEntries(f.among.filter(x => f.weights && f.weights[x] > 1).map(x => [x, f.weights[x]]));
     upsert({id, kind:'expense', desc:f.desc.trim(), cat:f.cat, amount:a, cur:f.cur, rate, paidBy:f.paidBy, among:f.among, weights:Object.keys(wts).length ? wts : null, at:atFromDay(f.date, old && old.at), by:old ? old.by || S.me : S.me, hasPhoto,
       photoId:f.photoChanged ? null : ((old && old.photoId) || null),
-      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, dest:f.dest || null, ...(bkKind(f) ? {when:f.when || null, until:f.until || null, from:f.from || null, to:f.to || null} : {}), ...(bkKind(f) === 'stay' && f.bagOk ? {bagOk:true} : {}), ...tlx});
+      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, dest:f.dest || null, ...(bkKind(f) ? {when:f.when || null, until:f.until || null, from:f.from || null, to:f.to || null} : {}), ...(bkKind(f) === 'stay' && f.bagOk ? {bagOk:true} : {}), ...tlx, ...v2f});
     if (f.photoChanged && f.photo) uploadPhoto(id, f.photo);
     logEvent(`${old ? 'düzenledi' : 'ekledi'}: ${f.desc.trim()} · ${money(a, f.cur)}`);
     S.lastCur = f.cur; flashId = id; closeSheet(); render();
@@ -7075,9 +7284,9 @@ function submit(){
     if (f.paidBy !== 'kasa' && others && !isFamily()) return toast(`${old ? 'Güncellendi' : 'Eklendi'} · ${rawName(f.paidBy)} ödedi ${money(a, f.cur)}, ${Object.keys(wts).length ? 'paylara göre bölündü' : `kişi başı ${money(a / f.among.length, f.cur)}`}. ${others} kişinin payı ${rawName(f.paidBy)} adına alacak yazıldı.`);
     toast(old ? 'Harcama güncellendi' : `${catById(f.cat).icon} Harcama eklendi`);
   } else if (f.mode === 'kasa'){
-    if (f.everyone && !f.id) S.people.forEach(p => S.entries.push({id:uid(), kind:'kasa', from:p.id, amount:a, cur:f.cur, rate, ...tlx, at:Date.now(), by:S.me}));
+    if (f.everyone && !f.id) S.people.forEach(p => S.entries.push({id:uid(), kind:'kasa', from:p.id, amount:a, cur:f.cur, rate, ...tlx, ...v2f, at:Date.now(), by:S.me}));
     else {
-      const e = {id:f.id || uid(), kind:'kasa', from:f.from, amount:a, cur:f.cur, rate, ...tlx, at:old ? old.at : Date.now(), by:S.me};
+      const e = {id:f.id || uid(), kind:'kasa', from:f.from, amount:a, cur:f.cur, rate, ...tlx, ...v2f, at:old ? old.at : Date.now(), by:S.me};
       if (kasaWouldGoNegative(e)) return fail('Bu tutarla kasa eksiye düşer, çünkü kasadan bundan fazla harcama yapılmış.');
       upsert(e);
     }
@@ -7086,7 +7295,15 @@ function submit(){
   } else if (f.mode === 'transfer'){
     const kind = old && old.kind === 'kasaout' ? 'kasaout' : 'transfer';
     if (f.from === f.to) return fail('Gönderen ile alan aynı kişi olamaz.');
-    const e = {id:f.id || uid(), kind, from:f.from, to:f.to, amount:a, cur:f.cur, rate, at:old ? old.at : Date.now(), by:S.me, total:!!(f.total || (old && old.total)), note:(f.note || '').trim() || null};
+    const e = {id:f.id || uid(), kind, from:f.from, to:f.to, amount:a, cur:f.cur, rate, ...tlx, at:old ? old.at : Date.now(), by:S.me, total:!!(f.total || (old && old.total)), note:(f.note || '').trim() || null, ...v2f};
+    // Yeni kuralda ödeme, bu ödeme olmadan açık olan aynı yöndeki borcu kapatır: önce kendi para birimindeki parçayı, kalanı diğerini
+    // (o günün kuru × (1 + döviz farkı) ile). Kapattığı parçalar ve kur kayda yazılır; kur sonradan değişse de borç yeniden açılmaz.
+    if (v2 && kind === 'transfer'){
+      const t0 = totalPlan({...S, entries:S.entries.filter(x => x.id !== e.id)}), row = t0.plan.find(p => p.from === e.from && p.to === e.to) || null;
+      const r = isOther(f.cur) ? (tlx.tlRate || S.trip.rate) : rate, fee = old && old.pa ? old.pa.f : fxFee(), Qp = fxQ(r, fee);
+      const k = f.cur === 'TRY' ? Math.round(a * 100) : Math.round((f.cur === 'EUR' ? a : a / rate) * 100);
+      e.pa = {...allocPay(k, f.cur === 'TRY' ? 'TRY' : 'EUR', row, Qp), r, f:fee};
+    }
     if (kind === 'kasaout' && kasaWouldGoNegative(e)) return fail('Kasada bu kadar para yok.');
     const myBefore = totalPlan().plan.filter(p => p.from === S.me || p.to === S.me).length, allBefore = totalPlan().plan.length;
     upsert(e);
@@ -7123,11 +7340,11 @@ function kasaBackPlan(){
 
 function shareText(){
   // Önce toplam hesaplaşma (asıl önemli olan), sonra kalem kalem liste.
-  const C = compute(S), {R, plan, locked} = totalPlan(), n = S.people.length;
+  const C = compute(S), {R, Q, plan, locked, hasE} = totalPlan(), n = S.people.length;
   let t = `${S.trip.name} – hesap özeti${S.trip.start ? ` (${tripRange(S.trip)})` : ''}\nToplam harcama: ${eu(C.total)} · kişi başı ${eu(Math.round(C.total / n))}\n`;
-  if (!isFamily()) t += `\nTOPLAM HESAPLAŞMA (1 € = ${nf4.format(R)} ₺${locked ? ', sabitlendi' : ''})\n`;
-  if (!isFamily()) t += plan.length ? plan.map(p => `• ${rawName(p.from)} → ${rawName(p.to)}: ${tlk(p.amt)} (${eu(Math.round(p.amt / R))})`
-    + (p.items.length ? `\n  ${p.items.map(it => `${it.label} ${it.k > 0 ? '+' : '−'}${tlk(Math.abs(it.k))}`).join(', ')}` : '')).join('\n') : 'Herkes denk, ödenecek bir şey yok.';
+  if (!isFamily()) t += `\nTOPLAM HESAPLAŞMA (1 € = ${nf4.format(R)} ₺${locked ? ', sabitlendi' : ''}${hasE ? `; euro borcu euro olarak, TL ile bugün 1 € = ${nf4.format(Q)} ₺` : ''})\n`;
+  if (!isFamily()) t += plan.length ? plan.map(p => { const its = [...p.items.map(it => `${it.label} ${it.k > 0 ? '+' : '−'}${tlk(Math.abs(it.k))}`), ...(p.itemsE || []).map(it => `${it.label} ${it.k > 0 ? '+' : '−'}${eu(Math.abs(it.k))}`)];
+    return `• ${rawName(p.from)} → ${rawName(p.to)}: ${p.eur ? `${payAmtText(p)} (TL ile bugün ${tlk(p.amt)})` : `${tlk(p.amt)} (${eu(Math.round(p.amt / R))})`}` + (its.length ? `\n  ${its.join(', ')}` : ''); }).join('\n') : 'Herkes denk, ödenecek bir şey yok.';
   const line = e => {
     const k = e.among.length, who = e.paidBy === 'kasa' ? 'kasadan' : `${rawName(e.paidBy)} ödedi`;
     return `• ${e.desc}: ${money(e.amount, e.cur)}, ${who}, kişi başı ${money(e.amount / k, e.cur)}`
@@ -8925,7 +9142,7 @@ function leaveApply(st, id, ch, R){
 function leaveBody(f){
   const id = f.pid, ch = f.lch || (f.lch = {}), R = totalPlan().R, rows = leaveRows(id);
   const st = {people:S.people.map(p => ({...p})), entries:JSON.parse(JSON.stringify(S.entries)), trip:S.trip};
-  const before = totalParts(S, R).net; leaveApply(st, id, ch, R); const after = totalParts(st, R).net;
+  const before = todayNet(S, R); leaveApply(st, id, ch, R); const after = todayNet(st, R);
   const dif = S.people.filter(p => p.id !== id).map(p => [p, (after[p.id] || 0) - (before[p.id] || 0)]).filter(([, d]) => Math.abs(d) >= 100);
   const xNet = after[id] || 0, tlx = k => nf.format(Math.abs(k) / 100) + ' ₺';
   const row = e => { const c = ch[e.id] || leaveDef(e, id), sh = splitShares(Math.round(e.amount * 100), e.among, e.weights)[id] || 0;
@@ -8977,7 +9194,7 @@ function addPeopleBody(f){
   const names = apNames(f), fam = isFamilies(), ch = f.jch || (f.jch = {}), rows = apRows(), pick = apPick(ch), tlx = k => nf.format(Math.abs(k) / 100) + ' ₺';
   let prev = '';
   if (names.length && pick.size){ const R = totalPlan().R, np = apNew(names), st = {people:[...S.people.map(p => ({...p})), ...np], entries:JSON.parse(JSON.stringify(S.entries)), trip:S.trip};
-    const before = totalParts(S, R).net; joinApply(st, np, pick, R); const after = totalParts(st, R).net;
+    const before = todayNet(S, R); joinApply(st, np, pick, R); const after = todayNet(st, R);
     const old = S.people.map(p => [p, (after[p.id] || 0) - (before[p.id] || 0)]).filter(([, d]) => Math.abs(d) >= 100);
     prev = `<div class="callout"><b>Sonuç</b>${np.map(p => `<span>➕ ${esc(p.name)}: ${tlx(after[p.id] || 0)} borçlanacak</span>`).join('')}${old.map(([p, d]) => `<span>${emojiOf(p.id)} ${esc(p.name)}: ${d > 0 ? tlx(d) + ' daha az ödeyecek' : 'payı ' + tlx(d) + ' arttı'}</span>`).join('')}</div>`; }
   return `<p class="note">Her satıra bir ${fam ? 'aile' : 'kişi'} yaz; birkaç ${fam ? 'aile' : 'kişi'} birden eklenebilir.${fam ? ' Kişi sayılarını sonra Seyahat sekmesinden değiştirirsin.' : ''}</p>
@@ -9036,8 +9253,8 @@ function exportCsv(){
     e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(e.paidBy), e.among.map(id => rawName(id) + (e.weights && e.weights[id] > 1 ? ' ×' + e.weights[id] : '')).join(', '),
     nf.format(e.amount), e.cur, nf.format(toCents(e) / 100), nf.format(tlKurus(e) / 100)]));
   const pays = S.entries.filter(e => e.kind === 'transfer').sort((a, b) => a.at - b.at);
-  if (pays.length){ rows.push([]); rows.push(['Yapılan ödemeler']); rows.push(['Tarih', 'Kimden', 'Kime', 'Tutar', 'Para birimi', 'Not']); pays.forEach(e => rows.push([d2(e.at), rawName(e.from), rawName(e.to), nf.format(e.amount), e.cur, e.note || ''])); }
-  if (!isFamily()){ const {plan} = totalPlan(); rows.push([]); rows.push(['Kalan hesaplaşma']); rows.push(['Kimden', 'Kime', 'TL']); plan.forEach(p => rows.push([rawName(p.from), rawName(p.to), nf.format(p.amt / 100)])); if (!plan.length) rows.push(['Herkes denk']); }
+  if (pays.length){ rows.push([]); rows.push(['Yapılan ödemeler']); rows.push(['Tarih', 'Kimden', 'Kime', 'Tutar', 'Para birimi', 'Not', 'Kapattığı borç']); pays.forEach(e => rows.push([d2(e.at), rawName(e.from), rawName(e.to), nf.format(e.amount), e.cur, e.note || '', paText(e)])); }
+  if (!isFamily()){ const {plan} = totalPlan(); rows.push([]); rows.push(['Kalan hesaplaşma']); const hE = plan.some(p => p.eur); rows.push(['Kimden', 'Kime', 'TL', ...(hE ? ['Euro', 'Bugünkü TL değeri'] : [])]); plan.forEach(p => rows.push([rawName(p.from), rawName(p.to), nf.format((hE ? p.tl : p.amt) / 100), ...(hE ? [nf.format(p.eur / 100), nf.format(p.amt / 100)] : [])])); if (!plan.length) rows.push(['Herkes denk']); }
   const csv = '\ufeff' + rows.map(r => r.map(q).join(';')).join('\r\n');
   saveFile(fileBase() + '-harcamalar.csv', new Blob([csv], {type:'text/csv;charset=utf-8'})).then(ok => ok && toast('📊 Excel dosyası hazır.'));
 }
@@ -9051,13 +9268,16 @@ function reportData(){
   S.entries.filter(e => e.kind === 'expense' && phaseOf(e, S) !== 'pre').forEach(e => { const k = isoDay(e.at); days[k] = (days[k] || 0) + toCents(e); });
   const dayList = Object.keys(days).sort().map(k => { const t = new Date(k + 'T12:00:00').getTime(), n = tripDay(t); return {key:k, label:n >= 1 ? n + '. gün' : new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}), v:days[k]}; });
   // Aile seyahati dışında kişiler hesap tablosundan (TL, hesaplaşmanın kuruyla; ekrandaki Hesap tablosuyla aynı, 2026-11-27).
-  const tp = isFamily() ? null : totalPlan(), L = tp ? ledgerShown(tp) : null;
-  const people = S.people.map(p => L ? {id:p.id, name:p.name, tl:true, ...L[p.id]} : {id:p.id, name:p.name, share:C.share[p.id] || 0, paid:C.paid[p.id] || 0});
-  return {C, n:headcount(), accent, cats, dayList, people, plan:tp ? tp.plan : [], R:tp ? tp.R : S.trip.rate, tp, L};
+  // Euro defteri (yeni kural) varsa LE; peopleT/peopleE defter çubukları için, people albüm grafiği için iki defterin bugünkü TL değeri.
+  const tp = isFamily() ? null : totalPlan(), L = tp ? ledgerShown(tp) : null, LE = tp && tp.hasE ? ledgerShown(tp, 'E') : null;
+  const comb = (x, y) => { const o = {...x}; if (y) for (const k of ['share', 'paid', 'gross', 'net', 'out', 'inn', 'kasa', 'rnd']) o[k] = (x[k] || 0) + Math.round((y[k] || 0) * tp.Q); return o; };
+  const people = S.people.map(p => L ? {id:p.id, name:p.name, tl:true, ...comb(L[p.id], LE && LE[p.id])} : {id:p.id, name:p.name, share:C.share[p.id] || 0, paid:C.paid[p.id] || 0});
+  const peopleT = L ? S.people.map(p => ({id:p.id, name:p.name, tl:true, ...L[p.id]})) : [], peopleE = LE ? S.people.map(p => ({id:p.id, name:p.name, ...LE[p.id]})) : [];
+  return {C, n:headcount(), accent, cats, dayList, people, peopleT, peopleE, plan:tp ? tp.plan : [], R:tp ? tp.R : S.trip.rate, tp, L, LE};
 }
 // --- tuval grafik çizimleri (PDF sayfası ve Excel görselleri ortak) ---
 const FONT = (w, px) => `${w} ${px}px "Figtree", system-ui, sans-serif`;
-function rr(x, X, Y, W, H, r){ x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + W, Y, X + W, Y + H, r); x.arcTo(X + W, Y + H, X, Y + H, r); x.arcTo(X, Y + H, X, Y, r); x.arcTo(X, Y, X + W, Y, r); x.closePath(); }
+function rr(x, X, Y, W, H, r){ r = Math.max(0, Math.min(r, W / 2, H / 2)); x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + W, Y, X + W, Y + H, r); x.arcTo(X + W, Y + H, X, Y + H, r); x.arcTo(X, Y + H, X, Y, r); x.arcTo(X, Y, X + W, Y, r); x.closePath(); }
 // Halka grafik + sağda lejant (renk, ad, tutar, yüzde).
 function drawDonut(x, X, Y, R, cats, total, s = 1){
   const cx = X + R, cy = Y + R; let a = -Math.PI / 2;
@@ -9108,20 +9328,22 @@ function drawPeople(x, X, Y, W, people, s = 1){
 }
 // Kişi başı toplam borç ya da alacak (çubuk boyu): ödenen/alınan kısım yeşil, kalan turuncu; değerler yazıyla da.
 const LG_DONE = '#1B7A4F', LG_REST = '#E39B2B';
-function drawLedgerBars(x, X, Y, W, people, s = 1){
+function drawLedgerBars(x, X, Y, W, people, s = 1, fm = tlk, zt = 100){
+  const tlk = fm;
   const max = Math.max(1, ...people.map(p => Math.abs(p.gross))), nameW = 190 * s, bw = W - nameW;
   x.fillStyle = LG_DONE; rr(x, X, Y, 20 * s, 20 * s, 4 * s); x.fill(); x.fillStyle = RPT.ink; x.font = FONT(500, 20 * s); x.fillText('Ödenen / alınan', X + 30 * s, Y + 17 * s);
   x.fillStyle = LG_REST; rr(x, X + 250 * s, Y, 20 * s, 20 * s, 4 * s); x.fill(); x.fillStyle = RPT.ink; x.fillText('Kalan', X + 280 * s, Y + 17 * s);
   let y = Y + 52 * s;
   for (const p of people){
-    const need = Math.abs(p.gross), debt = p.gross < 0, rest = Math.abs(p.net) < 100 ? 0 : Math.abs(p.net), done = Math.max(0, need - rest);
+    // done: gerçekten gönderdiği ya da aldığı (ekrandaki Hesap tablosu gibi); kalan ters yöne dönebilir (fazla aldıysa gönderecek).
+    const need = Math.abs(p.gross), debt = p.gross < 0, rest = Math.abs(p.net) < zt ? 0 : Math.abs(p.net), done = Math.max(0, debt ? p.out - p.inn : p.inn - p.out);
     x.fillStyle = RPT.ink; x.font = FONT(700, 22 * s); x.fillText(p.name.length > 14 ? p.name.slice(0, 13) + '…' : p.name, X, y + 24 * s);
-    const w = Math.max(6 * s, need / max * bw), wd = need ? w * done / need : 0;
+    const w = Math.max(6 * s, need / max * bw), wd = need ? Math.min(w, w * done / need) : 0;
     x.fillStyle = RPT.soft; rr(x, X + nameW, y + 4 * s, bw, 26 * s, 13 * s); x.fill();
     if (wd > 0){ x.fillStyle = LG_DONE; rr(x, X + nameW, y + 4 * s, Math.max(wd, 8 * s), 26 * s, 13 * s); x.fill(); }
     if (w - wd > 1){ x.fillStyle = LG_REST; rr(x, X + nameW + wd, y + 4 * s, Math.max(w - wd, 8 * s), 26 * s, 13 * s); x.fill(); }
     x.fillStyle = RPT.muted; x.font = FONT(500, 18 * s);
-    x.fillText(need < 100 ? 'payı kadar ödedi · denk ✓' : `${debt ? 'borcu' : 'alacağı'} ${tlk(need)} · ${debt ? 'gönderdi' : 'aldı'} ${tlk(done)} · ${rest ? (p.net < 0 ? 'gönderecek ' : 'alacak ') + tlk(rest) : 'denk ✓'}`, X + nameW, y + 54 * s);
+    x.fillText(need < zt ? 'payı kadar ödedi · denk ✓' : `${debt ? 'borcu' : 'alacağı'} ${tlk(need)} · ${debt ? 'gönderdi' : 'aldı'} ${tlk(done)} · ${rest ? (p.net < 0 ? 'gönderecek ' : 'alacak ') + tlk(rest) : 'denk ✓'}`, X + nameW, y + 54 * s);
     y += 80 * s;
   }
   return y;
@@ -9133,21 +9355,30 @@ function drawFlow(x, X, Y, W, plan, accent, s = 1){
   const Lf = [...new Set(plan.map(p => p.from))].sort((a, b) => sum(b, 'from') - sum(a, 'from')), Rt = [...new Set(plan.map(p => p.to))].sort((a, b) => sum(b, 'to') - sum(a, 'to'));
   const bw = 300 * s, bh = 76 * s, gap = 36 * s, rows = Math.max(Lf.length, Rt.length), Ht = rows * (bh + gap) - gap, max = Math.max(...plan.map(p => p.amt));
   const top = (n, i) => Y + (Ht - (n * (bh + gap) - gap)) / 2 + i * (bh + gap);
-  const bz = (t, a, b, c, d) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t * t * c + t ** 3 * d;
+  const bz = (t, a, b, c, d) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t * t * c + t ** 3 * d, labels = [];
   plan.forEach((p, k) => {
     const x1 = X + bw, y1 = top(Lf.length, Lf.indexOf(p.from)) + bh / 2, x2 = X + W - bw - 16 * s, y2 = top(Rt.length, Rt.indexOf(p.to)) + bh / 2, mx = (x1 + x2) / 2, lw = (3 + 11 * p.amt / max) * s;
     x.strokeStyle = accent; x.globalAlpha = .55; x.lineWidth = lw; x.beginPath(); x.moveTo(x1, y1); x.bezierCurveTo(mx, y1, mx, y2, x2, y2); x.stroke();
     x.globalAlpha = 1; x.fillStyle = accent; x.beginPath(); x.moveTo(x2 + 16 * s, y2); x.lineTo(x2 - 2 * s, y2 - lw / 2 - 9 * s); x.lineTo(x2 - 2 * s, y2 + lw / 2 + 9 * s); x.closePath(); x.fill();
-    const t = .5 + (k % 3 - 1) * .14, lx = bz(t, x1, mx, mx, x2), ly = bz(t, y1, y1, y2, y2), txt = tlk(p.amt);
-    x.font = FONT(800, 19 * s); const tw = x.measureText(txt).width + 22 * s;
-    x.fillStyle = '#fff'; rr(x, lx - tw / 2, ly - 17 * s, tw, 34 * s, 17 * s); x.fill(); x.strokeStyle = accent; x.lineWidth = 2 * s; x.stroke();
-    x.fillStyle = RPT.ink; x.textAlign = 'center'; x.fillText(txt, lx, ly + 7 * s); x.textAlign = 'left';
+    const t = .5 + (k % 3 - 1) * .14;
+    labels.push([bz(t, x1, mx, mx, x2), bz(t, y1, y1, y2, y2), payAmtText(p)]);
+  });
+  // Tutar etiketleri okların üstüne en son çizilir; başka bir etiketle çakışan aşağı ya da yukarı kaydırılır.
+  const boxes = [];
+  labels.forEach(([lx, ly, txt]) => {
+    x.font = FONT(800, 19 * s); const tw = x.measureText(txt).width + 22 * s, h = 34 * s, st = h + 6 * s;
+    const free = cy => !boxes.some(b => lx - tw / 2 < b[0] + b[2] && lx + tw / 2 > b[0] && cy - h / 2 < b[1] + b[3] && cy + h / 2 > b[1]);
+    const cy = [0, st, -st, 2 * st, -2 * st].map(d => ly + d).find(free) ?? ly;
+    boxes.push([lx - tw / 2, cy - h / 2, tw, h]);
+    x.fillStyle = '#fff'; rr(x, lx - tw / 2, cy - h / 2, tw, h, h / 2); x.fill(); x.strokeStyle = accent; x.lineWidth = 2 * s; x.stroke();
+    x.fillStyle = RPT.ink; x.textAlign = 'center'; x.fillText(txt, lx, cy + 7 * s); x.textAlign = 'left';
   });
   const node = (id, bx, by, bg, sub) => { x.fillStyle = bg; rr(x, bx, by, bw, bh, 16 * s); x.fill();
     x.fillStyle = RPT.ink; x.font = FONT(800, 24 * s); x.fillText(rawName(id).length > 16 ? rawName(id).slice(0, 15) + '…' : rawName(id), bx + 18 * s, by + 32 * s);
     x.fillStyle = RPT.muted; x.font = FONT(500, 18 * s); x.fillText(sub, bx + 18 * s, by + 58 * s); };
-  Lf.forEach((id, i) => node(id, X, top(Lf.length, i), '#FBEBD3', `gönderir ${tlk(sum(id, 'from'))}`));
-  Rt.forEach((id, i) => node(id, X + W - bw, top(Rt.length, i), '#D5EAE8', `alır ${tlk(sum(id, 'to'))}`));
+  const ap = plan.some(p => p.eur) ? '≈ ' : '';   // euro parçası varsa toplam, bugünkü TL değeriyle
+  Lf.forEach((id, i) => node(id, X, top(Lf.length, i), '#FBEBD3', `gönderir ${ap}${tlk(sum(id, 'from'))}`));
+  Rt.forEach((id, i) => node(id, X + W - bw, top(Rt.length, i), '#D5EAE8', `alır ${ap}${tlk(sum(id, 'to'))}`));
   return Y + Ht + 10 * s;
 }
 function chartImage(w, h, draw){ const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); draw(x); return c.toDataURL('image/png'); }
@@ -9163,72 +9394,85 @@ function loadLib(src, name){
 // doğrudan ↔ daha az ödeme karşılaştırması, yapılan ödemeler). Rakamlar ekrandaki Hesap tablosuyla aynı (ledgerShown, itemTL).
 const xlCol = n => { let s = ''; while (n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
 function xlsxLedger(wb, D, A, head, TRY, EUR){
-  const L = D.L, tp = D.tp, ids = S.people.map(p => p.id), np = ids.length, hasK = ids.some(id => L[id].kasa), hasR = ids.some(id => L[id].rnd);
-  const exps = S.entries.filter(e => e.kind === 'expense').sort((a, b) => a.at - b.at), pTot = exps.length + 2;
+  // İki defter (2026-11-27): TL defteri "Hesap tablosu" + "Paylar", euro defteri "Euro defteri" + "Paylar (€)"; Hesaplaşma ortak.
+  const books = [...(hasTL() || !D.tp.hasE ? ['T'] : []), ...(D.tp.hasE ? ['E'] : [])];
+  books.forEach((cur, i) => xlsxBook(wb, D, A, head, cur, cur === 'E' ? EUR : TRY, !i));
+  xlsxSettle(wb, D, A, head, TRY, EUR);
+}
+function xlsxBook(wb, D, A, head, cur, FM, first){
+  const E = cur === 'E', L = E ? D.LE : D.L, tp = D.tp, zt = E ? 5 : 100, PY = E ? `'Paylar (€)'` : 'Paylar', ids = S.people.map(p => p.id), np = ids.length, hasK = ids.some(id => L[id].kasa), hasR = ids.some(id => L[id].rnd);
+  const exps = S.entries.filter(e => e.kind === 'expense' && !!(e.v2 && v2Cur(e) === 'E') === E).sort((a, b) => a.at - b.at), pTot = exps.length + 2;
   const sumOf = k => ids.reduce((s, id) => s + L[id][k], 0) / 100, grey = {color:{argb:'FF5B6A74'}};
   // Hesap tablosu
-  const ht = wb.addWorksheet('Hesap tablosu', {views:[{showGridLines:false}]});
+  const ht = wb.addWorksheet(E ? 'Euro defteri' : 'Hesap tablosu', {views:[{showGridLines:false}]});
   const cols = [['Kişi', 16, null], ['Payına düşen', 15, 'share'], ['Harcamalarda ödediği', 20, 'paid'], ...(hasK ? [['Kasada kalan (sende)', 18, 'kasa']] : []), ...(hasR ? [['Kur yuvarlaması', 15, 'rnd']] : []),
     ['Toplam borç (−) / alacak (+)', 25, 'gross'], ['Gönderdiği', 14, 'out'], ['Aldığı', 14, 'inn'], ['Kalan', 14, 'net'], ['Durum', 13, null]];
   const cl = name => xlCol(cols.findIndex(c => c[0] === name) + 1);
   ht.columns = cols.map(c => ({width:c[1]}));
-  ht.addRow(['Hesap tablosu']).font = {size:18, bold:true, color:{argb:A}};
-  ht.addRow([`${settleRateText(D.R)} · TL girilen harcamalar TL tutarıyla · Kalan, Hesaplaşma sayfasındaki ödemelerle aynı`]).font = grey;
+  ht.addRow([E ? 'Euro defteri' : 'Hesap tablosu']).font = {size:18, bold:true, color:{argb:A}};
+  ht.addRow([E ? 'Tutarlar €: bundan sonraki euro (ve diğer döviz) harcamaların borcu euro olarak durur · Kalan, Hesaplaşma sayfasındaki ödemelerle aynı'
+    : `${settleRateText(D.R)} · TL girilen harcamalar TL tutarıyla · Kalan, Hesaplaşma sayfasındaki ödemelerle aynı`]).font = grey;
   ht.addRow([]); head(ht.addRow(cols.map(c => c[0])));
   const r0 = 5;
   ids.forEach((id, i) => { const x = L[id], r = r0 + i, row = ht.getRow(r);
     cols.forEach((c, j) => { const cell = row.getCell(j + 1), n = c[0];
       if (n === 'Kişi') cell.value = rawName(id);
-      else if (n === 'Payına düşen') cell.value = {formula:`Paylar!${xlCol(8 + i)}${pTot}`, result:x.share / 100};
+      else if (n === 'Payına düşen') cell.value = {formula:`${PY}!${xlCol(8 + i)}${pTot}`, result:x.share / 100};
       else if (n === 'Toplam borç (−) / alacak (+)') cell.value = {formula:`${cl('Harcamalarda ödediği')}${r}-${cl('Payına düşen')}${r}${hasK ? `+${cl('Kasada kalan (sende)')}${r}` : ''}${hasR ? `+${cl('Kur yuvarlaması')}${r}` : ''}`, result:x.gross / 100};
       else if (n === 'Kalan') cell.value = {formula:`${cl('Toplam borç (−) / alacak (+)')}${r}+${cl('Gönderdiği')}${r}-${cl('Aldığı')}${r}`, result:x.net / 100};
-      else if (n === 'Durum') cell.value = {formula:`IF(ABS(${cl('Kalan')}${r})<1,"Denk ✓",IF(${cl('Kalan')}${r}<0,"Gönderecek","Alacak"))`, result:Math.abs(x.net) < 100 ? 'Denk ✓' : x.net < 0 ? 'Gönderecek' : 'Alacak'};
+      else if (n === 'Durum') cell.value = {formula:`IF(ABS(${cl('Kalan')}${r})<${E ? '0.05' : '1'},"Denk ✓",IF(${cl('Kalan')}${r}<0,"Gönderecek","Alacak"))`, result:Math.abs(x.net) < zt ? 'Denk ✓' : x.net < 0 ? 'Gönderecek' : 'Alacak'};
       else cell.value = x[c[2]] / 100;
-      if (c[2]) cell.numFmt = TRY; });
-    const ok = Math.abs(x.net) < 100, col = ok || x.net > 0 ? 'FF1B7A4F' : 'FFB23A26';
+      if (c[2]) cell.numFmt = FM; });
+    const ok = Math.abs(x.net) < zt, col = ok || x.net > 0 ? 'FF1B7A4F' : 'FFB23A26';
     row.getCell(cols.length - 1).font = {bold:true, color:{argb:col}}; row.getCell(cols.length).font = {bold:true, color:{argb:col}};
     if (i % 2) row.eachCell({includeEmpty:true}, c => { c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF4F6F7'}}; }); });
   const rt = r0 + np, tot = ht.getRow(rt);
   cols.forEach((c, j) => { const cell = tot.getCell(j + 1);
-    if (j === 0) cell.value = 'Toplam'; else if (c[2]){ const L1 = xlCol(j + 1); cell.value = {formula:`SUM(${L1}${r0}:${L1}${rt - 1})`, result:sumOf(c[2])}; cell.numFmt = TRY; }
+    if (j === 0) cell.value = 'Toplam'; else if (c[2]){ const L1 = xlCol(j + 1); cell.value = {formula:`SUM(${L1}${r0}:${L1}${rt - 1})`, result:sumOf(c[2])}; cell.numFmt = FM; }
     cell.font = {bold:true}; cell.border = {top:{style:'thin'}}; });
   const notes = ['Nasıl okunur?', 'Payına düşen: ortak harcamalardaki payı (Paylar sayfasındaki sütunun toplamı).',
     'Harcamalarda ödediği: kendi cebinden ödediği harcamalar ve kasaya koyduğu para (kasadan geri aldığı düşülür).',
     ...(hasK ? ['Kasada kalan (sende): kasayı tutan kişide duran para; ona borç yazılır.'] : []),
     ...(hasR ? ['Kur yuvarlaması: euro harcamalar kişi başı yuvarlandığından kalan birkaç kuruş; toplama dahildir.'] : []),
     'Toplam = ödediği − payına düşen: eksi borç, artı alacak. Toplam sütununun toplamı 0 olur.',
-    'Kalan = toplam + gönderdiği − aldığı; Hesaplaşma sayfasındaki ödemelerle aynıdır.'];
+    'Kalan = toplam + gönderdiği − aldığı; Hesaplaşma sayfasındaki ödemelerle aynıdır.',
+    ...(E ? [`Euro borcu TL ile ödenirse ödeme gününün kuru × (1 + döviz farkı, şimdi %${feeTxt(fxFee())}) ile çevrilir; ödeme kapattığı borcu saklar (Hesaplaşma › Yapılan ödemeler).`] : [])];
   ht.addRow([]); notes.forEach((t, i) => { const r = ht.addRow([t]); r.font = i ? grey : {bold:true}; });
   const img = (data, row, w, h) => ht.addImage(wb.addImage({base64:data, extension:'png'}), {tl:{col:0, row}, ext:{width:w, height:h}});
   const bh = 110 + np * 80, nRows = Math.max(new Set(tp.plan.map(p => p.from)).size, new Set(tp.plan.map(p => p.to)).size, 1), fh = 150 + nRows * 112;
   const i1 = ht.rowCount + 1;
-  img(chartImage(1000, bh, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Kim ne kadar ödedi, ne kaldı', 30, 50); drawLedgerBars(x, 30, 80, 940, D.people); }), i1, 700, Math.round(bh * .7));
-  img(chartImage(1000, fh, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Kim kime ne gönderecek', 30, 50); drawFlow(x, 30, 90, 940, tp.plan, D.accent); }), i1 + Math.ceil(bh * .7 / 20) + 2, 700, Math.round(fh * .7));
-  // Paylar: her harcama bir satır, her kişi bir sütun (TL, hesaplaşmanın kuruyla)
-  const py = wb.addWorksheet('Paylar', {views:[{state:'frozen', ySplit:1, xSplit:2}]});
+  img(chartImage(1000, bh, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Kim ne kadar ödedi, ne kaldı', 30, 50); drawLedgerBars(x, 30, 80, 940, E ? D.peopleE : D.peopleT, 1, E ? eu : tlk, zt); }), i1, 700, Math.round(bh * .7));
+  if (first) img(chartImage(1000, fh, x => { x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText('Kim kime ne gönderecek', 30, 50); drawFlow(x, 30, 90, 940, tp.plan, D.accent); }), i1 + Math.ceil(bh * .7 / 20) + 2, 700, Math.round(fh * .7));
+  // Paylar: her harcama bir satır, her kişi bir sütun (TL defterinde TL, hesaplaşmanın kuruyla; euro defterinde euro)
+  const py = wb.addWorksheet(E ? 'Paylar (€)' : 'Paylar', {views:[{state:'frozen', ySplit:1, xSplit:2}]});
   py.columns = [{header:'Tarih', width:11}, {header:'Açıklama', width:28}, {header:'Kategori', width:13}, {header:'Ödeyen', width:14}, {header:'Tutar', width:12}, {header:'Birim', width:6},
-    {header:'TL (hesap kuruyla)', width:18}, ...ids.map(id => ({header:rawName(id), width:14})), {header:'Kontrol', width:10}];
+    {header:E ? '€ (euro defteri)' : 'TL (hesap kuruyla)', width:18}, ...ids.map(id => ({header:rawName(id), width:14})), {header:'Kontrol', width:10}];
   head(py.getRow(1));
   const lastP = xlCol(7 + np);
-  exps.forEach((e, i) => { const I = itemTL(e, D.R), r = i + 2;
+  exps.forEach((e, i) => { const I = itemTL(e, D.R, cur), r = i + 2;
     const row = py.addRow([new Date(e.at), e.desc, catById(e.cat).name, e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(e.paidBy), e.amount, e.cur, I.v / 100, ...ids.map(id => I.sh[id] != null ? I.sh[id] / 100 : null)]);
     row.getCell(8 + np).value = {formula:`G${r}-SUM(H${r}:${lastP}${r})`, result:0};
-    row.getCell(1).numFmt = 'dd.mm.yyyy'; row.getCell(5).numFmt = '#,##0.00'; for (let j = 7; j <= 8 + np; j++) row.getCell(j).numFmt = TRY;
+    row.getCell(1).numFmt = 'dd.mm.yyyy'; row.getCell(5).numFmt = '#,##0.00'; for (let j = 7; j <= 8 + np; j++) row.getCell(j).numFmt = FM;
     row.getCell(3).fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF' + mixHex(CAT_COLORS[e.cat] || '#999999', '#ffffff', .75).slice(1).toUpperCase()}}; });
   const pr = py.getRow(pTot); pr.getCell(2).value = 'Toplam';
-  for (let j = 7; j <= 8 + np; j++){ const L1 = xlCol(j), res = j === 7 ? exps.reduce((s, e) => s + itemTL(e, D.R).v, 0) / 100 : j === 8 + np ? 0 : L[ids[j - 8]].share / 100;
-    pr.getCell(j).value = {formula:`SUM(${L1}2:${L1}${pTot - 1})`, result:res}; pr.getCell(j).numFmt = TRY; }
+  for (let j = 7; j <= 8 + np; j++){ const L1 = xlCol(j), res = j === 7 ? exps.reduce((s, e) => s + itemTL(e, D.R, cur).v, 0) / 100 : j === 8 + np ? 0 : L[ids[j - 8]].share / 100;
+    pr.getCell(j).value = {formula:`SUM(${L1}2:${L1}${pTot - 1})`, result:res}; pr.getCell(j).numFmt = FM; }
   pr.eachCell(c => { c.font = {bold:true}; c.border = {top:{style:'thin'}}; });
   py.autoFilter = {from:'A1', to:`${xlCol(8 + np)}${Math.max(1, exps.length + 1)}`};
-  py.addRow([]); py.addRow(['', `TL girilen harcamalar TL tutarıyla; euro harcamalar ${settleRateText(D.R)} ile, kişi başı yuvarlanarak. Kontrol sütunu 0 olmalı: satırdaki paylar toplamı = harcamanın TL tutarı.`]).font = grey;
+  py.addRow([]); py.addRow(['', E ? 'Euro defteri: euro harcamalar euro olarak; diğer dövizler girildiği günün kuruyla euroya çevrilir. Kontrol sütunu 0 olmalı: satırdaki paylar toplamı = harcamanın euro tutarı.' : `TL girilen harcamalar TL tutarıyla; euro harcamalar ${settleRateText(D.R)} ile, kişi başı yuvarlanarak. Kontrol sütunu 0 olmalı: satırdaki paylar toplamı = harcamanın TL tutarı.`]).font = grey;
+}
+function xlsxSettle(wb, D, A, head, TRY, EUR){
   // Hesaplaşma: ödenecekler, karşılaştırma, yapılan ödemeler
+  const tp = D.tp, hasE = tp.hasE, grey = {color:{argb:'FF5B6A74'}};
   const z = wb.addWorksheet('Hesaplaşma', {views:[{showGridLines:false}]});
-  z.columns = [{width:20}, {width:20}, {width:16}, {width:70}];
+  z.columns = hasE ? [{width:20}, {width:20}, {width:14}, {width:12}, {width:16}, {width:56}] : [{width:20}, {width:20}, {width:16}, {width:70}];
   const h2 = t => { z.addRow([]); z.addRow([t]).font = {size:14, bold:true, color:{argb:A}}; };
-  const planRows = plan => { head(z.addRow(['Kimden', 'Kime', 'TL', 'Neden'])); if (!plan.length) z.addRow(['Herkes denk ✓']);
-    plan.forEach(p => { const r = z.addRow([rawName(p.from), rawName(p.to), p.amt / 100, payReasonText(p)]); r.getCell(3).numFmt = TRY; r.getCell(4).alignment = {wrapText:true, vertical:'top'}; }); };
+  // Euro defteri varsa satırda TL parçası, euro parçası ve bugünkü TL değeri (kur × (1 + döviz farkı)) ayrı sütunlarda.
+  const planRows = plan => { head(z.addRow(['Kimden', 'Kime', 'TL', ...(hasE ? ['€', 'Bugünkü TL değeri'] : []), 'Neden'])); if (!plan.length) z.addRow(['Herkes denk ✓']);
+    plan.forEach(p => { const r = z.addRow([rawName(p.from), rawName(p.to), (hasE ? p.tl : p.amt) / 100, ...(hasE ? [p.eur / 100, p.amt / 100] : []), payReasonText(p)]);
+      r.getCell(3).numFmt = TRY; if (hasE){ r.getCell(4).numFmt = EUR; r.getCell(5).numFmt = TRY; } r.getCell(hasE ? 6 : 4).alignment = {wrapText:true, vertical:'top'}; }); };
   z.addRow([`Ödenecekler · ${tp.mode === 'min' ? 'daha az ödeme' : 'doğrudan ödeme'} (${tp.plan.length} ödeme)`]).font = {size:16, bold:true, color:{argb:A}};
-  z.addRow([`${settleRateText(D.R)} · Herkesin göndereceği ve alacağı toplam, iki yöntemde de aynıdır.`]).font = grey;
+  z.addRow([`${hasTL() ? settleRateText(D.R) + ' · ' : ''}${hasE ? `Euro borcu euro olarak durur; TL ile ödenirse bugünkü kurla 1 € = ${nf4.format(tp.Q)} ₺ (%${feeTxt(fxFee())} döviz farkıyla) · ` : ''}Herkesin göndereceği ve alacağı toplam, iki yöntemde de aynıdır.`]).font = grey;
   planRows(tp.plan);
   if (tp.short.length < tp.direct.length){
     h2(tp.mode === 'min' ? `Karşılaştırma: doğrudan ödeme (${tp.direct.length} ödeme)` : `Karşılaştırma: daha az ödeme (${tp.short.length} ödeme)`);
@@ -9240,12 +9484,13 @@ function xlsxLedger(wb, D, A, head, TRY, EUR){
     h2('Ne değişti?');
     z.addRow(['Borçlar birleştirilir: biri hem alacaklı hem borçluysa aradan çıkar, para doğrudan son alıcıya gider. Değişen yalnız kime gönderildiği.']).font = grey;
     tp.diff.filter(d => !d.same).forEach(d => { const t = diffLines(d), r = z.addRow([rawName(d.id), [t.before, t.after, t.why, t.tot].filter(Boolean).join('\n')]);
-      z.mergeCells(r.number, 2, r.number, 4); r.getCell(1).font = {bold:true}; r.getCell(1).alignment = {vertical:'top'}; r.getCell(2).alignment = {wrapText:true, vertical:'top'};
+      z.mergeCells(r.number, 2, r.number, hasE ? 6 : 4); r.getCell(1).font = {bold:true}; r.getCell(1).alignment = {vertical:'top'}; r.getCell(2).alignment = {wrapText:true, vertical:'top'};
       r.height = 18 * (t.why ? 4 : 3) + 6; });
   }
   const pays = S.entries.filter(e => e.kind === 'transfer').sort((a, b) => a.at - b.at);
-  if (pays.length){ h2('Yapılan ödemeler'); head(z.addRow(['Tarih', 'Kimden', 'Kime', 'Tutar']));
-    pays.forEach(e => { const r = z.addRow([new Date(e.at), rawName(e.from), rawName(e.to), e.amount]); r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(1).alignment = {horizontal:'left'};
+  const anyPa = pays.some(e => e.v2 && e.pa);
+  if (pays.length){ h2('Yapılan ödemeler'); head(z.addRow(['Tarih', 'Kimden', 'Kime', 'Tutar', ...(anyPa ? ['Kapattığı borç'] : [])]));
+    pays.forEach(e => { const r = z.addRow([new Date(e.at), rawName(e.from), rawName(e.to), e.amount, ...(anyPa ? [paText(e)] : [])]); r.getCell(1).numFmt = 'dd.mm.yyyy'; r.getCell(1).alignment = {horizontal:'left'};
       r.getCell(4).numFmt = e.cur === 'TRY' ? TRY : EUR; r.getCell(4).alignment = {horizontal:'left'}; }); }
 }
 async function exportXlsx(){
@@ -9355,14 +9600,17 @@ function pdfPages(){
       for (const w of String(t).split(' ')){ const tst = line ? line + ' ' + w : w; if (x.measureText(tst).width > maxW && line){ out(line); line = w; } else line = tst; }
       if (line) out(line); };
     const need = h => { if (y + h > H - M) page(); };
+    // İki defter (2026-11-27): TL defteri (eski kayıtlar ve TL harcamalar) ve euro defteri (yeni kuralın euro harcamaları) ayrı tablolarda.
+    const books = [...(hasTL() || !tp.hasE ? [['T', D.L, D.peopleT]] : []), ...(tp.hasE ? [['E', D.LE, D.peopleE]] : [])];
+    books.forEach(([cur, L, ppl], bi) => { const E = cur === 'E', fm = E ? eu : tlk, zt = E ? 5 : 100; if (bi) page();
     // a) Hesap tablosu
-    title('Hesap tablosu');
-    wrap(`Tutarlar ₺, hesaplaşmanın kuruyla (${settleRateText(D.R)}); TL girilen harcamalar TL tutarıyla. Toplam = ödediği − payına düşen (eksi: borç, artı: alacak). Kalan = toplam + gönderdiği − aldığı; ödeme listesiyle aynıdır.`, M, W - 2 * M, 30, FONT(400, 21), RPT.muted);
+    title(books.length > 1 ? (E ? 'Hesap tablosu · euro defteri' : 'Hesap tablosu · TL defteri') : 'Hesap tablosu');
+    wrap(E ? `Tutarlar €. Bundan sonraki euro (ve diğer döviz) harcamaların borcu euro olarak durur; TL ile ödenirse ödeme gününün kuru × (1 + %${feeTxt(fxFee())} döviz farkı) ile, euroyla ödenirse tam euro olarak kapanır. Toplam = ödediği − payına düşen (eksi: borç, artı: alacak). Kalan = toplam + gönderdiği − aldığı; ödeme listesiyle aynıdır.` : `Tutarlar ₺, hesaplaşmanın kuruyla (${settleRateText(D.R)}); TL girilen harcamalar TL tutarıyla. Toplam = ödediği − payına düşen (eksi: borç, artı: alacak). Kalan = toplam + gönderdiği − aldığı; ödeme listesiyle aynıdır.`, M, W - 2 * M, 30, FONT(400, 21), RPT.muted);
     y += 16;
     const TC = [['Kişi', M + 18, 'left'], ['Payına düşen', M + 420, 'right'], ['Ödediği', M + 590, 'right'], ['Toplam', M + 770, 'right'], ['Gönderdi / aldı', M + 925, 'right'], ['Kalan', W - M - 18, 'right']];
     x.fillStyle = D.accent; rr(x, M, y, W - 2 * M, 48, 10); x.fill(); x.fillStyle = '#fff'; x.font = FONT(700, 19);
     TC.forEach(([t, cx, al]) => { x.textAlign = al; x.fillText(t, cx, y + 31); }); x.textAlign = 'left'; y += 58;
-    ids.forEach((id, i) => { const p = L[id], b = p.net, z = Math.abs(b) < 100;
+    ids.forEach((id, i) => { const p = L[id], b = p.net, z = Math.abs(b) < zt;
       if (i % 2){ x.fillStyle = RPT.soft; x.fillRect(M, y - 8, W - 2 * M, 66); }
       x.fillStyle = RPT.ink; x.font = FONT(700, 21); x.fillText(fit(rawName(id) + (p.kasa ? ' *' : ''), 290, FONT(700, 21)), M + 18, y + 24);
       x.textAlign = 'right'; x.font = FONT(500, 20); x.fillText(tk(p.share), M + 420, y + 24); x.fillText(tk(p.paid), M + 590, y + 24);
@@ -9374,19 +9622,21 @@ function pdfPages(){
     const sh = ids.reduce((s, id) => s + L[id].share, 0), pd = ids.reduce((s, id) => s + L[id].paid, 0), give = ids.reduce((s, id) => s + Math.max(0, -L[id].net), 0);
     x.strokeStyle = RPT.line; x.lineWidth = 2; x.beginPath(); x.moveTo(M, y - 6); x.lineTo(W - M, y - 6); x.stroke();
     x.fillStyle = RPT.ink; x.font = FONT(800, 20); x.fillText('Toplam', M + 18, y + 24); x.textAlign = 'right'; x.fillText(tk(sh), M + 420, y + 24); x.fillText(tk(pd), M + 590, y + 24); x.textAlign = 'left'; y += 48;
-    wrap(`Payların toplamı = bütün harcamalar ✓ · Gönderilecek = alınacak: ${tlk(give)} ✓${ids.some(id => L[id].kasa) ? ' · * Kasada kalan para kasayı tutan kişide; toplamına dahil.' : ''}${ids.some(id => L[id].rnd) ? ' · Toplam, euro kalemlerin birkaç kuruşluk kur yuvarlamasını içerir (kişi kartlarında ayrı satır).' : ''}`, M, W - 2 * M, 28, FONT(500, 19), RPT.muted);
+    wrap(`Payların toplamı = bütün harcamalar ✓ · Gönderilecek = alınacak: ${fm(give)} ✓${ids.some(id => L[id].kasa) ? ' · * Kasada kalan para kasayı tutan kişide; toplamına dahil.' : ''}${ids.some(id => L[id].rnd) ? ' · Toplam, euro kalemlerin birkaç kuruşluk kur yuvarlamasını içerir (kişi kartlarında ayrı satır).' : ''}`, M, W - 2 * M, 28, FONT(500, 19), RPT.muted);
     y += 24;
     // b) çubuklar
-    need(150 + ids.length * 80); title('Kim ne kadar ödedi, ne kaldı'); y = drawLedgerBars(x, M, y, W - 2 * M, D.people) + 10;
+    need(150 + ids.length * 80); title('Kim ne kadar ödedi, ne kaldı'); y = drawLedgerBars(x, M, y, W - 2 * M, ppl, 1, fm, zt) + 10;
+    });
     // c) kim kime
     page(); title(`Kim kime ne gönderecek · ${tp.mode === 'min' ? 'daha az ödeme' : 'doğrudan ödeme'} (${tp.plan.length} ödeme)`);
     wrap(tp.mode === 'min' ? `Borçlar birleştirildi: bazı ödemeler harcamayı yapan kişiye değil, başka birine gidiyor. Doğrudan ödemede ${tp.direct.length} ödeme olurdu; herkesin toplamı iki yöntemde de aynı.`
       : 'Her ödeme, kişinin ortak olduğu harcamaları ödeyen kişiye gider; iki kişi arasındaki karşılıklı borçlar birbirinden düşülür.', M, W - 2 * M, 30, FONT(400, 21), RPT.muted);
+    if (tp.hasE) wrap(`Euro borcu euro olarak yazılır. TL ile ödenecekse bugünkü kurla 1 € = ${nf4.format(tp.Q)} ₺ (%${feeTxt(fxFee())} döviz farkıyla); euroyla ödenirse tam euro.`, M, W - 2 * M, 30, FONT(500, 21), RPT.ink);
     y += 12; y = drawFlow(x, M, y, W - 2 * M, tp.plan, D.accent) + 26;
     tp.plan.forEach((p, i) => { const why = payReasonText(p); need(why ? 120 : 70);
       x.fillStyle = i % 2 ? '#fff' : RPT.soft; const y0 = y; rr(x, M, y0, W - 2 * M, 56, 10); x.fill();
       x.fillStyle = RPT.ink; x.font = FONT(700, 24); x.fillText(fit(`${rawName(p.from)} → ${rawName(p.to)}`, 700, FONT(700, 24)), M + 20, y0 + 37);
-      x.textAlign = 'right'; x.font = FONT(800, 24); x.fillText(tlk(p.amt), W - M - 20, y0 + 37); x.textAlign = 'left'; y = y0 + 62;
+      x.textAlign = 'right'; x.font = FONT(800, 24); x.fillText(payAmtText(p), W - M - 20, y0 + 37); x.textAlign = 'left'; y = y0 + 62;
       if (why) wrap(why, M + 20, W - 2 * M - 40, 26, FONT(400, 18), RPT.muted); y += 10; });
     // d) doğrudan ↔ daha az
     if (tp.short.length < tp.direct.length){
@@ -9399,25 +9649,28 @@ function pdfPages(){
         if (t.why) wrap(t.why, M + 20, W - 2 * M - 20, 27, FONT(400, 19), RPT.muted); wrap(t.tot, M + 20, W - 2 * M - 20, 27, FONT(700, 19), GOOD); y += 14; });
     }
     // e) kişi kartları: kişi başı yarım sayfa
-    page(); title('Kişi kartları');
-    ids.forEach(id => { const p = L[id], b = p.net, z = Math.abs(b) < 100, lines = ledgerLines(id, p), cats = ledgerCats(p).slice(0, 6);
+    books.forEach(([cur, L]) => { const E = cur === 'E', fm = E ? eu : tlk, zt = E ? 5 : 100;
+    page(); title(books.length > 1 ? (E ? 'Kişi kartları · euro defteri' : 'Kişi kartları · TL defteri') : 'Kişi kartları');
+    ids.forEach(id => { const p = L[id]; if (books.length > 1 && !p.share && !p.paid && !p.out && !p.inn && !p.kasa) return;
+      const b = p.net, z = Math.abs(b) < zt, lines = ledgerLines(id, p, zt), cats = ledgerCats(p).slice(0, 6);
       const hgt = 96 + lines.reduce((s, l) => s + (l[3] ? 62 : 38) + (l[4] ? 8 : 0), 0) + (cats.length ? 56 + cats.length * 38 : 0) + 20;
       need(hgt); const y0 = y; x.fillStyle = RPT.soft; rr(x, M, y0, W - 2 * M, hgt, 20); x.fill();
       x.fillStyle = RPT.ink; x.font = FONT(800, 30); x.fillText(fit(rawName(id), 600, FONT(800, 30)), M + 30, y0 + 52);
-      const pill = z ? 'Denk ✓' : `${tlk(Math.abs(b))} ${b < 0 ? 'gönderecek' : 'alacak'}`; x.font = FONT(700, 20); const pw = x.measureText(pill).width + 32;
+      const pill = z ? 'Denk ✓' : `${fm(Math.abs(b))} ${b < 0 ? 'gönderecek' : 'alacak'}`; x.font = FONT(700, 20); const pw = x.measureText(pill).width + 32;
       x.fillStyle = z || b > 0 ? '#D7EDE2' : '#FBE3DD'; rr(x, W - M - 30 - pw, y0 + 24, pw, 40, 20); x.fill(); x.fillStyle = z || b > 0 ? GOOD : BAD; x.textAlign = 'center'; x.fillText(pill, W - M - 30 - pw / 2, y0 + 51); x.textAlign = 'left';
       y = y0 + 90;
       lines.forEach(([sg, l, v, sub, t]) => { if (t){ x.strokeStyle = RPT.line; x.lineWidth = 2; x.beginPath(); x.moveTo(M + 30, y); x.lineTo(W - M - 30, y); x.stroke(); y += 8; }
         x.fillStyle = RPT.muted; x.font = FONT(800, 22); x.fillText(sg, M + 34, y + 24); x.fillStyle = RPT.ink; x.font = FONT(t ? 800 : 500, 22); x.fillText(l, M + 70, y + 24);
-        x.textAlign = 'right'; x.fillText(tlk(v), W - M - 30, y + 24); x.textAlign = 'left';
+        x.textAlign = 'right'; x.fillText(fm(v), W - M - 30, y + 24); x.textAlign = 'left';
         if (sub){ x.fillStyle = RPT.muted; x.font = FONT(400, 17); x.fillText(fit(sub, W - 2 * M - 120, FONT(400, 17)), M + 70, y + 50); y += 62; } else y += 38; });
       if (cats.length){ y += 14; x.fillStyle = RPT.muted; x.font = FONT(700, 17); x.fillText('PAYINA DÜŞEN NEREDEN GELİYOR?', M + 30, y + 20); y += 36;
         const mx = cats[0].v;
         cats.forEach(c => { x.fillStyle = CAT_COLORS[c.id] || '#999'; x.beginPath(); x.arc(M + 42, y + 14, 8, 0, Math.PI * 2); x.fill();
           x.fillStyle = RPT.ink; x.font = FONT(600, 19); x.fillText(`${c.name} · ${c.n} kalem`, M + 62, y + 21);
           x.fillStyle = '#fff'; rr(x, M + 420, y + 4, 480, 20, 10); x.fill(); x.fillStyle = CAT_COLORS[c.id] || '#999'; rr(x, M + 420, y + 4, Math.max(10, 480 * c.v / mx), 20, 10); x.fill();
-          x.fillStyle = RPT.ink; x.textAlign = 'right'; x.font = FONT(700, 19); x.fillText(tlk(c.v), W - M - 30, y + 21); x.textAlign = 'left'; y += 38; }); }
+          x.fillStyle = RPT.ink; x.textAlign = 'right'; x.font = FONT(700, 19); x.fillText(fm(c.v), W - M - 30, y + 21); x.textAlign = 'left'; y += 38; }); }
       y = y0 + hgt + 24; });
+    });
   }
   const P = planState();
   if (P.plan){ title('Bütçe'); x.fillStyle = RPT.ink; x.font = FONT(500, 24);
@@ -9567,9 +9820,9 @@ function albumPages(logo){
   const open = !isFamily() && D.plan.length;
   x.fillText(open ? 'Hesaplaşma' : 'Hesap kapandı ✓', M + 50, y + 80);
   y += 130;
-  if (open){ x.font = FONT(500, 22); x.globalAlpha = .85; x.fillText(settleRateText(D.R), M + 50, y - 16); x.globalAlpha = 1;
+  if (open){ x.font = FONT(500, 22); x.globalAlpha = .85; x.fillText(D.tp && D.tp.hasE ? `${legacyEur() ? settleRateText(D.R) + ' · ' : ''}euro borcu euro olarak` : settleRateText(D.R), M + 50, y - 16); x.globalAlpha = 1;
     D.plan.forEach(p => { if (y + 64 > H - M - 80) return; x.font = FONT(600, 30); x.fillText(fit(`${who(p.from)}  →  ${who(p.to)}`, 680, FONT(600, 30)), M + 50, y + 40);
-      x.textAlign = 'right'; x.font = DF(800, 32); x.fillText(tlk(p.amt), W - M - 50, y + 40); x.textAlign = 'left'; y += 64; }); }
+      x.textAlign = 'right'; x.font = DF(800, 32); x.fillText(payAmtText(p), W - M - 50, y + 40); x.textAlign = 'left'; y += 64; }); }
   else { x.font = FONT(500, 30); x.globalAlpha = .9; x.fillText('Herkes ödeşti. Bir sonraki heybede görüşmek üzere 👋', M + 50, y + 20); x.globalAlpha = 1; }
 
   pages.forEach((p, i) => { if (!i) return; const g2 = p.getContext('2d'); g2.font = FONT(400, 18); g2.fillStyle = '#93A4AE'; g2.fillText(`Heybe · ${S.trip.name} · ${i + 1}/${pages.length}`, M, H - 36); });
@@ -9901,6 +10154,7 @@ const HELP = {
   taxfree: 'Bu sekme sadece sana özel: kayıtlar bölüşülmez, ortak hesaba ve bütçeye girmez, kimse göremez. Tahmini iade temkinlidir: KDV payının %60’ı. Aracı şirketler (Global Blue, Planet) KDV’nin %30–40’ını keser; iadeyi kendi para biriminle alırsan kur farkından %3–8 daha gidebilir. Örnek: İspanya’da 100 € → tahmin ≈ 10 €, gerçekte çoğunlukla 10–14 €. En az tutar çoğu ülkede aynı mağaza ve aynı gün toplamına bakar. İade için: mağazadan tax-free formunu al, AB’den son çıkışta gümrükte (çoğu yerde kiosk) onaylat, sonra iadeni al. Kurallar değişebilir; kesin tutarı mağaza söyler.',
   kind: 'Arkadaşlar: harcamalar bölüşülür, sonunda kim kime ne kadar gönderecek hesaplanır. Sadece ailem: aranızda hesaplaşma olmaz; Hesaplaşma sekmesi ve “ödeyen/bölüşülen” kalkar, harcamalar ve bütçe izlenir. Birkaç aile: her aile tek katılımcıdır; yeni harcamalar ailelerin kişi sayısına göre bölünür (çocuklar istenirse yarım pay), hesaplaşma aileler arasında yapılır. Türü değiştirmek eski kayıtların paylarını değiştirmez.',
   big: 'Bu tutarın üstündeki harcamalar dikkat çeksin diye: kaydederken ekran kenarları bir an kırmızımsı parlar, satır kırmızı tonla vurgulanır ve listede tutarı kırmızı yazılır. TL harcamalar ₺ sınırıyla, euro ve diğer para birimleri euro karşılığıyla karşılaştırılır.',
+  fee: 'Döviz farkı: euro borcu TL ile ödenirken ödeme gününün kuruna eklenen oran. Euroyu kartla ödeyen ya da bozdurarak alan kişi bankanın satış kuru ve komisyonu kadar fazla öder; kendisine TL dönen parayla o euroyu yeniden alırken de öyle. Bu fark onu korur. Borcunu euroyla ödeyen bu farkı ödemez. Kart ekstrene bakıp oranı değiştirebilirsin (genelde %1–3). Yapılmış ödemeler kendi oranıyla kalır.',
   me: 'Bu telefonda harcama eklerken “ödeyen” kendiliğinden bu kişi seçilir; üstteki “toplamda … göndereceksin” satırı da bu kişinin hesabını gösterir. Her telefon kendi kişisini seçer.',
 };
 const help = k => `<button type="button" class="hq" data-help="${k}" aria-label="Bu ne?">?</button>`;
@@ -10128,7 +10382,7 @@ document.addEventListener('click', ev => {
     if (d.payer){ form.paidBy = d.payer; form.showPayer = false; drawSheetKeep(); return; }
     if (d.all){
       const live = S.people.filter(p => !p.left).map(p => p.id);
-      form.among = d.all === 'notme' ? live.filter(id => id !== S.me) : d.all === 'onlyme' ? [S.me] : live;
+      form.among = live;
       form.weights = defaultWeights(); drawSheetKeep(); return;
     }
     if (d.among){ const i = form.among.indexOf(d.among); if (i >= 0) form.among.splice(i,1); else form.among.push(d.among); form.among.sort((a,b) => S.people.findIndex(p=>p.id===a) - S.people.findIndex(p=>p.id===b)); drawSheetKeep(); return; }
@@ -10180,7 +10434,7 @@ document.addEventListener('click', ev => {
     case 'kasaempty': openSheet({mode:'kasaempty'}); break;
     case 'kasaback': {
       const now = Date.now();
-      kasaBackPlan().forEach(([id, c]) => S.entries.push({id:uid(), kind:'kasaout', from:'kasa', to:id, amount:c/100, cur:'EUR', rate:S.trip.rate, at:now, by:S.me}));
+      { const v2k = v2New('kasaout') ? {v2:1} : {}; kasaBackPlan().forEach(([id, c]) => S.entries.push({id:uid(), kind:'kasaout', from:'kasa', to:id, amount:c/100, cur:'EUR', rate:S.trip.rate, ...v2k, at:now, by:S.me})); }
       closeSheet(); render(); toast('Kasada kalan para geri dağıtıldı'); break;
     }
     case 'kasawipe':
@@ -10213,7 +10467,6 @@ document.addEventListener('click', ev => {
     case 'rmphoto': form.photo = form.photoHi = form.photoMid = null; form.photoChanged = true; saveDraftPhoto(null); drawSheetKeep(); break;
     case 'togglecat': form.showCat = !form.showCat; drawSheetKeep(); break;
     case 'togglepayer': form.showPayer = !form.showPayer; drawSheetKeep(); break;
-    case 'toggleamong': form.showAmong = !form.showAmong; drawSheetKeep(); break;
     case 'toggleweights': form.showW = !form.showW; drawSheetKeep(); break;
     case 'scan': scanReceipt(); break;
     case 'sharestory': shareStory(); break;
@@ -10254,8 +10507,14 @@ document.addEventListener('click', ev => {
       { const g = S.entries.find(x => x.id === form.id); logEvent(`sildi: ${g.kind === 'expense' ? g.desc : 'kayıt'} · ${money(g.amount, g.cur)}`); }
       S.entries = S.entries.filter(x => x.id !== form.id); closeSheet(); render(); toast('Silindi'); break;
     case 'paid': {
-      const p = planAt(d.i);
-      openSheet({mode:'transfer', total:true, amount:nf.format(p.amt/100), cur:'TRY', rate:totalPlan().R, from:p.from, to:p.to, note:payNote(p.from, p.to)}); break;
+      // Yeni kuralda ödeme, bugünkü kurla kaydedilir ve kapattığı parçaları saklar; eski kurala göre ödemede hesaplaşma kuru kalır.
+      const p = planAt(d.i), t = totalPlan();
+      openSheet({mode:'transfer', total:true, amount:nf.format(p.amt/100), cur:'TRY', rate:S.trip.rate, from:p.from, to:p.to, note:payNote(p.from, p.to)}); break;
+    }
+    case 'paideur': {
+      // Euroyla ödeme: euro parçası tam, TL parçası bugünkü kur × (1 + döviz farkı) ile çevrilir.
+      const p = planAt(d.i), t = totalPlan();
+      openSheet({mode:'transfer', total:true, amount:nf.format(payEur(p, t.Q) / 100), cur:'EUR', rate:S.trip.rate, from:p.from, to:p.to, note:payNote(p.from, p.to)}); break;
     }
     case 'copyamt': { const p = planAt(d.i); copyText((p.amt/100).toFixed(2).replace('.', ','), `Tutar kopyalandı: ${tlk(p.amt)}`); break; }
     case 'share': openSheet({mode:'share', text:shareText()}); break;
@@ -10309,7 +10568,7 @@ document.addEventListener('input', ev => {
   if (el.id === 'gWho' || el.id === 'gWhat' || el.id === 'gEst'){ giftDraft[{gWho:'who', gWhat:'what', gEst:'est'}[el.id]] = el.value; return; }
   if (form){
     if (el.id === 'fRate'){ const r = parseAmt(el.value); if (r > 0) form.rate = r; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); return; }
-    if (el.id === 'fAmt'){ form.amount = el.value; form.autoAmt = false; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); const e = document.getElementById('fEach'); if (e) e.textContent = eachNote(); return; }
+    if (el.id === 'fAmt'){ form.amount = el.value; form.autoAmt = false; const c = document.getElementById('fConv'); if (c) c.textContent = convNote(); const e = document.getElementById('fEach'); if (e) e.textContent = eachNote(); const pl = document.getElementById('fPpl'); if (pl) pl.innerHTML = pplHtml(); return; }
     if (el.id === 'fDesc'){
       form.desc = el.value;
       if (!form.catManual){
@@ -10415,6 +10674,7 @@ document.addEventListener('change', async ev => {
     render(); return;
   }
   if (b === 'plan'){ const v = parsePlan(el.value); S.trip.plan = v > 0 ? Math.round(v) : 0; }
+  if (b === 'fxFee'){ const v = parseAmt(el.value); if (v >= 0 && v <= 10){ const n = Math.round(v * 100) / 100; if (n !== fxFee()){ S.trip.fxFee = n; logEvent(`döviz farkını %${feeTxt(n)} yaptı`); } } else { render(); return toast('Döviz farkı 0 ile 10 arasında olmalı.'); } }
   if (b === 'planCur') S.trip.planCur = el.value;
   if (b === 'start' || b === 'end') S.trip[b] = el.value || null;
   if (b === 'me' && myUid && myPerson()){ render(); return; }
