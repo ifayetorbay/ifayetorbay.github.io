@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261127192320';</script>
-<script src="heybe-web.js?v=20261127192320"></script>
+<script>window.HEYBE_VER = '20261127194158';</script>
+<script src="heybe-web.js?v=20261127194158"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -374,6 +374,29 @@ button.mrow{border-left:0;border-right:0;border-bottom:0;background:none;width:1
 .mcat[open] .mcv{transform:rotate(90deg)}
 .mcl{padding:2px 0 6px 12px}
 .solo-hero{background:linear-gradient(150deg,#3E4C5E,#273240);color:#fff;box-shadow:0 6px 20px rgba(30,40,55,.25)}
+/* Özet sekmesi (2026-11-27): kaydırmalı kartlar (scroll-snap), noktalar, günler çubuğu, raporlar kartı */
+.oz-wrap{display:flex;flex-direction:column;gap:8px}
+.oz-cards{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 6px;margin:0 -2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.oz-cards::-webkit-scrollbar{display:none}
+.ozc{flex:0 0 84%;scroll-snap-align:center;position:relative;overflow:hidden;border:0;border-radius:22px;padding:18px 18px 16px;min-height:190px;text-align:left;color:#fff;background:linear-gradient(150deg,var(--c1),var(--c2));box-shadow:0 8px 22px -10px var(--c1);display:flex;flex-direction:column;gap:6px;font:inherit}
+.ozc .k{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;font-weight:700;opacity:.88;max-width:62%}
+.ozc .big{font-family:var(--display);font-weight:800;font-size:1.9rem;line-height:1.05;max-width:66%}
+.ozc .sub{font-size:.86rem;opacity:.94;max-width:64%;line-height:1.35}
+.ozc .go{margin-top:auto;font-size:.8rem;font-weight:700;opacity:.9}
+.ozc .ly{position:absolute;right:-8px;bottom:-10px;width:44%;max-width:150px;pointer-events:none}
+.ozc .ly .leyo{width:100%;height:auto}
+.oz-dots{display:flex;justify-content:center;gap:6px}
+.oz-dots i{width:7px;height:7px;border-radius:99px;background:var(--line);transition:width .2s,background .2s}
+.oz-dots i.on{width:20px;background:var(--accent)}
+.track.stk .f3{height:100%;background:#8E6CF0}
+.mleg .f3{background:#8E6CF0}
+.dbar+.dbar{margin-top:10px}
+.dbar small{color:var(--muted);font-weight:500}
+.rpt{display:flex;flex-direction:column;gap:12px}
+.rpt-row{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.rpt-row>span{display:flex;flex-direction:column}
+.rpt-row small{color:var(--muted);font-size:.78rem}
+@media (prefers-reduced-motion:reduce){.oz-dots i{transition:none}}
 .solo-note{margin:0 0 4px;padding:9px 12px;border-radius:12px;background:var(--accent-soft);color:var(--ink)}
 .solo-hint{margin:4px 0 0}
 table{width:100%;border-collapse:collapse;font-size:.88rem}
@@ -1105,9 +1128,9 @@ button.gp-b:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srg
 
 <nav class="tabs" aria-label="Sekmeler"><div class="in">
   <button data-tab="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Harcamalar</button>
-  <button data-tab="settle" aria-label="Hesap (hesaplaşma ve özet)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-4-4M17 17H4l4 4"/></svg>Hesap</button>
+  <button data-tab="settle" aria-label="Hesap (hesaplaşma)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-4-4M17 17H4l4 4"/></svg>Hesap</button>
   <button data-tab="gezi" aria-label="Gezi (plan ve rehber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Gezi</button>
-  <button data-tab="shop" aria-label="Kişisel (sadece sen görürsün)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-.8 12H4.8L4 8z"/><path d="M7.5 8V6a3 3 0 0 1 6 0v2"/><rect x="14.2" y="15" width="8.6" height="7" rx="1.6" fill="currentColor" style="stroke:var(--surface)" stroke-width="1.6"/><path d="M16.3 15v-1.4a2.2 2.2 0 0 1 4.4 0V15" stroke-width="1.7"/></svg>Kişisel</button>
+  <button data-tab="ozet" aria-label="Özet (seyahatin ve senin özetin, raporlar)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="4.5" y="11" width="3.6" height="7" rx="1"/><rect x="10.2" y="5" width="3.6" height="13" rx="1"/><rect x="15.9" y="13.5" width="3.6" height="4.5" rx="1"/><path d="M19.5 3.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="currentColor" stroke-width="1"/></svg>Özet</button>
   <button data-tab="trip" aria-label="Seyahat (kişiler ve ayarlar)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M22.17 17.42L23.74 18.40L22.80 20.67L21.00 20.26L20.26 21.00L20.67 22.80L18.40 23.74L17.42 22.17L16.38 22.17L15.40 23.74L13.13 22.80L13.54 21.00L12.80 20.26L11.00 20.67L10.06 18.40L11.63 17.42L11.63 16.38L10.06 15.40L11.00 13.13L12.80 13.54L13.54 12.80L13.13 11.00L15.40 10.06L16.38 11.63L17.42 11.63L18.40 10.06L20.67 11.00L20.26 12.80L21.00 13.54L22.80 13.13L23.74 15.40L22.17 16.38Z" fill="currentColor" style="stroke:var(--surface)" stroke-width="1.4"/><circle cx="16.9" cy="16.9" r="2.3" style="fill:var(--surface);stroke:none"/></svg>Seyahat</button>
 </div></nav>
 
@@ -2089,6 +2112,10 @@ function tgSet(id, k = 'trip'){ tgMem[k] = id || ''; try { localStorage.setItem(
 document.addEventListener('toggle', ev => { const d = ev.target; if (!d.classList || !d.classList.contains('tgrp')) return; const k = d.dataset.tgk || 'trip';
   if (d.open){ document.querySelectorAll('details.tgrp[open]').forEach(o => { if (o !== d && (o.dataset.tgk || 'trip') === k) o.open = false; }); tgSet(d.id, k); }
   else if (tgLast(k) === d.id) tgSet('', k); }, true);
+// Özet kartları kaydırıldıkça alttaki noktalar güncellenir (kaydırma olayı belgede yakalanır).
+document.addEventListener('scroll', ev => { const el = ev.target; if (!el.classList || !el.classList.contains('oz-cards')) return;
+  const c0 = el.firstElementChild, w = c0 ? c0.getBoundingClientRect().width + 12 : 1, i = Math.round(el.scrollLeft / w);
+  el.parentElement.querySelectorAll('.oz-dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, true);
 // Harcamalar: 👥 Ortak | 🔒 Kişisel (2026-11-27, kullanıcı onayı); seçim bu telefonda hatırlanır.
 let lmMem = null;
 function listMode(){ if (lmMem === null){ try { lmMem = localStorage.getItem('heybe-listmode') === 'kisisel' ? 'kisisel' : 'ortak'; } catch(_) { lmMem = 'ortak'; } } return lmMem; }
@@ -2352,23 +2379,27 @@ function render(){
     save(); return;
   }
   document.getElementById('rateBox').innerHTML = `1 € = <b class="num">${nf4.format(S.trip.rate)} ₺</b><br>${rateLabel()}`;
-  if (isFamily() && tab === 'settle') tab = 'sum';
-  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-current', (b.dataset.tab === tab || (b.dataset.tab === 'settle' && tab === 'sum')) ? 'page' : 'false'));
+  // 2026-11-27 yeni düzen: eski "Kişisel" (shop) Harcamalar › Kişisel'e, eski "Özet & Hikâye" (sum) Özet sekmesine gider.
+  if (tab === 'shop'){ tab = 'list'; setListMode('kisisel'); if (!PSEG.some(x => x[0] === shopView)) shopView = 'list'; }
+  if (tab === 'sum' || (isFamily() && tab === 'settle')) tab = 'ozet';
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
+  { const hb = document.querySelector('nav.tabs [data-tab="settle"]'); if (hb) hb.hidden = isFamily(); }   // aile seyahatinde hesaplaşma yok
   const fab = document.getElementById('fab');
   document.body.classList.toggle('ro', isRO());
   document.body.classList.toggle('nomgr', !isManager());
-  // Her görünümde tek ekleme yolu: Kişisel'de düğme yalnız Alışveriş'te (Hediye'nin kendi formu var, "Sadece bana" + Harcama'da).
-  fab.hidden = tab === 'trip' || tab === 'gezi' || isRO() || (tab === 'shop' && shopView !== 'list');
-  const soloFab = tab === 'list' && listMode() === 'kisisel';
-  fab.textContent = tab === 'settle' ? '+ Ödeme' : tab === 'shop' ? '+ Alışveriş' : soloFab ? '+ Kişisel' : '+ Harcama';
-  fab.dataset.act = tab === 'settle' ? 'pay' : tab === 'shop' ? 'addshop' : soloFab ? 'addsolo' : 'add';
+  // Her görünümde tek ekleme yolu: Harcamalar › Kişisel'de bölüme göre (Harcama "+ Kişisel", Alışveriş "+ Alışveriş"; Hediye'nin kendi
+  // formu var). Özet sekmesi okumak içindir, düğme yok.
+  const kis = tab === 'list' && listMode() === 'kisisel';
+  fab.hidden = tab === 'trip' || tab === 'gezi' || tab === 'ozet' || isRO() || (kis && shopView === 'gifts');
+  fab.textContent = tab === 'settle' ? '+ Ödeme' : kis ? (shopView === 'list' ? '+ Alışveriş' : '+ Kişisel') : '+ Harcama';
+  fab.dataset.act = tab === 'settle' ? 'pay' : kis ? (shopView === 'list' ? 'addshop' : 'addsolo') : 'add';
   const C = compute(S, startOfToday());
   const v = document.getElementById('view');
   S.people.forEach(rememberEmoji);
   // İçerik değişmediyse sayfaya dokunulmaz: eşitleme ya da kur yenilemesi kaydırırken içeriği yeniden kurup sıçratmasın.
-  const html = tab === 'list' ? viewList(C) : tab === 'settle' ? viewSettle(C) : tab === 'sum' ? viewSum(C) : tab === 'shop' ? viewShop() : tab === 'gezi' ? viewGezi() : viewTrip();
+  const html = tab === 'list' ? viewList(C) : tab === 'settle' ? viewSettle(C) : tab === 'ozet' ? viewOzet(C) : tab === 'gezi' ? viewGezi() : viewTrip();
   if (v.__html !== html || !v.firstChild){ v.innerHTML = html; v.__html = html; }
-  const viewKey = tab + '|' + (tab === 'shop' ? shopView : '') + '|' + S.tid;
+  const viewKey = tab + '|' + (kis ? 'k' + shopView : '') + '|' + S.tid;
   if (viewKey !== lastView){ lastView = viewKey; animateEnter(v); }
   if (flashId){ const el = v.querySelector(`[data-edit="${flashId}"], [data-shop="${flashId}"], [data-shopx="${flashId}"]`), big = isBig(S.entries.find(x => x.id === flashId)); flashId = null;
     if (el && !calm()){ const c = big ? 'flashbig' : 'flash'; el.classList.add(c); setTimeout(() => el.classList.remove(c), 1500); } if (big) bigPulse(); }
@@ -2508,7 +2539,7 @@ function budgetHtml(){
       + (P.plan ? `<p class="tip">${diff >= 0 ? `Bütçenin <b class="pos">${pB(diff)} altında</b> kaldınız.` : `Bütçe <b class="neg">${pB(-diff)} aşıldı</b>.`} (Bütçe ${pB(P.plan)})</p>` : '')
       + `<p class="tip">Seyahatte günde ortalama <b>${pD(P.trip / (P.len || 1))}</b>${cat ? ` · en çok ${cat.icon} ${cat.name} (%${Math.round(top[1] * 100 / C.total)})` : ''}.</p>`
       + (open ? `<button class="btn sm pri" data-tab="settle">${open} ödeme bekliyor · Hesaplaşmaya git</button>` : `<p class="tip pos"><b>Hesaplar kapandı, herkes denk. 🎉</b></p>`)
-      + `<button class="link" data-tab="sum">📖 Seyahat hikâyesini gör ›</button>`
+      + `<button class="link" data-tab="ozet">📖 Seyahat hikâyesini gör ›</button>`
       + (S.sample ? '' : `<div class="two"><button class="btn sm" data-act="sameteam">🔁 Aynı ekiple</button><button class="btn sm pri" data-act="newtrip">+ Yeni seyahat</button></div>`)
       + (!isRO() && !open ? `<button class="link" data-tab="trip">🗄️ Hesaplar kapandı; seyahati arşivleyebilirsin ›</button>` : '');
   } else if (!P.started){
@@ -2576,7 +2607,7 @@ function listLeyoMood(C){
 }
 const listSeg = m => `<div class="seg wide" role="tablist" aria-label="Harcama görünümü"><button type="button" data-lmode="ortak" aria-pressed="${m === 'ortak'}">👥 Ortak</button><button type="button" data-lmode="kisisel" aria-pressed="${m === 'kisisel'}">🔒 Kişisel</button></div>`;
 function viewList(C){
-  if (listMode() === 'kisisel') return webSampleNote() + listSeg('kisisel') + soloListHtml();
+  if (listMode() === 'kisisel') return webSampleNote() + listSeg('kisisel') + kisiselHtml();
   const lm = listLeyoMood(C);
   let h = webSampleNote() + listSeg('ortak') + todayStrip() + `<section class="hero hero-ly"><div class="hero-row">
     <div><div class="lbl">Toplam harcama</div>
@@ -2822,9 +2853,6 @@ function diffCard(t){
     <p class="hint">Borçlar birleştirilir: biri hem alacaklı hem borçluysa aradan çıkar, para doğrudan son alıcıya gider. Herkesin toplamı aynı kalır; değişen yalnız kime gönderildiği.</p>
     <div class="list dfl">${rows.map(r => `<div class="dfr num"><b>${nmE(r.id)}</b><span class="m">Doğrudan: ${side(r.d, true)}</span><span>Daha az: ${side(r.s, false)}</span>${why(r) ? `<span class="m">${why(r)}</span>` : ''}<span class="ok">Toplam aynı ✓ ${tot(r)}${kr(r)}</span></div>`).join('')}</div></div></details>`;
 }
-function hesapSeg(active){
-  return isFamily() ? '' : `<div class="seg wide" role="tablist" aria-label="Hesap görünümü"><button type="button" data-tab="settle" aria-pressed="${active === 'settle'}">🤝 Hesaplaşma</button><button type="button" data-tab="sum" aria-pressed="${active === 'sum'}">📊 Özet & Hikâye</button></div>`;
-}
 // Hesaplaşma: en üstte kişinin toplamı, altında kendi ödemeleri (gerekçesiyle); diğerlerininki kapalı bölümde.
 function viewSettle(C){
   const t = totalPlan(), {R, Q, T, TE, net, netE, plan, mode, nDirect, nShort, locked} = t;
@@ -2833,7 +2861,7 @@ function viewSettle(C){
   // Her sekme aynı yapıda renkli bir özet kartıyla açılır: burada kişinin göndereceği ya da alacağı.
   const b = net[S.me] || 0, z = Math.abs(b) < 100, math = meText(T, R, net, false, TE, Q, preOf(t, S.me));
   const sLy = z ? 'sevinc' : b > 0 ? 'hesap' : 'dusunme';
-  let h = hesapSeg('settle') + `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
+  let h = `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
     <div class="big num">${z ? 'Denk ✓' : tlk(Math.abs(b))}</div>
     <div class="eur num">${z ? 'Göndereceğin ya da alacağın bir şey yok' : `${b < 0 ? 'göndereceksin' : 'alacaksın'}${netE[S.me] ? ` · ${eu(Math.abs(netE[S.me]))} euro borcu bugünkü kurla dahil` : ` · ≈ ${eu(Math.round(Math.abs(b) / R))}`}`}</div></div>
     <div class="hero-mascot">${leyo(sLy, 'l', 'Leyo')}</div></div>
@@ -2950,23 +2978,23 @@ function rozetHtml(C){
   return `<h2>🏅 Pasaport Damgaları <span class="note">(${n}/${B.length})</span></h2><div class="card badges">`
     + B.map(b => `<div class="bdg${b.on ? ' on' : ''}"><i>${b.ic}</i><b>${b.t}</b><span>${b.s}</span></div>`).join('') + `</div>`;
 }
-function viewSum(C){
-  const rows = CATS.map(c => [c, C.cats[c.id] || 0]).filter(x => x[1] > 0).sort((a,b) => b[1]-a[1]);
-  const max = rows.length ? rows[0][1] : 1, n = headcount();
-  const story = storyHtml(), cnt = S.entries.filter(e => e.kind === 'expense').length;
-  let h = hesapSeg('sum') + (story || `<section class="hero"><div><div class="lbl">Toplam harcama</div><div class="big num">${eu(C.total)}</div>
-      <div class="eur num">kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama</div></div></section>`) + rozetHtml(C) + `<h2>Kategoriler</h2><div class="card bars">` + (rows.length ? rows.map(([c,v]) => `<div class="bar">
+// Eski "Özet & Hikâye"den (2026-11-27 Özet sekmesine taşındı): grubun kategorileri, kişi başı tablosu, son işlemler.
+function groupCatsHtml(C){
+  const rows = CATS.map(c => [c, C.cats[c.id] || 0]).filter(x => x[1] > 0).sort((a,b) => b[1]-a[1]), max = rows.length ? rows[0][1] : 1;
+  return `<div class="bars">` + (rows.length ? rows.map(([c,v]) => `<div class="bar">
       <div class="top2"><span><span class="bar-ic cat-${c.id}">${catSvg(c.id)}</span>${c.name}</span><span class="num"><b>${eu(v)}</b> · ${Math.round(v*100/C.total)}%</span></div>
       <div class="track"><div class="fill" style="width:${(v*100/max).toFixed(1)}%"></div></div></div>`).join('') : `<div class="done">Harcamalar geldikçe kategoriler burada belirecek 📊</div>`) + `</div>`;
-  // Aile seyahatinde hesaplaşma yok: euro defteri (bugünkü kurla TL). Diğerlerinde Hesap tablosuyla aynı rakamlar (2026-11-27).
-  if (isFamily()) h += `<h2>Kişi başı</h2><div class="card" style="overflow-x:auto"><table class="num"><thead><tr><th>Kişi</th><th class="r">Payına düşen</th><th class="r">Cebinden çıkan</th></tr></thead><tbody>` +
+}
+function perPersonHtml(C){
+  let h = '';
+  if (isFamily()) h += `<div class="card" style="overflow-x:auto"><table class="num"><thead><tr><th>Kişi</th><th class="r">Payına düşen</th><th class="r">Cebinden çıkan</th></tr></thead><tbody>` +
     S.people.map(p => `<tr><td>${esc(p.name)}</td><td class="r">${eu(C.share[p.id])}<br><small class="hint">${tl(C.share[p.id])}</small></td><td class="r">${eu(C.paid[p.id])}<br><small class="hint">${tl(C.paid[p.id])}</small></td></tr>`).join('') +
     `</tbody></table><p class="note" style="margin:10px 0 0">“Cebinden çıkan” kasaya koyduğu parayı da içerir. TL tutarlar bugünkü kurla.</p></div>`;
   else { const t = totalPlan(), L = ledgerShown(t), LE = t.hasE ? ledgerShown(t, 'E') : null;
     // İki defter (2026-11-27): euro harcamaların payı ve kalanı euro olarak yazılır ("730 ₺ + 29,91 €"); altında bugünkü TL değeri.
     // Telefonda dar sütun: her parça kendi satırında, tutar ortadan bölünmez.
     const nw = t => `<span class="nw">${t}</span>`, two = (vT, vE) => Math.abs(vE) < 5 ? nw(tlk(vT)) : Math.abs(vT) < 100 ? nw(eu(vE)) : `${nw(tlk(vT))}<br>${nw('+ ' + eu(vE))}`;
-    h += `<h2>Kişi başı</h2><div class="card" style="overflow-x:auto"><table class="num kb"><thead><tr><th>${isFamilies() ? 'Aile' : 'Kişi'}</th><th class="r">Payına düşen</th><th class="r">Ödediği</th><th class="r">Kalan</th></tr></thead><tbody>` +
+    h += `<div class="card" style="overflow-x:auto"><table class="num kb"><thead><tr><th>${isFamilies() ? 'Aile' : 'Kişi'}</th><th class="r">Payına düşen</th><th class="r">Ödediği</th><th class="r">Kalan</th></tr></thead><tbody>` +
       S.people.map(p => { const x = L[p.id], xe = LE ? LE[p.id] : {share:0, paid:0}, nT = t.netT[p.id] || 0, nE = t.netE[p.id] || 0, b = t.net[p.id] || 0;
         const zT = Math.abs(nT) < 100, zE = Math.abs(nE) < 5, z = zT && zE, mixed = !zT && !zE && Math.sign(nT) !== Math.sign(nE);
         const kal = z ? 'Denk ✓' : mixed ? `${nw(tlk(Math.abs(nT)))}<br>${nw(eu(Math.abs(nE)))}` : two(Math.abs(nT), Math.abs(nE));
@@ -2975,10 +3003,10 @@ function viewSum(C){
         return `<tr><td>${esc(p.name)}</td><td class="r">${two(x.share, xe.share)}<br><small class="hint">${shH}</small></td><td class="r">${two(x.paid, xe.paid)}<br><small class="hint">harcamalarda</small></td>`
           + `<td class="r"><b class="${z ? 'pos' : b > 0 ? 'pos' : 'neg'}">${kal}</b>${z ? '' : `<br><small class="hint">${kalHint}</small>`}</td></tr>`; }).join('') +
       `</tbody></table><p class="note" style="margin:10px 0 0">${hasTL() ? `TL girilen harcamalar TL tutarıyla${legacyEur() ? `, eski euro kayıtları hesaplaşmanın kuruyla (${settleRateText(t.R)})` : ''}. ` : ''}${t.hasE ? `Bundan sonraki euro harcamaların borcu euro olarak kalır; ≈ ₺ bugünkü kurla (%${feeTxt(fxFee())} döviz farkıyla). ` : ''}“Ödediği” harcamalarda cebinden çıkan ve kasaya koyduğu para; “Kalan” yapılan ödemelerden sonra. <button class="link" data-tab="settle">Ayrıntı: Hesaplaşma › Hesap tablosu</button></p></div>`; }
-  h += `<h2>Rapor</h2><button class="btn pri block" data-act="album">📖 Seyahat albümü</button>
-    <p class="hint">Paylaşmalık anı defteri: kapak, hikâye, gün gün neler oldu, kim ne kadar ve hesaplaşma.</p>
-    <div class="two"><button class="btn" data-act="pdf">📄 PDF indir</button><button class="btn" data-act="xlsx">📊 Excel indir</button></div>
-    <p class="hint">Arşiv için: bütün harcamalar, hesaplaşma ve özet tek dosyada.</p>`;
+  return h;
+}
+function logsHtml(){
+  let h = '';
   const L = tripLogs().slice(0, 50);
   if (L.length) h += `<details class="more" id="dLog" ${openDet.dLog ? 'open' : ''}><summary>Son işlemler (${L.length})</summary><div class="inner"><div class="list">`
     + L.map(l => `<div class="lg"><span class="av">${initial(l.by)}</span><span class="t"><b>${nm(l.by)}</b> ${esc(l.text)}<small>${hhmm(l.at)}</small></span></div>`).join('')
@@ -7414,7 +7442,7 @@ function submit(){
     const learned = []; let named = 0;
     lines.forEach(l => { if (l.orig && l.auto && l.name !== l.auto){ learned.push(...rcLearnFrom(l.orig, l.auto, l.name)); named++; l.auto = l.name; } });
     if (named){ saveLearn(); shareLearned(learned); }
-    saveShop(); flashId = id; closeSheet(); tab = 'shop'; render();
+    saveShop(); flashId = id; closeSheet(); shopView = 'list'; tab = 'shop'; render();
     const r = shopCalc().ref[id];
     if (learned.length) return toast(`📚 Öğrendim: ${learned.slice(0, 3).map(([w, t]) => `“${w.toLocaleLowerCase('tr')}” → ${t}`).join(', ')}. Sonraki fişlerde böyle yazacağım.`);
     if (named) return toast(`📚 Bu ${named > 1 ? 'ürünlerin' : 'ürünün'} adını hatırlayacağım; aynı fiş yazısı gelince senin yazdığın ad kullanılır.`);
@@ -7754,7 +7782,7 @@ async function startCloud(){
     gotTrips = true; onRemote('meta');
   }, fail);
   db.collection('log').onSnapshot(snap => {
-    cloudLogs = snap.docs.map(d => d.data()); if (tab === 'sum') render();
+    cloudLogs = snap.docs.map(d => d.data()); if (tab === 'ozet') render();
   }, () => {});
   db.collection('entries').onSnapshot(snap => {
     entSnap = snap; cloudEnts.clear(); snap.docs.forEach(d => cloudEnts.set(d.id, d.data()));
@@ -8845,7 +8873,7 @@ async function syncShopIn(){
   const ref = await shopRef(); if (!ref) return;
   try {
     const snap = await ref.get(), d = snap.exists ? snap.data() : null;
-    if (d && (d.at || 0) > (SH.at || 0)){ SH = Object.assign(SHDEF(), clone(d)); try { localStorage.setItem(SHOP_KEY(S.tid), JSON.stringify(SH)); } catch(_) {} if (tab === 'shop') render(); }
+    if (d && (d.at || 0) > (SH.at || 0)){ SH = Object.assign(SHDEF(), clone(d)); try { localStorage.setItem(SHOP_KEY(S.tid), JSON.stringify(SH)); } catch(_) {} if (tab === 'ozet' || (tab === 'list' && listMode() === 'kisisel')) render(); }
     else if (!d && SH.items.length) syncShopOut();
   } catch(_) {}
 }
@@ -8897,7 +8925,7 @@ function shopCalc(){
 const e0 = v => nf.format(v) + ' €';
 // Kişisel özet: bu seyahat bana kaça mal oldu — ortak harcamalardaki payım (seyahat öncesi / seyahatte) ve
 // kişisel alışverişim, kategori kategori. Sadece bu telefonda, kişinin kendisine görünür.
-let shopView = 'list';
+let shopView = 'solo';
 // Kişisel kaydın euro karşılığı (sent): euro aynen, diğerleri kaydın kuruyla.
 const soloEur = x => Math.round((x.cur === 'EUR' ? x.amount : x.amount / (x.rate || 1)) * 100);
 // Kişinin seyahati (2026-11-27 ayrıntılandı): ortak harcamalardaki payı (seyahat öncesi / seyahatte), kişisel harcamaları (öncesi /
@@ -8939,35 +8967,101 @@ function soloRow(x){ const c = catById(x.cat);
 // 👤 Özetim (2026-11-27, kullanıcı: "özette alışverişim şu kadar, basınca detayları gelsin"): en üstte "bu seyahat sana"; altında
 // açılır kutular (aynı anda biri açık, son açılan hatırlanır): ortak payın, kişisel harcamaların, alışverişin, hediyelerin, nereye ne
 // kadar (kategoriye dokununca kalemleri), hesap durumun. Altında kişisel rapor.
-function viewMine(){
+// 📊 Özet sekmesi (2026-11-27, kullanıcı onayı): üstte kaydırmalı Leyo kartları (dokununca ilgili kutu açılır); altında açılır kutular
+// (aynı anda biri açık, son açılan hatırlanır): ortak harcamalar, senin payın, kişisel harcamaların, alışverişin, hediyelerin, günler,
+// nereye ne kadar, hesap durumun; sonra tüm gezi (hikâye ve rozetler), raporlar ve son işlemler. Kişisel bilgiler yalnız sende.
+// Kartlar: veri yoksa gösterilmez.
+function ozetCards(C, M){
+  const out = [], cnt = S.entries.filter(e => e.kind === 'expense').length, n = headcount();
+  const P = planState(), days = groupDays(), tday = days.filter(d => d.n >= 1), maxD = tday.slice().sort((a, c) => c.v - a.v)[0];
+  const elapsed = Math.max(1, P.elapsed || tday.length || 1);
+  if (M.all) out.push({k:'Bu seyahat sana', big:eu(M.all), sub:`≈ ${tl(M.all)}${M.trip + M.soloTrip + M.shop ? ` · gezide günde ~${eu(Math.round((M.trip + M.soloTrip + M.shop) / elapsed))}` : ''}`, ly:'bavul', to:'mb_ortak'});
+  if (C.total) out.push({k:isFamily() ? 'Ailenin toplamı' : 'Grubun toplamı', big:eu(C.total), sub:`kişi başı ${eu(Math.round(C.total / n))} · ${cnt} harcama`, ly:'sevinc', to:'mb_grup'});
+  const tc = CATS.map(c => [c, C.cats[c.id] || 0]).filter(x => x[1] > 0).sort((a, c) => c[1] - a[1])[0];
+  if (tc) out.push({k:'En çok buraya gitti', big:`${tc[0].icon} ${tc[0].name}`, sub:`grubun harcamasının %${Math.round(tc[1] * 100 / (C.total || 1))}'i · ${eu(tc[1])}`, ly:'konusma', to:'mb_kat'});
+  if (maxD && tday.length > 1) out.push({k:'En pahalı gün', big:maxD.label, sub:`grup ${eu(maxD.v)}${maxD.top ? ` · en büyüğü: ${esc(maxD.top)}` : ''}`, ly:'saskin', to:'mb_gun'});
+  if (M.shop) out.push({k:'Alışverişin', big:eu(M.shop), sub:M.ref ? `tax-free ile ≈ ${eu(M.ref)} geri` : `${SH.items.filter(i => !i.ret).length} alışveriş`, ly:'alisveris', to:'mb_alis'});
+  if (P.plan > 0 && P.spent > 0){ const pc = Math.round(P.spent * 100 / P.plan);
+    out.push({k:'Kişi başı bütçe', big:`%${pc}`, sub:pc <= 100 ? `bütçenin %${pc}'i kullanıldı · ${fromTL(P.plan - P.spent, planCurOf(), 0)} kaldı` : `bütçe ${fromTL(P.spent - P.plan, planCurOf(), 0)} aşıldı`, ly:pc > 100 ? 'uzgun' : 'hesap'}); }
+  if (!isFamily() && cnt){ const t = totalPlan(), mine = t.plan.filter(q => q.from === S.me || q.to === S.me).length;
+    out.push(t.plan.length ? {k:'Hesaplaşma', big:`${t.plan.length} ödeme kaldı`, sub:mine ? `${mine} tanesi seninle ilgili` : 'senin hesabın denk', ly:'hesap', to:'mb_hesap'}
+      : {k:'Hesaplaşma', big:'Herkes ödeşti 🎉', sub:'kimsenin kimseye borcu yok', ly:'sevinc', to:'mb_hesap'}); }
+  const fun = funCounts(); if (fun.length) out.push({k:'Bu seyahatte', big:fun.slice(0, 3).map(f => `${f.n} ${f.ic}`).join(' · '), sub:fun.slice(0, 3).map(f => `${f.n} ${f.l}`).join(', '), ly:'sevinc'});
+  return out;
+}
+// Eğlenceli sayımlar: ortak ve kişisel harcamaların açıklamalarındaki kelimelerden (kahve, taksi, müze…).
+function funCounts(){
+  const K = [['☕', 'kahve', /kahve|coffee|caf[eé]|espresso|cappuccino|latte/i], ['🚕', 'taksi', /taksi|taxi|uber|bolt|cabify/i], ['🏛️', 'müze', /m[üu]ze|museum|museo|mus[ée]e/i],
+    ['🍦', 'dondurma', /dondurma|gelato|ice ?cream|helado/i], ['🍕', 'pizza', /pizza/i], ['🍺', 'bira', /bira|beer|birra|cerveza/i], ['🚇', 'metro', /metro|subway|u-?bahn/i]];
+  const txt = [...S.entries.filter(e => e.kind === 'expense').map(e => e.desc), ...(SH.solo || []).map(x => x.desc)].map(t => String(t || ''));
+  return K.map(([ic, l, re]) => ({ic, l, n:txt.filter(t => re.test(t)).length})).filter(x => x.n > 0).sort((a, c) => c.n - a.n);
+}
+// Grubun günleri (ortak harcamalar, euro sent): seyahat öncesi tek satır; seyahat günleri tarih sırasıyla, en büyük harcamasıyla.
+function groupDays(){
+  const m = {};
+  for (const e of S.entries) if (e.kind === 'expense'){ const pre = phaseOf(e, S) === 'pre', k = pre ? 'pre' : isoDay(e.at), v = toCents(e);
+    const o = m[k] = m[k] || {key:k, v:0, top:'', topV:0, at:e.at}; o.v += v; if (v > o.topV){ o.topV = v; o.top = e.desc; } }
+  return Object.values(m).map(o => { const n = o.key === 'pre' ? 0 : tripDay(new Date(o.key + 'T12:00:00').getTime());
+    return {...o, n, label:o.key === 'pre' ? 'Seyahat öncesi' : n >= 1 ? `${n}. gün` : dayLabel(o.at)}; }).sort((a, c) => (a.key === 'pre' ? -1 : c.key === 'pre' ? 1 : a.key < c.key ? -1 : 1));
+}
+function ozetCardsHtml(C, M){
+  const cards = ozetCards(C, M); if (!cards.length) return '';
+  const PAL = [['#0B6B6B', '#14A38F'], ['#E4572E', '#F29E4C'], ['#6250D6', '#9C8CFA'], ['#2A78D6', '#4FC3F7'], ['#C2185B', '#F06292'], ['#1B7A4F', '#4CC38A'], ['#5F3DC4', '#8E6CF0'], ['#B26A00', '#F0AE55']];
+  return `<div class="oz-wrap"><div class="oz-cards" role="list" aria-label="Özet kartları">${cards.map((c, i) => { const [a, b] = PAL[i % PAL.length];
+      return `<button type="button" class="ozc" role="listitem" style="--c1:${a};--c2:${b}" ${c.to ? `data-ozto="${c.to}"` : 'tabindex="-1"'}><span class="k">${c.k}</span><span class="big num">${c.big}</span><span class="sub">${c.sub}</span>${c.to ? '<span class="go">Ayrıntı ›</span>' : ''}<span class="ly" aria-hidden="true">${leyo(c.ly, 'm', '')}</span></button>`; }).join('')}</div>
+    ${cards.length > 1 ? `<div class="oz-dots" aria-hidden="true">${cards.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</div>`;
+}
+// 📅 Günler: her gün senin harcaman (ortak payın + kişisel + alışveriş, üç renk) ve grubun o günkü toplamı.
+function dayBox(M, box, ln){
+  const day = t => isoDay(t), m = {}, add = (k, f, v) => { const o = m[k] = m[k] || {k, p:0, s:0, a:0}; o[f] += v; };
+  M.shares.forEach(r => add(r.ph === 'pre' ? 'pre' : day(r.e.at), 'p', r.v));
+  M.soloRows.forEach(r => add(r.ph === 'pre' ? 'pre' : day(r.x.at), 's', r.v));
+  SH.items.forEach(i => add(phaseOf(i, S) === 'pre' ? 'pre' : day(i.at), 'a', Math.round(shopEur(i) * 100)));
+  const G = Object.fromEntries(groupDays().map(g => [g.key, g.v]));
+  const rows = Object.values(m).sort((a, c) => (a.k === 'pre' ? -1 : c.k === 'pre' ? 1 : a.k < c.k ? -1 : 1));
+  if (!rows.length) return box('mb_gun', '📅', 'Günler', 'henüz harcama yok', '', '<p class="hint" style="margin:0">Harcamalar geldikçe günlerin burada belirecek.</p>');
+  const tot = r => r.p + r.s + r.a, max = Math.max(1, ...rows.map(tot)), td = rows.filter(r => r.k !== 'pre'), top = td.slice().sort((a, c) => tot(c) - tot(a))[0];
+  const lbl = k => { if (k === 'pre') return 'Seyahat öncesi'; const t = new Date(k + 'T12:00:00').getTime(), n = tripDay(t); return n >= 1 ? `${n}. gün · ${dayLabel(t)}` : dayLabel(t); };
+  return box('mb_gun', '📅', 'Günler', top ? `en çok: ${lbl(top.k).split(' · ')[0]} ${eu(tot(top))}` : `${rows.length} gün`, '',
+    `<div class="mleg"><span><i class="f1"></i>ortak payın</span><span><i class="f2"></i>kişisel</span><span><i class="f3"></i>alışveriş</span></div>`
+    + rows.map(r => `<div class="bar dbar"><div class="top2"><span>${lbl(r.k)}</span><span class="num"><b>${eu(tot(r))}</b>${G[r.k] ? ` <small>grup ${eu(G[r.k])}</small>` : ''}</span></div>
+      <div class="track stk"><div class="f1" style="width:${(r.p * 100 / max).toFixed(1)}%"></div><div class="f2" style="width:${(r.s * 100 / max).toFixed(1)}%"></div><div class="f3" style="width:${(r.a * 100 / max).toFixed(1)}%"></div></div></div>`).join(''));
+}
+function viewOzet(C){
   const M = myPicture(), open = tgLast('mine'), pct = v => M.all ? ` · %${Math.round(v * 100 / M.all)}` : '';
   const box = (id, icon, title, sub, amt, body) => `<details class="tgrp mbox" data-tgk="mine" id="${id}" ${open === id ? 'open' : ''}><summary><span class="tgi" aria-hidden="true">${icon}</span><span class="tgt"><b>${title}</b><small class="num">${sub}</small></span><span class="tga num">${amt}</span><span class="tgc" aria-hidden="true">›</span></summary><div class="tgb">${body}</div></details>`;
   const ln = (l, v, sub = '', attr = '') => attr ? `<button type="button" class="mrow" ${attr}><span>${l}${sub ? `<small>${sub}</small>` : ''}</span><span class="num">${v}</span></button>`
     : `<div class="mrow"><span>${l}${sub ? `<small>${sub}</small>` : ''}</span><span class="num">${v}</span></div>`;
   const grp = (l, v) => `<div class="mgrp"><span>${l}</span><span class="num">${v}</span></div>`;
   const byPh = (rows, phOf, row) => ['pre', 'trip'].map(ph => { const a = rows.filter(r => phOf(r) === ph); return a.length ? grp(ph === 'pre' ? 'Seyahat öncesi' : 'Seyahatte', eu(a.reduce((t, r) => t + r.v, 0))) + a.map(row).join('') : ''; }).join('');
-  let h = `<section class="story"><div class="st-h">${emojiOf(S.me)} ${nm(S.me)}, bu seyahat sana</div>
-      <div class="st-big num">${eu(M.all)}<small>≈ ${tl(M.all)}${M.ref ? ` · tax-free sonrası ≈ ${eu(M.all - M.ref)}` : ''}</small></div></section><div class="tgrps">`;
-  // 1) ortak harcamalardaki payın
-  h += box('mb_ortak', '👥', 'Ortak harcamalardaki payın', M.shares.length ? `öncesi ${eu(M.pre)} · seyahatte ${eu(M.trip)}` : 'payın olan ortak harcama yok', eu(M.pre + M.trip) + `<small>${pct(M.pre + M.trip)}</small>`,
-    (M.shares.length ? byPh(M.shares, r => r.ph, r => ln(`${dmy(r.e.at)} · ${esc(r.e.desc)}`, eu(r.v), `toplam ${money(r.e.amount, r.e.cur)} · ${r.e.paidBy === 'kasa' ? 'kasadan' : esc(rawName(r.e.paidBy)) + ' ödedi'}`, `data-edit="${r.e.id}"`)) : '<p class="hint" style="margin:0">Henüz payın olan ortak harcama yok.</p>')
+  const cnt = S.entries.filter(e => e.kind === 'expense').length, n = headcount();
+  let h = ozetCardsHtml(C, M) + `<div class="tgrps">`;
+  // 1) ortak harcamalar (grubun)
+  h += box('mb_grup', '👥', isFamily() ? 'Ailenin harcamaları' : 'Ortak harcamalar', cnt ? `${cnt} harcama · kişi başı ${eu(Math.round(C.total / n))}` : 'henüz ortak harcama yok', eu(C.total),
+    (C.preTotal ? `<p class="note" style="margin:0">Seyahat öncesi ${eu(C.preTotal)} · seyahatte ${eu(C.total - C.preTotal)} · bugünkü kurla ${tl(C.total)}</p>` : '')
+    + (cnt ? `<div class="mgrp"><span>Kategoriler</span><span></span></div>` + groupCatsHtml(C) + `<div class="mgrp"><span>${isFamilies() ? 'Aile başı' : 'Kişi başı'}</span><span></span></div>` + perPersonHtml(C) : '')
     + (isFamily() ? '' : `<button type="button" class="link" data-tab="settle">Hesaplaşma'da gör ›</button>`));
-  // 2) kişisel harcamaların
+  // 2) senin payın
+  h += box('mb_ortak', '🧑', 'Ortak harcamalardaki payın', M.shares.length ? `öncesi ${eu(M.pre)} · seyahatte ${eu(M.trip)}` : 'payın olan ortak harcama yok', eu(M.pre + M.trip) + `<small>${pct(M.pre + M.trip)}</small>`,
+    M.shares.length ? byPh(M.shares, r => r.ph, r => ln(`${dmy(r.e.at)} · ${esc(r.e.desc)}`, eu(r.v), `toplam ${money(r.e.amount, r.e.cur)} · ${r.e.paidBy === 'kasa' ? 'kasadan' : esc(rawName(r.e.paidBy)) + ' ödedi'}`, `data-edit="${r.e.id}"`)) : '<p class="hint" style="margin:0">Henüz payın olan ortak harcama yok.</p>');
+  // 3) kişisel harcamaların
   h += box('mb_kisisel', '🔒', 'Kişisel harcamaların', M.soloRows.length ? `${M.soloRows.length} kayıt · öncesi ${eu(M.soloPre)} · seyahatte ${eu(M.soloTrip)}` : 'yalnız sen görürsün', eu(M.solo) + `<small>${pct(M.solo)}</small>`,
     (M.soloRows.length ? byPh(M.soloRows, r => r.ph, r => ln(`${dmy(r.x.at)} · ${esc(r.x.desc)}`, money(r.x.amount, r.x.cur), `${catById(r.x.cat).name}${r.x.cur === 'EUR' ? '' : ' · ' + eu(r.v)}`, `data-solo="${r.x.id}"`)) : '<p class="hint" style="margin:0">Kendi biletin, kahven gibi bölüşülmeyen harcamalar burada toplanır; arkadaşların görmez.</p>')
     + `<div class="two"><button type="button" class="btn sm" data-act="addsolo">+ Kişisel harcama</button><button type="button" class="btn sm" data-act="showsolo">Harcamalar › Kişisel</button></div>`);
-  // 3) alışverişin
+  // 4) alışverişin
   const {ref} = shopCalc(), items = SH.items.slice().sort((a, c) => a.at - c.at), nShop = items.filter(i => !i.ret).length;
   h += box('mb_alis', '🛍️', 'Alışverişin', nShop ? `${nShop} alışveriş${M.ref ? ` · tax-free ≈ ${eu(M.ref)}` : ''}` : 'henüz alışveriş yok', eu(M.shop) + `<small>${pct(M.shop)}</small>`,
     (items.length ? items.map(i => ln(`${dmy(i.at)} · ${esc(i.store)}${i.ret ? ' <small class="retb">↩ iade</small>' : ''}`, money(shopAmt(i), i.cur), ref[i.id] ? `tax-free ≈ ${eu(Math.round(ref[i.id] * 100))}` : '', `data-shop="${i.id}"`)).join('')
       + (M.ref ? ln('<b>Tax-free iadesi (tahmini)</b>', '−' + eu(M.ref)) + ln('<b>Tax-free sonrası</b>', eu(M.shop - M.ref)) : '') : '<p class="hint" style="margin:0">Kişisel alışverişlerin ve tax-free iadeleri burada toplanır.</p>')
     + savingsHtml() + `<button type="button" class="link" data-shopview="list">Alışveriş listesine git ›</button>`);
-  // 4) hediyelerin (toplama girmez)
+  // 5) hediyelerin (toplama girmez)
   const G = SH.gifts || [], gDone = G.filter(g => g.done).length, gEst = G.reduce((a, g) => a + (g.est || 0), 0);
   h += box('mb_hediye', '🎁', 'Hediyelerin', G.length ? `${G.length} hediye · ${gDone} alındı` : 'hediye listesi boş', gEst ? `<small>~${e0(gEst)}</small>` : '',
     (G.length ? G.slice().sort((a, c) => a.done - c.done).map(g => ln(`${g.done ? '✓' : '○'} ${esc(g.who)}`, g.est ? '~' + e0(g.est) : '', esc(g.what))).join('') : '')
     + `<p class="hint" style="margin:0">Hediye listesi bir yapılacaklar listesidir; tahminler toplama girmez, aldıkların alışverişinde sayılır.</p><button type="button" class="link" data-shopview="gifts">Hediye listesine git ›</button>`);
-  // 5) nereye ne kadar (kategoriye dokununca kalemleri)
+  // 6) günler (senin: ortak payın + kişisel + alışveriş; yanında grubun günü)
+  h += dayBox(M, box, ln);
+  // 7) nereye ne kadar (kategoriye dokununca kalemleri)
   const rows = CATS.map(c => ({c, p:M.catP[c.id] || 0, k:M.catS[c.id] || 0})).filter(r => r.p + r.k > 0);
   if (M.shop) rows.push({c:{id:'kshop', icon:'🛍️', name:'Kişisel alışveriş'}, p:0, k:M.shop});
   rows.sort((a, c) => (c.p + c.k) - (a.p + a.k));
@@ -8977,29 +9071,38 @@ function viewMine(){
   h += box('mb_kat', '📊', 'Nereye ne kadar', top ? `en çok: ${top.c.name} ${eu(top.p + top.k)}` : 'henüz harcama yok', '',
     rows.length ? `<div class="mleg"><span><i class="f1"></i>ortak payın</span><span><i class="f2"></i>kişisel</span></div>` + rows.map(({c, p, k}) => `<details class="mcat" id="mc_${c.id}" ${openDet['mc_' + c.id] ? 'open' : ''}><summary class="bar"><div class="top2"><span>${c.icon} ${c.name}<span class="mcv" aria-hidden="true">›</span></span><span class="num"><b>${eu(p + k)}</b>${p && k ? ` <small>(${eu(p)} + ${eu(k)})</small>` : ''}</span></div>
         <div class="track stk"><div class="f1" style="width:${(p * 100 / max).toFixed(1)}%"></div><div class="f2" style="width:${(k * 100 / max).toFixed(1)}%"></div></div></summary><div class="mcl">${catItems(c.id).join('')}</div></details>`).join('') : '<p class="hint" style="margin:0">Henüz harcama yok.</p>');
-  // 6) hesap durumun (ortak hesaplaşma; TL, bugünkü değeriyle)
+  // 8) hesap durumun (ortak hesaplaşma; TL, bugünkü değeriyle)
   if (!isFamily()){ const t = totalPlan(), b = t.net[S.me] || 0, z = Math.abs(b) < 100, mt = meText(t.T, t.R, t.net, false, t.TE, t.Q, preOf(t, S.me));
     h += box('mb_hesap', '💸', 'Hesap durumun', z ? 'hesabın denk' : b < 0 ? 'göndereceksin' : 'alacaksın', z ? 'Denk ✓' : tlk(Math.abs(b)),
       (mt || ln(z ? 'Kalan · denk' : b < 0 ? 'Kalan · göndereceksin' : 'Kalan · alacaksın', z ? '0,00 ₺' : tlk(Math.abs(b))))
       + `<p class="hint" style="margin:0">Ortak harcamalardaki payın, ödediklerin ve yapılan ödemelerden; kişisel harcamalar ve alışveriş girmez.</p><button type="button" class="link" data-tab="settle">Hesaplaşma'da gör ›</button>`); }
   h += `</div>`;
-  return h + (M.all ? `<h2>Kişisel rapor</h2><div class="two"><button class="btn" data-act="mypdf">📄 PDF indir</button><button class="btn" data-act="myxlsx">📊 Excel indir</button></div>
-      <p class="hint">Yalnız senin harcamaların: ortak harcamalardaki payın kalem kalem, kişisel harcamaların ve alışverişin; kategoriler ve grafiklerle. Excel'de hediye listen de var.</p>` : '')
-    + `<p class="hint">Ortak harcamalarda senin payın + sadece sana ait harcamalar ve alışveriş. Bu özet sadece sende görünür.</p>`
+  // tüm gezi: hikâye ve rozetler
+  const story = storyHtml();
+  if (story || cnt) h += `<h2>🌍 Tüm gezi</h2>` + (story || '') + rozetHtml(C);
+  // raporlar
+  h += `<h2>📚 Raporlar</h2><section class="card rpt">
+      <button class="btn pri block" data-act="album">📖 Seyahat albümü</button><p class="hint" style="margin:0">Paylaşmalık anı defteri: kapak, hikâye, gün gün neler oldu, kim ne kadar ve hesaplaşma.</p>
+      <div class="rpt-row"><span><b>👥 Ortak rapor</b><small>bütün harcamalar, hesap tablosu, hesaplaşma</small></span><div class="two"><button class="btn sm" data-act="pdf">📄 PDF</button><button class="btn sm" data-act="xlsx">📊 Excel</button></div></div>
+      ${M.all ? `<div class="rpt-row"><span><b>🔒 Kişisel rapor</b><small>yalnız senin harcamaların, alışverişin, hediye listen</small></span><div class="two"><button class="btn sm" data-act="mypdf">📄 PDF</button><button class="btn sm" data-act="myxlsx">📊 Excel</button></div></div>` : ''}
+    </section>`;
+  return h + logsHtml()
+    + `<p class="hint">Kişisel kutular (senin payın, kişisel harcamaların, alışverişin, hediyelerin) yalnız sende görünür; ortak rakamlar herkes için aynıdır.</p>`
     + (RC_LEARN.size || RC_LINES.size ? `<p class="hint">📚 Fiş düzeltmelerinden öğrendiklerim: ${RC_LEARN.size} kelime, ${RC_LINES.size} ürün adı · <button class="link" data-act="forgetlearn">${forgetSure ? 'Emin misin? Hepsini unut' : 'unut'}</button></p>` : '')
     + (RC_SHARED.size ? `<p class="hint">🌍 Ortak sözlük: arkadaşlarının ve Heybe kullanıcılarının öğrettiği ${RC_SHARED.size} kelime de kullanılıyor.</p>` : '');
 }
 // Kişisel sekmesinin üç görünümü (Alışveriş, Hediye, Özetim); kişisel harcamalar Harcamalar › Kişisel'de. Seçilinin arkasındaki renkli vurgu yeni seçilene kayar (psegFrom: önceki sıra).
 // Rozetler: tax-free formu bekleyen mağaza sayısı ve henüz alınmamış hediye sayısı.
-const PSEG = [['list', '🛍️', 'Alışveriş'], ['gifts', '🎁', 'Hediye'], ['mine', '👤', 'Özetim']];
+const PSEG = [['solo', '🧾', 'Harcama'], ['list', '🛍️', 'Alışveriş'], ['gifts', '🎁', 'Hediye']];
 let psegFrom = null;
-function viewShop(){
-  if (!PSEG.some(x => x[0] === shopView)) shopView = 'list';
+// Harcamalar › 🔒 Kişisel (2026-11-27): Harcama · Alışveriş · Hediye; hepsi yalnız bu kişinin özel alanında.
+function kisiselHtml(){
+  if (!PSEG.some(x => x[0] === shopView)) shopView = 'solo';
   const {ref} = shopCalc(), idx = PSEG.findIndex(x => x[0] === shopView), from = psegFrom === null ? idx : psegFrom; psegFrom = null;
   const badge = {list:new Set(SH.items.filter(i => !i.ret && ref[i.id] > 0 && tfStep(i) < 3).map(shopGroup)).size, gifts:SH.gifts.filter(g => !g.done).length};
-  const segs = `<div class="pseg" role="group" aria-label="Görünüm" style="--i:${from};--n:${PSEG.length}" data-to="${idx}">${PSEG.map(([k, ic, l]) => `<button type="button" data-shopview="${k}" aria-pressed="${shopView === k}"><span class="pic" aria-hidden="true">${ic}</span>${l}${badge[k] ? `<span class="pbadge" aria-label="${badge[k]} bekleyen">${badge[k]}</span>` : ''}</button>`).join('')}</div>`;
-  const ly = shopView === 'gifts' ? (SH.gifts.length ? 'hediye' : '') : shopView === 'mine' ? (SH.items.length ? 'hesap' : '') : (SH.items.length ? 'alisveris' : '');
-  return `<div class="privrow"><p class="privline">🔒 <b>Kişisel</b> · bu sekmeyi sadece sen görürsün</p>${ly ? leyo(ly, 'm', 'Leyo') : ''}</div>` + segs + airportHtml() + (shopView === 'mine' ? viewMine() : shopView === 'gifts' ? viewGifts() : viewShopList());
+  const segs = `<div class="pseg" role="group" aria-label="Kişisel bölüm" style="--i:${from};--n:${PSEG.length}" data-to="${idx}">${PSEG.map(([k, ic, l]) => `<button type="button" data-shopview="${k}" aria-pressed="${shopView === k}"><span class="pic" aria-hidden="true">${ic}</span>${l}${badge[k] ? `<span class="pbadge" aria-label="${badge[k]} bekleyen">${badge[k]}</span>` : ''}</button>`).join('')}</div>`;
+  const priv = `<p class="privline">🔒 Yalnız sen görürsün.</p>`;
+  return segs + (shopView === 'solo' ? soloListHtml() : shopView === 'gifts' ? priv + viewGifts() : priv + airportHtml() + viewShopList());
 }
 let forgetSure = false;
 // 🎁 Hediye listesi: gitmeden kime ne alınacağı yazılır, alınınca işaretlenir.
@@ -9030,7 +9133,7 @@ function airportHtml(){
     ${noForm.length ? ` ${noForm.length} mağazada form alınmadı: ${esc(noForm.join(', '))}.` : ''}
     ${(() => { const L = opGroups(ref).map(o => ({...o, open:o.stores.filter(x => x.st < 3)})).filter(o => o.open.length);
       return L.length ? ` Sonra iadeyi al: ${L.map(o => `<b>${esc(opName(o.op))}</b> (${o.open.length} form, ≈ ${e0(o.open.reduce((a, x) => a + x.ref, 0))})`).join(', ')}.` : ''; })()}</div></div>
-    <div class="kacts"><button class="btn sm" data-tab="shop">Göster</button></div></section>`;
+    <div class="kacts"><button class="btn sm" data-tab="shop" data-sv="list">Göster</button></div></section>`;
 }
 // 🧍 Sadece bana harcamalar: bölüşülmeyen küçük kişisel harcamalar (kendi kahven, taksin).
 function startSolo(x){
@@ -10729,7 +10832,9 @@ document.addEventListener('click', ev => {
   if (d.payto){ startPay(d.payfrom, d.payto); return; }
   if (d.shop){ startShop(SH.items.find(i => i.id === d.shop)); return; }
   if (d.shopview){
-    psegFrom = PSEG.findIndex(x => x[0] === shopView); shopView = d.shopview; render();
+    psegFrom = PSEG.findIndex(x => x[0] === shopView); shopView = d.shopview;
+    if (!(tab === 'list' && listMode() === 'kisisel')){ tab = 'list'; setListMode('kisisel'); psegFrom = null; render(); window.scrollTo(0, 0); return; }
+    render();
     requestAnimationFrame(() => { const g = document.querySelector('.pseg[data-to]'); if (g) g.style.setProperty('--i', g.dataset.to); });
     return;
   }
@@ -10756,7 +10861,8 @@ document.addEventListener('click', ev => {
   if (d.edit && swOpen === t){ swClose(); return; }
   if (d.act !== 'deltrip') confirmTrip = false;
   if (d.lmode){ setListMode(d.lmode); render(); window.scrollTo(0, 0); return; }
-  if (d.tab){ tab = d.tab; if (d.tg) tgSet(d.tg); render(); window.scrollTo(0,0); if (tab === 'settle' && Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false); return; }
+  if (d.ozto){ const el = document.getElementById(d.ozto); if (el){ el.open = true; el.scrollIntoView({block:'start', behavior:calm() ? 'auto' : 'smooth'}); } return; }
+  if (d.tab){ tab = d.tab; if (d.tg) tgSet(d.tg); if (d.sv) shopView = d.sv; render(); window.scrollTo(0,0); if (tab === 'settle' && Date.now() - S.trip.rateAt > 30*6e4) fetchRate(false); return; }
   if (d.trip){ closeSheet(); switchTrip(d.trip); return; }
   if (d.emo){ openSheet({mode:'emoji', pid:d.emo}); return; }
   if (d.pickemo){
@@ -10851,7 +10957,7 @@ document.addEventListener('click', ev => {
       openSheet({mode:'solo', desc:f.desc || '', cat:f.cat, amount:f.amount || '', cur:f.cur, rate:f.cur === 'EUR' ? null : (f.rate || null), date:f.date || isoDay(Date.now()),
         when:f.when || '', until:f.until || '', from:f.from || '', to:f.to || '', dest:f.dest || null, place:f.place || null, lat:f.lat, lon:f.lon, placeState:f.place ? 'ok' : 'off', ...(f.id ? {moveFrom:f.id} : {})});
       break; }
-    case 'showsolo': tab = 'list'; setListMode('kisisel'); render(); window.scrollTo(0, 0); break;
+    case 'showsolo': tab = 'list'; setListMode('kisisel'); shopView = 'solo'; render(); window.scrollTo(0, 0); break;
     case 'addsolo': startSolo(); break;
     case 'mypdf': exportMyPdf(); break;
     case 'myxlsx': exportMyXlsx(); break;
