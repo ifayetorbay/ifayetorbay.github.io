@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261128003049';</script>
-<script src="heybe-web.js?v=20261128003049"></script>
+<script>window.HEYBE_VER = '20261128161523';</script>
+<script src="heybe-web.js?v=20261128161523"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -204,6 +204,24 @@ body.ro .wbtn.tbtn{pointer-events:auto}
 .row.trf .ic{background:var(--accent-soft)}
 .row.big .amt b{color:var(--neg)}
 .row.big{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--neg) 70%,transparent)}
+/* 🚫 iptal edilen rezervasyon (2026-11-28): gri, silik; tutarın üstü çizili, hesaba girmez */
+.ozcan{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:.86rem;text-align:left}
+.ozcan small{color:var(--muted);font-size:.76rem}
+.repn{margin:8px 0 0;padding:9px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));font-size:.86rem;line-height:1.4}
+.repq{display:flex;flex-direction:column;gap:6px;margin:8px 0 0}
+.row.iptal>*{opacity:.55}
+.row.iptal .ic{filter:grayscale(1)}
+.row.iptal .d{text-decoration:line-through;text-decoration-thickness:1.5px}
+.row.iptal .amt s{display:block;font-weight:600;color:var(--muted)}
+.row .m.rep{color:var(--accent-text)}
+.ipt{display:flex;flex-direction:column;gap:10px}
+.ipt-h{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--sunk);filter:grayscale(1);opacity:.75}
+.ipt-h .mid{flex:1;min-width:0;display:flex;flex-direction:column}
+.ipt-h b{text-decoration:line-through}
+.ipt-h s{font-weight:700;color:var(--muted)}
+.ipt-st{margin:0;font-weight:700}
+.callout.leftnote{border-color:var(--muted)}
+.callout.leftnote b{display:flex;align-items:center;gap:6px}
 /* kaydırarak silme: satırın arkasında iki yanda "Sil" düğmesi */
 .swr{position:relative;overflow:hidden}
 .swr+.swr{border-top:1px solid var(--line)}
@@ -1240,7 +1258,7 @@ const CATS = [
   {id:'ucak', name:'Uçak', icon:'✈️', words:['uçak','ucak','uçuş','ucus','flight','thy','pegasus','ajet','ryanair','wizz','easyjet','havayolu','bagaj']},
   {id:'ulasim', name:'Ulaşım', icon:'🚕', words:['taksi','taxi','uber','bolt','metro','otobüs','otobus','bus','tren','train','tramvay','benzin','yakıt','otopark','park','araç','araba','kiralık','feribot','vapur','transfer','havalimanı','havaalanı','dolmuş','renfe','=ave','iryo','ouigo','trenitalia','italo','sncf','flixbus','cabify','ferry','scooter','bisiklet']},
   {id:'yeme', name:'Yeme-İçme', icon:'🍽️', words:['kahve','coffee','cafe','kafe','yemek','restoran','restaurant','bira','şarap','kahvaltı','öğle','akşam','pizza','makarna','dondurma','gelato','çay','=bar','tapas','içki','tatlı','burger','döner','lokanta','meze','kruvasan','sandviç']},
-  {id:'konaklama', name:'Konaklama', icon:'🏨', words:['otel','hotel','airbnb','hostel','pansiyon','konaklama','oda','booking','gece','kira','ev','daire','apart','villa','rezidans','residence','stüdyo','studio']},
+  {id:'konaklama', name:'Konaklama', icon:'🏨', words:['otel','hotel','airbnb','hostel','pansiyon','konaklama','oda','booking','gece','kira','ev','=evi','=evimiz','daire','apart','villa','rezidans','residence','stüdyo','studio']},
   {id:'aktivite', name:'Aktivite', icon:'🎟️', words:['müze','muze','museum','=tur','turu','tour','giriş','konser','kolezyum','vatikan','gezi','rehber','tekne','plaj','şezlong','bilet','sinema','galeri']},
   {id:'market', name:'Market', icon:'🛒', words:['market','süpermarket','su','atıştırmalık','eczane','ilaç','bakkal','meyve']},
   {id:'alisveris', name:'Alışveriş', icon:'🛍️', words:['hediyelik','hediye','kıyafet','alışveriş','magnet','ayakkabı','çanta','outlet','parfüm']},
@@ -1625,6 +1643,78 @@ function leaveApply(st, id, ch, R, newId = () => Math.random().toString(36).slic
     k++;
   }
   return k;
+}
+// Geziye katılmayan kişinin gördükleri (2026-11-28, kullanıcı: "katılmıyor dediğimiz zaman ondan sonraki harcamaları görmemeli; onu
+// ilgilendiren kısımları görebilmeli"): ayrıldığı ana (p.left: "geziye katılmıyor" işaretlendiği an) kadarki her kayıt; sonrakilerden
+// yalnız onu ilgilendirenler: ödediği, payının olduğu, ondan ya da ona yapılan ödeme, kasaya koyduğu ya da kasadan aldığı. Yalnız
+// ekranda gösterilen süzülür; hesaplaşma herkes aynı rakamı görsün diye her zaman bütün kayıtlarla hesaplanır.
+const involves = (e, id) => e.paidBy === id || e.from === id || e.to === id || (e.among || []).includes(id);
+function seenBy(st, id){
+  const p = st.people.find(q => q.id === id), t = p && p.left;
+  return t ? e => (e.at || 0) < t || involves(e, id) : () => true;
+}
+// ---- İptal edilen rezervasyon (2026-11-28, kullanıcı: "Sil dediğimiz zaman iptal edildiği anlamına gelsin; tek seçenek; herkesin
+// anlayacağı şekilde sade") ----
+// Rezervasyon (ev, uçak/tren/otobüs bileti, tarihli bilet) silinince kayıt kalkmaz, türü 'iptal' olur: listede gri kalır; hiçbir
+// hesaba (toplam, bütçe, pay, hesaplaşma) ve seyahat planına girmez, para tamamen geri gelmiş sayılır. Hesap işlevleri yalnız
+// expense, kasa, kasaout ve transfer türlerini işlediği için 'iptal' kendiliğinden dışarıda kalır. TL'yle hemen ödeşilen harcamada
+// "payını gönderdi" işaretleri önce ödeme kaydına çevrilir (yeni kuralla; eski kuralın hesaplaşma kurunu kilitlemez): gönderilen
+// para kaybolmaz, Hesap ödeyenin geri ödemesini gösterir. e.iptal = {at, by, yerine}: yerine, onun yerine eklenen kaydın kimliği
+// (yeni kayıtta e.yerine = eskinin kimliği). Geri alınınca türü yine 'expense' olur; çevrilen ödemeler kalır (işaretle aynı sonuç).
+function cancelApply(st, id, newId, by = null, now = Date.now()){
+  const e = st.entries.find(x => x.id === id); if (!e || e.kind !== 'expense') return null;
+  const made = [];
+  if (e.settleTL && (e.tlPaid || []).length){ const sh = splitShares(Math.round(e.amount * 100), e.among, e.weights);
+    for (const pid of e.tlPaid) if (pid !== e.paidBy && sh[pid]){
+      const t = {id:newId(), kind:'transfer', total:true, v2:1, from:pid, to:e.paidBy, amount:sh[pid] / 100, cur:'TRY', rate:st.trip.rate, pa:{t:sh[pid], e:0, r:st.trip.rate, f:0}, at:e.at, by, note:`Önceden gönderilen pay: ${e.desc}`};
+      if (e.tripId) t.tripId = e.tripId;
+      st.entries.push(t); made.push(t.id); }
+    e.tlPaid = []; }
+  e.kind = 'iptal'; e.iptal = {at:now, by};
+  return made;
+}
+function cancelUndo(st, id){
+  const e = st.entries.find(x => x.id === id); if (!e || e.kind !== 'iptal') return false;
+  const y = e.iptal && e.iptal.yerine; e.kind = 'expense'; delete e.iptal;
+  const n = y && st.entries.find(x => x.id === y); if (n && n.yerine === id) delete n.yerine;
+  return true;
+}
+// Yerine gelen rezervasyon (kullanıcı: "Airbnb evi ya da Sevilla evi yazınca iptal edilenin yerine geldiğini kendisi anlasın"): yeni
+// kayıt n için iptal edilmiş, aynı türden (K.kind: 'stay' ev, 'trip' yolculuk, 'event' tarihli bilet) ve yerine henüz bir şey
+// konmamış kayıtlar puanlanır. Ev: iptal edilen evin şehri yeni kaydın adında ya da adresinde geçiyorsa +2, geceler çakışıyorsa +2;
+// başka bilinen bir şehirse ya da tarihler çakışmıyorsa aday değil. Yolculuk: aynı güzergâh +2, aynı kalkış günü +1; ikisi de
+// tutmuyorsa aday değil. Bilet: aynı gün +2; tarih yoksa adlarında ortak kelime olmalı. 2 ve üstü kendiliğinden bağlanır (best);
+// daha azı formda "… yerine mi?" diye sorulur (maybe). K.city(e): evin şehri; K.cities: seyahatin bilinen şehirleri (küçük harf).
+function cancelMatch(st, n, K){
+  const k = K.kind(n), out = {best:null, maybe:[]}; if (!k) return out;
+  const low = s => String(s || '').toLocaleLowerCase('tr'), d0 = w => String(w || '').slice(0, 10);
+  const words = s => low(s).split(/[^\p{L}\p{N}]+/u).filter(w => w.length > 2);
+  const share = (a, b) => { const B = new Set(words(b)); return words(a).some(w => B.has(w)); };
+  const live = id => st.entries.some(x => x.id === id && x.kind === 'expense');
+  const rows = [];
+  for (const e of st.entries){
+    if (e.kind !== 'iptal' || e.id === n.id || K.kind(e) !== k) continue;
+    if (e.iptal && e.iptal.yerine && e.iptal.yerine !== n.id && live(e.iptal.yerine)) continue;
+    let s;
+    if (k === 'stay'){
+      const c = low(K.city(e)), cn = low(K.city(n)), dated = e.when && e.until && n.when && n.until;
+      const city = !!c && low(`${n.desc || ''} ${n.dest || ''} ${n.city || ''}`).includes(c), lap = !!dated && d0(n.when) < d0(e.until) && d0(e.when) < d0(n.until);
+      if (!city && ((cn && c && cn !== c && K.cities.has(cn)) || (dated && !lap))) continue;
+      s = (city ? 2 : 0) + (lap ? 2 : 0);
+    } else if (k === 'trip'){
+      const route = e.from && e.to && n.from && n.to, same = !!route && share(e.from, n.from) && share(e.to, n.to), day = !!(e.when && n.when) && d0(e.when) === d0(n.when);
+      if ((route && !same && !day) || (!route && e.when && n.when && !day)) continue;
+      s = (same ? 2 : 0) + (day ? 1 : 0);
+    } else {
+      const day = !!(e.when && n.when) && d0(e.when) === d0(n.when);
+      if (e.when && n.when ? !day : !share(e.desc, n.desc)) continue;
+      s = day ? 2 : 0;
+    }
+    rows.push({e, s});
+  }
+  rows.sort((a, b) => b.s - a.s || ((b.e.iptal || {}).at || 0) - ((a.e.iptal || {}).at || 0));
+  if (rows.length && rows[0].s >= 2) out.best = rows[0].e; else out.maybe = rows.map(r => r.e);
+  return out;
 }
 </script>
 
@@ -2233,6 +2323,19 @@ const rawName = id => id === 'kasa' ? 'Ortak kasa' : person(id).name;
 // Geziye katılmıyor simgesi (2026-11-27, kullanıcı: kahverengi kapı anlaşılmıyordu): kişi + çarpı çizgisi, yazının rengini alır.
 const GONE_ICO = '<svg class="gico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8" r="4"/><path d="M1.8 21v-.8A5.7 5.7 0 0 1 7.5 14.5h2a5.7 5.7 0 0 1 3.4 1.1"/><path d="M15.6 10.6l6.2 6.2M21.8 10.6l-6.2 6.2"/></svg>';
 const nm = id => esc(rawName(id)) + (id !== 'kasa' && (S.people.find(p => p.id === id) || {}).left ? ` <span class="gone-tag" title="Geziye katılmıyor">${GONE_ICO}</span>` : '');
+// Geziye katılmayan kişinin telefonu (2026-11-28): bu telefonun kişisi "geziye katılmıyor" işaretliyse ekranda ayrıldığı ana kadarki
+// her kayıt ve sonrasında yalnız onu ilgilendirenler görünür (seenBy, hesap çekirdeğinde). Hesaplaşma her zaman bütün kayıtlarla
+// hesaplanır (herkes aynı rakamı görsün); Hesap'ta yalnız kendi satırı ve ödemeleri, Özet'te grubun rakamları gördüğü kayıtlardan;
+// Ortak rapor onda kapalı. Yalnız görünüm kuralıdır: kayıtlar telefona yine iner.
+const meLeft = () => (S.people.find(p => p.id === S.me) || {}).left || 0;
+const VE = () => meLeft() ? S.entries.filter(seenBy(S, S.me)) : S.entries;
+const VS = () => meLeft() ? {...S, entries:VE()} : S;
+// Rezervasyon mu (ev, uçak/tren/otobüs bileti ya da tarihli bilet)? Silinince iptal sayılır, listede gri kalır (2026-11-28).
+const isBooking = e => !!e && e.kind === 'expense' && (bkKind(e) === 'stay' || bkKind(e) === 'trip' || !!e.when);
+// İptal edilenin yerine gelen kayıt ve yeni kaydın yerine geçtiği iptal.
+const repOf = e => { const y = e && e.iptal && e.iptal.yerine; return y ? S.entries.find(x => x.id === y && x.kind === 'expense') || null : null; };
+const wasOf = e => { const y = e && e.yerine; return y ? S.entries.find(x => x.id === y && x.kind === 'iptal') || null : null; };
+const dShort = t => new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'short'});
 let relAsk = null, relAskT = null;   // 🔓 telefon bağını kaldırma onayı (ilk dokunuş)
 // Her kişinin bir emojisi var (Seyahat sekmesinden değiştirilir); seçilmemişse sırasına göre verilir.
 const EMOJI_SETS = [
@@ -2484,7 +2587,7 @@ function render(){
   fab.hidden = tab === 'trip' || tab === 'gezi' || isRO() || (kis && shopView === 'gifts');
   fab.textContent = tab === 'settle' ? '+ Ödeme' : kis ? (shopView === 'list' ? '+ Alışveriş' : '+ Kişisel') : '+ Harcama';
   fab.dataset.act = tab === 'settle' ? 'pay' : kis ? (shopView === 'list' ? 'addshop' : 'addsolo') : 'add';
-  const C = compute(S, startOfToday());
+  const C = compute(VS(), startOfToday());   // geziye katılmayanın telefonunda gördüğü kayıtlardan (VS)
   const v = document.getElementById('view');
   S.people.forEach(rememberEmoji);
   // İçerik değişmediyse sayfaya dokunulmaz: eşitleme ya da kur yenilemesi kaydırırken içeriği yeniden kurup sıçratmasın.
@@ -2579,7 +2682,7 @@ function fromTL(k, c, dec){
 function planState(){
   const n = headcount(), na = headcount(true), t0 = startOfToday();
   let pre = 0, trip = 0, today = 0;
-  for (const e of S.entries) if (e.kind === 'expense'){
+  for (const e of VE()) if (e.kind === 'expense'){
     const k = tlKurus(e);
     if (phaseOf(e, S) === 'pre') pre += k; else { trip += k; if (e.at >= t0) today += k; }
   }
@@ -2712,8 +2815,8 @@ function viewList(C){
     <div class="hero-mascot">${leyo(lm.st, 'l', 'Leyo')}</div></div>
     <div class="me">${meLine(C)}</div></section>
     <button type="button" class="leyo-bar" data-act="leyobrief"><span>${lm.msg}</span></button>`;
-  h += airportHtml();
-  if (S.trip.kasaOn && !isFamily()){
+  h += airportHtml() + leftNote();
+  if (S.trip.kasaOn && !isFamily() && !meLeft()){
     const hasKasa = S.entries.some(e => e.kind === 'kasa' || e.kind === 'kasaout' || (e.kind === 'expense' && e.paidBy === 'kasa'));
     const short = C.kasaLeft < 0;
     h += `<section class="kasa ${short ? 'short' : ''}" data-hhost><div><div class="t">${short ? 'Kasa açığı' : 'Ortak kasa'}${help('kasa')}</div>
@@ -2722,10 +2825,10 @@ function viewList(C){
   }
   // Harcamalar ortak defterdir (2026-11-27, kullanıcı: "kişisel harcama Harcamalar'da gözükmesin, doğrudan kişisel listeye eklensin"):
   // kişisel kayıtlar (SH.solo) yalnız Kişisel sekmesindedir; toplamlara ve hesaplaşmaya girmez.
-  const es = S.entries.slice().sort((a,b) => b.at - a.at);
+  const es = VE().slice().sort((a,b) => b.at - a.at);
   if (!es.length) return h + `<div class="card done leyo-empty">${leyo('uyku', 'm')}<span>Henüz harcama yok. İlk kahveyi kim ısmarlıyor? ☕<br>Sağ alttaki <b>+ Harcama</b> ile başla.</span></div>`;
   // Önce seyahat günleri (en yeni üstte), en altta "Seyahat öncesi" bölümü.
-  const isPre = e => e.kind === 'expense' && phaseOf(e, S) === 'pre';
+  const isPre = e => (e.kind === 'expense' || e.kind === 'iptal') && phaseOf(e, S) === 'pre';
   let last = null, open = false;
   for (const e of es.filter(e => !isPre(e))){
     const n = tripDay(e.at), dl = n >= 1 ? `${n}. gün · ${dayLabel(e.at)}` : dayLabel(e.at);
@@ -2735,7 +2838,7 @@ function viewList(C){
   if (open) h += `</div>`;
   const pre = es.filter(isPre);
   if (pre.length){
-    const tot = pre.reduce((s, e) => s + tlKurus(e), 0);
+    const tot = pre.filter(e => e.kind === 'expense').reduce((s, e) => s + tlKurus(e), 0);
     h += `<div class="day">Seyahat öncesi · ${tlk(tot)}</div><div class="list">${pre.map(rowHtml).join('')}</div>`;
   }
   return h;
@@ -2766,13 +2869,19 @@ function rowInner(e){
     <span class="mid"><span class="d">${nm(e.from)} → ${nm(e.to)}</span><span class="m">${e.note ? esc(e.note) : 'Hesap kapatma'}${sub}</span></span>
     <span class="amt num"><b>${money(e.amount, e.cur)}</b>${sm}</span></button>`; }
   const cat = catById(e.cat);
+  // 🚫 İptal edilen rezervasyon: gri satır, tutarın üstü çizili, hesaba girmez; yerine geleni yazılı (2026-11-28).
+  if (e.kind === 'iptal'){ const y = repOf(e);
+    return `<button class="row iptal" data-edit="${e.id}"><span class="ic cat-${cat.id}" title="${cat.name}">${catSvg(cat.id)}</span>
+    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">🚫 İptal edildi${e.iptal && e.iptal.at ? ' · ' + dShort(e.iptal.at) : ''}${y ? ` · yerine: ${esc(y.desc)}` : ''}</span>${e.when ? `<span class="m">${esc(bkLine(e))}</span>` : ''}</span>
+    <span class="amt num"><s>${money(e.amount, e.cur)}</s><small>hesaba girmez</small></span></button>`; }
+  const was = wasOf(e);
   // Kim girdi: aile modunda ödeyen yerine giren gösterilir; diğerlerinde giren ödeyenden farklıysa eklenir.
   const by = e.by && S.people.some(p => p.id === e.by) ? e.by : null;
   const who = isFamily() ? `✍️ ${nmE(by || e.paidBy)} girdi` : (e.paidBy === 'kasa' ? '💰 Kasadan' : `${nmE(e.paidBy)} ödedi`) + (by && by !== e.paidBy ? ` · ✍️ ${nm(by)} girdi` : '');
   const wk = id => e.weights && e.weights[id] > 1 ? ` ×${e.weights[id]}` : '';
   const among = e.among.length === S.people.length && !e.weights ? `${e.among.length} kişi` : e.among.map(id => nm(id) + wk(id)).join(', ');
   return `<button class="row${isBig(e) ? ' big' : ''}" data-edit="${e.id}"><span class="ic cat-${cat.id}" title="${cat.name}">${catSvg(cat.id)}</span>
-    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">${phaseOf(e, S) === 'pre' ? new Date(e.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' · ' : ''}${who} · ${among}${e.hasPhoto ? ' · 🧾 fiş' : ''}</span>${e.when ? `<span class="m">${esc(bkLine(e))}</span>` : ''}${e.place ? `<span class="m">📍 ${esc(e.place)}</span>` : ''}</span>
+    <span class="mid"><span class="d">${esc(e.desc)}</span><span class="m">${phaseOf(e, S) === 'pre' ? new Date(e.at).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' · ' : ''}${who} · ${among}${e.hasPhoto ? ' · 🧾 fiş' : ''}</span>${e.when ? `<span class="m">${esc(bkLine(e))}</span>` : ''}${was ? `<span class="m rep">🔁 ${esc(was.desc)} yerine</span>` : ''}${e.place ? `<span class="m">📍 ${esc(e.place)}</span>` : ''}</span>
     <span class="amt num"><b>${money(e.amount, e.cur)}</b>${other}</span></button>`;
 }
 
@@ -2907,17 +3016,21 @@ function ledgerDetail(id, x, fm = tlk, zt = 100){
       <span>Seyahatte</span><span>${tlk(P.trip.share)}</span><span>${tlk(P.trip.paid)}</span>${sv(P.trip.d)}</div>`
     + (gone && Math.abs(P.trip.d) < zt && Math.abs(P.pre.d) >= zt ? `<p class="lnote">${GONE_ICO} Geziye katılmadı; ${P.pre.d < 0 ? 'borcunun' : 'alacağının'} tamamı seyahat öncesinden${preList ? `: ${preList}` : ''}.</p>` : '')
     + (x.kasa || Math.abs(x.rnd) > 0 ? '<p class="lnote">Farka kasada kalan para ve kuruş yuvarlaması dahil.</p>' : '');
+  // 🚫 Bu kişinin de olduğu iptal edilen rezervasyonlar (2026-11-28): hesaba girmez; borcun neden düştüğü anlaşılsın.
+  const can = VE().filter(e => e.kind === 'iptal' && ((e.v2 ? v2Cur(e) : 'T') === (zt === 5 ? 'E' : 'T')) && (e.among.includes(id) || e.paidBy === id));
   return phTbl + `<div class="leq num">${eq}</div>`
+    + (can.length ? `<p class="lnote">🚫 İptal edildiği için hesaba girmeyen: ${can.map(e => `${esc(e.desc)} (${money(e.amount, e.cur)})`).join(', ')}.</p>` : '')
     + (catRows ? `<div class="lcats"><span class="lsub">Payına düşen nereden geliyor?</span>${catRows}</div>` : '')
     + (its.length ? `<details class="why"><summary>Kalem kalem (${its.length})</summary><div class="wl num">${itRows}<div class="tot"><span>Payına düşen</span><span>${tlk(x.share)}</span></div></div></details>` : '');
 }
 // Hesap tablosunda TL defteri var mı (eski kayıtlar ya da yeni kuralın TL kayıtları); euro defteri t.hasE.
-const hasTL = () => S.entries.some(e => !e.v2 || (e.kind === 'transfer' ? payParts(e).t : v2Cur(e) === 'T'));
+const hasTL = () => S.entries.some(e => e.kind !== 'iptal' && (!e.v2 || (e.kind === 'transfer' ? payParts(e).t : v2Cur(e) === 'T')));
 // Eski euro kayıtları (hesaplaşma kuruyla çevrilenler) var mı: kur yazısı yalnız o zaman anlamlı.
 const legacyEur = () => S.entries.some(e => !e.v2 && ((e.kind === 'expense' && !e.settleTL) || e.kind === 'kasa' || e.kind === 'kasaout' || (e.kind === 'transfer' && !e.total)));
 function ledgerCard(t, C){
   if (!S.entries.some(e => e.kind === 'expense')) return '';
-  const ids = S.people.map(p => p.id), both = t.hasE && hasTL();
+  // Geziye katılmayanın telefonunda yalnız kendi satırı (rakamlar bütün kayıtlarla, herkesinkiyle aynı).
+  const lf = !!meLeft(), ids = lf ? [S.me] : S.people.map(p => p.id), both = t.hasE && hasTL();
   const sec = cur => {
     const L = ledgerShown(t, cur), fm = cur === 'T' ? tlk : eu, zt = cur === 'T' ? 100 : 5;
     const tot = ids.reduce((s, id) => s + L[id].share, 0), give = ids.reduce((s, id) => s + Math.max(0, -L[id].net), 0);
@@ -2925,12 +3038,12 @@ function ledgerCard(t, C){
     const head = !both ? '' : cur === 'T' ? '<h3 class="lsec">₺ TL defteri</h3>' : '<h3 class="lsec">💶 Euro defteri</h3>';
     const eurNote = cur === 'E' ? `<br>Euro harcamalarının borcu euro olarak durur; TL ile ödenirse ödeme gününün kuru + %${feeTxt(fxFee())} farkla çevrilir (bugün 1 € = ${nf4.format(t.Q)} ₺), euroyla ödenirse tam euro.` : '';
     return head + `<div class="ledg">${ids.map(id => `<details id="dL${cur}_${id}" ${openDet['dL' + cur + '_' + id] ? 'open' : ''}>${ledgerRow(id, L[id], fm, zt)}<div class="lgd">${ledgerDetail(id, L[id], fm, zt)}</div></details>`).join('')}</div>
-      <p class="lnote num">Payların toplamı = bütün harcamalar: ${fm(tot)} ✓ · Gönderilecek = alınacak: ${fm(give)} ✓${kasaNote}${eurNote}</p>`;
+      ${lf ? (eurNote ? `<p class="lnote num">${eurNote.replace(/^<br>/, '')}</p>` : '') : `<p class="lnote num">Payların toplamı = bütün harcamalar: ${fm(tot)} ✓ · Gönderilecek = alınacak: ${fm(give)} ✓${kasaNote}${eurNote}</p>`}`;
   };
-  return `<section class="card ledgcard"><div class="lhead" data-hhost><h2>📋 Hesap tablosu${help('ledger')}</h2><span class="note num">herkes${legacyEur() ? ` · ${settleRateText(t.R)}` : ''}</span></div>
-    ${hasTL() ? sec('T') : ''}${t.hasE ? sec('E') : ''}<p class="lnote">Kişiye dokun: payı nereden geliyor, ne ödedi, ne gönderdi.</p>
-    <div class="two lrep"><button class="btn" data-act="pdf">📄 PDF indir</button><button class="btn" data-act="xlsx">📊 Excel indir</button></div>
-    <p class="lnote">PDF'te bu tablo, kim kime şeması ve kişi kartları; Excel'de formüllü hesap tablosu ve paylar.</p></section>`;
+  return `<section class="card ledgcard"><div class="lhead" data-hhost><h2>📋 Hesap tablosu${help('ledger')}</h2><span class="note num">${lf ? 'yalnız sen' : 'herkes'}${legacyEur() ? ` · ${settleRateText(t.R)}` : ''}</span></div>
+    ${hasTL() ? sec('T') : ''}${t.hasE ? sec('E') : ''}<p class="lnote">${lf ? 'Satırına dokun: payın nereden geliyor, ne ödedin, ne gönderdin.' : 'Kişiye dokun: payı nereden geliyor, ne ödedi, ne gönderdi.'}</p>
+    ${lf ? '' : `<div class="two lrep"><button class="btn" data-act="pdf">📄 PDF indir</button><button class="btn" data-act="xlsx">📊 Excel indir</button></div>
+    <p class="lnote">PDF'te bu tablo, kim kime şeması ve kişi kartları; Excel'de formüllü hesap tablosu ve paylar.</p>`}</section>`;
 }
 // Doğrudan ↔ daha az ödeme: yalnız değişen kişiler; önce (doğrudan) ve sonra (daha az), toplamın aynı kaldığı.
 function diffCard(t){
@@ -2957,7 +3070,7 @@ function viewSettle(C){
   // Her sekme aynı yapıda renkli bir özet kartıyla açılır: burada kişinin göndereceği ya da alacağı.
   const b = net[S.me] || 0, z = Math.abs(b) < 100, math = meText(T, R, net, false, TE, Q, preOf(t, S.me));
   const sLy = z ? 'sevinc' : b > 0 ? 'hesap' : 'dusunme';
-  let h = `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
+  let h = leftNote() + `<section class="hero hero-ly"><div class="hero-row"><div><div class="lbl">${emojiOf(S.me)} ${nm(S.me)} · senin durumun</div>
     <div class="big num">${z ? 'Denk ✓' : tlk(Math.abs(b))}</div>
     <div class="eur num">${z ? 'Göndereceğin ya da alacağın bir şey yok' : `${b < 0 ? 'göndereceksin' : 'alacaksın'}${netE[S.me] ? ` · ${eu(Math.abs(netE[S.me]))} euro borcu bugünkü kurla dahil` : ` · ≈ ${eu(Math.round(Math.abs(b) / R))}`}`}</div></div>
     <div class="hero-mascot">${leyo(sLy, 'l', 'Leyo')}</div></div>
@@ -2971,20 +3084,20 @@ function viewSettle(C){
   else if (!mine.length) h += `<div class="done leyo-empty">${leyo('hesap', 'm')}<span>Senin hesabın denk 👌<br>Göndereceğin ya da alacağın bir şey yok.</span></div>`;
   else h += mine.map(([p, i]) => payHtml(p, i, R, Q)).join('');
   // Doğrudan yöntemdeyken, ödeme sayısı gerçekten azalıyorsa açıklamalı öneri kutusu.
-  if (mode !== 'min' && nShort < nDirect && canSetMode()) h += `<div class="callout"><b>💡 ${nDirect} yerine ${nShort} ödemeyle de kapanabilir</b>
+  if (mode !== 'min' && nShort < nDirect && canSetMode() && !meLeft()) h += `<div class="callout"><b>💡 ${nDirect} yerine ${nShort} ödemeyle de kapanabilir</b>
     <span>Borçlar birleştirilir: daha az havale yapılır, herkesin toplam tutarı aynı kalır; sadece <b>kime</b> gönderileceği değişir. Seçim herkes için geçerlidir.</span>
     <button class="btn sm" data-act="setmode" data-m="min">Daha az ödemeye geç</button>${modeNote()}</div>`;
   if (!locked) h += `<button class="link" data-act="rate">${rateBusy ? 'Kur güncelleniyor…' : 'Kuru güncelle'}</button>`;
   h += `</section>`;
-  h += ledgerCard(t, C) + diffCard(t);
-  if (others.length) h += `<details class="more" id="dOthers" ${openDet.dOthers ? 'open' : ''}><summary>Diğerlerinin ödemeleri (${others.length})</summary><div class="inner"><div class="list">`
+  h += ledgerCard(t, C) + (meLeft() ? '' : diffCard(t));
+  if (others.length && !meLeft()) h += `<details class="more" id="dOthers" ${openDet.dOthers ? 'open' : ''}><summary>Diğerlerinin ödemeleri (${others.length})</summary><div class="inner"><div class="list">`
     + others.map(([p, i]) => payHtml(p, i, R, Q)).join('') + `</div></div></details>`;
 
-  const payments = S.entries.filter(e => e.kind === 'transfer').sort((a, b) => a.at - b.at);
+  const payments = VE().filter(e => e.kind === 'transfer').sort((a, b) => a.at - b.at);
   if (payments.length) h += `<details class="more" id="dKalem" ${openDet.dKalem ? 'open' : ''}><summary>Yapılan ödemeler (${payments.length})</summary><div class="inner">`
     + `<div class="list">${payments.map(rowHtml).join('')}</div></div></details>`;
   // "Kişi bakiyeleri" yerine Hesap tablosu (2026-11-27); kasa notu da orada.
-  h += `<button class="btn block" data-act="share">WhatsApp için özet</button>`;
+  if (!meLeft()) h += `<button class="btn block" data-act="share">WhatsApp için özet</button>`;
   return h;
 }
 
@@ -2992,8 +3105,8 @@ function viewSettle(C){
 // Eğlenceli özet: en çok neye harcandı, en pahalı gün, en çok ödeyen, kahveyi kim ısmarladı, en büyük harcama, en çok
 // harcanan yer. Seyahat bitince "Seyahat hikâyesi", sürerken "Şimdiye kadar". Görsel olarak paylaşılabilir.
 function storyFacts(){
-  const exps = S.entries.filter(e => e.kind === 'expense'); if (exps.length < 3) return null;
-  const C = compute(S), P = planState(), facts = [];
+  const exps = VE().filter(e => e.kind === 'expense'); if (exps.length < 3) return null;
+  const C = compute(VS()), P = planState(), facts = [];
   const top = Object.entries(C.cats).sort((a, b) => b[1] - a[1])[0];
   if (top){ const c = catById(top[0]); facts.push([c.icon, 'En çok harcanan', `${c.name} · %${Math.round(top[1] * 100 / (C.total || 1))}`]); }
   const days = {};
@@ -3056,7 +3169,7 @@ async function shareStory(){
 }
 
 function rozetHtml(C){
-  const exps = S.entries.filter(e => e.kind === 'expense');
+  const exps = VE().filter(e => e.kind === 'expense');
   const hasPhoto = exps.some(e => e.photo) || (SH.items || []).some(i => i.photo);
   const hasGuide = Object.values(S.trip.guide || {}).some(g => g && (g.ok || (g.days && g.days.length)));
   const P = planState(), budOk = !!(P.plan && P.spent > 0 && P.spent <= P.plan);
@@ -3103,7 +3216,7 @@ function perPersonHtml(C){
 }
 function logsHtml(){
   let h = '';
-  const L = tripLogs().slice(0, 50);
+  const t = meLeft(), L = tripLogs().filter(l => !t || l.at < t).slice(0, 50);
   if (L.length) h += `<details class="more" id="dLog" ${openDet.dLog ? 'open' : ''}><summary>Son işlemler (${L.length})</summary><div class="inner"><div class="list">`
     + L.map(l => `<div class="lg"><span class="av">${initial(l.by)}</span><span class="t"><b>${nm(l.by)}</b> ${esc(l.text)}<small>${hhmm(l.at)}</small></span></div>`).join('')
     + `</div></div></details>`;
@@ -3365,6 +3478,7 @@ function drawSheet(){
     </div>
     ${f.scanning ? `<div class="scan-stage">${leyo('fis', 'l', 'Leyo')}<div><b>Leyo fişi inceliyor…</b><span>Tutar, mağaza ve tarih otomatik okunuyor.</span></div></div>` : ''}
     <div class="bk" id="fBk">${bkHtml()}</div>
+    <div id="fRep">${repHtml()}</div>
     <div class="place" id="fPlace">${placeHtml()}</div>
     ${f.id ? (() => { const o = S.entries.find(x => x.id === f.id); return o && o.by && S.people.some(p => p.id === o.by) ? `<p class="note">✍️ ${nmE(o.by)} girdi · ${hhmm(o.at)}</p>` : ''; })() : ''}`;
   } else if (f.mode === 'kasa'){
@@ -3495,11 +3609,13 @@ function drawSheet(){
     body = wizBody();
 } else if (f.mode === 'plan'){
     body = planBody();
+  } else if (f.mode === 'iptal'){
+    body = iptalBody(f);
   } else if (f.mode === 'share'){
     body = `<p class="note">Metni kopyalayıp grubunuza yapıştırabilirsin.</p><textarea class="copy" id="shareTxt" readonly>${esc(f.text)}</textarea>`;
   }
   body = kindSeg + body;
-  const titles = {ozd:OZD_T[f.key] || 'Ayrıntı', album:'📖 Seyahat albümü', expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: f.direct ? 'Geziye katılmıyor' : 'Katılımcıyı sil', addpeople: isFamilies() ? 'Aile ekle' : 'Kişi ekle', solo: f.id ? '🔒 Kişisel harcama' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', wiz: '🐦 Leyo\'yla planla', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
+  const titles = {ozd:OZD_T[f.key] || 'Ayrıntı', album:'📖 Seyahat albümü', iptal:'🚫 İptal edilen rezervasyon', expense: f.id ? 'Harcamayı düzenle' : 'Yeni harcama', kasa: f.id ? 'Kasa kaydı' : 'Kasaya para ekle', transfer: f.from === 'kasa' ? 'Kasadan geri verilen' : f.pick ? 'Para gönderdim' : 'Ödeme', newtrip: 'Yeni seyahat', delperson: f.direct ? 'Geziye katılmıyor' : 'Katılımcıyı sil', addpeople: isFamilies() ? 'Aile ekle' : 'Kişi ekle', solo: f.id ? '🔒 Kişisel harcama' : 'Yeni harcama', shop: f.ret ? (f.id ? 'Ürün iadesini düzenle' : 'Ürün iadesi ekle') : f.id ? 'Alışverişi düzenle' : 'Alışveriş ekle', trips: 'Seyahatlerim', plan: '📅 Seyahat planı', guide: '🧭 Gezi rehberi', wiz: '🐦 Leyo\'yla planla', who: 'Sen kimsin?', tfform: 'Tax-free formu', emoji: f.mode === 'emoji' ? `${nm(f.pid)} · emoji seç` : '', ios: 'Önce ana ekrana ekle', share: 'Hesap özeti', kasaempty: 'Kasayı boşalt'};
   const saveLbl = {expense:'Kaydet', delperson:f.mode === 'delperson' && (f.how || 'ayril') === 'ayril' && !(person(f.pid) || {}).left ? 'Katılmıyor olarak kaydet' : 'Aktar ve sil', addpeople:'Ekle', shop:'Kaydet', solo:'Kaydet', kasa:'Kasaya ekle', transfer:'Kaydet', newtrip:'Seyahati başlat', share:'Kopyala'}[f.mode];
   saveDraft();
   // Dışarıya dokunmak formu kapatmaz; sadece × ile kapanır.
@@ -3508,13 +3624,30 @@ function drawSheet(){
   const inner = `<div class="shead"><h3>${titles[f.mode]}</h3><button class="x" data-act="close" aria-label="Kapat">×</button></div>
     ${body}<div class="err" id="fErr"></div>
     ${saveLbl ? `<button class="btn pri block" data-act="save">${saveLbl}</button>` : ''}
-    ${f.id ? `<button class="btn danger block" data-act="del">${confirmDel ? 'Emin misin? Kalıcı olarak sil' : 'Sil'}</button>` : ''}`;
+    ${f.id ? `<button class="btn danger block" data-act="del">${!confirmDel ? 'Sil' : f.mode === 'iptal' ? 'Emin misin? Listeden tamamen kaldır' : f.mode === 'expense' && isBooking(S.entries.find(x => x.id === f.id)) ? 'Emin misin? Sil · iptal olarak gri kalır' : 'Emin misin? Kalıcı olarak sil'}</button>` : ''}`;
   const old = host.querySelector('.scrim:not(.closing) .sheet');
   if (old){ old.innerHTML = inner; old.setAttribute('aria-label', titles[f.mode]); }
   else host.innerHTML = `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${titles[f.mode]}">${inner}</div></div>`;
   document.documentElement.classList.add('sheetopen');
 }
 
+// 🚫 İptal edilen rezervasyonun sayfası (salt okunur, 2026-11-28): ne iptal edildi, ne zaman, yerine ne geldi; "↩ İptali geri al"
+// ve Sil (gri kaydı listeden tamamen kaldırır; yanlış girilmiş rezervasyon için).
+function iptalBody(f){
+  const e = S.entries.find(x => x.id === f.id); if (!e) return '<p class="note">Bu kayıt artık yok.</p>';
+  const cat = catById(e.cat), y = repOf(e), by = e.iptal && e.iptal.by && S.people.some(p => p.id === e.iptal.by) ? e.iptal.by : null;
+  return `<div class="ipt"><div class="ipt-h"><span class="ic cat-${cat.id}">${catSvg(cat.id)}</span><span class="mid"><b>${esc(e.desc)}</b><span class="note">${e.when ? esc(bkLine(e)) + ' · ' : ''}${e.paidBy === 'kasa' ? 'kasadan ödenmişti' : nm(e.paidBy) + ' ödemişti'} · ${e.among.length} kişi</span></span><s class="num">${money(e.amount, e.cur)}</s></div>
+    <p class="ipt-st">🚫 İptal edildi${e.iptal && e.iptal.at ? ' · ' + dShort(e.iptal.at) : ''}${by ? ' · ' + nm(by) : ''}</p>
+    <p class="note">Hiçbir hesaba girmiyor: toplamdan, bütçeden ve hesaplaşmadan düştü, para geri gelmiş sayılır. Seyahat planında da yok.</p>
+    ${y ? `<button type="button" class="mrow" data-edit="${y.id}"><span>🔁 Yerine: ${esc(y.desc)}<small>${y.when ? esc(bkLine(y)) : 'yeni kayıt'}</small></span><span class="num">${money(y.amount, y.cur)} ›</span></button>`
+      : `<p class="note">${bkKind(e) === 'stay' ? 'Yeni evi' : 'Yenisini'} <b>+ Harcama</b> ile eklersen, iptal edilenin yerine geldiğini kendim anlarım.</p>`}
+    ${isRO() ? '' : `<button type="button" class="btn block" data-act="uncancel">↩ İptali geri al</button>`}</div>`;
+}
+// Geziye katılmayan kişinin ekranlarında üstte kısa not (2026-11-28).
+function leftNote(){
+  const t = meLeft(); if (!t) return '';
+  return `<div class="callout leftnote"><b>${GONE_ICO} Geziye katılmıyorsun · ${dShort(t)}</b><span>Bundan sonraki harcamalardan yalnız seni ilgilendirenler görünür: ödediğin, payının olduğu harcamalar ve ödemelerin. Hesabın her şey dahil doğru hesaplanır.</span></div>`;
+}
 // Euro dışı para biriminde kur satırı; kur bilinmiyorsa doğrudan giriş kutusu açılır.
 // Ödemede isteğe bağlı not ("ne için gönderdi"); öneri olarak borç kalemleriyle dolu gelir.
 function noteBlock(){
@@ -3734,7 +3867,35 @@ function bkHtml(){
   return head + `<div class="rows">${dt('fWhen', 'when', 'Kalkış')}${dt('fUntil', 'until', 'Varış')}</div>
     <div class="bkft"><input class="inp" id="fFrom" autocomplete="off" placeholder="Nereden (ör. Barcelona Sants)" value="${v('from')}" aria-label="Nereden"><input class="inp" id="fTo" autocomplete="off" placeholder="Nereye (ör. Madrid Atocha)" value="${v('to')}" aria-label="Nereye"></div>`;
 }
-function drawBk(){ const el = document.getElementById('fBk'); if (el) el.innerHTML = bkHtml(); }
+function drawBk(){ const el = document.getElementById('fBk'); if (el) el.innerHTML = bkHtml(); drawRep(); }
+// 🔁 Yerine gelen rezervasyon (2026-11-28, kullanıcı: "Airbnb evi ya da Sevilla evi yazınca iptal edilenin yerine geldiğini kendisi
+// anlasın"): yeni kayıtta iptal edilmiş bir rezervasyonun yerine mi diye bakılır (cancelMatch). Güçlü eşleşmede kendiliğinden (kısa
+// not, "Değil" ile vazgeçilir), zayıfta tek dokunuşla ("… yerine mi?"). Kaydedince bağlanır; boş tarihler iptal edilenden gelir.
+const repKind = e => { const k = bkKind(e); return k === 'stay' || k === 'trip' ? k : e.when || e.cat === 'aktivite' ? 'event' : null; };
+function repMatch(f){
+  if (!f || f.mode !== 'expense' || f.id || !S.entries.some(e => e.kind === 'iptal')) return null;
+  const cities = new Set([...S.entries.filter(e => (e.kind === 'expense' || e.kind === 'iptal') && bkKind(e) === 'stay').map(stayCity), ...Object.keys(S.trip.guide || {})].filter(Boolean).map(c => c.toLocaleLowerCase('tr')));
+  const m = cancelMatch(S, {id:f.newId || '', kind:'expense', desc:f.desc, cat:f.cat, dest:f.dest, when:f.when, until:f.until, from:f.from, to:f.to}, {kind:repKind, city:stayCity, cities});
+  return m.best || m.maybe.length ? m : null;
+}
+const repPick = f => { const m = repMatch(f); if (!m) return null; const id = f.rep || (!f.repNo && m.best ? m.best.id : null); return id ? S.entries.find(e => e.id === id && e.kind === 'iptal') || null : null; };
+function repHtml(){
+  const f = form, m = repMatch(f); if (!m) return '';
+  const o = repPick(f), k = o && repKind(o), need = o && ((k === 'stay' && (!f.when || !f.until) && o.when) || (k !== 'stay' && !f.when && o.when));
+  if (o) return `<div class="repn">🔁 İptal edilen <b>${esc(o.desc)}</b> yerine sayılacak${need ? '; tarihleri ondan alınır' : ''}. <button type="button" class="link" data-act="repno">Değil</button></div>`;
+  if (f.repNo || !m.maybe.length) return '';
+  return `<div class="repq"><span class="note">İptal edilen bir rezervasyonun yerine mi?</span><div class="chips">${m.maybe.slice(0, 3).map(e => chip(`🔁 ${esc(e.desc)} yerine`, false, `data-rep="${e.id}"`)).join('')}</div></div>`;
+}
+function drawRep(){ const el = document.getElementById('fRep'); if (el) el.innerHTML = repHtml(); }
+// Kaydedilen yeni kaydı iptal edilene bağlar; boş tarih, güzergâh ve (evde) şehir ondan gelir. Döner: iptal edilen kayıt ya da null.
+function repLink(f, n){
+  const o = repPick(f); if (!o || !n) return null;
+  const k = repKind(o);
+  if (k === 'stay'){ if (!n.when && o.when) n.when = o.when; if (!n.until && o.until) n.until = o.until; if (!stayCity(n) && stayCity(o)) n.city = stayCity(o); }
+  else { if (!n.when && o.when){ n.when = o.when; if (!n.until && o.until) n.until = o.until; } if (k === 'trip'){ if (!n.from && o.from) n.from = o.from; if (!n.to && o.to) n.to = o.to; } }
+  n.yerine = o.id; o.iptal = {...(o.iptal || {}), yerine:n.id};
+  return o;
+}
 // Kısa gösterim: "30 Kas 14:45", "30 Kas – 3 Ara · 3 gece".
 function bkDay(w){ return new Date(String(w).slice(0, 10) + 'T12:00').toLocaleDateString('tr-TR', {day:'numeric', month:'short'}); }
 function bkTime(w){ return String(w).length > 10 ? String(w).slice(11, 16) : ''; }
@@ -3760,14 +3921,19 @@ function bkLine(e){
 const isoAdd = (d, n) => { const t = new Date(d + 'T12:00'); t.setDate(t.getDate() + n); return isoDay(t.getTime()); };
 const planDay = d => new Date(d + 'T12:00').toLocaleDateString('tr-TR', {weekday:'short', day:'numeric', month:'short'});
 function stayCity(e){
-  const w = String(e.desc || '').trim().split(/\s+/)[0] || '';
+  // Yerine gelen evde şehir iptal edilenden alınır (e.city; ör. adı "Airbnb evi", adresi yok). "Yeni Sevilla evi" gibi adlarda baştaki
+  // sıfat şehir sanılmaz (2026-11-28).
+  if (e.city) return e.city;
+  const ws = String(e.desc || '').trim().split(/\s+/), w = (/^(yeni|ikinci|eski|asıl|diğer|son|ilk)$/i.test(ws[0] || '') ? ws[1] : ws[0]) || '';
   if (/^\p{Lu}/u.test(w) && !/^(airbnb|booking|otel|hotel|ev|konaklama|hostel|apart)/i.test(w)) return w.replace(/[^\p{L}-]/gu, '');
   return e.dest ? String(e.dest).split(',').pop().replace(/\d+/g, '').trim() : '';
 }
-function tripPlan(){
-  // "Sadece bana" biletleri (ör. yalnız sana ait bir aktarma uçuşu) yalnız bu telefonda, 🔒 ile plana girer.
+function tripPlan(vis = false){
+  // "Sadece bana" biletleri (ör. yalnız sana ait bir aktarma uçuşu) yalnız bu telefonda, 🔒 ile plana girer. İptal edilen rezervasyon
+  // (kind 'iptal') plana girmez. vis: ekranda gösterilen plan; geziye katılmayanın telefonunda yalnız gördüğü kayıtlardan (rehberin
+  // hesapları her zaman bütün plandan).
   const fx = e => e.when ? {...e, when:fixYear(e.when), until:e.until ? fixYear(e.until) : e.until} : e;
-  const B = S.entries.filter(e => e.kind === 'expense').map(fx), mine = (SH.solo || []).filter(x => x.when).map(x => ({...fx(x), priv:true}));
+  const B = (vis ? VE() : S.entries).filter(e => e.kind === 'expense').map(fx), mine = (SH.solo || []).filter(x => x.when).map(x => ({...fx(x), priv:true}));
   const stays = [...B, ...mine].filter(e => bkKind(e) === 'stay' && e.when && e.until);
   const dated = [...B.filter(e => e.when), ...mine];
   if (!dated.length) return null;                     // hiç tarih girilmemişse plan yok (seyahatin günlerini boş göstermesin)
@@ -3820,7 +3986,7 @@ function todayStrip(){
   if (!S.trip.start || !S.trip.end) return '';
   const td = isoDay(Date.now());
   if (td < isoAdd(S.trip.start, -1) || td > S.trip.end) return '';
-  const P = tripPlan(); if (!P) return '';
+  const P = tripPlan(true); if (!P) return '';
   const n = planNext(P); if (!n) return '';
   const lbl = n.x.d === td ? 'Bugün' : n.x.d === isoAdd(td, 1) ? 'Yarın' : ''; if (!lbl) return '';
   const e = n.it.e, t = n.it.kind === 'in' ? 'giriş ' + planT(n.it).t : bkTime(e.when), d = destOf(e);
@@ -3830,7 +3996,7 @@ function todayStrip(){
     + (d ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`;
 }
 function programHtml(){
-  const P = tripPlan(), need = S.entries.filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
+  const P = tripPlan(true), need = VE().filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
   if (!P && !need.length) return '';
   let sub, next = '';
   if (P){
@@ -3842,11 +4008,11 @@ function programHtml(){
   return `<button class="tplan" data-act="plan"><span class="pc-ic" aria-hidden="true">📅</span><span class="pc-mid"><b>Seyahat planı</b><span class="pc-sub">${sub}</span>${next}</span><span class="pc-go">Aç ›</span></button>`;
 }
 function planBody(){
-  const P = tripPlan(), today = isoDay(Date.now());
+  const P = tripPlan(true), today = isoDay(Date.now());
   const tools = `<div class="ptools">${P ? `<button type="button" class="btn sm" data-act="planpdf">📄 PDF</button>` : ''}<button type="button" class="btn sm" data-act="icsout">📅 Takvime aktar</button><label class="btn sm" for="icsIn">📥 Takvim dosyasından ekle</label><input type="file" id="icsIn" accept=".ics,text/calendar" hidden>${P ? `<button type="button" class="btn sm" data-act="plancopy">💬 Kopyala</button>` : ''}</div>`;
   const ics = form.ics ? icsPickHtml() : '';
   if (!P){
-    const need = S.entries.filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
+    const need = VE().filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
     return ics + `<p class="note">Plan, bilet ve rezervasyonlara tarih girilince gün gün oluşur. Her birine dokun, fotoğrafını ekleyip <b>✨ Fotoğraftan doldur</b>’a bas, tarihi elle yaz ya da takvim dosyasından ekle.</p>`
       + `<div class="pmiss">${need.map(e => `<button class="link" data-edit="${e.id}">${iconOf(e)} ${esc(e.desc)}: ${bkKind(e) === 'stay' ? 'giriş–çıkış tarihi' : bkKind(e) === 'trip' ? 'kalkış tarihi ve saati' : 'ziyaret günü ve saati'}</button>`).join('')}</div>` + tools;
   }
@@ -5835,6 +6001,46 @@ function gStayTxt(c){
   const i = stayIn(e), o = stayOut(e);
   return `🏠 Giriş ${planDay(e.when.slice(0, 10))} ${mh(i.t)}${i.est ? ' (tahmini)' : ''}${e.until ? ` · Çıkış ${planDay(e.until.slice(0, 10))} ${mh(o.t)}${o.est ? ' (tahmini)' : ''}` : ''}`;
 }
+// 🏠 Ev değişti (2026-11-28, kullanıcı: "iptal edilen evin gezi planındaki konumu yenisine göre değişsin"): o şehrin rehberi varsa
+// (ve değişen ev rehberin evi ya da şehrin tek eviyse) önce kopyası alınır (↩ Önceki taslak); eski evin giriş/çıkış satırları çıkar,
+// ev yeni adrese taşınır (konum OpenStreetMap'ten), yeni evin giriş/çıkışı kendi günlerine girer (gEnsureFixed, Google'sız) ve
+// günlerin sırası yeni eve göre yeniden kurulur. Evin yakınındaki bavul emanetçisi Google'dan bir kez yenilenir (tek istek). Yeni
+// evin adresi yoksa ev eski yerinde kalır; adres eklenince (düzenleyince) taşınır.
+async function gHomeSync(o, n){
+  const c = n && (stayCity(n) || (o && stayCity(o))), g = c && (S.trip.guide || {})[c]; if (!g || !Array.isArray(g.days)) return;
+  const stays = S.entries.filter(e => e.kind === 'expense' && bkKind(e) === 'stay' && stayCity(e) === c);
+  const was = o && g.home && String(g.home.addr || '').trim() === String(o.dest || o.desc || '').trim();
+  if (!was && stays.length > 1) return;
+  const addr = String(n.dest || '').trim();
+  if (!addr){ toast(`🏠 ${c} rehberinde ev şimdilik eski yerinde: yeni evin adresini eklersen (rezervasyon fotoğrafından ya da elle) oraya taşırım.`, {ms:6000}); return; }
+  let p = null;
+  try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`).then(r => r.json()); if (r && r[0] && +r[0].lat) p = {lat:+r[0].lat, lon:+r[0].lon}; } catch(_) {}
+  const g2 = (S.trip.guide || {})[c]; if (!g2 || !Array.isArray(g2.days)) return;
+  gSnap(c);
+  // Çıkan ev satırları: eskisinin ve yenisinin (yenisi aşağıda kendi saatleriyle yeniden girer) ve iptal edilen evlerin giriş/çıkışı;
+  // ev işaretli (it.stay) satırlardan artık hiçbir eve ait olmayanlar. Adı "… giriş" olan biletli ziyaretlere dokunulmaz.
+  const names = [o && o.desc, n.desc, ...S.entries.filter(e => e.kind === 'iptal' && bkKind(e) === 'stay').map(e => e.desc)].filter(Boolean).map(String);
+  const live = S.entries.filter(e => e.kind === 'expense' && bkKind(e) === 'stay').map(e => String(e.desc || '')).filter(Boolean);
+  const nmOf = it => String(it.name || ''), stayRow = it => it.src === 'bilet' && (it.stay || / (giriş|çıkış)$/.test(nmOf(it)));
+  g2.days.forEach(x => { x.items = (x.items || []).filter(it => !(stayRow(it) && (names.some(d => nmOf(it).startsWith(d)) || (it.stay && !live.some(d => nmOf(it).startsWith(d)))))); });
+  g2.home = p ? {addr, lat:p.lat, lon:p.lon, ok:1} : {...(g2.home || {}), addr};
+  try { await gEnsureFixed(c, g2, [], true); } catch(_) {}
+  gRouteAll(c);
+  g2.chg = {at:Date.now(), by:S.me, log:[`🏠 Ev değişti: ${n.desc}${p ? '' : ' (konumu bulunamadı, ev eski yerinde)'}; günlerin sırası yeni eve göre kuruldu. Eski hali ↩ Önceki taslak'ta.`]};
+  save(); render(); if (form && form.mode === 'guide') drawSheetKeep();
+  toast(p ? `🏠 ${c} rehberinde ev yeni adrese taşındı; günlerin sırası yeni eve göre kuruldu.` : `🏠 ${c} rehberinde yeni evin konumu bulunamadı; ev eski yerinde. Adresi kontrol et.`, {ms:6000});
+  if (p) gHomeLuggage(c);
+}
+// Evin yakınındaki bavul emanetçisi (ev değişince; tek Google isteği, gar yanındaki aynen kalır).
+async function gHomeLuggage(c){
+  const g = (S.trip.guide || {})[c], H = g && g.home && g.home.lat ? g.home : null; if (!H || !window.claude || !window.claude.guide) return;
+  let r; try { r = await window.claude.guide({mode:'yakin', city:c, lat:+H.lat, lon:+H.lon, items:[{q:'luggage storage', lat:+H.lat, lon:+H.lon, r:800}]}); } catch(_) { return; }
+  if (!r || r.src !== 'google') return;
+  const b = (((r.items || [])[0] || {}).list || [])[0], g2 = (S.trip.guide || {})[c]; if (!g2) return;
+  const rest = (g2.bavul || []).filter(x => x.yer !== 'ev');
+  g2.bavul = b ? [{yer:'ev', at:'', name:b.name, addr:b.addr || '', lat:b.lat, lon:b.lon, km:b.km, g:{r:b.r, n:b.n, url:b.url || ''}}, ...rest] : rest;
+  save(); render();
+}
 const gStayIt = it => !!it && it.src === 'bilet' && (!!it.stay || (/ (giriş|çıkış)$/.test(it.name || '')
   && S.entries.some(e => e.kind === 'expense' && bkKind(e) === 'stay' && (it.name === (e.desc || '') + ' giriş' || it.name === (e.desc || '') + ' çıkış'))));
 function gVisit(c, d, it){
@@ -7303,7 +7509,7 @@ function guideAct(d){
 // 📅 Takvime aktar: biletler ve rezervasyonlar tek .ics dosyası (iPhone Takvim, Google Takvim açar). Saatler biletteki yerel
 // saattir (saat dilimi yazılmaz; telefon hangi ülkedeyse o saatte görünür). Ulaşımda 2 saat, ziyarette 1 saat önce hatırlatma.
 function icsOut(){
-  const P = tripPlan(); if (!P) return toast('Önce bilet ve rezervasyonlara tarih ekle.');
+  const P = tripPlan(true); if (!P) return toast('Önce bilet ve rezervasyonlara tarih ekle.');
   const T = v => String(v || '').replace(/\\/g, '\\\\').replace(/[;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
   const D = w => w.length > 10 ? w.replace(/[-:]/g, '').slice(0, 13) + '00' : w.replace(/-/g, '');
   const plus = (w, min) => { const t = new Date(w + ':00'); t.setMinutes(t.getMinutes() + min); return isoDay(t.getTime()) + 'T' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); };
@@ -7331,7 +7537,7 @@ function icsOut(){
 }
 // 📄 Plan PDF'i: A4 sayfalar (rapordaki gibi tuvale çizilir); gün başlıkları, saat sırasıyla biletler, ev adresleri, eksikler.
 async function planPdf(){
-  const P = tripPlan(); if (!P) return toast('Önce bilet ve rezervasyonlara tarih ekle.');
+  const P = tripPlan(true); if (!P) return toast('Önce bilet ve rezervasyonlara tarih ekle.');
   toast('📄 Plan PDF hazırlanıyor…');
   let jsPDF; try { jsPDF = (await loadLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf')).jsPDF; } catch(_) { return toast('PDF aracı indirilemedi; planı kopyalayabilirsin.'); }
   const W = 1240, H = 1754, M = 80, tc = themeCountry(), accent = tc ? tc[2] : '#0B6B6B', pages = []; let cv, x, y;
@@ -7432,7 +7638,7 @@ function icsApply(){
 }
 // Planın yazılı hali: gruba yapıştırmak için.
 function planText(){
-  const P = tripPlan(); if (!P) return '';
+  const P = tripPlan(true); if (!P) return '';
   // Paylaşılan metne "sadece bana" biletleri girmez.
   return `📅 ${S.trip.name}\n` + P.days.map(x => { const its = x.items.filter(i => !i.e.priv); return `\n${planDay(x.d)}${x.city ? ' · ' + x.city : ''}\n` + (its.length ? its.map(i => {
     const e = i.e, t = i.kind === 'in' || i.kind === 'out' ? (planT(i).est ? '' : planT(i).t) : bkTime(e.when);
@@ -7572,9 +7778,17 @@ function submit(){
     const wts = Object.fromEntries(f.among.filter(x => f.weights && f.weights[x] > 1).map(x => [x, f.weights[x]]));
     upsert({id, kind:'expense', desc:f.desc.trim(), cat:f.cat, amount:a, cur:f.cur, rate, paidBy:f.paidBy, among:f.among, weights:Object.keys(wts).length ? wts : null, at:atFromDay(f.date, old && old.at), by:old ? old.by || S.me : S.me, hasPhoto,
       photoId:f.photoChanged ? null : ((old && old.photoId) || null),
-      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, dest:f.dest || null, ...(bkKind(f) ? {when:f.when || null, until:f.until || null, from:f.from || null, to:f.to || null} : {}), ...(bkKind(f) === 'stay' && f.bagOk ? {bagOk:true} : {}), ...tlx, ...v2f});
+      settleTL, tlPaid, phase:f.phase || 'trip', place:f.place || null, lat:f.place ? f.lat : null, lon:f.place ? f.lon : null, dest:f.dest || null, ...(bkKind(f) ? {when:f.when || null, until:f.until || null, from:f.from || null, to:f.to || null} : {}), ...(bkKind(f) === 'stay' && f.bagOk ? {bagOk:true} : {}), ...(old && old.yerine ? {yerine:old.yerine} : {}), ...(old && old.city ? {city:old.city} : {}), ...tlx, ...v2f});
+    // 🔁 Yeni rezervasyon iptal edilenin yerine mi (2026-11-28): bağlanır, boş tarihler ondan gelir; evse rehberdeki ev taşınır.
+    const repOld = !old ? repLink(f, S.entries.find(x => x.id === id)) : null;
     if (f.photoChanged && f.photo) uploadPhoto(id, f.photo);
-    logEvent(`${old ? 'düzenledi' : 'ekledi'}: ${f.desc.trim()} · ${money(a, f.cur)}`);
+    logEvent(`${old ? 'düzenledi' : 'ekledi'}: ${f.desc.trim()} · ${money(a, f.cur)}${repOld ? ` (iptal edilen ${repOld.desc} yerine)` : ''}`);
+    if (repOld && bkKind(repOld) === 'stay') setTimeout(() => gHomeSync(repOld, S.entries.find(x => x.id === id)), 0);
+    // Evin adresi değiştiyse (ör. yerine gelen eve sonradan adres eklendi) rehberdeki ev de taşınır.
+    else if (old && bkKind(old) === 'stay' && f.dest && (old.dest || '') !== f.dest) setTimeout(() => gHomeSync(old, S.entries.find(x => x.id === id)), 0);
+    // Yerine diye tanınmayan yeni ev: rehberin evi şehirdeki hiçbir eve uymuyorsa (eski ev iptal ya da silindi) ve şehrin tek eviyse taşınır.
+    else if (!old && bkKind(f) === 'stay') setTimeout(() => { const n = S.entries.find(x => x.id === id), c = n && stayCity(n), g = c && (S.trip.guide || {})[c];
+      if (g && g.home && !S.entries.some(e => e.kind === 'expense' && e.id !== id && bkKind(e) === 'stay' && stayCity(e) === c && String(g.home.addr || '').trim() === String(e.dest || e.desc || '').trim())) gHomeSync(null, n); }, 0);
     S.lastCur = f.cur; flashId = id; closeSheet(); render();
     if (photoLost) return toast('Harcama kaydedildi ama telefonda yer kalmadığı için fiş fotoğrafı kaydedilemedi.');
     const after = budgetState();
@@ -7585,6 +7799,7 @@ function submit(){
       try { if (warn.lvl === 'over' && navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch(_) {}
     }
     if (warn) return toast(warn.lvl === 'over' ? `⚠️ ${warn.key === 'daily' ? 'Bugünkü sınır' : 'Toplam bütçe'} aşıldı` : `⚠️ ${warn.key === 'daily' ? 'Bugünkü sınırın' : 'Toplam bütçenin'} %${Math.floor(warn.pct*100)}'ine geldiniz`);
+    if (repOld) return toast(`🔁 ${f.desc.trim()}, iptal edilen ${repOld.desc} yerine kaydedildi. Eski kayıt listede gri duruyor.`, {ms:5000});
     // Bilgi notu: kim ödedi, kişi başı ne düştü, kaç kişi ödeyene borçlandı.
     const others = f.among.filter(x => x !== f.paidBy).length;
     if (f.paidBy !== 'kasa' && others && !isFamily()) return toast(`${old ? 'Güncellendi' : 'Eklendi'} · ${rawName(f.paidBy)} ödedi ${money(a, f.cur)}, ${Object.keys(wts).length ? 'paylara göre bölündü' : `kişi başı ${money(a / f.among.length, f.cur)}`}. ${others} kişinin payı ${rawName(f.paidBy)} adına alacak yazıldı.`);
@@ -9071,13 +9286,13 @@ function soloRow(x){ const c = catById(x.cat);
 function funCounts(shared = false){
   const K = [['☕', 'kahve', /kahve|coffee|caf[eé]|espresso|cappuccino|latte/i], ['🚕', 'taksi', /taksi|taxi|uber|bolt|cabify/i], ['🏛️', 'müze', /m[üu]ze|museum|museo|mus[ée]e/i],
     ['🍦', 'dondurma', /dondurma|gelato|ice ?cream|helado/i], ['🍕', 'pizza', /pizza/i], ['🍺', 'bira', /bira|beer|birra|cerveza/i], ['🚇', 'metro', /metro|subway|u-?bahn/i]];
-  const txt = [...S.entries.filter(e => e.kind === 'expense').map(e => e.desc), ...(shared ? [] : (SH.solo || []).map(x => x.desc))].map(t => String(t || ''));   // shared: albüm (kişisel kayıt girmez)
+  const txt = [...VE().filter(e => e.kind === 'expense').map(e => e.desc), ...(shared ? [] : (SH.solo || []).map(x => x.desc))].map(t => String(t || ''));   // shared: albüm (kişisel kayıt girmez)
   return K.map(([ic, l, re]) => ({ic, l, n:txt.filter(t => re.test(t)).length})).filter(x => x.n > 0).sort((a, c) => c.n - a.n);
 }
 // Grubun günleri (ortak harcamalar, euro sent): seyahat öncesi tek satır; seyahat günleri tarih sırasıyla, en büyük harcamasıyla.
 function groupDays(){
   const m = {};
-  for (const e of S.entries) if (e.kind === 'expense'){ const pre = phaseOf(e, S) === 'pre', k = pre ? 'pre' : isoDay(e.at), v = toCents(e);
+  for (const e of VE()) if (e.kind === 'expense'){ const pre = phaseOf(e, S) === 'pre', k = pre ? 'pre' : isoDay(e.at), v = toCents(e);
     const o = m[k] = m[k] || {key:k, v:0, top:'', topV:0, at:e.at}; o.v += v; if (v > o.topV){ o.topV = v; o.top = e.desc; } }
   return Object.values(m).map(o => { const n = o.key === 'pre' ? 0 : tripDay(new Date(o.key + 'T12:00:00').getTime());
     return {...o, n, label:o.key === 'pre' ? 'Seyahat öncesi' : n >= 1 ? `${n}. gün` : dayLabel(o.at)}; }).sort((a, c) => (a.key === 'pre' ? -1 : c.key === 'pre' ? 1 : a.key < c.key ? -1 : 1));
@@ -9107,10 +9322,10 @@ function dayBox(M, box, ln){
 // Altta en çok harcanan yerler, Google Haritalar'da açılır. Konum, harcama eklerken "📍 Buradayım" ile eklenir.
 function mapBox(box){
   const pts = [], fin = v => v != null && v !== '' && isFinite(+v);
-  for (const e of S.entries) if (e.kind === 'expense' && fin(e.lat) && fin(e.lon)) pts.push({lat:+e.lat, lon:+e.lon, v:toCents(e), cat:e.cat, t:e.desc, place:e.place});
+  for (const e of VE()) if (e.kind === 'expense' && fin(e.lat) && fin(e.lon)) pts.push({lat:+e.lat, lon:+e.lon, v:toCents(e), cat:e.cat, t:e.desc, place:e.place});
   for (const x of SH.solo || []) if (fin(x.lat) && fin(x.lon)) pts.push({lat:+x.lat, lon:+x.lon, v:soloEur(x), cat:x.cat, t:x.desc, place:x.place, own:1});
   for (const i of SH.items) if (fin(i.lat) && fin(i.lon)) pts.push({lat:+i.lat, lon:+i.lon, v:Math.round(shopEur(i) * 100), cat:'alisveris', t:i.store, place:i.place, own:1});
-  const nAll = S.entries.filter(e => e.kind === 'expense').length + (SH.solo || []).length + SH.items.length;
+  const nAll = VE().filter(e => e.kind === 'expense').length + (SH.solo || []).length + SH.items.length;
   if (!pts.length) return box('mb_harita', '🗺️', 'Harcama haritası', 'konumlu harcama yok', '', '<p class="hint" style="margin:0">Harcama eklerken 📍 konum eklersen (Buradayım) harcamaların burada haritada görünür.</p>');
   const W = 320, H = 170, la = pts.map(p => p.lat), lo = pts.map(p => p.lon), la0 = Math.min(...la), la1 = Math.max(...la), lo0 = Math.min(...lo), lo1 = Math.max(...lo);
   const k = Math.cos(((la0 + la1) / 2) * Math.PI / 180), sx = (lo1 - lo0) * k, sy = la1 - la0, sc = sx || sy ? Math.min((W - 40) / (sx || 1e-9), (H - 40) / (sy || 1e-9)) : 1;
@@ -9141,7 +9356,7 @@ const ozF = v => fromTL(v, planCurOf(), 0);                 // bütçe tutarlar�
 const OZD_T = {sana:'💶 Bu seyahat sana', ortak:'👥 Ortak harcamalar', kisisel:'🔒 Kişisel cüzdanın', gunler:'📅 Günler', harita:'🗺️ Harcama haritası', kat:'🍽️ Nereye gidiyor', hesap:'🤝 Hesap durumun', butce:'💰 Bütçe', rapor:'📚 Raporlar'};
 function viewOzet(C){
   const M = myPicture(), P = planState(), ph = ozPhase(P), t = isFamily() ? null : totalPlan();
-  return ozHero(ph, P, C) + ozKpis(ph, P, C, M, t) + ozBudgetW(ph, P, C) + ozDaysW(ph, P) + ozCatsW(C) + ozFairW(t) + ozWalletW(M) + ozShopW(ph, M) + ozAlertsW(ph, P, C, t) + ozFunW(ph) + ozTilesW() + logsHtml() + ozLearnHtml();
+  return leftNote() + ozHero(ph, P, C) + ozKpis(ph, P, C, M, t) + ozBudgetW(ph, P, C) + ozDaysW(ph, P) + ozCatsW(C) + ozFairW(t) + ozWalletW(M) + ozShopW(ph, M) + ozAlertsW(ph, P, C, t) + ozFunW(ph) + ozTilesW() + logsHtml() + ozLearnHtml();
 }
 // Gezi kartı (uçan Leyo'lu, hikâye kartının görünümünde): dönemine göre başlık ve rakam; bitince hikâyenin satırları ve paylaşım.
 function ozHero(ph, P, C){
@@ -9195,15 +9410,34 @@ function ozBudgetRows(ph, P, C){
     + (topTL ? ozLn('En çok harcanan', `${top[0].icon} ${top[0].name}`, `kişi başı ${ozF(topTL)} · bütçeden %${Math.round(topTL * 100 / P.plan)}`) : '');
 }
 function ozBudgetW(ph, P, C){
-  if (!(P.plan > 0)) return ph === 'post' ? '' : `<section class="ozw"><div class="ozw-h"><span>💰 Bütçe</span></div><span class="mut">Kişi başı bütçe belirlersen burada gidişatı görürsün: kalan, günlük sınır ve seyahat sonu tahmini.</span><button type="button" class="btn sm" data-tab="trip" data-tg="tg_budget">Bütçe belirle</button></section>`;
+  if (!(P.plan > 0)) return ph === 'post' ? (cancelLine() ? `<section class="ozw"><div class="ozw-h"><span>💰 Bütçe</span></div>${cancelLine()}</section>` : '') : `<section class="ozw"><div class="ozw-h"><span>💰 Bütçe</span></div><span class="mut">Kişi başı bütçe belirlersen burada gidişatı görürsün: kalan, günlük sınır ve seyahat sonu tahmini.</span>${cancelLine()}<button type="button" class="btn sm" data-tab="trip" data-tg="tg_budget">Bütçe belirle</button></section>`;
   const pct = Math.round((ph === 'pre' ? P.pre : P.spent) * 100 / P.plan);
   return `<button type="button" class="ozw" data-ozd="butce"><div class="ozw-h"><span>💰 ${ph === 'pre' ? 'Bütçe planı' : ph === 'trip' ? 'Bütçe nabzı' : 'Bütçe sonucu'}</span><span class="num">%${pct}</span></div>
-    <div class="tr"><i class="${pct > 100 ? 'over' : pct > 80 ? 'near' : ''}" style="width:${Math.min(100, pct)}%"></i></div>${ozBudgetRows(ph, P, C)}</button>`;
+    <div class="tr"><i class="${pct > 100 ? 'over' : pct > 80 ? 'near' : ''}" style="width:${Math.min(100, pct)}%"></i></div>${ozBudgetRows(ph, P, C)}${cancelLine()}</button>`;
+}
+// 🚫 İptaller bütçede (2026-11-28, kullanıcı: "bütçede iptal edilen eksi, yenisi artı görünsün"): iptal edilenler eksi, yerine gelenler
+// artı; tutarlar kaydın kendi para biriminde (karışıksa bugünkü TL değeriyle). Toplamlar zaten iptalsiz hesaplanır; bu satır yalnız
+// neyin düştüğünü gösterir. rows: Özet ayrıntısı ve raporlar için [iptal, yerine gelen] çiftleri.
+function cancelInfo(L = VE()){
+  const X = L.filter(e => e.kind === 'iptal').sort((a, c) => a.at - c.at); if (!X.length) return null;
+  const R = X.map(repOf).filter(Boolean);
+  const amt = a => { const c = [...new Set(a.map(e => e.cur))]; return c.length === 1 ? money(a.reduce((s, e) => s + e.amount, 0), c[0]) : tlk(a.reduce((s, e) => s + tlKurus(e), 0)); };
+  return {X, R, minus:amt(X), plus:R.length ? amt(R) : '', rows:X.map(e => [e, repOf(e)])};
+}
+function cancelLine(){
+  const I = cancelInfo(); if (!I) return '';
+  const one = I.X.length === 1, r = I.R[0];
+  return `<div class="ozcan"><span>🚫 ${one ? esc(I.X[0].desc) + ' iptal' : I.X.length + ' iptal'} <b class="num neg">−${I.minus}</b>${I.R.length ? ` · yerine ${one && r ? esc(r.desc) + ' ' : ''}<b class="num pos">+${I.plus}</b>` : ''}</span><small>İptal edilen hesaba girmez; toplam yenisiyle hesaplanır.</small></div>`;
+}
+// Özet ayrıntısında iptal edilenler ve yerine gelenler (dokununca kaydı açar).
+function cancelRowsHtml(){
+  const I = cancelInfo(); if (!I) return '';
+  return ozGrp('🚫 İptal edilenler', `−${I.minus}`) + I.rows.map(([e, y]) => ozLn(`${esc(e.desc)}${e.when ? ` · ${esc(bkLine(e))}` : ''}`, `<s>${money(e.amount, e.cur)}</s>`, `iptal ${e.iptal && e.iptal.at ? dShort(e.iptal.at) : ''}${y ? ` · yerine ${esc(y.desc)} ${money(y.amount, y.cur)}` : ' · yerine bir şey eklenmedi'}`, `data-edit="${e.id}"`)).join('');
 }
 // Gidişat: öncesi "peşin ödenenler" (en büyük seyahat öncesi harcamalar); sırası ve sonrası "gün gün" kişi başı dikey çubuklar,
 // kesik çizgi günlük bütçe; sırasında bugün vurgulu, sonrasında en pahalı ve en ekonomik gün yazılı.
 function ozDaysW(ph, P){
-  if (ph === 'pre'){ const pre = S.entries.filter(e => e.kind === 'expense' && phaseOf(e, S) === 'pre').map(e => ({e, v:toCents(e)})).sort((a, c) => c.v - a.v);
+  if (ph === 'pre'){ const pre = VE().filter(e => e.kind === 'expense' && phaseOf(e, S) === 'pre').map(e => ({e, v:toCents(e)})).sort((a, c) => c.v - a.v);
     if (!pre.length) return ''; const tot = pre.reduce((x, r) => x + r.v, 0), top = pre.slice(0, 5);
     return `<button type="button" class="ozw" data-ozd="gunler"><div class="ozw-h"><span>🧾 Peşin ödenenler · grup</span><span class="num">${eu(tot)}</span></div>`
       + top.map(r => `<div class="hb"><span>${esc(r.e.desc)}</span><b class="num">${eu(r.v)}</b><i style="width:${(r.v * 100 / top[0].v).toFixed(1)}%"></i></div>`).join('')
@@ -9226,7 +9460,7 @@ function ozCatsW(C){
 }
 // Kim ne ödedi: her kişinin ödediği eksi payı (bugünkü TL değeriyle), ortadan iki yana çubuk; isme dokununca Hesaplaşma dökümü.
 function ozFairW(t){
-  if (!t || S.people.length < 2) return '';
+  if (!t || S.people.length < 2 || meLeft()) return '';
   const LT = ledgerShown(t, 'T'), LE = t.hasE ? ledgerShown(t, 'E') : null;
   const rows = S.people.map(p => ({p, g:(LT[p.id] ? LT[p.id].gross : 0) + (LE && LE[p.id] ? Math.round(LE[p.id].gross * t.Q) : 0)})).sort((a, b) => b.g - a.g);
   const max = Math.max(1, ...rows.map(r => Math.abs(r.g)));
@@ -9279,7 +9513,7 @@ function ozAlertsW(ph, P, C, t){
     if (n1) A.push(['🛂', `${n1} tax-free formu onaylatılacak`, 'ülkeden çıkarken gümrükte', 'data-tab="shop" data-sv="list"']);
     if (n2) A.push(['⏳', `${n2} tax-free iadesi bekleniyor`, '', 'data-tab="shop" data-sv="list"']); }
   if (ph === 'trip'){ if (P.dayLimit && P.today > P.dayLimit) A.push(['⚠️', `Bugün günlük sınırı ${ozF(P.today - P.dayLimit)} aştın`, 'kişi başı', 'data-ozd="butce"']);
-    if (S.trip.kasaOn && C.kasaLeft < 0) A.push(['💰', `Kasada ${eu(-C.kasaLeft)} açık var`, 'kasaya para ekleyin', 'data-act="kasa"']); }
+    if (S.trip.kasaOn && C.kasaLeft < 0 && !meLeft()) A.push(['💰', `Kasada ${eu(-C.kasaLeft)} açık var`, 'kasaya para ekleyin', 'data-act="kasa"']); }
   if (ph === 'post' && P.plan > 0 && P.spent > P.plan) A.push(['📊', `Bütçe ${ozF(P.spent - P.plan)} aşıldı`, 'nedeni Bütçe sonucunda', 'data-ozd="butce"']);
   if (ph === 'post') A.push(['📚', 'Raporlarını indir', 'ortak ve kişisel PDF / Excel, albüm', 'data-ozd="rapor"']);
   const msg = !A.length ? 'Her şey yolunda, bekleyen bir şey yok ✓' : ph === 'post' ? 'Seyahat bitti; kalan işler bunlar.' : `${A.length} şey seni bekliyor.`;
@@ -9296,7 +9530,7 @@ function ozTilesW(){
 }
 // Alttan açılan ayrıntı sayfası (salt okunur): kutucuk, gösterge ve widget'lar buraya açılır.
 function ozDetail(key){
-  const C = compute(S, startOfToday()), M = myPicture(), P = planState(), ph = ozPhase(P), cnt = S.entries.filter(e => e.kind === 'expense').length;
+  const C = compute(VS(), startOfToday()), M = myPicture(), P = planState(), ph = ozPhase(P), cnt = VE().filter(e => e.kind === 'expense').length;
   const {ref} = shopCalc(), items = SH.items.slice().sort((a, c) => a.at - c.at), G = SH.gifts || [];
   const shares = () => M.shares.length ? ozByPh(M.shares, r => ozLn(`${dmy(r.e.at)} · ${esc(r.e.desc)}`, eu(r.v), `toplam ${money(r.e.amount, r.e.cur)} · ${r.e.paidBy === 'kasa' ? 'kasadan' : esc(rawName(r.e.paidBy)) + ' ödedi'}`, `data-edit="${r.e.id}"`)) : '<p class="hint" style="margin:0">Henüz payın olan ortak harcama yok.</p>';
   const solos = () => M.soloRows.length ? ozByPh(M.soloRows, r => ozLn(`${dmy(r.x.at)} · ${esc(r.x.desc)}`, money(r.x.amount, r.x.cur), `${catById(r.x.cat).name}${r.x.cur === 'EUR' ? '' : ' · ' + eu(r.v)}`, `data-solo="${r.x.id}"`)) : '<p class="hint" style="margin:0">Kişisel harcama yok.</p>';
@@ -9307,8 +9541,8 @@ function ozDetail(key){
     + ozLn('<b>Toplam</b>', `<b>${eu(M.all)}</b>`, `≈ ${tl(M.all)}${M.ref ? ` · tax-free sonrası ≈ ${eu(M.all - M.ref)}` : ''}`)
     + `<p class="hint">Ortak harcamalarda yalnız senin payın sayılır; kişisel harcama ve alışveriş yalnız sende görünür.</p>`;
   if (key === 'ortak') return (cnt ? `<p class="note" style="margin:0">Grup: ${eu(C.total)}${C.preTotal ? ` · öncesi ${eu(C.preTotal)} · seyahatte ${eu(C.total - C.preTotal)}` : ''} · bugünkü kurla ${tl(C.total)}</p>`
-      + ozGrp('Kategoriler', '') + groupCatsHtml(C) + ozGrp(isFamilies() ? 'Aile başı' : 'Kişi başı', '') + perPersonHtml(C) : '<p class="hint" style="margin:0">Henüz ortak harcama yok.</p>')
-    + ozGrp('Senin payın', eu(M.pre + M.trip)) + shares() + (isFamily() ? '' : `<button type="button" class="link" data-tab="settle">Hesaplaşma'da gör ›</button>`);
+      + ozGrp('Kategoriler', '') + groupCatsHtml(C) + (meLeft() ? '' : ozGrp(isFamilies() ? 'Aile başı' : 'Kişi başı', '') + perPersonHtml(C)) : '<p class="hint" style="margin:0">Henüz ortak harcama yok.</p>')
+    + ozGrp('Senin payın', eu(M.pre + M.trip)) + shares() + cancelRowsHtml() + (isFamily() ? '' : `<button type="button" class="link" data-tab="settle">Hesaplaşma'da gör ›</button>`);
   if (key === 'kisisel') return ozGrp('Kişisel harcamalar', eu(M.solo)) + solos() + ozGrp('Alışveriş', eu(M.shop)) + shops()
     + (M.ref ? ozLn('<b>Tax-free iadesi (tahmini)</b>', '−' + eu(M.ref)) + ozLn('<b>Tax-free sonrası</b>', eu(M.shop - M.ref)) : '') + savingsHtml()
     + (G.length ? ozGrp('Hediye listesi · toplama girmez', `~${e0(G.reduce((a, g) => a + (g.est || 0), 0))}`) + G.slice().sort((a, c) => a.done - c.done).map(g => ozLn(`${g.done ? '✓' : '○'} ${esc(g.who)}`, g.est ? '~' + e0(g.est) : '', esc(g.what))).join('') : '')
@@ -9329,10 +9563,10 @@ function ozDetail(key){
       + `<p class="hint">Ortak harcamalardaki payın, ödediklerin ve yapılan ödemelerden; kişisel harcamalar ve alışveriş girmez.</p><button type="button" class="btn block" data-tab="settle">Hesaplaşma'ya git</button>`; }
   if (key === 'butce') return P.plan > 0 ? `<p class="note" style="margin:0">Kişi başı bütçe ${ozF(P.plan)}${P.len ? ` · ${P.len} gün` : ''}. Bütçe ortak harcamalar içindir; kişisel harcama ve alışveriş girmez.</p>` + ozBudgetRows(ph, P, C)
       + (ph !== 'pre' ? ozGrp('Nasıl hesaplanır?', '') + `<p class="hint" style="margin:0">${ph === 'trip' ? 'Tahmin: seyahat öncesi + (şimdiye kadarki seyahat harcaması ÷ geçen gün) × gün sayısı. Bugün için kalan: kalan bütçenin kalan günlere bölünmüşü − bugün harcanan.' : 'Sonuç: bütçe − harcanan (kişi başı). Planlanan günlük: (bütçe − seyahat öncesi) ÷ gün sayısı.'}</p>` : '')
-      + `<button type="button" class="btn block" data-tab="trip" data-tg="tg_budget">Bütçeyi değiştir</button>`
+      + cancelRowsHtml() + `<button type="button" class="btn block" data-tab="trip" data-tg="tg_budget">Bütçeyi değiştir</button>`
     : `<p class="hint">Kişi başı bütçe yok.</p><button type="button" class="btn block" data-tab="trip" data-tg="tg_budget">Bütçe belirle</button>`;
   if (key === 'rapor') return `<div class="rpt-row rpt-main"><span><b>🧳 Gezi raporu · yalnız sen</b><small>Her şey grafikleriyle: bir bakışta, gün gün, bütçe, nerede harcadın, ortak payın, kişisel harcamaların, alışverişin (mağaza, outlet, tax-free, ürünler), hediyeler, hesabın ve fiş fotoğrafların. İçinde kişisel bilgilerin var.</small></span><div class="two"><button class="btn pri" data-act="tpdf">📄 PDF</button><button class="btn" data-act="txlsx">📊 Excel</button></div></div>
-      <div class="rpt-row"><span><b>👥 Ortak rapor</b><small>grupla paylaşmak için: bütün ortak harcamalar, herkesin hesap tablosu, hesaplaşma</small></span><div class="two"><button class="btn sm" data-act="pdf">📄 PDF</button><button class="btn sm" data-act="xlsx">📊 Excel</button></div></div>
+      ${meLeft() ? '' : `<div class="rpt-row"><span><b>👥 Ortak rapor</b><small>grupla paylaşmak için: bütün ortak harcamalar, herkesin hesap tablosu, hesaplaşma</small></span><div class="two"><button class="btn sm" data-act="pdf">📄 PDF</button><button class="btn sm" data-act="xlsx">📊 Excel</button></div></div>`}
       <div class="rpt-row"><span><b>📖 Seyahat albümü</b><small>paylaşmalık anı defteri: kapak fotoğrafı, rota haritası, gün gün gezdiğimiz yerler, hikâyeler ve fotoğraflar; kimsenin kişisel harcaması yok</small></span><button class="btn sm" data-act="album">📖 Albümü hazırla</button></div>`;
   return '';
 }
@@ -9817,7 +10051,7 @@ function removePerson(id, target){
 // Arşivlenen seyahat salt okunurdur: ekleme, düzenleme, silme ve ödeme kapalı; sadece görüntülenir.
 // Ayar seyahatle birlikte buluta gider, herkeste arşivde görünür. Seyahat sekmesinden geri açılabilir.
 const isRO = () => !!(S.trip && S.trip.closed);
-const RO_ACTS = new Set(['add', 'pay', 'addshop', 'addgift', 'kasa', 'kasaempty', 'paid', 'editplan', 'saveplan', 'shoplimit', 'saveshoplimit',
+const RO_ACTS = new Set(['add', 'uncancel', 'pay', 'addshop', 'addgift', 'kasa', 'kasaempty', 'paid', 'editplan', 'saveplan', 'shoplimit', 'saveshoplimit',
   'setmode', 'addperson', 'scan', 'plus', 'addline', 'rate', 'copyamt']);
 let confirmArc = false, tripMore = false;   // tripMore: Seyahat kartındaki ••• (arşivle, sil) açık mı
 
@@ -9852,10 +10086,11 @@ const CAT_COLORS = {ucak:'#2a78d6', ulasim:'#eb6834', yeme:'#1baf7a', konaklama:
 const RPT = {ink:'#13232C', muted:'#5B6A74', line:'#D5DDE2', soft:'#F1F4F5', s1:'#2a78d6', s2:'#eb6834'};
 function mixHex(a, b, t){ const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
 function reportData(){
-  const C = compute(S), tc = themeCountry(), accent = tc ? tc[2] : '#0B6B6B';
+  // Grubun rakamları: geziye katılmayanın telefonunda (Gezi raporu) yalnız gördüğü kayıtlardan (VS); hesap tablosu bütün kayıtlarla.
+  const V = VS(), C = compute(V), tc = themeCountry(), accent = tc ? tc[2] : '#0B6B6B';
   const cats = CATS.map(c => ({id:c.id, name:c.name, v:C.cats[c.id] || 0, color:CAT_COLORS[c.id]})).filter(c => c.v > 0).sort((a, b) => b.v - a.v);
   const days = {};
-  S.entries.filter(e => e.kind === 'expense' && phaseOf(e, S) !== 'pre').forEach(e => { const k = isoDay(e.at); days[k] = (days[k] || 0) + toCents(e); });
+  V.entries.filter(e => e.kind === 'expense' && phaseOf(e, S) !== 'pre').forEach(e => { const k = isoDay(e.at); days[k] = (days[k] || 0) + toCents(e); });
   const dayList = Object.keys(days).sort().map(k => { const t = new Date(k + 'T12:00:00').getTime(), n = tripDay(t); return {key:k, label:n >= 1 ? n + '. gün' : new Date(t).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}), v:days[k]}; });
   // Aile seyahati dışında kişiler hesap tablosundan (TL, hesaplaşmanın kuruyla; ekrandaki Hesap tablosuyla aynı, 2026-11-27).
   // Euro defteri (yeni kural) varsa LE; peopleT/peopleE defter çubukları için, people albüm grafiği için iki defterin bugünkü TL değeri.
@@ -10131,6 +10366,7 @@ async function exportXlsx(){
     t.font = {bold:true}; t.getCell('e').numFmt = EUR; t.getCell('tl').numFmt = TRY; t.getCell('a').border = {top:{style:'thin'}};
     h.autoFilter = {from:'A1', to:`J${exps.length + 1}`};
   }
+  xlsxCancels(wb, head, TRY, EUR, S.entries);
   // Kategoriler
   const k = wb.addWorksheet('Kategoriler');
   k.columns = [{header:'Kategori', width:18}, {header:'Euro', width:14}, {header:'Pay', width:10}];
@@ -10351,7 +10587,7 @@ function tripPdfPages(emit, dry){
   }
   if (!isFamily() && C.total){ const avg = Math.round(C.total / (D.n || 1)), mine = P.pre + P.trip, d0 = avg ? Math.round((mine - avg) * 100 / avg) : 0;
     title('Sen ve grup', 240);
-    tiles([['Grubun toplamı', eu(C.total), `${S.entries.filter(e => e.kind === 'expense').length} ortak harcama`], ['Kişi başı ortalama', eu(avg), `${D.n} kişi`],
+    tiles([['Grubun toplamı', eu(C.total), `${VE().filter(e => e.kind === 'expense').length} ortak harcama`], ['Kişi başı ortalama', eu(avg), `${D.n} kişi`],
       ['Senin ortak payın', eu(mine), avg ? `ortalamaya göre ${d0 >= 0 ? '+' : '−'}%${Math.abs(d0)}` : '']]); }
 
   // 3) Nerede harcadın
@@ -10367,6 +10603,7 @@ function tripPdfPages(emit, dry){
   if (P.shares.length){ part('👥', 'Ortak harcamalardaki payın', `${P.shares.length} harcamada payın var; "Harcama" tamamı, "Payın" sana düşen kısım.`);
     table([['Tarih', M + 14, 'left'], ['Açıklama', M + 130, 'left', 480], ['Ödeyen', M + 630, 'left', 180], ['Harcama', M + 950, 'right'], ['Payın', W - M - 14, 'right']],
       [...byPh(P.shares, r => ({cells:[dmy(r.e.at), r.e.desc, r.e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(r.e.paidBy), money(r.e.amount, r.e.cur), eu(r.v)]})), {total:['Toplam', null, null, null, eu(P.pre + P.trip)]}]); }
+  pdfCancels(S.entries, {page, title, fit, get x(){ return x; }, get y(){ return y; }, set y(v){ y = v; }, W, H, M}, S.me);
   if (P.soloRows.length){ if (P.shares.length) title('🔒 Kişisel harcamaların', 260); else part('🔒', 'Kişisel harcamaların', 'Yalnız sende; seyahatin toplamına ve hesaplaşmaya girmez.');
     table([['Tarih', M + 14, 'left'], ['Açıklama', M + 130, 'left', 500], ['Kategori', M + 650, 'left', 180], ['Tutar', M + 950, 'right'], ['€', W - M - 14, 'right']],
       [...byPh(P.soloRows, r => ({cells:[dmy(r.x.at), r.x.desc, catById(r.x.cat).name, money(r.x.amount, r.x.cur), eu(r.v)]})), {total:['Toplam', null, null, null, eu(P.solo)]}]); }
@@ -10545,6 +10782,7 @@ function tripXlsx(ExcelJS, R){
   { const r = sp.getRow(sTot); r.getCell(2).value = 'Toplam'; r.getCell(8).value = P.shares.length ? {formula:`SUM(H2:H${sEnd})`, result:(P.pre + P.trip) / 100} : 0; r.getCell(8).numFmt = EUR; bold(r); }
   if (P.shares.length) sp.autoFilter = {from:'A1', to:`I${P.shares.length + 1}`};
   // Kişisel harcamalarım
+  xlsxCancels(wb, head, TRY, EUR, S.entries, S.me);   // 🚫 payının olduğu iptal edilenler (hesaba girmedi)
   const SK = 'Kişisel harcamalarım', sk = wb.addWorksheet(SK, {views:[{state:'frozen', ySplit:1}]});
   sk.columns = [{header:'Tarih', width:11}, {header:'Açıklama', width:32}, {header:'Kategori', width:13}, {header:'Dönem', width:15}, {header:'Tutar', width:12}, {header:'Birim', width:7}, {header:'€ karşılığı', width:13}, {header:'Yer', width:24}];
   head(sk.getRow(1));
@@ -10816,8 +11054,52 @@ function pdfPages(){
     x.fillText(fit(isFamily() ? rawName(e.by || e.paidBy) : e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(e.paidBy), 220, FONT(400, 20)), M + 640, y + 24);
     x.textAlign = 'right'; x.font = FONT(600, 20); x.fillText(money(e.amount, e.cur), W - M - 16, y + 24); x.textAlign = 'left'; y += 42;
   });
+  pdfCancels(S.entries, {page, title, fit, get x(){ return x; }, get y(){ return y; }, set y(v){ y = v; }, W, H, M});
   pages.forEach((p, i) => { const g = p.getContext('2d'); g.font = FONT(400, 16); g.fillStyle = '#93A4AE'; g.fillText(`Heybe · ${S.trip.name} · ${i + 1}/${pages.length}`, M, H - 36); });
   return pages;
+}
+// 🚫 İptal edilenler (raporlar, 2026-11-28; kullanıcı: "raporlarda da tam anlaşılsın"): hiçbir toplama girmez; her satırda iptal
+// tarihi, yerine gelen ve fark. me: Gezi raporunda kişinin payı ("payın olacaktı"). T: tuval yardımcıları (x, y, page, title, fit).
+const cancelDiffTxt = (e, r) => { if (!r) return ''; const same = r.cur === e.cur, d = same ? r.amount - e.amount : (tlKurus(r) - tlKurus(e)) / 100, c = same ? e.cur : 'TRY';
+  return Math.abs(d) < 0.005 ? 'aynı fiyat' : `${money(Math.abs(d), c)} ${d < 0 ? 'daha ucuz' : 'daha pahalı'}`; };
+function pdfCancels(L, T, me = null){
+  const I = cancelInfo(L.filter(e => !me || (e.kind === 'iptal' && (e.among.includes(me) || e.paidBy === me))) ); if (!I) return;
+  const {W, H, M} = T; if (T.y + 200 > H - M) T.page();
+  T.title('🚫 İptal edilenler');
+  let x = T.x; x.fillStyle = RPT.muted; x.font = FONT(400, 19);
+  x.fillText(T.fit('Hiçbir toplama ve hesaplaşmaya girmez; para geri gelmiş sayılır. Yerine gelenler harcamaların arasında.', W - 2 * M, FONT(400, 19)), M, T.y + 20); T.y += 44;
+  for (const [e, r] of I.rows){
+    if (T.y + 74 > H - M){ T.page(); x = T.x; }
+    x.fillStyle = RPT.soft; rr(x, M, T.y - 6, W - 2 * M, 64, 10); x.fill();
+    x.fillStyle = RPT.muted; x.font = FONT(400, 20); x.fillText(new Date(e.at).toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'}), M + 34, T.y + 22);
+    x.fillStyle = RPT.ink; x.font = FONT(600, 20); x.fillText(T.fit(e.desc, 600, FONT(600, 20)), M + 160, T.y + 22);
+    const share = me ? splitShares(toCents(e), e.among, e.weights)[me] || 0 : 0;
+    const sub = `iptal ${e.iptal && e.iptal.at ? dShort(e.iptal.at) : ''}${me && share ? ` · payın ${eu(share)} olacaktı` : ''}${r ? ` · yerine ${r.desc} ${money(r.amount, r.cur)} (${cancelDiffTxt(e, r)})` : ' · yerine bir şey eklenmedi'}`;
+    x.fillStyle = RPT.muted; x.font = FONT(400, 17); x.fillText(T.fit(sub, W - 2 * M - 360, FONT(400, 17)), M + 160, T.y + 48);
+    x.textAlign = 'right'; x.font = FONT(600, 20); const tx = money(e.amount, e.cur), tw = x.measureText(tx).width; x.fillText(tx, W - M - 16, T.y + 22);
+    x.strokeStyle = RPT.muted; x.lineWidth = 2; x.beginPath(); x.moveTo(W - M - 16 - tw, T.y + 15); x.lineTo(W - M - 16, T.y + 15); x.stroke();
+    x.font = FONT(400, 16); x.fillText('hesaba girmedi', W - M - 16, T.y + 46); x.textAlign = 'left';
+    T.y += 74;
+  }
+}
+// Excel'de "İptal edilenler" sayfası: tutar (hesaba girmedi), iptal tarihi, yerine geçen, fark (TL, girildiği günün kuruyla).
+function xlsxCancels(wb, head, TRY, EUR, L, me = null){
+  const I = cancelInfo(L.filter(e => !me || (e.kind === 'iptal' && (e.among.includes(me) || e.paidBy === me)))); if (!I) return;
+  const w = wb.addWorksheet('İptal edilenler', {views:[{state:'frozen', ySplit:1}]});
+  w.columns = [{header:'Tarih', key:'d', width:12}, {header:'İptal edilen', key:'a', width:30}, {header:'Kategori', key:'k', width:14}, {header:'Ödeyen', key:'o', width:16},
+    {header:'Tutar', key:'t', width:13}, {header:'Birim', key:'c', width:7}, ...(me ? [{header:'Payın olacaktı', key:'m', width:15}] : []), {header:'TL (girildiği gün)', key:'tl', width:17},
+    {header:'İptal tarihi', key:'x', width:12}, {header:'Yerine geçen', key:'y', width:28}, {header:'Yeni tutar', key:'yt', width:13}, {header:'Birim', key:'yc', width:7}, {header:'Fark (TL)', key:'f', width:14}];
+  head(w.getRow(1));
+  for (const [e, r] of I.rows){
+    const row = w.addRow({d:new Date(e.at), a:e.desc, k:catById(e.cat).name, o:e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(e.paidBy), t:e.amount, c:e.cur,
+      ...(me ? {m:(splitShares(toCents(e), e.among, e.weights)[me] || 0) / 100} : {}), tl:tlKurus(e) / 100, x:e.iptal && e.iptal.at ? new Date(e.iptal.at) : null,
+      y:r ? r.desc : '—', yt:r ? r.amount : null, yc:r ? r.cur : '', f:r ? (tlKurus(r) - tlKurus(e)) / 100 : null});
+    row.getCell('d').numFmt = 'dd.mm.yyyy'; row.getCell('x').numFmt = 'dd.mm.yyyy'; row.getCell('t').numFmt = '#,##0.00'; row.getCell('yt').numFmt = '#,##0.00';
+    row.getCell('tl').numFmt = TRY; row.getCell('f').numFmt = TRY; if (me) row.getCell('m').numFmt = EUR;
+    row.getCell('t').font = {strike:true, color:{argb:'FF5B6A74'}};
+  }
+  w.addRow([]);
+  w.addRow({a:'İptal edilenler hiçbir toplama ve hesaplaşmaya girmez (para geri gelmiş sayılır). Fark: yeni tutar − iptal edilen, TL.'}).font = {italic:true, color:{argb:'FF5B6A74'}};
 }
 // ---- 📖 seyahat albümü (anı defteri, PDF) ----
 // 2026-11-27 yenilendi (kullanıcı: "güzel anılar, hikâyeler, gezi planı: 1. gün şuraya gitmiştik; fotoğraflarla süslenmiş bir albüm").
@@ -10904,7 +11186,7 @@ function albGuides(){ return Object.entries(S.trip.guide || {}).filter(([, g]) =
 const albSlug = s => String(s || '').toLocaleLowerCase('tr').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '');
 const albTkName = s => String(s || '').replace(/\s*(giriş\s*)?(bileti?|biletleri|ticket[s]?|entrance|entry)\s*$/i, '').trim() || String(s || '');
 function albDays(){
-  const P = tripPlan(), guides = albGuides(), exps = S.entries.filter(e => e.kind === 'expense' && phaseOf(e, S) !== 'pre');
+  const P = tripPlan(true), guides = albGuides(), exps = VE().filter(e => e.kind === 'expense' && phaseOf(e, S) !== 'pre');
   let ds = [];
   if (S.trip.start && S.trip.end && S.trip.end >= S.trip.start){ for (let d = S.trip.start, k = 0; d <= S.trip.end && k < 60; d = isoAdd(d, 1), k++) ds.push(d); }
   else ds = [...new Set([...exps.map(e => isoDay(e.at)), ...guides.flatMap(([, g]) => g.days.map(x => x.d))])].filter(Boolean).sort();
@@ -11039,7 +11321,7 @@ async function albFonts(){ try { await Promise.race([Promise.all([document.fonts
 async function albSrcImg(src){ let u = src, tmp = null; try { if (!/^data:/.test(u)){ const r = await fetch(u); if (!r.ok) return null; tmp = u = URL.createObjectURL(await r.blob()); } return await loadImg(u); } catch(_) { return null; } finally { if (tmp) URL.revokeObjectURL(tmp); } }
 async function exportAlbum(){
   const f = form, Ds = albDays();
-  if (!Ds.length && !S.entries.some(e => e.kind === 'expense')) return toast('Albüm için seyahat tarihleri ya da birkaç harcama gerekiyor.');
+  if (!Ds.length && !VE().some(e => e.kind === 'expense')) return toast('Albüm için seyahat tarihleri ya da birkaç harcama gerekiyor.');
   albStore();
   if (f && f.mode === 'album'){ f.busy = 'pdf'; drawSheetKeep(); }
   toast('📖 Albüm hazırlanıyor…');
@@ -11068,7 +11350,7 @@ function drawStamp(x, cx, cy, r, top, bottom, col, rot){
 }
 // Biz: herkese kayıtlardan çıkan olumlu bir ünvan (her ünvan bir kişiye, en yüksek değere); kalanlar "Yol arkadaşımız".
 function albTitles(){
-  const ppl = S.people.filter(p => !p.left), ids = new Set(ppl.map(p => p.id)), ex = S.entries.filter(e => e.kind === 'expense');
+  const ppl = S.people.filter(p => !p.left), ids = new Set(ppl.map(p => p.id)), ex = VE().filter(e => e.kind === 'expense');
   const sum = f => { const o = {}; ex.filter(e => e.paidBy !== 'kasa' && f(e)).forEach(e => o[e.paidBy] = (o[e.paidBy] || 0) + toCents(e)); return o; };
   const cnt = (f, k = 'paidBy') => { const o = {}; ex.filter(e => e[k] && e[k] !== 'kasa' && f(e)).forEach(e => o[e[k]] = (o[e[k]] || 0) + 1); return o; };
   const T = [['☕', 'Kahveleri ısmarlayan', cnt(e => /kahve|coffee|caf[eé]|espresso|cappuccino|latte/i.test(e.desc || ''))], ['🍽️', 'Sofranın sahibi', sum(e => e.cat === 'yeme')],
@@ -11080,7 +11362,7 @@ function albTitles(){
 }
 // Sayfalar. emit(tuval) her biten sayfada (async); dry: yalnız sayfa sayısı (tek tuval, fotoğraf açılmaz). Sayfa sayısını döndürür.
 async function albumPages(emit, dry, Ds, logo){
-  const W = 1240, H = 1754, M = 80, m = alb(), C = compute(S), n = headcount(), tc = themeCountry(), A = tc ? tc[2] : '#0B6B6B', Q = tc ? tc[3] : '#F0AE55';
+  const W = 1240, H = 1754, M = 80, m = alb(), C = compute(VS()), n = headcount(), tc = themeCountry(), A = tc ? tc[2] : '#0B6B6B', Q = tc ? tc[3] : '#F0AE55';
   const INK = ['#1F4E9E', '#A23B2A', '#5B3A8C', '#2E6B3E'];
   let cv = null, cv0 = null, x, y, pages = 0;
   const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
@@ -11103,7 +11385,7 @@ async function albumPages(emit, dry, Ds, logo){
   const text = (s0, X, Y, w, font, lh, maxL = 99, col = RPT.ink) => { const L = lines(s0, w, font); x.font = font; x.fillStyle = col;
     L.slice(0, maxL).forEach((l, k) => x.fillText(k === maxL - 1 && L.length > maxL ? fit(l + ' …', w, font) : l, X, Y + k * lh)); return Y + Math.min(L.length, maxL) * lh; };
   const band = (col, h) => { x.fillStyle = col; x.fillRect(0, 0, W, h); };
-  const guides = albGuides(), exps = S.entries.filter(e => e.kind === 'expense');
+  const guides = albGuides(), exps = VE().filter(e => e.kind === 'expense');
   const nPl = Ds.reduce((a, D) => a + D.places.length, 0), km = Ds.reduce((a, D) => a + (D.walk ? D.walk.km : 0), 0), steps = Ds.reduce((a, D) => a + (D.walk ? D.walk.steps : 0), 0);
   const allPh = Object.values(m.ph.days).flat(), nPh = allPh.length + Object.keys(m.ph.tk).length + (m.ph.cover ? 1 : 0), cities = albCities(Ds);
   const dayCol = (d, k = 0) => { const i = Ds.findIndex(D => D.d === d); return '#' + G_COLORS[(i < 0 ? k : i) % G_COLORS.length]; };
@@ -11421,8 +11703,8 @@ function showLeyoSplash(){
   setTimeout(close, 2400);
 }
 function openLeyoBrief(){
-  const C = compute(S, startOfToday()), P = planState(), lm = listLeyoMood(C);
-  const exps = S.entries.filter(e => e.kind === 'expense');
+  const C = compute(VS(), startOfToday()), P = planState(), lm = listLeyoMood(C);
+  const exps = VE().filter(e => e.kind === 'expense');
   const hasGuide = Object.values(S.trip.guide || {}).some(g => g && (g.ok || (g.days && g.days.length)));
   const settled = exps.length > 0 && (isFamily() || totalPlan().plan.length === 0);
   const bCnt = [exps.length > 0, exps.some(e => e.photo) || (SH.items || []).some(i => i.photo), hasGuide, !!(P.plan && P.spent > 0 && P.spent <= P.plan), (SH.items || []).length > 0 || (SH.gifts || []).length > 0, settled].filter(Boolean).length;
@@ -11588,14 +11870,28 @@ document.addEventListener('touchcancel', pullEnd);
 function swipeDelete(id){
   const e = S.entries.find(x => x.id === id); if (!e) return;
   if (e.kind === 'kasa' && kasaWouldGoNegative(e, true)){ swClose(); return toast('Bu kaydı silersen kasa eksiye düşer, çünkü bu para kasadan harcanmış.'); }
+  // Rezervasyon silinince iptal sayılır: satır kaybolmaz, gri kalır (2026-11-28). Gri kaydı bir daha silmek onu tamamen kaldırır.
+  if (isBooking(e)){ swClose(); return cancelEntry(id); }
   swipeGone(`.swr [data-edit="${id}"]`, () => {
     const i = S.entries.indexOf(e); if (i < 0) return;
-    const what = e.kind === 'expense' ? e.desc : 'kayıt';
-    softDelete(e.kind === 'expense' ? e.desc : 'Kayıt',
+    const what = e.kind === 'expense' || e.kind === 'iptal' ? e.desc : 'kayıt';
+    softDelete(e.kind === 'expense' || e.kind === 'iptal' ? e.desc : 'Kayıt',
       () => { S.entries.splice(S.entries.indexOf(e), 1); logEvent(`sildi: ${what} · ${money(e.amount, e.cur)}`); },
       () => { if (!S.entries.some(x => x.id === e.id)) S.entries.splice(Math.min(i, S.entries.length), 0, e); logEvent(`geri getirdi: ${what}`); },
       () => setPhoto(e.id, null));
   });
+}
+// 🚫 Rezervasyonu iptal et (Sil'in rezervasyondaki anlamı, 2026-11-28): kayıt gri kalır, hesaptan ve seyahat planından düşer;
+// 10 sn geri alınabilir. Yerine yenisi eklenince kendiliğinden bağlanır (cancelMatch) ve rehberdeki ev taşınır (gHomeSync).
+function cancelEntry(id){
+  const e = S.entries.find(x => x.id === id); if (!e || e.kind !== 'expense') return;
+  const snap = JSON.stringify(S.entries), stay = bkKind(e) === 'stay';
+  cancelApply(S, id, uid, S.me);
+  logEvent(`iptal etti: ${e.desc} · ${money(e.amount, e.cur)}`);
+  swOpen = null; if (form) closeSheet(); render();
+  finishGUndo();
+  gUndo = {tid:S.tid, timer:setTimeout(finishGUndo, 10000), restore:() => { S.entries = JSON.parse(snap); logEvent(`iptali geri aldı: ${e.desc}`); save(); }};
+  toast(`🚫 ${e.desc} iptal edildi; hesaptan düştü, listede gri kalır.${stay ? ' Yeni evi eklersen yerine geldiğini anlarım.' : ''}`, {act:'gundo', label:'Geri al', ms:10000});
 }
 function showPhoto(src){
   const v = document.createElement('div'); v.className = 'viewer';
@@ -11714,7 +12010,8 @@ document.addEventListener('click', ev => {
     render(); toast(`${p.name} serbest; o telefon açılınca kim olduğu yeniden sorulacak.`); return;
   }
   if (d.edit){
-    const e = S.entries.find(x => x.id === d.edit);
+    const e = S.entries.find(x => x.id === d.edit); if (!e) return;
+    if (e.kind === 'iptal'){ openSheet({mode:'iptal', id:e.id}); return; }
     if (e.kind === 'expense') startExpense(e);
     else if (e.kind === 'kasa') openSheet({mode:'kasa', id:e.id, amount:nf.format(e.amount), cur:e.cur, from:e.from, everyone:false, rate:e.rate});
     else openSheet({mode:'transfer', id:e.id, amount:nf.format(e.amount), cur:e.cur, from:e.kind === 'kasaout' ? 'kasa' : e.from, to:e.to, rate:e.rate, note:e.note || '', noteManual:true});
@@ -11730,6 +12027,7 @@ document.addEventListener('click', ev => {
     }
     if (d.settle){ form.settleTL = d.settle === '1'; if (form.settleTL && form.paidBy === 'kasa') form.paidBy = S.me; drawSheetKeep(); return; }
     if (d.cat){ form.cat = d.cat; form.catManual = true; form.showCat = false; drawSheetKeep(); return; }
+    if (d.rep){ form.rep = form.rep === d.rep ? null : d.rep; form.repNo = false; drawRep(); return; }
     if (d.payer){ form.paidBy = d.payer; form.showPayer = false; drawSheetKeep(); return; }
     if (d.all){
       const live = S.people.filter(p => !p.left).map(p => p.id);
@@ -11818,6 +12116,9 @@ document.addEventListener('click', ev => {
     case 'planpdf': planPdf(); break;
     case 'icsapply': icsApply(); break;
     case 'icscancel': form.ics = null; drawSheetKeep(); break;
+    case 'uncancel': { const id = form && form.id, e = S.entries.find(x => x.id === id); if (!e) break;
+      const y = repOf(e); cancelUndo(S, id); logEvent(`iptali geri aldı: ${e.desc}`); closeSheet(); flashId = id; render();
+      toast(`↩ ${e.desc} yeniden hesapta.${y ? ` Yerine eklenen ${y.desc} de duruyor; gerekirse onu sil.` : ''}`, {ms:6000}); break; }
     case 'gundo':
       if (gUndo && gUndo.tid === S.tid){ const r = gUndo.restore; clearTimeout(gUndo.timer); gUndo = null; r(); render(); toast('Geri alındı'); }
       break;
@@ -11830,10 +12131,10 @@ document.addEventListener('click', ev => {
     case 'toggleweights': form.showW = !form.showW; drawSheetKeep(); break;
     case 'scan': scanReceipt(); break;
     case 'sharestory': shareStory(); break;
-    case 'pdf': exportPdf(); break;
+    case 'pdf': if (meLeft()) { toast('Ortak rapor gezide olanlar için; senin için 🧳 Gezi raporu var (Özet › Raporlar).'); break; } exportPdf(); break;
     case 'album': openSheet({mode:'album'}); break;
     case 'albundo': albUndo(); break;
-    case 'xlsx': exportXlsx(); break;
+    case 'xlsx': if (meLeft()) { toast('Ortak rapor gezide olanlar için; senin için 🧳 Gezi raporu var (Özet › Raporlar).'); break; } exportXlsx(); break;
     case 'forgetlearn':
       if (!forgetSure){ forgetSure = true; render(); break; }
       forgetSure = false; RC_LEARN.clear(); RC_LINES.clear(); saveLearn(); render(); toast('Öğrenilenler silindi; fişler yine sözlükle okunacak.'); break;
@@ -11847,8 +12148,9 @@ document.addEventListener('click', ev => {
     case 'rmplace': Object.assign(form, {place:null, lat:null, lon:null, placeState:'off'}); drawPlace(); break;
     case 'destedit': form.destEdit = true; form.destDraft = null; drawPlace(); { const i = document.getElementById('fDest'); if (i){ i.focus(); i.select(); } } break;
     case 'destok': { const v = String(form.destDraft ?? document.getElementById('fDest')?.value ?? '').trim(), g = guessDest(form.desc, form.cat, form);
-      form.dest = v && !(g && v === g.label) && !(form.lat && v === form.place) ? v.slice(0, 150) : null; form.destEdit = false; drawPlace(); break; }
-    case 'destclear': form.dest = null; form.destEdit = false; drawPlace(); break;
+      form.dest = v && !(g && v === g.label) && !(form.lat && v === form.place) ? v.slice(0, 150) : null; form.destEdit = false; drawPlace(); drawRep(); break; }
+    case 'destclear': form.dest = null; form.destEdit = false; drawPlace(); drawRep(); break;
+    case 'repno': form.repNo = true; form.rep = null; drawRep(); break;
     case 'locate': locate(form); document.getElementById('fPlace').innerHTML = placeHtml(); break;
     case 'del':
       if (form.mode === 'solo'){
@@ -11861,9 +12163,11 @@ document.addEventListener('click', ev => {
       }
       { const old = S.entries.find(x => x.id === form.id);
         if ((old.kind === 'kasa') && kasaWouldGoNegative(old, true)){ document.getElementById('fErr').textContent = 'Bu kaydı silersen kasa eksiye düşer, çünkü bu para kasadan harcanmış. Tüm kasayı sıfırlamak için “Kasayı boşalt”ı kullan.'; break; } }
+      // Rezervasyonda Sil = iptal (2026-11-28): onaydan sonra kayıt gri kalır, hesaptan düşer.
+      if (form.mode === 'expense' && isBooking(S.entries.find(x => x.id === form.id))){ if (!confirmDel){ confirmDel = true; drawSheetKeep(); break; } cancelEntry(form.id); break; }
       if (!confirmDel){ confirmDel = true; drawSheetKeep(); break; }
       setPhoto(form.id, null);
-      { const g = S.entries.find(x => x.id === form.id); logEvent(`sildi: ${g.kind === 'expense' ? g.desc : 'kayıt'} · ${money(g.amount, g.cur)}`); }
+      { const g = S.entries.find(x => x.id === form.id); logEvent(`sildi: ${g.kind === 'expense' || g.kind === 'iptal' ? g.desc : 'kayıt'} · ${money(g.amount, g.cur)}`); }
       S.entries = S.entries.filter(x => x.id !== form.id); closeSheet(); render(); toast('Silindi'); break;
     case 'paid': {
       // Yeni kuralda ödeme, bugünkü kurla kaydedilir ve kapattığı parçaları saklar; eski kurala göre ödemede hesaplaşma kuru kalır.
@@ -11876,7 +12180,7 @@ document.addEventListener('click', ev => {
       openSheet({mode:'transfer', total:true, amount:nf.format(payEur(p, t.Q) / 100), cur:'EUR', rate:S.trip.rate, from:p.from, to:p.to, note:payNote(p.from, p.to)}); break;
     }
     case 'copyamt': { const p = planAt(d.i); copyText((p.amt/100).toFixed(2).replace('.', ','), `Tutar kopyalandı: ${tlk(p.amt)}`); break; }
-    case 'share': openSheet({mode:'share', text:shareText()}); break;
+    case 'share': if (meLeft()) break; openSheet({mode:'share', text:shareText()}); break;
     case 'addperson': openSheet({mode:'addpeople', apText:'', jch:{}}); break;
     case 'archive':
       if (!confirmArc){ confirmArc = true; render(); break; }
@@ -11922,9 +12226,9 @@ document.addEventListener('input', ev => {
   if (el.id === 'gNote' && form){ const P = S.trip.prefs || (S.trip.prefs = {}); (P[S.me] || (P[S.me] = {})).not = el.value.trim(); save(); return; }
   if (form && ['fWhen', 'fUntil', 'fWhenT', 'fUntilT'].includes(el.id) && bkKind(form) === 'stay'){
     const id = el.id.replace(/T$/, ''), d = (document.getElementById(id) || {}).value || '', t = (document.getElementById(id + 'T') || {}).value || '';
-    form[id === 'fWhen' ? 'when' : 'until'] = d ? d + (t ? 'T' + t : '') : ''; return; }
+    form[id === 'fWhen' ? 'when' : 'until'] = d ? d + (t ? 'T' + t : '') : ''; drawRep(); return; }
   if (form && el.id === 'fBagOk'){ form.bagOk = el.checked; return; }
-  if (form && ['fWhen', 'fUntil', 'fFrom', 'fTo'].includes(el.id)){ form[{fWhen:'when', fUntil:'until', fFrom:'from', fTo:'to'}[el.id]] = el.value.trim(); if (el.id === 'fFrom' && !form.destEdit) drawPlace(); return; }
+  if (form && ['fWhen', 'fUntil', 'fFrom', 'fTo'].includes(el.id)){ form[{fWhen:'when', fUntil:'until', fFrom:'from', fTo:'to'}[el.id]] = el.value.trim(); if (el.id === 'fFrom' && !form.destEdit) drawPlace(); drawRep(); return; }
   if (el.id === 'shopQ'){ shopQ = el.value; const r = document.getElementById('shopRes'); if (r) r.innerHTML = shopRowsHtml(); return; }
   if (el.id === 'gWho' || el.id === 'gWhat' || el.id === 'gEst'){ giftDraft[{gWho:'who', gWhat:'what', gEst:'est'}[el.id]] = el.value; return; }
   if (form){
@@ -11942,6 +12246,7 @@ document.addEventListener('input', ev => {
       if (!form.destEdit) drawPlace();
       { const b = document.getElementById('fBk'); if (b && (b.dataset.k || '') !== (bkKind(form) || '')){ b.innerHTML = bkHtml(); b.dataset.k = bkKind(form) || ''; } }
       { const pl = document.getElementById('fPhotoLbl'); if (pl && !form.photo) pl.textContent = docLabel(form); }
+      drawRep();
       return;
     }
     if (el.id === 'nName'){ form.name = el.value; return; }
