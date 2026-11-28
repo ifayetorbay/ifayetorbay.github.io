@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261128163115';</script>
-<script src="heybe-web.js?v=20261128163115"></script>
+<script>window.HEYBE_VER = '20261128170705';</script>
+<script src="heybe-web.js?v=20261128170705"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -204,6 +204,18 @@ body.ro .wbtn.tbtn{pointer-events:auto}
 .row.trf .ic{background:var(--accent-soft)}
 .row.big .amt b{color:var(--neg)}
 .row.big{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--neg) 70%,transparent)}
+/* 🐦 Leyo hatırlatıyor (2026-11-28): Özet'te gezi kartının altında */
+.remind{gap:6px;border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+.rem-say{display:flex;align-items:center;gap:10px}
+.rem-say .leyo{width:70px;height:auto;flex:none}
+.rem-bub{position:relative;flex:1;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));font-size:.9rem;font-weight:600;line-height:1.35}
+.rem-bub::before{content:'';position:absolute;left:-7px;top:50%;margin-top:-7px;border:7px solid transparent;border-left:0;border-right-color:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.rem-bub small{display:block;color:var(--accent-text);font-weight:800;font-size:.72rem;margin-bottom:2px}
+.rem-row{display:flex;align-items:flex-start;gap:8px;padding-top:8px;border-top:1px solid var(--line)}
+.rem-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+.rem-w{font-size:.72rem;font-weight:800;color:var(--accent-text);text-transform:uppercase;letter-spacing:.04em}
+.rem-t{font-weight:700}
+.rem-s{font-size:.82rem;color:var(--muted);line-height:1.35}
 /* 🔁 ev değişti: hesabın nasıl değişti (2026-11-28) */
 .chgcard{display:flex;flex-direction:column;gap:8px;border:1.5px solid var(--accent)}
 .chgcard h2{margin:0;font-size:1.02rem}
@@ -1754,6 +1766,73 @@ function changeLines(st, id, R, Q){
   }
   return out;
 }
+// ---- 🐦 Leyo hatırlatıyor (2026-11-28, kullanıcı onayı: "Yarın Erzurum–İstanbul hatırlatması Özet'te olsun; bu tür hatırlatmaları
+// çoğaltalım; maskotumuzu kullanalım") ----
+// Bugünün ve yarının hatırlatmaları, yalnız verilen bilgilerden (sayfa ve ağ yok; test: node tests/hatirlatma-test.mjs).
+// B: rezervasyonlar [{id, kind: trip|in|out|event, d: 'YYYY-MM-DD', t: 'HH:MM' ya da '', est: saat tahmini, desc, from, to, air: uçuş,
+//    bagOk: ev sahibi bavulu tutuyor}]. o: {start, end, route: {gün: {n, steps, first}} (onaylı rehber), bavul: {rezervasyon: {name,
+//    yer}}, airTip: {gün: havalimanı ulaşım önerisi}, tf: {n, text} (dönüşte tax-free), pays: dönüş günü bekleyen ödeme sayısı,
+//    miss: [{id, desc, m, d}] (eksik bilgi), wx: {gün: {city, icon, label, hi, lo, rain, snow}} (yarının havası)}.
+// Dönen: [{k, d, when, t, est, title, icon, sub: [], ly: Leyo'nun hâli, id, dir: yol tarifi, tab, act}] gün ve saat sırasıyla.
+function remindCore(B, now, o = {}){
+  const pad = n => String(n).padStart(2, '0'), iso = t => { const x = new Date(t); return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`; };
+  const today = iso(now), tom = iso(now + 864e5), nowHM = (x => pad(x.getHours()) + ':' + pad(x.getMinutes()))(new Date(now));
+  const hm = v => { const m = /^(\d{1,2}):(\d{2})/.exec(v || ''); return m ? +m[1] * 60 + +m[2] : null; };
+  const mh = v => { const w = ((v % 1440) + 1440) % 1440; return pad(Math.floor(w / 60)) + ':' + pad(w % 60); };
+  const days = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
+  const when = d => d === today ? 'Bugün' : d === tom ? 'Yarın' : days(today, d) > 1 ? `${days(today, d)} gün sonra` : '';
+  const out = [];
+  for (const b of B){
+    if (b.d !== today && b.d !== tom) continue;
+    if (b.d === today && b.t && b.t < nowHM) continue;                     // geçti
+    const T = hm(b.t), r = {k:b.kind, d:b.d, when:when(b.d), t:b.t || '', est:!!b.est, id:b.id || null, dir:true, sub:[], act:'plan'};
+    if (b.kind === 'trip'){
+      r.title = b.from && b.to ? `${b.from} → ${b.to}` : b.desc; r.icon = b.air ? '✈️' : '🚆'; r.ly = b.air ? 'ucma' : 'kosma';
+      if (b.air){
+        const mins = T != null ? (new Date(`${b.d}T${b.t}:00`) - now) / 60000 : null;
+        if (mins != null && mins > 120 && mins <= 1440) r.sub.push('Online check-in açık olabilir: genelde kalkıştan 24 saat önce açılır.');
+        if (T != null) r.sub.push(`Havalimanında olma saati: ${mh(T - 120)} (kalkıştan 2 saat önce).`);
+        if (o.airTip && o.airTip[b.d]) r.sub.push(o.airTip[b.d]);
+      } else if (T != null) r.sub.push(`Kalkıştan yarım saat önce yerinde ol (${mh(T - 30)}).`);
+    } else if (b.kind === 'in'){
+      r.title = `${b.desc}: giriş`; r.icon = '🏠'; r.ly = 'bavul';
+      const L = o.bavul && o.bavul[b.id];
+      if (b.bagOk) r.sub.push('Ev sahibi bavulu erken alıyor.'); else if (L) r.sub.push(`Girişe kadar bavul: ${L.name}.`);
+    } else if (b.kind === 'out'){
+      r.title = `${b.desc}: çıkış`; r.icon = '🏠'; r.ly = 'bavul'; r.dir = false;
+      const L = o.bavul && o.bavul[b.id];
+      if (b.bagOk) r.sub.push('Ev sahibi bavulu çıkıştan sonra da tutuyor.'); else if (L) r.sub.push(`Bavul emanetçisi: ${L.name}${L.yer === 'gar' ? ' (garın yanında)' : ''}.`);
+    } else {
+      r.title = b.desc; r.icon = '🎟️'; r.ly = 'harita';
+      r.sub.push('Biletini telefonda hazır tut; 15 dakika önce orada ol.');
+    }
+    out.push(r);
+  }
+  // Günün rotası (onaylı rehber), eksik bilgi (3 gün içindeki rezervasyon), dönüş günü (tax-free, bekleyen ödeme), yarının havası,
+  // gidişe 3 gün kala hazırlık.
+  const R = o.route && o.route[today];
+  if (R && R.n) out.push({k:'rota', d:today, when:'Bugün', t:'', title:'Günün rotası', icon:'🗺️', ly:'harita', tab:'gezi',
+    sub:[[`${R.n} durak`, R.steps ? `~${R.steps.toLocaleString('tr-TR')} adım` : '', R.first ? `ilk durak ${R.first}` : ''].filter(Boolean).join(' · ')]});
+  for (const m of o.miss || []) if (m.d && days(today, m.d) >= 0 && days(today, m.d) <= 3)
+    out.push({k:'eksik', d:m.d, when:when(m.d), t:'', title:`${m.desc}: ${m.m}`, icon:'⚠️', ly:'dusunme', id:m.id || null, sub:['Eklersen yol tarifi ve plan hazır olur.']});
+  const endIn = o.end ? days(today, o.end) : null, endW = endIn === 0 ? 'Bugün dönüş' : 'Yarın dönüş';
+  if ((endIn === 0 || endIn === 1) && o.tf && o.tf.n) out.push({k:'taxfree', d:o.end, when:endW, t:'', title:'Tax-free formların', icon:'🧾', ly:'alisveris', tab:'shop', sub:[o.tf.text]});
+  if (endIn === 0 && o.pays) out.push({k:'odeme', d:o.end, when:endW, t:'', title:`${o.pays} ödemen bekliyor`, icon:'💸', ly:'hesap', tab:'settle', sub:['Dönmeden kapatırsan hesap temiz kalır (Hesap › Ödendi).']});
+  const W = o.wx && o.wx[tom];
+  if (W && o.start && o.end && tom >= o.start && tom <= o.end){
+    const tip = W.rain ? 'Şemsiyeni ya da yağmurluğunu al.' : W.snow ? 'Sıkı giyin; kaymayan ayakkabı iyi olur.' : W.hi >= 30 ? 'Su, şapka ve güneş kremi al.' : W.lo <= 3 ? 'Kalın giyin, sabah serin.' : '';
+    out.push({k:'hava', d:tom, when:'Yarın', t:'', title:`${W.city}: ${W.label} · ${W.hi}° / ${W.lo}°`, icon:W.icon || '🌤️', ly:W.rain || W.snow ? 'saskin' : 'sevinc', sub:tip ? [tip] : []});
+  }
+  const toStart = o.start ? days(today, o.start) : null;
+  if (toStart != null && toStart >= 1 && toStart <= 3){
+    const L = ['kimlik ya da pasaport', 'biletler ve rezervasyonlar telefonda'];
+    if (B.some(b => b.kind === 'trip' && b.air && b.d === o.start)) L.push('uçuştan 24 saat önce online check-in');
+    out.push({k:'hazirlik', d:o.start, when:toStart === 1 ? 'Yarın gidiş' : `Gidişe ${toStart} gün`, t:'', title:'Yola hazırlık', icon:'🧳', ly:'bavul', act:'plan',
+      sub:[L.join(' · ').replace(/^./, c => c.toLocaleUpperCase('tr')) + '.']});
+  }
+  const ord = {hazirlik:0, trip:1, in:1, out:1, event:1, rota:2, eksik:3, taxfree:4, odeme:5, hava:6};
+  return out.sort((a, b) => (a.k === 'hazirlik' ? -1 : 0) - (b.k === 'hazirlik' ? -1 : 0) || a.d.localeCompare(b.d) || (a.t || '99:99').localeCompare(b.t || '99:99') || ord[a.k] - ord[b.k]);
+}
 </script>
 
 <script id="plan">
@@ -2848,14 +2927,14 @@ function viewList(C){
   const P = planState(), ph = ozPhase(P), nA = headcount(true) || 1, n = headcount();
   const top = ph === 'trip' ? {l:'Bugün', big:eu(C.today), sub:P.dayLimit ? `kişi başı ${ozF(P.today)} · günlük sınır ${ozF(P.dayLimit)}` : `kişi başı ${eu(Math.round(C.today / nA))}`}
     : ph === 'pre' ? {l:'Seyahat öncesi', big:eu(C.preTotal), sub:`kişi başı ${eu(Math.round(C.preTotal / n))}`} : {l:'Seyahat bitti', big:eu(C.total), sub:`kişi başı ${eu(Math.round(C.total / n))}`};
-  let h = webSampleNote() + listSeg('ortak') + todayStrip() + `<section class="hero hero-ly"><div class="hero-row">
+  let h = webSampleNote() + listSeg('ortak') + `<section class="hero hero-ly"><div class="hero-row">
     <div><div class="lbl">${top.l}</div>
     <div class="big num">${top.big}</div><div class="eur num">${top.sub}</div>
     ${ph !== 'post' ? `<div class="eur num">Toplam ${eu(C.total)} · ayrıntı Özet'te</div>` : ''}</div>
     <div class="hero-mascot">${leyo(lm.st, 'l', 'Leyo')}</div></div>
     <div class="me">${meLine(C)}</div></section>
     <button type="button" class="leyo-bar" data-act="leyobrief"><span>${lm.msg}</span></button>`;
-  h += airportHtml() + leftNote();
+  h += leftNote();   // "Bugün/Yarın" şeridi ve dönüş günü tax-free kutusu Özet'teki "Leyo hatırlatıyor"da (2026-11-28)
   if (S.trip.kasaOn && !isFamily() && !meLeft()){
     const hasKasa = S.entries.some(e => e.kind === 'kasa' || e.kind === 'kasaout' || (e.kind === 'expense' && e.paidBy === 'kasa'));
     const short = C.kasaLeft < 0;
@@ -4022,20 +4101,6 @@ function planNext(P){
   for (const x of P.days) for (const it of x.items){ if (it.kind === 'out') continue; const w = String(it.kind === 'in' ? it.e.when : it.e.when);
     const at = w.length > 10 ? w : w + 'T23:59'; if (at >= now) return {x, it}; }
   return null;
-}
-// Harcamalar sekmesinin başında ince şerit: seyahat günlerinde (ve bir gün öncesinde) bugünün ya da yarının sıradaki bileti.
-function todayStrip(){
-  if (!S.trip.start || !S.trip.end) return '';
-  const td = isoDay(Date.now());
-  if (td < isoAdd(S.trip.start, -1) || td > S.trip.end) return '';
-  const P = tripPlan(true); if (!P) return '';
-  const n = planNext(P); if (!n) return '';
-  const lbl = n.x.d === td ? 'Bugün' : n.x.d === isoAdd(td, 1) ? 'Yarın' : ''; if (!lbl) return '';
-  const e = n.it.e, t = n.it.kind === 'in' ? 'giriş ' + planT(n.it).t : bkTime(e.when), d = destOf(e);
-  const rest = n.x.items.filter(it => it.kind !== 'out').length - 1 - n.x.items.filter(it => it.kind !== 'out').indexOf(n.it);
-  const what = n.it.kind === 'trip' && e.from && e.to ? `${e.from} → ${e.to}` : e.desc;
-  return `<div class="tstrip">${n.it.kind === 'trip' && lbl === 'Bugün' ? leyo('ucma', 's') : ''}<button class="ts-main" data-act="plan"><span class="ts-l">${lbl}${t ? ' · ' + t : ''}</span><span class="ts-d">${iconOf(e)} ${e.priv ? '🔒 ' : ''}${esc(what)}${rest > 0 ? ` <small>+${rest} daha</small>` : ''}</span></button>`
-    + (d ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`;
 }
 function programHtml(){
   const P = tripPlan(true), need = VE().filter(e => e.kind === 'expense' && bkKind(e) && !e.when && (bkKind(e) !== 'event' || e.cat === 'aktivite'));
@@ -9398,7 +9463,7 @@ const ozF = v => fromTL(v, planCurOf(), 0);                 // bütçe tutarlar�
 const OZD_T = {sana:'💶 Bu seyahat sana', ortak:'👥 Ortak harcamalar', kisisel:'🔒 Kişisel cüzdanın', gunler:'📅 Günler', harita:'🗺️ Harcama haritası', kat:'🍽️ Nereye gidiyor', hesap:'🤝 Hesap durumun', butce:'💰 Bütçe', rapor:'📚 Raporlar'};
 function viewOzet(C){
   const M = myPicture(), P = planState(), ph = ozPhase(P), t = isFamily() ? null : totalPlan();
-  return leftNote() + ozHero(ph, P, C) + ozKpis(ph, P, C, M, t) + ozBudgetW(ph, P, C) + ozDaysW(ph, P) + ozCatsW(C) + ozFairW(t) + ozWalletW(M) + ozShopW(ph, M) + ozAlertsW(ph, P, C, t) + ozFunW(ph) + ozTilesW() + logsHtml() + ozLearnHtml();
+  return leftNote() + ozHero(ph, P, C) + remindCard() + ozKpis(ph, P, C, M, t) + ozBudgetW(ph, P, C) + ozDaysW(ph, P) + ozCatsW(C) + ozFairW(t) + ozWalletW(M) + ozShopW(ph, M) + ozAlertsW(ph, P, C, t) + ozFunW(ph) + ozTilesW() + logsHtml() + ozLearnHtml();
 }
 // Gezi kartı (uçan Leyo'lu, hikâye kartının görünümünde): dönemine göre başlık ve rakam; bitince hikâyenin satırları ve paylaşım.
 function ozHero(ph, P, C){
@@ -9636,6 +9701,86 @@ function ozAlertsW(ph, P, C, t){
   const msg = !A.length ? 'Her şey yolunda, bekleyen bir şey yok ✓' : ph === 'post' ? 'Seyahat bitti; kalan işler bunlar.' : `${A.length} şey seni bekliyor.`;
   return `<section class="ozw ozal"><div class="ozw-h"><span>🔔 Dikkat</span></div><div class="ozal-say">${leyo(A.length ? 'konusma' : 'sevinc', 's', 'Leyo')}<span>${msg}</span></div>`
     + A.map(([i, l, sub, attr]) => `<button type="button" class="mrow" ${attr}><span>${i} ${l}${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="num">›</span></button>`).join('') + `</section>`;
+}
+// ---- 🐦 Leyo hatırlatıyor (2026-11-28, kullanıcı onayı): Özet'te gezi kartının altında bugünün ve yarının hatırlatmaları ----
+// Kurallar remindCore'da (hesap çekirdeği, test: tests/hatirlatma-test.mjs). Bilgiler: seyahat planı (geziye katılmayanın telefonunda
+// gördükleri), onaylı rehber (günün rotası, bavul emanetçisi, havalimanı ulaşımı), tax-free kayıtları (dönüşte), bekleyen ödemeler
+// (dönüş günü), yarının hava tahmini (remWx). Harcamalar'daki eski "Bugün/Yarın" şeridinin ve dönüş günü tax-free kutusunun yerine.
+// Leyo, ilk hatırlatmanın türüne uygun hâliyle konuşur (uçuşta uçar, ev giriş-çıkışında bavullu, rotada haritalı…).
+const isRain = c => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95, isSnow = c => (c >= 71 && c <= 77) || c === 85 || c === 86;
+function remindsNow(){
+  if (!S.people.length) return [];
+  const P = tripPlan(true), now = Date.now(), today = isoDay(now), tom = isoAdd(today, 1), G = S.trip.guide || {};
+  const gOf = c => { const g = G[c]; return g && Array.isArray(g.days) ? g : null; };
+  const B = [], bavul = {}, airTip = {}, route = {};
+  if (P) for (const x of P.days) if (x.d === today || x.d === tom) for (const it of x.items){
+    const e = it.e, T = planT(it), t = T.t && T.t !== '98:00' ? T.t : '';
+    B.push({id:e.id, kind:it.kind, d:x.d, t, est:!!T.est, desc:e.desc, from:e.from || '', to:e.to || '', bagOk:!!e.bagOk,
+      air:it.kind === 'trip' && (e.cat === 'ucak' || G_AIR.test(`${e.desc} ${e.from || ''} ${e.to || ''}`))});
+    if (it.kind === 'in' || it.kind === 'out'){ const g = gOf(stayCity(e)), L = (g && g.bavul) || [];
+      const b = it.kind === 'out' ? L.find(z => z.yer === 'gar') || L.find(z => z.yer === 'ev') : L.find(z => z.yer === 'ev'); if (b) bavul[e.id] = {name:b.name, yer:b.yer}; }
+    if (it.kind === 'trip') for (const c of String(x.city || '').split(' → ')){ const U = (gOf(c) || {}).ulasim;
+      if (U && U.d === x.d && U.text && !airTip[x.d]) airTip[x.d] = String(U.text).split(/(?<=[.!])\s/)[0].slice(0, 180); }
+  }
+  // Günün rotası: onaylı rehberde bugünün numaralı durakları, adım ve ilk durak.
+  const xt = P && P.days.find(x => x.d === today);
+  if (xt) for (const c of String(xt.city || '').split(' → ')){ const g = gOf(c); if (!g || !g.ok) continue;
+    const day = g.days.find(y => y.d === today); if (!day) continue;
+    const N = gNums(c, g), its = day.items.filter(it => N.has(it)).sort((a, b) => N.get(a) - N.get(b)), st = gSteps(c, day);
+    if (its.length){ route[today] = {n:its.length, steps:st ? st.steps : 0, first:gCleanName(its[0].name)}; break; } }
+  // Dönüşte tax-free (eskiden Harcamalar'daki kutu): onaylatılacak formlar ve form alınmayan mağazalar.
+  let tf = null;
+  if (S.trip.end && (today === S.trip.end || tom === S.trip.end) && (SH.items || []).length){
+    const {ref, T} = shopCalc(), stores = f => [...new Set(SH.items.filter(i => ref[i.id] > 0 && f(i)).map(i => i.store))];
+    const st1 = stores(i => tfStep(i) === 1), st0 = stores(i => tfStep(i) === 0);
+    const eu = T && ['ES','IT','FR','DE','GR','PT','NL','IE','AT','BE','HR','CZ','HU','PL','SE','DK'].includes(T.code);
+    if (st1.length || st0.length) tf = {n:st1.length + st0.length, text:[st1.length ? `${st1.length} formu ${eu ? 'AB’den son çıkışta' : 'ülkeden çıkarken'} gümrükte (kiosk) onaylat: ${st1.join(', ')}.` : '', st0.length ? `${st0.length} mağazada form alınmadı: ${st0.join(', ')}.` : ''].filter(Boolean).join(' ')};
+  }
+  const pays = S.trip.end === today && !isFamily() ? totalPlan().plan.filter(q => q.from === S.me).length : 0;
+  const miss = (P ? P.miss : []).filter(m => m.e && m.e.when && !m.e.priv && /adres yok/.test(m.m)).map(m => ({id:m.e.id, desc:m.e.desc, m:m.m, d:fixYear(m.e.when).slice(0, 10)}));
+  // Yarının havası: yarın gezi günüyse o gecenin şehri (yolculuk gününde varılan şehir).
+  const wx = {}, xm = P && [...P.days].reverse().find(x => x.d <= tom && x.city), city = xm ? String(xm.city).split(' → ').pop() : '';   // yarın evsizse son bilinen şehir
+  if (city && S.trip.start && S.trip.end && tom >= S.trip.start && tom <= S.trip.end){
+    const W = remWx(tom, city);
+    if (W){ const [, icon, label] = wxOf(W.c); wx[tom] = {city, icon, label, hi:W.hi, lo:W.lo, rain:isRain(W.c), snow:isSnow(W.c)}; }
+    else remWxFetch(tom, city);
+  }
+  return remindCore(B, now, {start:S.trip.start, end:S.trip.end, route, bavul, airTip, tf, pays, miss, wx});
+}
+function remindCard(){
+  const R = remindsNow(); if (!R.length) return '';
+  const r0 = R[0], head = r => `${r.when}${r.t ? ` · ${r.est ? '~' : ''}${r.t}` : ''}`;
+  const say = R.length === 1 ? `Unutma: ${head(r0)} · ${r0.title}` : `${R.length} hatırlatmam var. En yakını: ${head(r0)} · ${r0.title}`;
+  const row = r => { const e = r.id ? S.entries.find(x => x.id === r.id) : null, d = r.dir && e ? destOf(e) : null;
+    const attr = r.k === 'eksik' && e ? `data-edit="${r.id}"` : r.tab ? `data-tab="${r.tab}"${r.tab === 'shop' ? ' data-sv="list"' : ''}` : r.act ? `data-act="${r.act}"` : '';
+    return `<div class="rem-row"><button type="button" class="rem-main" ${attr}><span class="rem-w">${esc(head(r))}</span><span class="rem-t">${r.icon} ${esc(r.title)}</span>${r.sub.map(x => `<span class="rem-s">${esc(x)}</span>`).join('')}</button>`
+      + (d ? `<a class="btn sm" href="${mapsDir(d.q)}" target="_blank" rel="noopener" aria-label="Yol tarifi: ${esc(d.label)}">🧭</a>` : '') + `</div>`; };
+  return `<section class="ozw remind"><div class="rem-say">${leyo(r0.ly || 'konusma', 'm', 'Leyo')}<div class="rem-bub"><small>🐦 Leyo hatırlatıyor</small><span>${esc(say)}</span></div></div>${R.map(row).join('')}</section>`;
+}
+// 🌦 Yarının hava tahmini (Open-Meteo; ücretsiz, anahtarsız; giden yalnız şehrin konumu): bu telefonda saklanır, 3 saatte bir yenilenir;
+// alınamazsa (ör. claude.ai yapıtında izin yoksa) hatırlatma çıkmaz, yarım saat yeniden denenmez.
+const WXF_KEY = 'heybe-yarin-hava', wxfFail = {};
+let wxfBusy = false;
+const wxfAll = () => { try { const m = JSON.parse(localStorage.getItem(WXF_KEY) || '{}'); return m && typeof m === 'object' ? m : {}; } catch(_) { return {}; } };
+function remWx(d, city){ const w = wxfAll()[`${S.tid}|${d}`]; return w && w.city === city && Date.now() - (w.at || 0) < 3 * 36e5 ? w : null; }
+async function remWxFetch(d, city){
+  const key = `${S.tid}|${d}|${city}`; if (wxfBusy || Date.now() - (wxfFail[key] || 0) < 30 * 6e4) return;
+  wxfBusy = true; let ok = false;
+  try {
+    const g = (S.trip.guide || {})[city]; let p = g && Array.isArray(g.days) ? gCenter(g) : null;
+    if (!p){ const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=tr&name=${encodeURIComponent(city)}`).then(r => r.json()); const x = r && r.results && r.results[0]; if (x) p = {lat:x.latitude, lon:x.longitude}; }
+    if (p){
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${(+p.lat).toFixed(3)}&longitude=${(+p.lon).toFixed(3)}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${d}&end_date=${d}`).then(r => r.json());
+      const dd = r && r.daily;
+      if (dd && dd.time && dd.weather_code && dd.weather_code[0] != null && dd.temperature_2m_max[0] != null){
+        const m = wxfAll(); m[`${S.tid}|${d}`] = {city, c:dd.weather_code[0], hi:Math.round(dd.temperature_2m_max[0]), lo:Math.round(dd.temperature_2m_min[0]), at:Date.now()};
+        for (const k of Object.keys(m)) if (Date.now() - (m[k].at || 0) > 7 * 864e5) delete m[k];
+        try { localStorage.setItem(WXF_KEY, JSON.stringify(m)); } catch(_) {}
+        ok = true;
+      }
+    }
+  } catch(_) {} finally { wxfBusy = false; }
+  if (!ok) wxfFail[key] = Date.now(); else if (tab === 'ozet') render();
 }
 function ozFunW(ph){ if (ph === 'pre') return ''; const F = funCounts(); if (!F.length) return '';
   return `<div class="ozfun">${F.slice(0, 6).map(x => `<span>${x.ic} <b>${x.n}</b> ${x.l}</span>`).join('')}</div>`; }
