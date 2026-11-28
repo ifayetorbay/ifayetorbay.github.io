@@ -8,8 +8,8 @@
 <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script>window.HEYBE_VER = '20261128161523';</script>
-<script src="heybe-web.js?v=20261128161523"></script>
+<script>window.HEYBE_VER = '20261128163115';</script>
+<script src="heybe-web.js?v=20261128163115"></script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -204,6 +204,21 @@ body.ro .wbtn.tbtn{pointer-events:auto}
 .row.trf .ic{background:var(--accent-soft)}
 .row.big .amt b{color:var(--neg)}
 .row.big{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--neg) 70%,transparent)}
+/* 🔁 ev değişti: hesabın nasıl değişti (2026-11-28) */
+.chgcard{display:flex;flex-direction:column;gap:8px;border:1.5px solid var(--accent)}
+.chgcard h2{margin:0;font-size:1.02rem}
+.chg-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--sunk)}
+.chg-top small{display:block;color:var(--muted);font-size:.74rem}
+.chg-top b{font-size:.95rem}
+.chg-top>span{color:var(--muted);font-weight:700}
+.chg-sum{margin:0;font-size:.95rem}
+.chg-lns{display:flex;flex-direction:column;gap:4px}
+.chg-ln{display:flex;justify-content:space-between;gap:10px;font-size:.86rem;line-height:1.35}
+.chg-ln b{flex:none;font-weight:700}
+.chg-pay{display:flex;flex-direction:column;gap:2px;font-size:.84rem;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.chg-pay span:first-child{font-weight:700}
+.chg-led{display:flex;flex-direction:column;gap:4px;margin:10px 0 4px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.chg-led-t{font-size:.86rem;font-weight:600}
 /* 🚫 iptal edilen rezervasyon (2026-11-28): gri, silik; tutarın üstü çizili, hesaba girmez */
 .ozcan{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:.86rem;text-align:left}
 .ozcan small{color:var(--muted);font-size:.76rem}
@@ -1716,6 +1731,29 @@ function cancelMatch(st, n, K){
   if (rows.length && rows[0].s >= 2) out.best = rows[0].e; else out.maybe = rows.map(r => r.e);
   return out;
 }
+// "Ev değişmeseydi" (2026-11-28, kullanıcı: "eski ev çıkıp daha ucuz ev gelince birinin +10 bin alacağının neden değiştiği hesaplaşmada
+// kolayca anlaşılsın"): iptal edilen kayıtlar yeniden harcama sayılır, yerlerine gelenler (e.yerine → iptal edilen) yok sayılır; aradaki
+// başka kayıtlar aynen kalır. Önceden gönderilen paylardan çevrilen ödemeler iki durumda da durur (işaretle aynı sonucu verir). İptal
+// yoksa null.
+const isRep = (st, e) => !!e.yerine && st.entries.some(x => x.id === e.yerine && x.kind === 'iptal');
+function uncancelState(st){
+  if (!st.entries.some(e => e.kind === 'iptal')) return null;
+  return {...st, entries:st.entries.filter(e => !(e.kind === 'expense' && isRep(st, e))).map(e => e.kind === 'iptal' ? {...e, kind:'expense'} : e)};
+}
+// Değişikliğin kişiye etkisi, kalem kalem: iptal edilen her kayıt ve yerine gelen için kişinin payı ve ödediği (bugünkü TL değeri,
+// kuruş; euro defteri Q ile). d: kalanına etkisi (+ lehine). İptal: d = pay − ödediği (ödediği geri döner, payı düşer); yerine gelen:
+// d = ödediği − pay. Kasadan ödenende ödeyen kasayı tutan kişidir (para kasaya döner). Değerler hesap tablosundakiyle aynı (itemTL).
+function changeLines(st, id, R, Q){
+  const out = [], H = st.trip.holder;
+  const val = e => { const x = {...e, kind:'expense'}, T = itemTL(x, R, 'T'), E = itemTL(x, R, 'E'), payer = e.paidBy === 'kasa' ? H : e.paidBy;
+    return {share:(T.sh[id] || 0) + Math.round((E.sh[id] || 0) * Q), paid:payer === id ? T.v + Math.round(E.v * Q) : 0, kasa:e.paidBy === 'kasa'}; };
+  for (const c of st.entries.filter(e => e.kind === 'iptal').sort((a, b) => ((a.iptal || {}).at || 0) - ((b.iptal || {}).at || 0))){
+    const a = val(c); if (a.share || a.paid) out.push({e:c, kind:'iptal', ...a, d:a.share - a.paid});
+    const r = st.entries.find(x => x.kind === 'expense' && x.yerine === c.id);
+    if (r){ const b = val(r); if (b.share || b.paid) out.push({e:r, kind:'yerine', was:c, ...b, d:b.paid - b.share}); }
+  }
+  return out;
+}
 </script>
 
 <script id="plan">
@@ -2204,7 +2242,8 @@ const HP = (() => {
 document.documentElement.lang = 'tr';
 const KEY = 'yol-hesabi-v1';
 function load(){ try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch(_) { return null; } }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(_) {} if (typeof syncSoon === 'function') syncSoon(); }
+let chgCache = null;   // 🔁 "ev değişmeseydi" hesaplaşmasının önbelleği (chgCtx); her kayıtta ve çizimde yenilenir
+function save(){ chgCache = null; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(_) {} if (typeof syncSoon === 'function') syncSoon(); }
 
 // Fiş fotoğrafları buluta yüklenene kadar bu cihazda ayrı anahtarlarda tutulur.
 const photoKey = id => 'yol-hesabi-foto-' + id;
@@ -2555,6 +2594,7 @@ function rateLabel(){
 
 // ---- ekranlar ----
 function render(){
+  chgCache = null;
   const empty = !S.people.length, tc = empty ? null : themeCountry();
   applyTheme();
   document.querySelector('nav.tabs').hidden = empty;
@@ -3019,6 +3059,7 @@ function ledgerDetail(id, x, fm = tlk, zt = 100){
   // 🚫 Bu kişinin de olduğu iptal edilen rezervasyonlar (2026-11-28): hesaba girmez; borcun neden düştüğü anlaşılsın.
   const can = VE().filter(e => e.kind === 'iptal' && ((e.v2 ? v2Cur(e) : 'T') === (zt === 5 ? 'E' : 'T')) && (e.among.includes(id) || e.paidBy === id));
   return phTbl + `<div class="leq num">${eq}</div>`
+    + (zt === 100 || !hasTL() ? chgLedgerHtml(id) : '')
     + (can.length ? `<p class="lnote">🚫 İptal edildiği için hesaba girmeyen: ${can.map(e => `${esc(e.desc)} (${money(e.amount, e.cur)})`).join(', ')}.</p>` : '')
     + (catRows ? `<div class="lcats"><span class="lsub">Payına düşen nereden geliyor?</span>${catRows}</div>` : '')
     + (its.length ? `<details class="why"><summary>Kalem kalem (${its.length})</summary><div class="wl num">${itRows}<div class="tot"><span>Payına düşen</span><span>${tlk(x.share)}</span></div></div></details>` : '');
@@ -3075,6 +3116,7 @@ function viewSettle(C){
     <div class="eur num">${z ? 'Göndereceğin ya da alacağın bir şey yok' : `${b < 0 ? 'göndereceksin' : 'alacaksın'}${netE[S.me] ? ` · ${eu(Math.abs(netE[S.me]))} euro borcu bugünkü kurla dahil` : ` · ≈ ${eu(Math.round(Math.abs(b) / R))}`}`}</div></div>
     <div class="hero-mascot">${leyo(sLy, 'l', 'Leyo')}</div></div>
     ${math ? `<div class="me">${math}</div>` : ''}</section>`;
+  h += changeCard();
   h += `<section class="bigcard"><div class="head" data-hhost><h2>Senin ödemelerin${help('settle')}</h2><span class="note num">${settleRateText(R)}</span></div>
     <span class="note">${mode === 'min' ? 'Seyahat öncesi + seyahatte, her şey dahil.' : 'Seyahat öncesi + seyahatte, her şey dahil. Her ödeme, kimin harcamasına ortak olduğuna göre.'}${locked ? ' Kur ilk ödemeyle sabitlendi.' : ''}</span>`
     // Daha az ödeme açıkken en üstte uyarı: ödemeler harcamayı yapana değil, birleştirilmiş kişiye gidiyor.
@@ -9427,7 +9469,81 @@ function cancelInfo(L = VE()){
 function cancelLine(){
   const I = cancelInfo(); if (!I) return '';
   const one = I.X.length === 1, r = I.R[0];
-  return `<div class="ozcan"><span>🚫 ${one ? esc(I.X[0].desc) + ' iptal' : I.X.length + ' iptal'} <b class="num neg">−${I.minus}</b>${I.R.length ? ` · yerine ${one && r ? esc(r.desc) + ' ' : ''}<b class="num pos">+${I.plus}</b>` : ''}</span><small>İptal edilen hesaba girmez; toplam yenisiyle hesaplanır.</small></div>`;
+  // Kişi başı etkisi (bütçe kişi başı olduğu için): yerine gelenler − iptal edilenler, girildiği günün TL değeriyle, kişi sayısına bölünür.
+  const dk = I.R.reduce((a, e) => a + tlKurus(e), 0) - I.X.reduce((a, e) => a + tlKurus(e), 0), pp = Math.abs(dk) / (headcount() || 1);
+  return `<div class="ozcan"><span>🚫 ${one ? esc(I.X[0].desc) + ' iptal' : I.X.length + ' iptal'} <b class="num neg">−${I.minus}</b>${I.R.length ? ` · yerine ${one && r ? esc(r.desc) + ' ' : ''}<b class="num pos">+${I.plus}</b>` : ''}</span>`
+    + `${pp >= 100 ? `<span class="num">Kişi başı <b class="${dk < 0 ? 'pos' : 'neg'}">${ozF(pp)} ${dk < 0 ? 'daha az' : 'daha fazla'}</b></span>` : ''}<small>İptal edilen hesaba girmez; toplam ve hesaplaşma yeni duruma göre.</small></div>`;
+}
+// ---- 🔁 Ev değişti: hesabın nasıl değişti? (2026-11-28, kullanıcı onayı: "birinin +10 bin alacağı varken yeni duruma göre neden
+// değiştiğini kolayca anlasın") ----
+// "Önce": ev (rezervasyon) değişmeseydi bugünkü kalanı (uncancelState ile aynı hesaplaşma); "şimdi": ekrandaki kalan. Nedenler kalem
+// kalem changeLines'tan (hesap çekirdeği); kalemlerin toplamı ile farkın arası (birkaç kuruş) "kuruş yuvarlaması". Önbellek her
+// çizimde ve kayıtta yenilenir (chgCache = null: render, save).
+function chgCtx(){
+  if (chgCache && chgCache.tid === S.tid) return chgCache.v;
+  const B = isFamily() ? null : uncancelState(S), v = B ? {t:totalPlan(), tb:totalPlan(B)} : null;
+  chgCache = {tid:S.tid, v}; return v;
+}
+function chgOf(id){
+  const c = chgCtx(); if (!c) return null;
+  const L = changeLines(S, id, c.t.R, c.t.Q); if (!L.length) return null;
+  const now = c.t.net[id] || 0, was = c.tb.net[id] || 0, sum = L.reduce((a, l) => a + l.d, 0);
+  const pays = t => t.plan.filter(q => q.from === id || q.to === id).map(q => `${q.from === id ? '→ ' + rawName(q.to) : '← ' + rawName(q.from)} ${payAmtText(q)}`);
+  const pb = pays(c.tb), pn = pays(c.t);
+  // Önceden gönderdiği pay: iptalde ödeme kaydına çevrildi, artık ona geri dönecek.
+  const sent = L.filter(l => l.kind === 'iptal' && l.e.paidBy !== id).map(l => ({l, tr:S.entries.find(e => e.kind === 'transfer' && e.from === id && e.to === l.e.paidBy && e.note === `Önceden gönderilen pay: ${l.e.desc}`)})).filter(x => x.tr);
+  const at = Math.max(0, ...L.map(l => ((l.kind === 'iptal' ? l.e : l.was).iptal || {}).at || 0));
+  return {L, now, was, d:now - was, rnd:now - was - sum, pb, pn, payCh:pb.join('|') !== pn.join('|'), sent, at, stay:L.some(l => bkKind(l.e) === 'stay')};
+}
+// Durum yazısı: you (ikinci kişi) ya da üçüncü kişi; past: önceki durum.
+const chgState = (v, past, you = true) => Math.abs(v) < 100 ? (you ? (past ? 'denktin' : 'denksin') : (past ? 'denkti' : 'denk'))
+  : `${tlk(Math.abs(v))} ${v > 0 ? (you ? (past ? 'alacaklıydın' : 'alacaklısın') : (past ? 'alacaklıydı' : 'alacaklı')) : (you ? (past ? 'borçluydun' : 'borçlusun') : (past ? 'borçluydu' : 'borçlu'))}`;
+// Kısa sonuç: "alacağın 5.000 ₺ arttı", "borcun 5.000 ₺ azaldı", "borçluydun, şimdi alacaklısın".
+function chgPhrase(was, now, you = true){
+  const d = now - was, A = tlk(Math.abs(d)), z = v => Math.abs(v) < 100;
+  if (Math.abs(d) < 100) return you ? 'hesabın değişmedi' : 'hesabı değişmedi';
+  if (!z(was) && !z(now) && (was > 0) !== (now > 0)) return was < 0 ? (you ? 'borçluydun, şimdi alacaklısın' : 'borçluydu, şimdi alacaklı') : (you ? 'alacaklıydın, şimdi borçlusun' : 'alacaklıydı, şimdi borçlu');
+  const cr = now > 0 || (z(now) && was > 0);
+  return `${cr ? (you ? 'alacağın' : 'alacağı') : (you ? 'borcun' : 'borcu')} ${A} ${(cr ? d > 0 : d < 0) ? 'arttı' : 'azaldı'}`;
+}
+// Neden satırları (ekran ve raporlar): [metin, etki (kuruş)].
+function chgReasons(x, you = true, fmt = esc){
+  const P = you ? 'payın' : 'payı', out = x.L.map(l => {
+    const ds = fmt(l.e.desc);
+    if (l.kind === 'iptal') return [l.paid ? `🚫 ${ds} iptal: ${l.kasa ? `kasadan ödenen ${tlk(l.paid)} kasaya döndü` : `${you ? 'ödediğin' : 'ödediği'} ${tlk(l.paid)} geri döndü`}${l.share ? `, ${P} ${tlk(l.share)} düştü` : ''}` : `🚫 ${ds} iptal: ${P} ${tlk(l.share)} düştü`, l.d];
+    return [l.paid ? `🔁 Yerine ${ds}: ${l.kasa ? 'kasadan ödendi' : you ? 'sen ödedin' : 'o ödedi'} ${tlk(l.paid)}${l.share ? `, ${P} ${tlk(l.share)}` : ''}` : `🔁 Yerine ${ds}: ${P} ${tlk(l.share)}`, l.d];
+  });
+  if (Math.abs(x.rnd) >= 1) out.push(['kuruş yuvarlaması', x.rnd]);
+  return out;
+}
+const chgAmt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${tlk(Math.abs(v))}`;
+const chgShort = v => Math.abs(v) < 100 ? 'denk' : `${tlk(Math.abs(v))} ${v > 0 ? 'alacak' : 'borç'}`;
+// Raporlar için: kişi kişi önce / şimdi / fark (me: yalnız o kişi). Yalnız etkisi 1 ₺'yi geçenler.
+const chgPeople = (me = null) => (me ? [me] : S.people.map(p => p.id)).map(id => [id, chgOf(id)]).filter(([, x]) => x && Math.abs(x.d) >= 100);
+function chgRowsHtml(x, you = true){
+  return chgReasons(x, you).map(([t, v]) => `<div class="chg-ln"><span>${t}</span><b class="num ${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${chgAmt(v)}</b></div>`).join('');
+}
+// Hesap sekmesinde, kişinin durumunun altında: önce → şimdi, nedenleri, ödemeleri değiştiyse önce/şimdi.
+function changeCard(){
+  const x = chgOf(S.me); if (!x || (Math.abs(x.d) < 100 && !x.payCh)) return '';
+  return `<section class="card chgcard"><h2>🔁 ${x.stay ? 'Ev' : 'Rezervasyon'} değişti: hesabın nasıl değişti?</h2>
+    <div class="chg-top num"><div><small>Önce</small><b>${chgState(x.was, true)}</b></div><span aria-hidden="true">→</span><div><small>Şimdi</small><b>${chgState(x.now, false)}</b></div></div>
+    <p class="chg-sum ${x.d > 0 ? 'pos' : x.d < 0 ? 'neg' : ''}"><b>${chgPhrase(x.was, x.now)}</b>${Math.abs(x.d) >= 100 ? ` (${chgAmt(x.d)})` : ''}</p>
+    <div class="chg-lns">${chgRowsHtml(x)}</div>
+    ${x.sent.map(s0 => `<p class="note">↩ ${esc(s0.l.e.desc)} için gönderdiğin ${money(s0.tr.amount, s0.tr.cur)} payın sana geri dönecek; ödemelerine eklendi.</p>`).join('')}
+    ${x.payCh ? `<div class="chg-pay num"><span>Ödemelerin</span><span>önce: ${x.pb.length ? x.pb.map(esc).join(', ') : 'yoktu'}</span><span>şimdi: ${x.pn.length ? x.pn.map(esc).join(', ') : 'yok'}</span></div>` : ''}
+    <p class="hint">Önce: ${x.stay ? 'ev' : 'rezervasyon'} değişmeseydi bugünkü durumun. Diğer harcamalar iki tarafta da aynı; fark yalnız bu değişiklikten. Toplam harcama ve bütçe yeni duruma göre.</p></section>`;
+}
+// Hesap tablosunda kişinin dökümünde aynı bilgi (üçüncü kişi).
+function chgLedgerHtml(id){
+  const x = chgOf(id); if (!x || (Math.abs(x.d) < 100 && !x.payCh)) return '';
+  const you = id === S.me;
+  return `<div class="chg-led"><span class="lsub">🔁 ${x.stay ? 'Ev' : 'Rezervasyon'} değişikliği</span><span class="chg-led-t num">Önce ${chgState(x.was, true, you)} → şimdi ${chgState(x.now, false, you)}: ${chgPhrase(x.was, x.now, you)}</span>${chgRowsHtml(x, you)}</div>`;
+}
+// Özet › Dikkat: değişiklikten sonra 7 gün kısa hatırlatma (uygulama Özet'le açılır).
+function chgAlert(){
+  const x = chgOf(S.me); if (!x || Date.now() - x.at > 7 * 864e5 || (Math.abs(x.d) < 100 && !x.payCh)) return null;
+  return ['🔁', `${x.stay ? 'Ev' : 'Rezervasyon'} değişti: ${chgPhrase(x.was, x.now)}`, `önce ${chgState(x.was, true)} → şimdi ${chgState(x.now, false)} · ayrıntısı Hesap'ta`, 'data-tab="settle"'];
 }
 // Özet ayrıntısında iptal edilenler ve yerine gelenler (dokununca kaydı açar).
 function cancelRowsHtml(){
@@ -9504,6 +9620,7 @@ function ozAlertsW(ph, P, C, t){
   const A = [];
   if (ph === 'pre'){ if (!S.trip.start) A.push(['📅', 'Seyahat tarihlerini ekle', 'gün gün grafik ve günlük bütçe için', 'data-tab="trip" data-tg="tg_trip"']);
     if (!(P.plan > 0)) A.push(['💰', 'Kişi başı bütçe belirle', 'gidişata göre uyarı alırsın', 'data-tab="trip" data-tg="tg_budget"']); }
+  { const ca = !isFamily() && chgAlert(); if (ca) A.push(ca); }
   if (t){ t.plan.filter(q => q.from === S.me).slice(0, 2).forEach(q => A.push(['💸', `${nm(q.to)} kişisine ${payAmtText(q)} göndereceksin`, 'Hesap › Ödendi ile kapat', 'data-tab="settle"']));
     const inc = t.plan.filter(q => q.to === S.me); if (inc.length) A.push(['📥', `${inc.length} kişiden ${tlk(inc.reduce((x, q) => x + q.amt, 0))} alacaksın`, inc.map(q => rawName(q.from)).join(', '), 'data-tab="settle"']);
     if (ph === 'post' && !t.plan.length) A.push(['🎉', 'Herkes ödeşti', 'seyahati arşivleyebilirsin (Seyahat › •••)', 'data-tab="trip"']); }
@@ -11063,12 +11180,12 @@ function pdfPages(){
 const cancelDiffTxt = (e, r) => { if (!r) return ''; const same = r.cur === e.cur, d = same ? r.amount - e.amount : (tlKurus(r) - tlKurus(e)) / 100, c = same ? e.cur : 'TRY';
   return Math.abs(d) < 0.005 ? 'aynı fiyat' : `${money(Math.abs(d), c)} ${d < 0 ? 'daha ucuz' : 'daha pahalı'}`; };
 function pdfCancels(L, T, me = null){
-  const I = cancelInfo(L.filter(e => !me || (e.kind === 'iptal' && (e.among.includes(me) || e.paidBy === me))) ); if (!I) return;
+  const I = cancelInfo(L.filter(e => !me || (e.kind === 'iptal' && (e.among.includes(me) || e.paidBy === me)))), PP = chgPeople(me); if (!I && !PP.length) return;
   const {W, H, M} = T; if (T.y + 200 > H - M) T.page();
   T.title('🚫 İptal edilenler');
   let x = T.x; x.fillStyle = RPT.muted; x.font = FONT(400, 19);
   x.fillText(T.fit('Hiçbir toplama ve hesaplaşmaya girmez; para geri gelmiş sayılır. Yerine gelenler harcamaların arasında.', W - 2 * M, FONT(400, 19)), M, T.y + 20); T.y += 44;
-  for (const [e, r] of I.rows){
+  for (const [e, r] of I ? I.rows : []){
     if (T.y + 74 > H - M){ T.page(); x = T.x; }
     x.fillStyle = RPT.soft; rr(x, M, T.y - 6, W - 2 * M, 64, 10); x.fill();
     x.fillStyle = RPT.muted; x.font = FONT(400, 20); x.fillText(new Date(e.at).toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'}), M + 34, T.y + 22);
@@ -11081,16 +11198,35 @@ function pdfCancels(L, T, me = null){
     x.font = FONT(400, 16); x.fillText('hesaba girmedi', W - M - 16, T.y + 46); x.textAlign = 'left';
     T.y += 74;
   }
+  // 🔁 Kişi kişi hesaba etkisi (2026-11-28): önce (değişmeseydi) → şimdi ve fark; altında nedenleri. Gezi raporunda yalnız kişinin kendisi.
+  if (!PP.length) return;
+  if (T.y + 160 > H - M){ T.page(); x = T.x; }
+  T.y += 10; x.fillStyle = RPT.ink; x.font = FONT(800, 24); x.fillText(me ? '🔁 Hesabına etkisi' : '🔁 Kişi kişi hesaba etkisi', M, T.y + 24); T.y += 40;
+  x.fillStyle = RPT.muted; x.font = FONT(400, 17); x.fillText(T.fit('Önce: değişiklik olmasaydı bugünkü kalan. Diğer harcamalar iki tarafta da aynı; fark yalnız bu değişiklikten.', W - 2 * M, FONT(400, 17)), M, T.y + 16); T.y += 34;
+  const cx = [M + 14, M + 330, M + 640, W - M - 14];
+  const hd = () => { x.fillStyle = RPT.soft; rr(x, M, T.y, W - 2 * M, 40, 8); x.fill(); x.fillStyle = RPT.muted; x.font = FONT(700, 18);
+    x.fillText('Kişi', cx[0], T.y + 26); x.fillText('Önce', cx[1], T.y + 26); x.fillText('Şimdi', cx[2], T.y + 26); x.textAlign = 'right'; x.fillText('Fark', cx[3], T.y + 26); x.textAlign = 'left'; T.y += 48; };
+  hd();
+  for (const [id, c] of PP){
+    const rs = chgReasons(c, !!me, s0 => s0);
+    if (T.y + 44 + rs.length * 26 > H - M){ T.page(); x = T.x; hd(); }
+    x.fillStyle = RPT.ink; x.font = FONT(700, 20); x.fillText(T.fit(rawName(id), 300, FONT(700, 20)), cx[0], T.y + 22);
+    x.font = FONT(500, 19); x.fillText(chgShort(c.was), cx[1], T.y + 22); x.fillText(chgShort(c.now), cx[2], T.y + 22);
+    x.textAlign = 'right'; x.font = FONT(800, 20); x.fillStyle = c.d > 0 ? '#1B7A4F' : '#B23A26'; x.fillText(chgAmt(c.d), cx[3], T.y + 22); x.textAlign = 'left'; T.y += 34;
+    x.fillStyle = RPT.muted; x.font = FONT(400, 16);
+    for (const [t2, v2] of rs){ x.fillText(T.fit(t2, W - 2 * M - 220, FONT(400, 16)), cx[0] + 14, T.y + 16); x.textAlign = 'right'; x.fillText(chgAmt(v2), cx[3], T.y + 16); x.textAlign = 'left'; T.y += 26; }
+    x.strokeStyle = RPT.line; x.lineWidth = 1; x.beginPath(); x.moveTo(M, T.y + 4); x.lineTo(W - M, T.y + 4); x.stroke(); T.y += 14;
+  }
 }
 // Excel'de "İptal edilenler" sayfası: tutar (hesaba girmedi), iptal tarihi, yerine geçen, fark (TL, girildiği günün kuruyla).
 function xlsxCancels(wb, head, TRY, EUR, L, me = null){
-  const I = cancelInfo(L.filter(e => !me || (e.kind === 'iptal' && (e.among.includes(me) || e.paidBy === me)))); if (!I) return;
+  const I = cancelInfo(L.filter(e => !me || (e.kind === 'iptal' && (e.among.includes(me) || e.paidBy === me)))), PP = chgPeople(me); if (!I && !PP.length) return;
   const w = wb.addWorksheet('İptal edilenler', {views:[{state:'frozen', ySplit:1}]});
   w.columns = [{header:'Tarih', key:'d', width:12}, {header:'İptal edilen', key:'a', width:30}, {header:'Kategori', key:'k', width:14}, {header:'Ödeyen', key:'o', width:16},
     {header:'Tutar', key:'t', width:13}, {header:'Birim', key:'c', width:7}, ...(me ? [{header:'Payın olacaktı', key:'m', width:15}] : []), {header:'TL (girildiği gün)', key:'tl', width:17},
     {header:'İptal tarihi', key:'x', width:12}, {header:'Yerine geçen', key:'y', width:28}, {header:'Yeni tutar', key:'yt', width:13}, {header:'Birim', key:'yc', width:7}, {header:'Fark (TL)', key:'f', width:14}];
   head(w.getRow(1));
-  for (const [e, r] of I.rows){
+  for (const [e, r] of I ? I.rows : []){
     const row = w.addRow({d:new Date(e.at), a:e.desc, k:catById(e.cat).name, o:e.paidBy === 'kasa' ? 'Ortak kasa' : rawName(e.paidBy), t:e.amount, c:e.cur,
       ...(me ? {m:(splitShares(toCents(e), e.among, e.weights)[me] || 0) / 100} : {}), tl:tlKurus(e) / 100, x:e.iptal && e.iptal.at ? new Date(e.iptal.at) : null,
       y:r ? r.desc : '—', yt:r ? r.amount : null, yc:r ? r.cur : '', f:r ? (tlKurus(r) - tlKurus(e)) / 100 : null});
@@ -11100,6 +11236,15 @@ function xlsxCancels(wb, head, TRY, EUR, L, me = null){
   }
   w.addRow([]);
   w.addRow({a:'İptal edilenler hiçbir toplama ve hesaplaşmaya girmez (para geri gelmiş sayılır). Fark: yeni tutar − iptal edilen, TL.'}).font = {italic:true, color:{argb:'FF5B6A74'}};
+  // 🔁 Kişi kişi hesaba etkisi: önce (değişmeseydi) ve şimdi kalan (artı alacak, eksi borç), fark ve nedenleri.
+  if (!PP.length) return;
+  w.addRow([]);
+  const hr = w.addRow([me ? 'Hesabına etkisi' : 'Kişi', 'Önce (₺)', 'Şimdi (₺)', 'Fark (₺)', 'Neden']); hr.font = {bold:true};
+  for (const [id, c] of PP){
+    const r = w.addRow([rawName(id), c.was / 100, c.now / 100, c.d / 100, chgReasons(c, !!me, s0 => s0).map(([t2, v2]) => `${t2} (${chgAmt(v2)})`).join(' · ')]);
+    [2, 3, 4].forEach(k => { r.getCell(k).numFmt = '+#,##0.00 "₺";−#,##0.00 "₺";0 "₺"'; });
+  }
+  w.addRow(['Önce: değişiklik olmasaydı bugünkü kalan; artı alacak, eksi borç. Diğer harcamalar iki tarafta da aynı.']).font = {italic:true, color:{argb:'FF5B6A74'}};
 }
 // ---- 📖 seyahat albümü (anı defteri, PDF) ----
 // 2026-11-27 yenilendi (kullanıcı: "güzel anılar, hikâyeler, gezi planı: 1. gün şuraya gitmiştik; fotoğraflarla süslenmiş bir albüm").
